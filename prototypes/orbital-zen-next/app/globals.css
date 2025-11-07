@@ -1,0 +1,266 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 40%),
+    linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-attachment: fixed;
+}
+
+/* Enable 3D transforms for z-index control */
+.orbital-system {
+  perspective: 2000px;
+  transform-style: preserve-3d;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Orbital animations for tasks - container orbits */
+@keyframes orbit-slow {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+@keyframes orbit-medium {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+@keyframes orbit-fast {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+/* Counter-rotation for text to keep horizontal */
+@keyframes counter-orbit-slow {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+@keyframes counter-orbit-medium {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+@keyframes counter-orbit-fast {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+.orbit-slow {
+  animation: orbit-slow 90s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.orbit-medium {
+  animation: orbit-medium 70s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.orbit-fast {
+  animation: orbit-fast 50s linear infinite;
+  transform-style: preserve-3d;
+}
+
+/* Counter animations for text */
+.counter-orbit-slow {
+  animation: counter-orbit-slow 90s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.counter-orbit-medium {
+  animation: counter-orbit-medium 70s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.counter-orbit-fast {
+  animation: counter-orbit-fast 50s linear infinite;
+  transform-style: preserve-3d;
+}
+
+/* Subtask orbital animations - variable speeds based on distance */
+@keyframes orbit-subtask-fast {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+@keyframes orbit-subtask-medium {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+@keyframes orbit-subtask-slow {
+  from {
+    transform: rotate(var(--starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--starting-angle, 0deg) + 360deg));
+  }
+}
+
+@keyframes counter-orbit-subtask-fast {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+@keyframes counter-orbit-subtask-medium {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+@keyframes counter-orbit-subtask-slow {
+  from {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg)));
+  }
+  to {
+    transform: rotate(calc(-1 * var(--starting-angle, 0deg) - 360deg));
+  }
+}
+
+.orbit-subtask-fast {
+  animation: orbit-subtask-fast 55s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.orbit-subtask-medium {
+  animation: orbit-subtask-medium 70s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.orbit-subtask-slow {
+  animation: orbit-subtask-slow 85s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.counter-orbit-subtask-fast {
+  animation: counter-orbit-subtask-fast 55s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.counter-orbit-subtask-medium {
+  animation: counter-orbit-subtask-medium 70s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.counter-orbit-subtask-slow {
+  animation: counter-orbit-subtask-slow 85s linear infinite;
+  transform-style: preserve-3d;
+}
+
+/* Pause all animations on any hover */
+.orbital-system:has(.task-node:hover) .orbit-slow,
+.orbital-system:has(.task-node:hover) .orbit-medium,
+.orbital-system:has(.task-node:hover) .orbit-fast,
+.orbital-system:has(.task-node:hover) .counter-orbit-slow,
+.orbital-system:has(.task-node:hover) .counter-orbit-medium,
+.orbital-system:has(.task-node:hover) .counter-orbit-fast {
+  animation-play-state: paused;
+}
+
+/* Pause animations during zoom transition */
+.orbit-slow.zooming,
+.orbit-medium.zooming,
+.orbit-fast.zooming,
+.counter-orbit-slow.zooming,
+.counter-orbit-medium.zooming,
+.counter-orbit-fast.zooming {
+  animation-play-state: paused !important;
+}
+
+/* Pause subtask animations on any subtask hover */
+.orbital-system:has(.subtask-node:hover) .orbit-subtask-fast,
+.orbital-system:has(.subtask-node:hover) .orbit-subtask-medium,
+.orbital-system:has(.subtask-node:hover) .orbit-subtask-slow,
+.orbital-system:has(.subtask-node:hover) .counter-orbit-subtask-fast,
+.orbital-system:has(.subtask-node:hover) .counter-orbit-subtask-medium,
+.orbital-system:has(.subtask-node:hover) .counter-orbit-subtask-slow {
+  animation-play-state: paused;
+}
+
+/* Smooth transitions for interactions */
+.task-node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.task-node:hover {
+  z-index: 100 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
+
+.task-node-inner {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.task-node:hover .task-node-inner {
+  transform: scale(1.15);
+}
+
+/* Smooth transitions for subtask interactions */
+.subtask-node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.subtask-node:hover {
+  z-index: 100 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+}
