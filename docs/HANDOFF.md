@@ -31,3 +31,10 @@ Focus Tools is an ADHD-friendly task management system exploring spatial visuali
 2. Add interaction animations
 3. Integrate mock AI chat panel
 4. Test with real tasks
+
+## Environment Setup
+- Environment switching scripts created in ~/scripts/
+- Switch modes with: source ~/scripts/focus-mode.sh or work-mode.sh
+- Figma MCP connected for design reference
+- Git operations via CLI commands
+- GitHub push via standard git remote
