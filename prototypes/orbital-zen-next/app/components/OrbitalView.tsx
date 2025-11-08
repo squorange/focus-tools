@@ -447,6 +447,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   orbitRadius={desktopRadius}
                   startingAngle={startingAngle}
                   index={index}
+                  isZooming={isZooming && zoomedTask?.id === task.id}
+                  showCenterCircle={showCenterCircle}
                 />
               </div>
               {/* Mobile version */}
@@ -483,6 +485,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   orbitRadius={mobileRadius}
                   startingAngle={startingAngle}
                   index={index}
+                  isZooming={isZooming && zoomedTask?.id === task.id}
+                  showCenterCircle={showCenterCircle}
                 />
               </div>
             </div>

@@ -298,3 +298,28 @@ body {
 .animate-glow-focus {
   animation: glow-focus 3s ease-in-out infinite;
 }
+
+/* Moon orbit animations - moons orbiting around their parent task */
+@keyframes moon-orbit {
+  from {
+    transform: rotate(var(--moon-starting-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--moon-starting-angle, 0deg) + 360deg));
+  }
+}
+
+.moon-orbit-fast {
+  animation: moon-orbit 40s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.moon-orbit-normal {
+  animation: moon-orbit 50s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.moon-orbit-slow {
+  animation: moon-orbit 70s linear infinite;
+  transform-style: preserve-3d;
+}

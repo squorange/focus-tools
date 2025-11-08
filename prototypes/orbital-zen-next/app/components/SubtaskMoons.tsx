@@ -7,43 +7,85 @@ interface SubtaskMoonsProps {
   orbitRadius: number;
   startingAngle: number;
   index: number;
+  isZooming?: boolean;
+  showCenterCircle?: boolean;
 }
 
-const MOON_ORBIT_RADIUS = 30; // px from parent task center
+const MOON_ORBIT_RADIUS = 70; // px from parent task center (task radius is 56px, so this orbits ~14px outside)
 const MAX_MOONS_TO_SHOW = 5;
 
-// Distribute moons evenly around the parent task
-function getMoonAngle(moonIndex: number, totalMoons: number, parentStartAngle: number): number {
-  const baseAngle = (360 / totalMoons) * moonIndex;
-  return baseAngle + parentStartAngle;
+// Moon size options (px diameter)
+const MOON_SIZES = [4, 6, 8];
+
+// Moon speed durations (seconds)
+const MOON_SPEEDS = [40, 50, 70]; // fast, normal, slow
+
+// Simple seeded random for consistent randomness per task
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
 }
 
-// Get orbit animation class based on parent orbit radius
-function getMoonOrbitClass(parentRadius: number): string {
+// Get moon starting angle with slight randomness
+function getMoonAngle(moonIndex: number, totalMoons: number, taskId: string): number {
+  const baseAngle = (360 / totalMoons) * moonIndex;
+  // Add random jitter of ±20 degrees for organic placement
+  const seed = taskId.charCodeAt(0) * 1000 + moonIndex;
+  const jitter = (seededRandom(seed) * 40) - 20; // -20 to +20 degrees
+  return baseAngle + jitter;
+}
+
+// Get random moon size based on index
+function getMoonSize(moonIndex: number, taskId: string): number {
+  const seed = taskId.charCodeAt(0) * 100 + moonIndex;
+  const index = Math.floor(seededRandom(seed) * MOON_SIZES.length);
+  return MOON_SIZES[index];
+}
+
+// Get random moon speed duration based on index
+function getMoonSpeed(moonIndex: number, taskId: string): number {
+  const seed = taskId.charCodeAt(0) * 500 + moonIndex;
+  const index = Math.floor(seededRandom(seed) * MOON_SPEEDS.length);
+  return MOON_SPEEDS[index];
+}
+
+// Get moon orbit class based on speed
+function getMoonOrbitClass(speed: number): string {
+  if (speed === 40) return 'moon-orbit-fast';
+  if (speed === 70) return 'moon-orbit-slow';
+  return 'moon-orbit-normal';
+}
+
+// Get parent orbit animation class based on parent task orbit radius
+function getParentOrbitClass(parentRadius: number): string {
   if (parentRadius <= 120) return 'orbit-fast';
   if (parentRadius >= 200) return 'orbit-slow';
   return 'orbit-medium';
 }
 
-function getMoonCounterOrbitClass(parentRadius: number): string {
+function getParentCounterOrbitClass(parentRadius: number): string {
   if (parentRadius <= 120) return 'counter-orbit-fast';
   if (parentRadius >= 200) return 'counter-orbit-slow';
   return 'counter-orbit-medium';
 }
 
-export default function SubtaskMoons({ task, orbitRadius, startingAngle, index }: SubtaskMoonsProps) {
+export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, isZooming = false, showCenterCircle = true }: SubtaskMoonsProps) {
   const subtasks = task.subtasks || [];
   const moonsToShow = Math.min(subtasks.length, MAX_MOONS_TO_SHOW);
 
   if (moonsToShow === 0) return null;
 
-  const orbitClass = getMoonOrbitClass(orbitRadius);
-  const counterOrbitClass = getMoonCounterOrbitClass(orbitRadius);
+  const parentOrbitClass = getParentOrbitClass(orbitRadius);
+  const parentCounterOrbitClass = getParentCounterOrbitClass(orbitRadius);
 
   return (
     <>
       {Array.from({ length: moonsToShow }).map((_, moonIndex) => {
-        const moonAngle = getMoonAngle(moonIndex, moonsToShow, 0);
+        const moonAngle = getMoonAngle(moonIndex, moonsToShow, task.id);
+        const moonSize = getMoonSize(moonIndex, task.id);
+        const moonSpeed = getMoonSpeed(moonIndex, task.id);
+        const moonOrbitClass = getMoonOrbitClass(moonSpeed);
+        const halfSize = moonSize / 2;
 
         return (
           <div
@@ -51,19 +93,20 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index }
             className="absolute left-0 top-0 pointer-events-none"
             style={{
               transformStyle: 'preserve-3d',
-              opacity: 0.6,
+              opacity: showCenterCircle && !isZooming ? 1 : 0,
+              transition: 'opacity 0.8s ease',
             }}
           >
-            {/* Layer 1: Parent orbit rotation (same as parent task) */}
+            {/* Layer 1: Parent orbit rotation (follows parent task around center) */}
             <div
-              className={`${orbitClass} absolute left-0 top-0`}
+              className={`${parentOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
               style={{
                 animationDelay: `${index * -8}s`,
                 transformStyle: 'preserve-3d',
                 ['--starting-angle' as string]: `${startingAngle}deg`,
               }}
             >
-              {/* Layer 2: Parent radius positioning (same as parent task) */}
+              {/* Layer 2: Parent radius positioning (places moon at task location) */}
               <div
                 className="absolute"
                 style={{
@@ -73,9 +116,9 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index }
                   top: '-3.5rem',
                 }}
               >
-                {/* Layer 3: Counter-rotation to stay oriented */}
+                {/* Layer 3: Counter-rotation to keep moon oriented */}
                 <div
-                  className={`${counterOrbitClass} absolute left-0 top-0`}
+                  className={`${parentCounterOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
                   style={{
                     animationDelay: `${index * -8}s`,
                     transformStyle: 'preserve-3d',
@@ -84,12 +127,12 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index }
                     top: '3.5rem',
                   }}
                 >
-                  {/* Layer 4: Moon orbit around parent task */}
+                  {/* Layer 4: Moon orbit around task */}
                   <div
-                    className="absolute"
+                    className={`${moonOrbitClass} absolute ${isZooming ? 'zooming' : ''}`}
                     style={{
-                      transform: `rotate(${moonAngle}deg)`,
                       transformStyle: 'preserve-3d',
+                      ['--moon-starting-angle' as string]: `${moonAngle}deg`,
                     }}
                   >
                     {/* Layer 5: Moon radius positioning */}
@@ -97,15 +140,17 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index }
                       className="absolute"
                       style={{
                         transform: `translateX(${MOON_ORBIT_RADIUS}px)`,
-                        left: '-2px',
-                        top: '-2px',
+                        left: `-${halfSize}px`,
+                        top: `-${halfSize}px`,
                       }}
                     >
-                      {/* The moon dot itself */}
+                      {/* The moon itself */}
                       <div
-                        className="w-1 h-1 rounded-full bg-gray-400/40 shadow-sm"
+                        className="rounded-full"
                         style={{
-                          boxShadow: '0 0 2px rgba(156, 163, 175, 0.3)',
+                          width: `${moonSize}px`,
+                          height: `${moonSize}px`,
+                          background: 'radial-gradient(circle, rgba(140, 110, 180, 0.25), rgba(100, 130, 180, 0.2))',
                         }}
                       />
                     </div>
