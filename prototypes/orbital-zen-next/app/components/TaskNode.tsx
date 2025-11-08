@@ -1,7 +1,8 @@
 'use client';
 
-import { Task } from '../lib/types';
+import { Task, FocusSession } from '../lib/types';
 import { useState, useRef, useEffect } from 'react';
+import TimerBadge from './TimerBadge';
 
 type ViewLevel = 'galaxy' | 'solar';
 
@@ -20,6 +21,7 @@ interface TaskNodeProps {
   isTransitioning?: boolean;
   forceHovered?: boolean;
   viewLevel?: ViewLevel;
+  focusSession?: FocusSession;
 }
 
 const priorityConfig = {
@@ -109,6 +111,7 @@ export default function TaskNode({
   isTransitioning = false,
   forceHovered = false,
   viewLevel = 'galaxy',
+  focusSession,
 }: TaskNodeProps) {
   const priority = priorityConfig[task.priority];
   const orbitClass = getOrbitClass(orbitRadius);
@@ -123,6 +126,9 @@ export default function TaskNode({
 
   // Compute directly from props - NO STATE LAG
   const showAsSelected = isSelected && (viewLevel === 'solar' || isTransitioning);
+
+  // Check if this task or any of its subtasks is in focus (show glow/timer even when paused)
+  const isInFocus = focusSession?.taskId === task.id;
 
   // Clear hover state when transition completes to force re-evaluation
   useEffect(() => {
@@ -234,8 +240,8 @@ export default function TaskNode({
             flex items-center justify-center
             pointer-events-none
             relative
-            overflow-hidden
             transition-all duration-300
+            ${isInFocus ? 'animate-glow-focus' : ''}
           `}
           style={{
             width: '7rem',
@@ -299,7 +305,7 @@ export default function TaskNode({
             onClick={onClick}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            className="task-node rounded-full cursor-pointer shadow-2xl flex items-center justify-center relative overflow-hidden"
+            className={`task-node rounded-full cursor-pointer shadow-2xl flex items-center justify-center relative overflow-hidden ${isInFocus ? 'animate-glow-focus' : ''}`}
             style={{
               width: '7rem',
               height: '7rem',
@@ -333,6 +339,26 @@ export default function TaskNode({
               </div>
             </div>
           </button>
+
+          {/* Timer badge wrapper with counter-rotation - always rendered to stay in sync */}
+          <div
+            className={`${counterOrbitClass} absolute inset-0 pointer-events-none ${isZooming ? 'zooming' : ''}`}
+            style={{
+              animationDelay: `${index * -8}s`,
+              ['--starting-angle' as string]: `${startingAngle}deg`,
+              zIndex: 1002, // Always above the clone overlay
+            }}
+          >
+            {/* Only show timer badge when task is in focus */}
+            {isInFocus && focusSession && (
+              <TimerBadge
+                startTime={focusSession.startTime}
+                isActive={focusSession.isActive}
+                pausedAt={focusSession.pausedAt}
+                totalTime={focusSession.totalTime}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

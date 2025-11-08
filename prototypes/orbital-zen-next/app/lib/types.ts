@@ -15,6 +15,8 @@ export interface Task {
   orbitDistance?: number; // Distance from center (1-5, 1 = closest/most urgent)
   subtasks?: Subtask[];
   completed?: boolean;
+  totalFocusTime?: number; // Total seconds spent in focus
+  focusSessionCount?: number; // Number of focus sessions
 }
 
 export interface Subtask {
@@ -22,6 +24,8 @@ export interface Subtask {
   title: string;
   completed: boolean;
   parentTaskId: string;
+  totalFocusTime?: number; // Total seconds spent in focus
+  focusSessionCount?: number; // Number of focus sessions
 }
 
 // AI types
@@ -38,10 +42,21 @@ export interface AIContext {
   recentMessages: ChatMessage[];
 }
 
+// Focus session types
+export interface FocusSession {
+  taskId: string;
+  subtaskId?: string;
+  startTime: Date;
+  pausedAt?: Date;
+  isActive: boolean;
+  totalTime: number; // seconds accumulated
+}
+
 // App state
 export interface AppState {
   tasks: Task[];
   selectedTaskId?: string;
   isOnline: boolean;
   isSyncing: boolean;
+  activeFocusSession?: FocusSession;
 }

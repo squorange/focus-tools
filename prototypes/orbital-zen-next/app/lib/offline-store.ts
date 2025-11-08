@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Task, ChatMessage } from './types';
+import { Task, ChatMessage, FocusSession } from './types';
 
 interface OrbitalZenDB extends DBSchema {
   tasks: {
@@ -12,10 +12,14 @@ interface OrbitalZenDB extends DBSchema {
     value: ChatMessage;
     indexes: { 'by-taskId': string };
   };
+  focusSession: {
+    key: string;
+    value: FocusSession;
+  };
 }
 
 const DB_NAME = 'orbital-zen-db';
-const DB_VERSION = 2; // Incremented to refresh with subtasks data
+const DB_VERSION = 3; // Incremented to add focus session support
 
 let dbInstance: IDBPDatabase<OrbitalZenDB> | null = null;
 
@@ -35,6 +39,11 @@ async function getDB(): Promise<IDBPDatabase<OrbitalZenDB>> {
       if (!db.objectStoreNames.contains('messages')) {
         const messageStore = db.createObjectStore('messages', { keyPath: 'id' });
         messageStore.createIndex('by-taskId', 'taskId');
+      }
+
+      // Focus session store (single active session)
+      if (!db.objectStoreNames.contains('focusSession')) {
+        db.createObjectStore('focusSession', { keyPath: 'taskId' });
       }
 
       // Clear existing data on upgrade to version 2 to get subtasks
@@ -80,6 +89,32 @@ export async function getMessages(taskId?: string): Promise<ChatMessage[]> {
 export async function saveMessage(message: ChatMessage): Promise<void> {
   const db = await getDB();
   await db.put('messages', message);
+}
+
+// Focus session operations
+export async function getActiveFocusSession(): Promise<FocusSession | undefined> {
+  const db = await getDB();
+  const allSessions = await db.getAll('focusSession');
+  return allSessions.find(session => session.isActive);
+}
+
+export async function saveFocusSession(session: FocusSession): Promise<void> {
+  const db = await getDB();
+  await db.put('focusSession', session);
+}
+
+export async function clearFocusSession(taskId: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('focusSession', taskId);
+}
+
+export async function pauseActiveFocusSession(): Promise<void> {
+  const activeSession = await getActiveFocusSession();
+  if (activeSession && activeSession.isActive) {
+    activeSession.pausedAt = new Date();
+    activeSession.isActive = false;
+    await saveFocusSession(activeSession);
+  }
 }
 
 // Initialize with sample data

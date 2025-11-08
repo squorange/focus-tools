@@ -1,13 +1,15 @@
 'use client';
 
-import { Task, Subtask, TaskPriority } from '../lib/types';
+import { Task, Subtask, TaskPriority, FocusSession } from '../lib/types';
 import { useState, useEffect } from 'react';
+import TimerBadge from './TimerBadge';
 
 interface SolarSystemViewProps {
   parentTask: Task;
   onSubtaskClick: (subtask: Subtask) => void;
   onToggleSubtask: (subtaskId: string) => void;
   onParentClick?: () => void;
+  focusSession?: FocusSession;
 }
 
 // Priority-based styling (matching TaskNode in galaxy view)
@@ -73,12 +75,15 @@ function getSubtaskCounterOrbitClass(radius: number): string {
   return 'counter-orbit-subtask-medium';
 }
 
-export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSubtask, onParentClick }: SolarSystemViewProps) {
+export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSubtask, onParentClick, focusSession }: SolarSystemViewProps) {
   const [hoveredSubtaskId, setHoveredSubtaskId] = useState<string | null>(null);
   const [selectedSubtaskId, setSelectedSubtaskId] = useState<string | null>(null);
   const [showSubtasks, setShowSubtasks] = useState(false);
   const subtasks = parentTask.subtasks || [];
   const priority = priorityConfig[parentTask.priority];
+
+  // Check if parent task is in focus (show even when paused)
+  const isParentInFocus = focusSession?.taskId === parentTask.id && !focusSession?.subtaskId;
 
   // Fade in subtasks after component mounts
   useEffect(() => {
@@ -111,7 +116,7 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
       </div>
 
       {/* Parent task in center (acts as sun) - matches galaxy view styling */}
-      <div className="absolute z-20">
+      <div className="absolute z-20 relative">
         <button
           onClick={onParentClick}
           className={`
@@ -125,6 +130,7 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
             cursor-pointer
             transition-all duration-300
             hover:scale-105
+            ${isParentInFocus ? 'animate-glow-focus' : ''}
           `}
         >
           {/* Gradient overlay matching galaxy view */}
@@ -138,6 +144,16 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
             {parentTask.title}
           </div>
         </button>
+
+        {/* Timer badge for focus on parent (no rotation needed - already static) */}
+        {isParentInFocus && focusSession && (
+          <TimerBadge
+            startTime={focusSession.startTime}
+            isActive={focusSession.isActive}
+            pausedAt={focusSession.pausedAt}
+            totalTime={focusSession.totalTime}
+          />
+        )}
       </div>
 
       {/* Subtasks orbiting the parent */}
@@ -149,6 +165,9 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
         const isHovered = hoveredSubtaskId === subtask.id;
         const isSelected = selectedSubtaskId === subtask.id;
         const isDimmed = (hoveredSubtaskId !== null && !isHovered) || (selectedSubtaskId !== null && !isSelected);
+
+        // Check if this subtask is in focus (show even when paused)
+        const isSubtaskInFocus = focusSession?.taskId === parentTask.id && focusSession?.subtaskId === subtask.id;
 
         return (
           <div
@@ -207,6 +226,7 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
                     shadow-2xl
                     pointer-events-auto
                     relative overflow-hidden
+                    ${isSubtaskInFocus ? 'animate-glow-focus' : ''}
                   `}
                 >
                   {/* Gradient overlay */}
@@ -233,6 +253,25 @@ export default function SolarSystemView({ parentTask, onSubtaskClick, onToggleSu
                     </div>
                   </div>
                 </button>
+
+                {/* Timer badge wrapper with counter-rotation - always rendered to stay in sync */}
+                <div
+                  className={`${counterOrbitClass} absolute inset-0 pointer-events-none`}
+                  style={{
+                    animationDelay: `${index * -3}s`,
+                    ['--starting-angle' as string]: `${startingAngle}deg`,
+                  }}
+                >
+                  {/* Only show timer badge when subtask is in focus */}
+                  {isSubtaskInFocus && focusSession && (
+                    <TimerBadge
+                      startTime={focusSession.startTime}
+                      isActive={focusSession.isActive}
+                      pausedAt={focusSession.pausedAt}
+                      totalTime={focusSession.totalTime}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

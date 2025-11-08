@@ -1,10 +1,19 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Task, TaskPriority, Subtask } from '../lib/types';
+import { Task, TaskPriority, Subtask, FocusSession } from '../lib/types';
 import TaskNode from './TaskNode';
 import AIPanel from './AIPanel';
 import SolarSystemView from './SolarSystemView';
+import SubtaskMoons from './SubtaskMoons';
+import TimerBadge from './TimerBadge';
+import {
+  getActiveFocusSession,
+  saveFocusSession,
+  clearFocusSession,
+  saveTask,
+  getTask,
+} from '../lib/offline-store';
 
 interface OrbitalViewProps {
   tasks: Task[];
@@ -56,6 +65,7 @@ type ViewLevel = 'galaxy' | 'solar';
 
 export default function OrbitalView({ tasks }: OrbitalViewProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedSubtask, setSelectedSubtask] = useState<Subtask | null>(null);
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
   const [hoveredTaskPosition, setHoveredTaskPosition] = useState<{ x: number; y: number } | null>(null);
   const [cloneAnimated, setCloneAnimated] = useState(false);
@@ -67,6 +77,9 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   const [isZooming, setIsZooming] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showCenterCircle, setShowCenterCircle] = useState(true);
+
+  // Focus session state
+  const [focusSession, setFocusSession] = useState<FocusSession | null>(null);
 
   // Find the hovered task data
   const hoveredTask = tasks.find(t => t.id === hoveredTaskId);
@@ -160,16 +173,157 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     }
   }, [viewLevel, isTransitioning, isZooming, selectedTask]);
 
+  // Load active focus session on mount
+  useEffect(() => {
+    const loadFocusSession = async () => {
+      try {
+        const activeSession = await getActiveFocusSession();
+        if (activeSession) {
+          setFocusSession(activeSession);
+        }
+      } catch (error) {
+        console.error('Failed to load focus session:', error);
+      }
+    };
+    loadFocusSession();
+  }, []);
+
   // Handle subtask click
   const handleSubtaskClick = (subtask: Subtask) => {
-    // For now, just log - could open detail view later
-    console.log('Subtask clicked:', subtask);
+    setSelectedSubtask(subtask);
   };
 
   // Handle subtask toggle
   const handleToggleSubtask = (subtaskId: string) => {
     // Toggle subtask completion (would update in database in production)
     console.log('Toggle subtask:', subtaskId);
+  };
+
+  // Focus session handlers
+  const handleStartFocus = async () => {
+    if (!zoomedTask) return;
+
+    try {
+      // Auto-pause any existing active session
+      const existingSession = await getActiveFocusSession();
+      if (existingSession && existingSession.isActive) {
+        // Pause the existing session
+        existingSession.isActive = false;
+        existingSession.pausedAt = new Date();
+        await saveFocusSession(existingSession);
+
+        // Update the task/subtask metadata for the paused session
+        await updateTaskFocusMetadata(existingSession);
+      }
+
+      // Create new focus session
+      const newSession: FocusSession = {
+        taskId: zoomedTask.id,
+        subtaskId: selectedSubtask?.id,
+        startTime: new Date(),
+        isActive: true,
+        totalTime: 0,
+      };
+
+      await saveFocusSession(newSession);
+      setFocusSession(newSession);
+    } catch (error) {
+      console.error('Failed to start focus session:', error);
+    }
+  };
+
+  const handlePauseFocus = async () => {
+    if (!focusSession || !focusSession.isActive) return;
+
+    try {
+      const pausedSession: FocusSession = {
+        ...focusSession,
+        isActive: false,
+        pausedAt: new Date(),
+      };
+
+      await saveFocusSession(pausedSession);
+      setFocusSession(pausedSession);
+    } catch (error) {
+      console.error('Failed to pause focus session:', error);
+    }
+  };
+
+  const handleResumeFocus = async () => {
+    if (!focusSession || focusSession.isActive) return;
+
+    try {
+      // Calculate time accumulated during the paused period
+      const now = new Date();
+      const pausedTime = focusSession.pausedAt ? focusSession.pausedAt.getTime() : focusSession.startTime.getTime();
+      const elapsedDuringPreviousSession = Math.floor((pausedTime - focusSession.startTime.getTime()) / 1000);
+
+      // Create resumed session with accumulated time
+      const resumedSession: FocusSession = {
+        ...focusSession,
+        startTime: now,
+        isActive: true,
+        pausedAt: undefined,
+        totalTime: focusSession.totalTime + elapsedDuringPreviousSession,
+      };
+
+      await saveFocusSession(resumedSession);
+      setFocusSession(resumedSession);
+    } catch (error) {
+      console.error('Failed to resume focus session:', error);
+    }
+  };
+
+  const handleStopFocus = async () => {
+    if (!focusSession) return;
+
+    try {
+      // Calculate final time
+      const now = new Date();
+      const endTime = focusSession.pausedAt || now;
+      const elapsedDuringSession = Math.floor((endTime.getTime() - focusSession.startTime.getTime()) / 1000);
+      const finalTotalTime = focusSession.totalTime + elapsedDuringSession;
+
+      // Update task/subtask metadata
+      await updateTaskFocusMetadata(focusSession, finalTotalTime);
+
+      // Clear the focus session
+      await clearFocusSession(focusSession.taskId);
+      setFocusSession(null);
+    } catch (error) {
+      console.error('Failed to stop focus session:', error);
+    }
+  };
+
+  // Helper to update task/subtask focus metadata
+  const updateTaskFocusMetadata = async (session: FocusSession, finalTime?: number) => {
+    try {
+      const task = await getTask(session.taskId);
+      if (!task) return;
+
+      const timeToAdd = finalTime !== undefined ? finalTime : (() => {
+        const endTime = session.pausedAt || new Date();
+        const elapsed = Math.floor((endTime.getTime() - session.startTime.getTime()) / 1000);
+        return session.totalTime + elapsed;
+      })();
+
+      if (session.subtaskId && task.subtasks) {
+        // Update subtask metadata
+        const subtaskIndex = task.subtasks.findIndex(st => st.id === session.subtaskId);
+        if (subtaskIndex !== -1) {
+          task.subtasks[subtaskIndex].totalFocusTime = (task.subtasks[subtaskIndex].totalFocusTime || 0) + timeToAdd;
+          task.subtasks[subtaskIndex].focusSessionCount = (task.subtasks[subtaskIndex].focusSessionCount || 0) + 1;
+        }
+      } else {
+        // Update task metadata
+        task.totalFocusTime = (task.totalFocusTime || 0) + timeToAdd;
+        task.focusSessionCount = (task.focusSessionCount || 0) + 1;
+      }
+
+      await saveTask(task);
+    } catch (error) {
+      console.error('Failed to update task focus metadata:', error);
+    }
   };
 
   return (
@@ -285,6 +439,14 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   isZooming={isZooming && zoomedTask?.id === task.id}
                   shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
                   isTransitioning={isTransitioning}
+                  focusSession={focusSession || undefined}
+                />
+                {/* Subtask moon indicators */}
+                <SubtaskMoons
+                  task={task}
+                  orbitRadius={desktopRadius}
+                  startingAngle={startingAngle}
+                  index={index}
                 />
               </div>
               {/* Mobile version */}
@@ -313,6 +475,14 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   isZooming={isZooming && zoomedTask?.id === task.id}
                   shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
                   isTransitioning={isTransitioning}
+                  focusSession={focusSession || undefined}
+                />
+                {/* Subtask moon indicators */}
+                <SubtaskMoons
+                  task={task}
+                  orbitRadius={mobileRadius}
+                  startingAngle={startingAngle}
+                  index={index}
                 />
               </div>
             </div>
@@ -322,27 +492,50 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
       {/* Overlay clone for hovered task - renders on top with matching style */}
       {hoveredTask && hoveredTaskPosition && hoveredTaskIndex !== -1 && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            left: hoveredTaskPosition.x,
-            top: hoveredTaskPosition.y,
-            zIndex: 9999,
-          }}
-        >
-          <TaskNode
-            task={hoveredTask}
-            isSelected={false}
-            onClick={() => {}}
-            index={hoveredTaskIndex}
-            orbitRadius={getOrbitRadius(hoveredTask.priority, false)}
-            startingAngle={STARTING_ANGLES[hoveredTaskIndex] || 0}
-            onHoverChange={() => {}}
-            isClone={true}
-            isHoveredElsewhere={false}
-            forceHovered={cloneAnimated}
-          />
-        </div>
+        <>
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              left: hoveredTaskPosition.x,
+              top: hoveredTaskPosition.y,
+              zIndex: 9999,
+            }}
+          >
+            <TaskNode
+              task={hoveredTask}
+              isSelected={false}
+              onClick={() => {}}
+              index={hoveredTaskIndex}
+              orbitRadius={getOrbitRadius(hoveredTask.priority, false)}
+              startingAngle={STARTING_ANGLES[hoveredTaskIndex] || 0}
+              onHoverChange={() => {}}
+              isClone={true}
+              isHoveredElsewhere={false}
+              forceHovered={cloneAnimated}
+            />
+          </div>
+
+          {/* Timer badge for clone - rendered outside to avoid filter stacking context */}
+          {focusSession?.taskId === hoveredTask.id && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: hoveredTaskPosition.x,
+                top: hoveredTaskPosition.y,
+                zIndex: 10000,
+              }}
+            >
+              <div className="absolute inset-0" style={{ width: '7rem', height: '7rem', transform: 'translate(-50%, -50%)' }}>
+                <TimerBadge
+                  startTime={focusSession.startTime}
+                  isActive={focusSession.isActive}
+                  pausedAt={focusSession.pausedAt}
+                  totalTime={focusSession.totalTime}
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Instructions */}
@@ -370,11 +563,18 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
               onSubtaskClick={handleSubtaskClick}
               onToggleSubtask={handleToggleSubtask}
               onParentClick={handleZoomOut}
+              focusSession={focusSession || undefined}
             />
             {/* AI Panel - only in solar system view */}
             <AIPanel
               task={zoomedTask}
+              subtask={selectedSubtask || undefined}
+              focusSession={focusSession || undefined}
               onClose={handleZoomOut}
+              onStartFocus={handleStartFocus}
+              onPauseFocus={handlePauseFocus}
+              onResumeFocus={handleResumeFocus}
+              onStopFocus={handleStopFocus}
             />
           </>
         )}
