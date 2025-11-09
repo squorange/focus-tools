@@ -4,6 +4,7 @@ import { Task, Subtask, TaskPriority, FocusSession } from '../lib/types';
 import { useState, useEffect } from 'react';
 import TimerBadge from './TimerBadge';
 import PriorityMarker from './PriorityMarker';
+import { saveTask } from '../lib/offline-store';
 import {
   getSubtaskAngle,
   getSubtaskOrbitRadius,
@@ -118,7 +119,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
   }, []);
 
   // Marker tap handlers
-  const handleMoveInward = () => {
+  const handleMoveInward = async () => {
     if (!onTaskUpdate) return;
 
     // Minimum ring is 2 (encircling the innermost subtask at ring 1)
@@ -138,10 +139,11 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
       updatedAt: new Date(),
     };
 
+    await saveTask(updatedTask);
     onTaskUpdate(updatedTask);
   };
 
-  const handleMoveOutward = () => {
+  const handleMoveOutward = async () => {
     if (!onTaskUpdate) return;
 
     const newRing = Math.min(subtasks.length + 1, currentMarkerRing + 1);
@@ -160,6 +162,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
       updatedAt: new Date(),
     };
 
+    await saveTask(updatedTask);
     onTaskUpdate(updatedTask);
   };
 
