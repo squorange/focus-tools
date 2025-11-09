@@ -94,13 +94,19 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
   // Check if parent task is in focus (show even when paused)
   const isParentInFocus = focusSession?.taskId === parentTask.id && !focusSession?.subtaskId;
 
-  // Calculate current marker ring position
-  const currentMarkerRing = getCurrentMarkerRing(
-    parentTask.subtasks || [],
-    parentTask.priorityMarkerRing,
-    parentTask.priorityMarkerOriginalIds
-  );
-  const isCelebrating = currentMarkerRing === 0 && parentTask.priorityMarkerEnabled;
+  // Use priorityMarkerRing directly for visual position (source of truth)
+  // Only calculate automatic position during subtask completion (in AIPanel)
+  const currentMarkerRing = parentTask.priorityMarkerRing || 0;
+
+  // Celebration only happens when all original targets are complete
+  // Check that we have targets AND they're all complete
+  const allTargetsComplete = parentTask.priorityMarkerOriginalIds &&
+    parentTask.priorityMarkerOriginalIds.length > 0 &&
+    parentTask.priorityMarkerOriginalIds.every(id => {
+      const subtask = parentTask.subtasks?.find(st => st.id === id);
+      return subtask?.completed === true;
+    });
+  const isCelebrating = allTargetsComplete && parentTask.priorityMarkerEnabled;
 
   // Fade in subtasks after component mounts
   useEffect(() => {

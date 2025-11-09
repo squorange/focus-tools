@@ -622,7 +622,7 @@ export default function AIPanel({
                         // Calculate active subtasks for marker positioning
                         const activeSubtasks = subtasks.filter(s => !s.completed);
                         const activeIndex = activeSubtasks.findIndex(s => s.id === st.id);
-                        const currentMarkerPosition = getCurrentMarkerRing(subtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+                        const currentMarkerPosition = task.priorityMarkerRing || 0;
                         // Show marker after the last subtask inside the belt (ring position - 1)
                         const showMarkerAfter = task.priorityMarkerEnabled &&
                           !st.completed &&
