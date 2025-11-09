@@ -1,6 +1,8 @@
 // Task types
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskCategory = 'work' | 'personal' | 'home' | 'maintenance' | 'other';
+export type EnergyLevel = 'high' | 'medium' | 'low' | 'rest';
+export type EstimatedTime = '5min' | '15min' | '30min' | '1hr' | '2hr' | '4hr' | '1day' | '1week';
 
 export interface Task {
   id: string;
@@ -13,12 +15,18 @@ export interface Task {
   updatedAt: Date;
   completedAt?: Date;
   dueDate?: Date;
+  targetDate?: Date; // Target completion date (softer than due date)
   orbitDistance?: number; // Distance from center (1-5, 1 = closest/most urgent)
   subtasks?: Subtask[];
   completed?: boolean;
   totalFocusTime?: number; // Total seconds spent in focus
   focusSessionCount?: number; // Number of focus sessions
   addedBy?: string; // 'user' | 'partner' | 'ai'
+
+  // Organization fields
+  energy?: EnergyLevel; // Energy level required
+  tags?: string[]; // Context tags
+  estimatedTime?: EstimatedTime; // Estimated time to complete
 
   // Priority marker fields
   priorityMarkerEnabled?: boolean; // Whether priority marker is shown
