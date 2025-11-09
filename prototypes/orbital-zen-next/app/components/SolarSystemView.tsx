@@ -121,7 +121,8 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
   const handleMoveInward = () => {
     if (!onTaskUpdate) return;
 
-    const newRing = Math.max(1, currentMarkerRing - 1);
+    // Minimum ring is 2 (encircling the innermost subtask at ring 1)
+    const newRing = Math.max(2, currentMarkerRing - 1);
 
     // Get subtask IDs that are inside the belt (before the belt ring)
     const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(st => st.id);
@@ -401,7 +402,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           style="foggyRing"
           onMoveInward={handleMoveInward}
           onMoveOutward={handleMoveOutward}
-          canMoveInward={currentMarkerRing > 1}
+          canMoveInward={currentMarkerRing > 2}
           canMoveOutward={currentMarkerRing < subtasks.length + 1}
           isCelebrating={isCelebrating}
         />

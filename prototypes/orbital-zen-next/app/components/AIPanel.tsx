@@ -718,7 +718,8 @@ export default function AIPanel({
                                   <button
                                     onClick={async () => {
                                       // Move marker inward (decrease ring number)
-                                      const newRing = Math.max(1, currentMarkerPosition - 1);
+                                      // Minimum ring is 2 (encircling the innermost subtask at ring 1)
+                                      const newRing = Math.max(2, currentMarkerPosition - 1);
                                       const subtasksInsideBelt = activeSubtasks.slice(0, newRing - 1).map(s => s.id);
                                       const updatedSubtasks = recalculateRadii(task.subtasks || [], newRing);
                                       const updatedTask = {
@@ -731,7 +732,7 @@ export default function AIPanel({
                                       await saveTask(updatedTask);
                                       onTaskUpdate?.(updatedTask);
                                     }}
-                                    disabled={currentMarkerPosition <= 1}
+                                    disabled={currentMarkerPosition <= 2}
                                     className="p-0.5 text-purple-400 hover:text-purple-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
                                     title="Move marker up (inward)"
                                   >
