@@ -101,8 +101,18 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
       // Start transition
       setIsTransitioning(true);
       setIsZooming(true);
-      setZoomedTask(task);
-      setSelectedTask(task); // Set as selected to preserve hover appearance
+
+      // Load latest task from IndexedDB to ensure we have current belt position
+      getTask(task.id).then((latestTask) => {
+        if (latestTask) {
+          setZoomedTask(latestTask);
+          setSelectedTask(latestTask); // Set as selected to preserve hover appearance
+        } else {
+          // Fallback to the task from props if not found
+          setZoomedTask(task);
+          setSelectedTask(task);
+        }
+      });
 
       // Switch to solar view after animation completes
       setTimeout(() => {
@@ -578,6 +588,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
               onSubtaskClick={handleSubtaskClick}
               onToggleSubtask={handleToggleSubtask}
               onParentClick={handleZoomOut}
+              onTaskUpdate={(updatedTask) => setZoomedTask(updatedTask)}
               focusSession={focusSession || undefined}
               completingSubtaskIds={completingSubtaskIds}
             />

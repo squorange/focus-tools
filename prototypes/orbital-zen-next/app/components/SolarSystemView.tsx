@@ -3,7 +3,18 @@
 import { Task, Subtask, TaskPriority, FocusSession } from '../lib/types';
 import { useState, useEffect } from 'react';
 import TimerBadge from './TimerBadge';
-import { getSubtaskAngle, getSubtaskOrbitRadius, SUBTASK_ORBIT_RADII, getStableAnimationDelay } from '../lib/orbit-utils';
+import PriorityMarker from './PriorityMarker';
+import {
+  getSubtaskAngle,
+  getSubtaskOrbitRadius,
+  getSubtaskRadiusWithBelt,
+  SUBTASK_ORBIT_RADII,
+  getStableAnimationDelay,
+  getMarkerRadius,
+  radiusToRing,
+  getCurrentMarkerRing,
+  recalculateRadii,
+} from '../lib/orbit-utils';
 
 interface SolarSystemViewProps {
   parentTask: Task;
@@ -11,6 +22,7 @@ interface SolarSystemViewProps {
   onSubtaskClick: (subtask: Subtask | null) => void;
   onToggleSubtask: (subtaskId: string) => void;
   onParentClick?: () => void;
+  onTaskUpdate?: (task: Task) => void;
   focusSession?: FocusSession;
   completingSubtaskIds: Set<string>;
 }
@@ -71,15 +83,24 @@ function getSubtaskCounterOrbitClass(subtaskId: string): string {
   return 'counter-orbit-subtask-slow';
 }
 
-export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubtaskClick, onToggleSubtask, onParentClick, focusSession, completingSubtaskIds }: SolarSystemViewProps) {
+export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubtaskClick, onToggleSubtask, onParentClick, onTaskUpdate, focusSession, completingSubtaskIds }: SolarSystemViewProps) {
   const [hoveredSubtaskId, setHoveredSubtaskId] = useState<string | null>(null);
   const [showSubtasks, setShowSubtasks] = useState(false);
+
   // Filter out completed subtasks (but keep completing ones for animation)
   const subtasks = (parentTask.subtasks || []).filter(st => !st.completed || completingSubtaskIds.has(st.id));
   const priority = priorityConfig[parentTask.priority];
 
   // Check if parent task is in focus (show even when paused)
   const isParentInFocus = focusSession?.taskId === parentTask.id && !focusSession?.subtaskId;
+
+  // Calculate current marker ring position
+  const currentMarkerRing = getCurrentMarkerRing(
+    parentTask.subtasks || [],
+    parentTask.priorityMarkerRing,
+    parentTask.priorityMarkerOriginalIds
+  );
+  const isCelebrating = currentMarkerRing === 0 && parentTask.priorityMarkerEnabled;
 
   // Fade in subtasks after component mounts
   useEffect(() => {
@@ -90,6 +111,81 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
     return () => clearTimeout(timer);
   }, []);
 
+  // Marker tap handlers
+  const handleMoveInward = () => {
+    if (!onTaskUpdate) return;
+
+    const newRing = Math.max(1, currentMarkerRing - 1);
+
+    // Get subtask IDs that are inside the belt (before the belt ring)
+    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(st => st.id);
+
+    // Recalculate subtask radii with new belt position
+    const updatedSubtasks = recalculateRadii(parentTask.subtasks || [], newRing);
+
+    const updatedTask: Task = {
+      ...parentTask,
+      subtasks: updatedSubtasks,
+      priorityMarkerRing: newRing,
+      priorityMarkerOriginalIds: subtasksInsideBelt,
+      updatedAt: new Date(),
+    };
+
+    onTaskUpdate(updatedTask);
+  };
+
+  const handleMoveOutward = () => {
+    if (!onTaskUpdate) return;
+
+    const newRing = Math.min(subtasks.length + 1, currentMarkerRing + 1);
+
+    // Get subtask IDs that are inside the belt (before the belt ring)
+    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(st => st.id);
+
+    // Recalculate subtask radii with new belt position
+    const updatedSubtasks = recalculateRadii(parentTask.subtasks || [], newRing);
+
+    const updatedTask: Task = {
+      ...parentTask,
+      subtasks: updatedSubtasks,
+      priorityMarkerRing: newRing,
+      priorityMarkerOriginalIds: subtasksInsideBelt,
+      updatedAt: new Date(),
+    };
+
+    onTaskUpdate(updatedTask);
+  };
+
+  // Calculate orbital ring radii accounting for belt position
+  const getOrbitalRingRadii = (): number[] => {
+    if (subtasks.length === 0) return [];
+
+    const radii: number[] = [];
+
+    // Add a ring for each subtask position
+    for (let i = 0; i < subtasks.length; i++) {
+      const radius = subtasks[i].assignedOrbitRadius !== undefined
+        ? subtasks[i].assignedOrbitRadius!
+        : getSubtaskRadiusWithBelt(i, parentTask.priorityMarkerRing);
+
+      if (!radii.includes(radius)) {
+        radii.push(radius);
+      }
+    }
+
+    // Add belt ring if marker is enabled and visible (not in celebration mode)
+    if (parentTask.priorityMarkerEnabled && currentMarkerRing > 0) {
+      const beltRadius = getMarkerRadius(currentMarkerRing);
+      if (!radii.includes(beltRadius)) {
+        radii.push(beltRadius);
+      }
+    }
+
+    return radii.sort((a, b) => a - b);
+  };
+
+  const orbitalRingRadii = getOrbitalRingRadii();
+
   return (
     <div className="absolute inset-0 flex items-center justify-center">
       {/* Orbit rings for subtasks */}
@@ -99,10 +195,10 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           opacity: showSubtasks ? 1 : 0,
         }}
       >
-        {SUBTASK_ORBIT_RADII.map((radius) => (
+        {orbitalRingRadii.map((radius) => (
           <div
             key={radius}
-            className="absolute border border-gray-700/20 rounded-full"
+            className="absolute border border-gray-700/20 rounded-full transition-all duration-500 ease-in-out"
             style={{
               width: `${radius * 2}px`,
               height: `${radius * 2}px`,
@@ -291,6 +387,19 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           </div>
         );
       })}
+
+      {/* Priority Marker */}
+      {parentTask.priorityMarkerEnabled && (
+        <PriorityMarker
+          radius={getMarkerRadius(currentMarkerRing)}
+          style="foggyRing"
+          onMoveInward={handleMoveInward}
+          onMoveOutward={handleMoveOutward}
+          canMoveInward={currentMarkerRing > 1}
+          canMoveOutward={currentMarkerRing < subtasks.length + 1}
+          isCelebrating={isCelebrating}
+        />
+      )}
     </div>
   );
 }

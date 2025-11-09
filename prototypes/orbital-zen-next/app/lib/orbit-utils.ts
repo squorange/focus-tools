@@ -85,8 +85,9 @@ export function calculateNextRadius(existingSubtasks: Subtask[]): number {
 /**
  * Recalculate radii for all remaining subtasks after a completion
  * Maintains their assigned angles but updates radii to fill inward
+ * Accounts for belt position if present
  */
-export function recalculateRadii(subtasks: Subtask[]): Subtask[] {
+export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtask[] {
   const activeSubtasks = subtasks.filter(st => !st.completed);
 
   return subtasks.map(st => {
@@ -97,7 +98,7 @@ export function recalculateRadii(subtasks: Subtask[]): Subtask[] {
 
     return {
       ...st,
-      assignedOrbitRadius: getSubtaskOrbitRadius(newIndex),
+      assignedOrbitRadius: getSubtaskRadiusWithBelt(newIndex, beltRing),
     };
   });
 }
@@ -105,8 +106,9 @@ export function recalculateRadii(subtasks: Subtask[]): Subtask[] {
 /**
  * Initialize angles and radii for subtasks that don't have them
  * (Migration helper for existing data)
+ * Accounts for belt position if present
  */
-export function initializeSubtaskOrbits(subtasks: Subtask[]): Subtask[] {
+export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number): Subtask[] {
   const activeSubtasks = subtasks.filter(st => !st.completed);
 
   return subtasks.map((st, index) => {
@@ -122,7 +124,7 @@ export function initializeSubtaskOrbits(subtasks: Subtask[]): Subtask[] {
     return {
       ...st,
       assignedStartingAngle: st.completed ? st.assignedStartingAngle : getSubtaskAngle(activeIndex, totalActive),
-      assignedOrbitRadius: st.completed ? st.assignedOrbitRadius : getSubtaskOrbitRadius(activeIndex),
+      assignedOrbitRadius: st.completed ? st.assignedOrbitRadius : getSubtaskRadiusWithBelt(activeIndex, beltRing),
     };
   });
 }
@@ -140,4 +142,103 @@ export function getStableAnimationDelay(id: string): number {
   }
   // Return a delay between 0 and -30 seconds (negative to start at different positions)
   return -(Math.abs(hash) % 30);
+}
+
+/**
+ * Priority Marker Utilities
+ */
+
+const MIN_RADIUS = 115;
+const RADIUS_SPACING = 40;
+const BELT_SPACING_BUFFER = 20; // Extra space for belt ring and all outer rings
+
+/**
+ * Calculate marker radius based on ring position
+ * Ring 0 = celebration mode (around parent task)
+ * Ring 1+ = orbital ring positions (belt ring gets extra buffer)
+ */
+export function getMarkerRadius(ringPosition: number): number {
+  if (ringPosition === 0) {
+    return 70; // Celebration mode: ring around parent task (parent is 28px radius)
+  }
+  // Belt occupies its ring with extra spacing buffer
+  return MIN_RADIUS + ((ringPosition - 1) * RADIUS_SPACING) + BELT_SPACING_BUFFER;
+}
+
+/**
+ * Convert radius to ring position (for drag interactions)
+ * Returns the nearest valid ring position (1-based)
+ */
+export function radiusToRing(radius: number): number {
+  const ring = Math.round((radius - MIN_RADIUS) / RADIUS_SPACING) + 1;
+  return Math.max(1, ring); // Minimum ring 1
+}
+
+/**
+ * Get default marker ring position for a given subtask count
+ * Places belt at ring 3 if 3+ subtasks, otherwise after all subtasks
+ */
+export function getDefaultMarkerRing(subtaskCount: number): number {
+  if (subtaskCount >= 3) {
+    return 3;
+  } else if (subtaskCount > 0) {
+    return subtaskCount + 1;
+  }
+  return 1; // Minimum ring
+}
+
+/**
+ * Calculate subtask's orbital radius accounting for belt position
+ * Subtasks before belt: normal ring positions
+ * Belt: occupies its ring position + BUFFER (20px gap before it)
+ * Subtasks at/after belt: shifted by +1 ring + BUFFER*2 (20px gap before + 20px gap after)
+ */
+export function getSubtaskRadiusWithBelt(
+  subtaskIndex: number,
+  beltRing?: number
+): number {
+  const baseRing = subtaskIndex + 1; // Convert 0-based index to 1-based ring
+
+  if (!beltRing) {
+    // No belt, use normal radius
+    return MIN_RADIUS + (subtaskIndex * RADIUS_SPACING);
+  }
+
+  // Subtasks before belt: normal positions (no buffer)
+  if (baseRing < beltRing) {
+    return MIN_RADIUS + (subtaskIndex * RADIUS_SPACING);
+  }
+
+  // Subtasks at or after belt position: shifted by +1 ring AND add double buffer
+  // This creates equal 20px gaps on both sides of the belt
+  return MIN_RADIUS + (subtaskIndex + 1) * RADIUS_SPACING + (BELT_SPACING_BUFFER * 2);
+}
+
+/**
+ * Calculate current marker ring position based on remaining original targets
+ * Returns the ring position where belt should be
+ * Returns 0 if all targets are complete (celebration mode)
+ */
+export function getCurrentMarkerRing(
+  subtasks: Subtask[],
+  beltRing?: number,
+  originalTargetIds?: string[]
+): number {
+  if (!beltRing || !originalTargetIds || originalTargetIds.length === 0) {
+    return 0;
+  }
+
+  // Count how many of the original target set remain incomplete
+  const remainingCount = originalTargetIds.filter(id => {
+    const subtask = subtasks.find(st => st.id === id);
+    return subtask && !subtask.completed;
+  }).length;
+
+  if (remainingCount === 0) {
+    return 0; // Celebration mode
+  }
+
+  // Belt position is one after the last remaining target
+  // E.g., if 2 targets remain, belt is at ring 3
+  return remainingCount + 1;
 }

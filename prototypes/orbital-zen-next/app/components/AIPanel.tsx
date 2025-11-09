@@ -2,8 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Task, Subtask, FocusSession } from '../lib/types';
-import { saveTask } from '../lib/offline-store';
-import { calculateNextAngle, calculateNextRadius, recalculateRadii, initializeSubtaskOrbits } from '../lib/orbit-utils';
+import { saveTask, getTask } from '../lib/offline-store';
+import {
+  calculateNextAngle,
+  calculateNextRadius,
+  recalculateRadii,
+  initializeSubtaskOrbits,
+  getCurrentMarkerRing,
+  getDefaultMarkerRing,
+} from '../lib/orbit-utils';
 
 type PanelState = 'details' | 'focus';
 type DetailsView = 'task' | 'subtask';
@@ -114,7 +121,7 @@ export default function AIPanel({
     );
 
     if (needsMigration) {
-      const migratedSubtasks = initializeSubtaskOrbits(subtasks);
+      const migratedSubtasks = initializeSubtaskOrbits(subtasks, task.priorityMarkerRing);
       const updatedTask = { ...task, subtasks: migratedSubtasks, updatedAt: new Date() };
       saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
@@ -201,12 +208,56 @@ export default function AIPanel({
             st.id === subtaskId ? { ...st, completed: true } : st
           );
 
-          // Recalculate radii for remaining active subtasks (angles stay the same)
-          updatedSubtasks = recalculateRadii(updatedSubtasks);
+          // Calculate new belt position if marker enabled
+          let newBeltRing = task.priorityMarkerRing;
+          let shouldCelebrate = false;
 
-          const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
+          if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtaskId)) {
+            // Belt slides inward when a contained subtask completes
+            newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+
+            // Check if belt reached celebration mode (ring 0)
+            if (newBeltRing === 0) {
+              shouldCelebrate = true;
+            }
+          }
+
+          // Recalculate radii for remaining active subtasks (angles stay the same)
+          // Pass undefined for belt ring if in celebration mode (ring 0) so subtasks use normal spacing
+          updatedSubtasks = recalculateRadii(updatedSubtasks, newBeltRing === 0 ? undefined : newBeltRing);
+
+          // Update marker if enabled (marker position will auto-adjust based on remaining targets)
+          let updatedTask = {
+            ...task,
+            subtasks: updatedSubtasks,
+            priorityMarkerRing: newBeltRing,
+            updatedAt: new Date()
+          };
+
           await saveTask(updatedTask);
           onTaskUpdate?.(updatedTask);
+
+          // If celebrating, auto-clear belt after 3 seconds
+          if (shouldCelebrate) {
+            setTimeout(async () => {
+              // Reload task to check if it still has the marker (user might have removed it)
+              const currentTask = await getTask(task.id);
+              if (currentTask && currentTask.priorityMarkerEnabled && currentTask.priorityMarkerRing === 0) {
+                // Clear the belt
+                const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
+                const clearedTask = {
+                  ...currentTask,
+                  subtasks: clearedSubtasks,
+                  priorityMarkerEnabled: false,
+                  priorityMarkerRing: undefined,
+                  priorityMarkerOriginalIds: undefined,
+                  updatedAt: new Date(),
+                };
+                await saveTask(clearedTask);
+                onTaskUpdate?.(clearedTask);
+              }
+            }, 3000); // 3 second celebration
+          }
 
           // PHASE 3: Clean up (after 1000ms total)
           // Keep in completing set during radius transition, remove after
@@ -227,10 +278,22 @@ export default function AIPanel({
           st.id === subtaskId ? { ...st, completed: false } : st
         );
 
-        // Recalculate radii for all active subtasks
-        updatedSubtasks = recalculateRadii(updatedSubtasks);
+        // Restore original belt position if we're uncompleting a targeted subtask
+        let restoredBeltRing = task.priorityMarkerRing;
+        if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtaskId)) {
+          // Recalculate based on original targets (now including the restored one)
+          restoredBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+        }
 
-        const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
+        // Recalculate radii for all active subtasks
+        updatedSubtasks = recalculateRadii(updatedSubtasks, restoredBeltRing);
+
+        const updatedTask = {
+          ...task,
+          subtasks: updatedSubtasks,
+          priorityMarkerRing: restoredBeltRing,
+          updatedAt: new Date()
+        };
         await saveTask(updatedTask);
         onTaskUpdate?.(updatedTask);
       });
@@ -552,88 +615,158 @@ export default function AIPanel({
                   {/* Subtasks List */}
                   {hasSubtasks && (
                     <div className="space-y-2">
-                      {subtasks.map((st) => {
+                      {subtasks.map((st, index) => {
                         const isEditing = editingSubtaskId === st.id;
                         const isCompleting = completingSubtaskIds.has(st.id);
 
-                        return (
-                          <div
-                            key={st.id}
-                            className="flex items-center gap-2 group transition-all duration-500"
-                            style={{
-                              opacity: isCompleting ? 0 : 1,
-                              transform: isCompleting ? 'scale(0.8)' : 'scale(1)',
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={st.completed}
-                              onChange={() => handleSubtaskToggle(st.id)}
-                              disabled={isCompleting}
-                              className="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-800 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
-                            />
+                        // Calculate active subtasks for marker positioning
+                        const activeSubtasks = subtasks.filter(s => !s.completed);
+                        const activeIndex = activeSubtasks.findIndex(s => s.id === st.id);
+                        const currentMarkerPosition = getCurrentMarkerRing(subtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+                        // Show marker after the last subtask inside the belt (ring position - 1)
+                        const showMarkerAfter = task.priorityMarkerEnabled &&
+                          !st.completed &&
+                          activeIndex === currentMarkerPosition - 2 &&
+                          currentMarkerPosition > 0;
 
-                            {isEditing ? (
-                              <>
-                                <input
-                                  ref={subtaskInputRef}
-                                  type="text"
-                                  value={editedSubtaskTitle}
-                                  onChange={(e) => setEditedSubtaskTitle(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSaveSubtaskEdit();
-                                    if (e.key === 'Escape') handleCancelSubtaskEdit();
-                                  }}
-                                  className="flex-1 px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded text-sm text-gray-200 focus:outline-none focus:border-gray-600"
-                                />
-                                <button
-                                  onClick={handleCancelSubtaskEdit}
-                                  className="p-1 text-gray-400 hover:text-white transition-colors"
-                                  title="Cancel"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={handleSaveSubtaskEdit}
-                                  className="p-1 text-green-400 hover:text-green-300 transition-colors"
-                                  title="Save"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => handleSubtaskClick(st)}
-                                  className="flex-1 text-left text-gray-300 hover:text-white transition-colors py-1"
-                                >
-                                  <span className={st.completed ? 'line-through opacity-50' : ''}>
-                                    {st.title}
-                                  </span>
-                                </button>
-                                <button
-                                  onClick={() => handleEditSubtask(st)}
-                                  className="p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-300 transition-all"
-                                  title="Edit subtask"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteSubtask(st.id)}
-                                  className="p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
-                                  title="Delete subtask"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </>
+                        return (
+                          <div key={st.id}>
+                            <div
+                              className="flex items-center gap-2 group transition-all duration-500"
+                              style={{
+                                opacity: isCompleting ? 0 : 1,
+                                transform: isCompleting ? 'scale(0.8)' : 'scale(1)',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={st.completed}
+                                onChange={() => handleSubtaskToggle(st.id)}
+                                disabled={isCompleting}
+                                className="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-800 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+                              />
+
+                              {isEditing ? (
+                                <>
+                                  <input
+                                    ref={subtaskInputRef}
+                                    type="text"
+                                    value={editedSubtaskTitle}
+                                    onChange={(e) => setEditedSubtaskTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveSubtaskEdit();
+                                      if (e.key === 'Escape') handleCancelSubtaskEdit();
+                                    }}
+                                    className="flex-1 px-2 py-1 bg-gray-800/50 border border-gray-700/50 rounded text-sm text-gray-200 focus:outline-none focus:border-gray-600"
+                                  />
+                                  <button
+                                    onClick={handleCancelSubtaskEdit}
+                                    className="p-1 text-gray-400 hover:text-white transition-colors"
+                                    title="Cancel"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={handleSaveSubtaskEdit}
+                                    className="p-1 text-green-400 hover:text-green-300 transition-colors"
+                                    title="Save"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleSubtaskClick(st)}
+                                    className="flex-1 text-left text-gray-300 hover:text-white transition-colors py-1"
+                                  >
+                                    <span className={st.completed ? 'line-through opacity-50' : ''}>
+                                      {st.title}
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditSubtask(st)}
+                                    className="p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-300 transition-all"
+                                    title="Edit subtask"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteSubtask(st.id)}
+                                    className="p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
+                                    title="Delete subtask"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Priority Marker Divider */}
+                            {showMarkerAfter && (
+                              <div className="flex items-center gap-2 py-2 my-1">
+                                <div className="flex-1 border-t-2 border-dashed border-purple-500/40" />
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={async () => {
+                                      // Move marker inward (decrease ring number)
+                                      const newRing = Math.max(1, currentMarkerPosition - 1);
+                                      const subtasksInsideBelt = activeSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                      const updatedSubtasks = recalculateRadii(task.subtasks || [], newRing);
+                                      const updatedTask = {
+                                        ...task,
+                                        subtasks: updatedSubtasks,
+                                        priorityMarkerRing: newRing,
+                                        priorityMarkerOriginalIds: subtasksInsideBelt,
+                                        updatedAt: new Date(),
+                                      };
+                                      await saveTask(updatedTask);
+                                      onTaskUpdate?.(updatedTask);
+                                    }}
+                                    disabled={currentMarkerPosition <= 1}
+                                    className="p-0.5 text-purple-400 hover:text-purple-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                                    title="Move marker up (inward)"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                  </button>
+                                  <span className="text-xs text-purple-400 font-medium px-1">Priority</span>
+                                  <button
+                                    onClick={async () => {
+                                      // Move marker outward (increase ring number)
+                                      const newRing = Math.min(activeSubtasks.length + 1, currentMarkerPosition + 1);
+                                      const subtasksInsideBelt = activeSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                      const updatedSubtasks = recalculateRadii(task.subtasks || [], newRing);
+                                      const updatedTask = {
+                                        ...task,
+                                        subtasks: updatedSubtasks,
+                                        priorityMarkerRing: newRing,
+                                        priorityMarkerOriginalIds: subtasksInsideBelt,
+                                        updatedAt: new Date(),
+                                      };
+                                      await saveTask(updatedTask);
+                                      onTaskUpdate?.(updatedTask);
+                                    }}
+                                    disabled={currentMarkerPosition >= activeSubtasks.length + 1}
+                                    className="p-0.5 text-purple-400 hover:text-purple-300 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
+                                    title="Move marker down (outward)"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div className="flex-1 border-t-2 border-dashed border-purple-500/40" />
+                              </div>
                             )}
                           </div>
                         );
@@ -675,6 +808,64 @@ export default function AIPanel({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                       Add subtask
+                    </button>
+                  )}
+
+                  {/* Add/Remove Priority Indicator Button */}
+                  {hasSubtasks && (
+                    <button
+                      onClick={async () => {
+                        if (task.priorityMarkerEnabled) {
+                          // Remove priority indicator
+                          const updatedSubtasks = recalculateRadii(task.subtasks || [], undefined);
+                          const updatedTask = {
+                            ...task,
+                            subtasks: updatedSubtasks,
+                            priorityMarkerEnabled: false,
+                            priorityMarkerRing: undefined,
+                            priorityMarkerOriginalIds: undefined,
+                            updatedAt: new Date(),
+                          };
+                          await saveTask(updatedTask);
+                          onTaskUpdate?.(updatedTask);
+                        } else {
+                          // Add priority indicator at outermost ring (containing all subtasks)
+                          const activeSubtasks = (task.subtasks || []).filter(st => !st.completed);
+                          const outerRing = activeSubtasks.length + 1;
+                          const subtasksInsideBelt = activeSubtasks.map(st => st.id);
+
+                          // Recalculate subtask radii with belt position
+                          const updatedSubtasks = recalculateRadii(task.subtasks || [], outerRing);
+
+                          const updatedTask = {
+                            ...task,
+                            subtasks: updatedSubtasks,
+                            priorityMarkerEnabled: true,
+                            priorityMarkerRing: outerRing,
+                            priorityMarkerOriginalIds: subtasksInsideBelt,
+                            updatedAt: new Date(),
+                          };
+                          await saveTask(updatedTask);
+                          onTaskUpdate?.(updatedTask);
+                        }
+                      }}
+                      className="w-full py-2 mt-1 text-left text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2"
+                    >
+                      {task.priorityMarkerEnabled ? (
+                        <>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Remove Priority Indicator
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add Priority Indicator
+                        </>
+                      )}
                     </button>
                   )}
                 </div>

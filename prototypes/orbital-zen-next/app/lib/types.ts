@@ -19,6 +19,11 @@ export interface Task {
   totalFocusTime?: number; // Total seconds spent in focus
   focusSessionCount?: number; // Number of focus sessions
   addedBy?: string; // 'user' | 'partner' | 'ai'
+
+  // Priority marker fields
+  priorityMarkerEnabled?: boolean; // Whether priority marker is shown
+  priorityMarkerRing?: number; // Ring position where belt is placed (1-based, e.g., 3 = belt at ring 3)
+  priorityMarkerOriginalIds?: string[]; // IDs of subtasks originally inside belt
 }
 
 export interface Subtask {
