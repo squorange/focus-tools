@@ -1,6 +1,7 @@
 'use client';
 
 import { Task } from '../lib/types';
+import { getSubtaskAngle, getStableAnimationDelay } from '../lib/orbit-utils';
 
 interface SubtaskMoonsProps {
   task: Task;
@@ -9,6 +10,7 @@ interface SubtaskMoonsProps {
   index: number;
   isZooming?: boolean;
   showCenterCircle?: boolean;
+  completingSubtaskIds: Set<string>;
 }
 
 const MOON_ORBIT_RADIUS = 70; // px from parent task center (task radius is 56px, so this orbits ~14px outside)
@@ -69,8 +71,9 @@ function getParentCounterOrbitClass(parentRadius: number): string {
   return 'counter-orbit-medium';
 }
 
-export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, isZooming = false, showCenterCircle = true }: SubtaskMoonsProps) {
-  const subtasks = task.subtasks || [];
+export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, isZooming = false, showCenterCircle = true, completingSubtaskIds }: SubtaskMoonsProps) {
+  // Filter out completed subtasks (but keep completing ones for animation)
+  const subtasks = (task.subtasks || []).filter(st => !st.completed || completingSubtaskIds.has(st.id));
   const moonsToShow = Math.min(subtasks.length, MAX_MOONS_TO_SHOW);
 
   if (moonsToShow === 0) return null;
@@ -81,7 +84,14 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, 
   return (
     <>
       {Array.from({ length: moonsToShow }).map((_, moonIndex) => {
-        const moonAngle = getMoonAngle(moonIndex, moonsToShow, task.id);
+        const subtask = subtasks[moonIndex];
+        const isCompleting = subtask ? completingSubtaskIds.has(subtask.id) : false;
+
+        // Use assigned angle if available, otherwise use the calculated moon angle
+        const moonAngle = subtask?.assignedStartingAngle !== undefined
+          ? subtask.assignedStartingAngle
+          : getMoonAngle(moonIndex, moonsToShow, task.id);
+
         const moonSize = getMoonSize(moonIndex, task.id);
         const moonSpeed = getMoonSpeed(moonIndex, task.id);
         const moonOrbitClass = getMoonOrbitClass(moonSpeed);
@@ -90,18 +100,18 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, 
         return (
           <div
             key={`moon-${task.id}-${moonIndex}`}
-            className="absolute left-0 top-0 pointer-events-none"
+            className="absolute left-0 top-0 pointer-events-none transition-all duration-500 ease-in-out"
             style={{
               transformStyle: 'preserve-3d',
-              opacity: showCenterCircle && !isZooming ? 1 : 0,
-              transition: 'opacity 0.8s ease',
+              opacity: isCompleting ? 0 : (showCenterCircle && !isZooming ? 1 : 0),
+              transform: isCompleting ? 'scale(0.5)' : 'scale(1)',
             }}
           >
             {/* Layer 1: Parent orbit rotation (follows parent task around center) */}
             <div
               className={`${parentOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
               style={{
-                animationDelay: `${index * -8}s`,
+                animationDelay: `${getStableAnimationDelay(task.id)}s`,
                 transformStyle: 'preserve-3d',
                 ['--starting-angle' as string]: `${startingAngle}deg`,
               }}
@@ -120,7 +130,7 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, 
                 <div
                   className={`${parentCounterOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
                   style={{
-                    animationDelay: `${index * -8}s`,
+                    animationDelay: `${getStableAnimationDelay(task.id)}s`,
                     transformStyle: 'preserve-3d',
                     ['--starting-angle' as string]: `${startingAngle}deg`,
                     left: '3.5rem',

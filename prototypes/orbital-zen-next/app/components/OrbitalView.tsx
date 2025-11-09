@@ -81,6 +81,9 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   // Focus session state
   const [focusSession, setFocusSession] = useState<FocusSession | null>(null);
 
+  // Completing subtasks state (for smooth completion animation)
+  const [completingSubtaskIds, setCompletingSubtaskIds] = useState<Set<string>>(new Set());
+
   // Find the hovered task data
   const hoveredTask = tasks.find(t => t.id === hoveredTaskId);
   const hoveredTaskIndex = tasks.findIndex(t => t.id === hoveredTaskId);
@@ -188,8 +191,13 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     loadFocusSession();
   }, []);
 
-  // Handle subtask click
-  const handleSubtaskClick = (subtask: Subtask) => {
+  // Handle subtask click (both selection and deselection from circles)
+  const handleSubtaskClick = (subtask: Subtask | null) => {
+    setSelectedSubtask(subtask);
+  };
+
+  // Handle subtask change (selection from panel)
+  const handleSubtaskChange = (subtask: Subtask | null) => {
     setSelectedSubtask(subtask);
   };
 
@@ -449,6 +457,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   index={index}
                   isZooming={isZooming && zoomedTask?.id === task.id}
                   showCenterCircle={showCenterCircle}
+                  completingSubtaskIds={completingSubtaskIds}
                 />
               </div>
               {/* Mobile version */}
@@ -487,6 +496,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                   index={index}
                   isZooming={isZooming && zoomedTask?.id === task.id}
                   showCenterCircle={showCenterCircle}
+                  completingSubtaskIds={completingSubtaskIds}
                 />
               </div>
             </div>
@@ -564,10 +574,12 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
           <>
             <SolarSystemView
               parentTask={zoomedTask}
+              selectedSubtaskId={selectedSubtask?.id}
               onSubtaskClick={handleSubtaskClick}
               onToggleSubtask={handleToggleSubtask}
               onParentClick={handleZoomOut}
               focusSession={focusSession || undefined}
+              completingSubtaskIds={completingSubtaskIds}
             />
             {/* AI Panel - only in solar system view */}
             <AIPanel
@@ -579,6 +591,10 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
               onPauseFocus={handlePauseFocus}
               onResumeFocus={handleResumeFocus}
               onStopFocus={handleStopFocus}
+              onTaskUpdate={(updatedTask) => setZoomedTask(updatedTask)}
+              onSubtaskChange={handleSubtaskChange}
+              completingSubtaskIds={completingSubtaskIds}
+              setCompletingSubtaskIds={setCompletingSubtaskIds}
             />
           </>
         )}

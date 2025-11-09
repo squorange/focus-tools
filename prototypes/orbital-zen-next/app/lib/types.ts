@@ -6,6 +6,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  notes?: string; // Freeform notes/scratchpad
   priority: TaskPriority;
   category: TaskCategory;
   createdAt: Date;
@@ -17,6 +18,7 @@ export interface Task {
   completed?: boolean;
   totalFocusTime?: number; // Total seconds spent in focus
   focusSessionCount?: number; // Number of focus sessions
+  addedBy?: string; // 'user' | 'partner' | 'ai'
 }
 
 export interface Subtask {
@@ -24,8 +26,11 @@ export interface Subtask {
   title: string;
   completed: boolean;
   parentTaskId: string;
+  dueDate?: Date;
   totalFocusTime?: number; // Total seconds spent in focus
   focusSessionCount?: number; // Number of focus sessions
+  assignedStartingAngle?: number; // Permanent starting angle for orbital animation (degrees)
+  assignedOrbitRadius?: number; // Assigned orbital radius (pixels)
 }
 
 // AI types
