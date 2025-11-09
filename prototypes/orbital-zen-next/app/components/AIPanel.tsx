@@ -180,50 +180,60 @@ export default function AIPanel({
     }
   };
 
-  // Handle subtask toggle with animation
+  // Handle subtask toggle with staggered animation phases
   const handleSubtaskToggle = async (subtaskId: string) => {
     if (!task.subtasks) return;
 
     const subtask = task.subtasks.find(st => st.id === subtaskId);
     if (!subtask) return;
 
-    // If marking as complete, add animation delay
+    // If marking as complete, use staggered phases
     if (!subtask.completed) {
-      // Add to completing set for animation
+      // PHASE 1: Fade out (0-500ms)
+      // Add to completing set to start fade-out animation
       setCompletingSubtaskIds(prev => new Set(prev).add(subtaskId));
 
-      // After animation completes, actually mark as complete
-      setTimeout(async () => {
-        let updatedSubtasks = task.subtasks!.map(st =>
-          st.id === subtaskId ? { ...st, completed: true } : st
+      // PHASE 2: Update data and transition radii (500-1000ms)
+      // Use requestAnimationFrame to ensure update happens at optimal frame timing
+      setTimeout(() => {
+        requestAnimationFrame(async () => {
+          let updatedSubtasks = task.subtasks!.map(st =>
+            st.id === subtaskId ? { ...st, completed: true } : st
+          );
+
+          // Recalculate radii for remaining active subtasks (angles stay the same)
+          updatedSubtasks = recalculateRadii(updatedSubtasks);
+
+          const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
+          await saveTask(updatedTask);
+          onTaskUpdate?.(updatedTask);
+
+          // PHASE 3: Clean up (after 1000ms total)
+          // Keep in completing set during radius transition, remove after
+          setTimeout(() => {
+            setCompletingSubtaskIds(prev => {
+              const next = new Set(prev);
+              next.delete(subtaskId);
+              return next;
+            });
+          }, 500); // Wait for radius transition to complete
+        });
+      }, 500); // Wait for fade-out to complete
+    } else {
+      // If unmarking (uncompleting), use smooth transition approach
+      // Update immediately but let CSS transitions handle the animation
+      requestAnimationFrame(async () => {
+        let updatedSubtasks = task.subtasks.map(st =>
+          st.id === subtaskId ? { ...st, completed: false } : st
         );
 
-        // Recalculate radii for remaining active subtasks (angles stay the same)
+        // Recalculate radii for all active subtasks
         updatedSubtasks = recalculateRadii(updatedSubtasks);
 
         const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
         await saveTask(updatedTask);
         onTaskUpdate?.(updatedTask);
-
-        // Remove from completing set
-        setCompletingSubtaskIds(prev => {
-          const next = new Set(prev);
-          next.delete(subtaskId);
-          return next;
-        });
-      }, 500); // Match animation duration
-    } else {
-      // If unmarking (uncompleting), recalculate radii immediately
-      let updatedSubtasks = task.subtasks.map(st =>
-        st.id === subtaskId ? { ...st, completed: false } : st
-      );
-
-      // Recalculate radii for all active subtasks
-      updatedSubtasks = recalculateRadii(updatedSubtasks);
-
-      const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
-      await saveTask(updatedTask);
-      onTaskUpdate?.(updatedTask);
+      });
     }
   };
 

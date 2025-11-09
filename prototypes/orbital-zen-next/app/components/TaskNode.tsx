@@ -234,7 +234,7 @@ export default function TaskNode({
             ${effectiveHovered ? priority.bgSelected : priority.bg}
             ${effectiveHovered ? priority.borderSelected : priority.border}
             ${priority.glow}
-            border-2
+            border
             rounded-full
             shadow-2xl
             flex items-center justify-center
@@ -311,7 +311,7 @@ export default function TaskNode({
               height: '7rem',
               pointerEvents: isTransitioning ? 'none' : 'auto',
               transform: (effectiveHovered && !isZooming) ? 'scale(1.05)' : 'scale(1)',
-              borderWidth: '2px',
+              borderWidth: '1px',
               borderStyle: 'solid',
               // Transitions are applied via useEffect + setProperty()
             }}

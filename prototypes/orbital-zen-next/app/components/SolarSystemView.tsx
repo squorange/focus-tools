@@ -51,17 +51,24 @@ const priorityConfig = {
   },
 };
 
-// Map orbit radius to animation class (closer = faster, farther = slower)
-function getSubtaskOrbitClass(radius: number): string {
-  if (radius <= 130) return 'orbit-subtask-fast';
-  if (radius >= 220) return 'orbit-subtask-slow';
-  return 'orbit-subtask-medium';
+// Get stable animation class based on subtask ID (not radius)
+// This prevents animation restarts when radius changes
+function getSubtaskOrbitClass(subtaskId: string): string {
+  // Use ID hash to pick a speed variant for visual variety
+  const hash = subtaskId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const variant = hash % 3;
+  if (variant === 0) return 'orbit-subtask-fast';
+  if (variant === 1) return 'orbit-subtask-medium';
+  return 'orbit-subtask-slow';
 }
 
-function getSubtaskCounterOrbitClass(radius: number): string {
-  if (radius <= 130) return 'counter-orbit-subtask-fast';
-  if (radius >= 220) return 'counter-orbit-subtask-slow';
-  return 'counter-orbit-subtask-medium';
+function getSubtaskCounterOrbitClass(subtaskId: string): string {
+  // Match the orbit class variant
+  const hash = subtaskId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const variant = hash % 3;
+  if (variant === 0) return 'counter-orbit-subtask-fast';
+  if (variant === 1) return 'counter-orbit-subtask-medium';
+  return 'counter-orbit-subtask-slow';
 }
 
 export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubtaskClick, onToggleSubtask, onParentClick, focusSession, completingSubtaskIds }: SolarSystemViewProps) {
@@ -118,7 +125,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
             w-28 h-28 rounded-full
             ${priority.bgHover}
             ${priority.borderHover}
-            backdrop-blur-xl border-2
+            backdrop-blur-xl border
             flex items-center justify-center
             shadow-2xl
             relative overflow-hidden
@@ -163,11 +170,12 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           ? subtask.assignedOrbitRadius
           : getSubtaskOrbitRadius(index);
 
-        const orbitClass = getSubtaskOrbitClass(orbitRadius);
-        const counterOrbitClass = getSubtaskCounterOrbitClass(orbitRadius);
+        // Use stable classes based on ID, not radius
+        const orbitClass = getSubtaskOrbitClass(subtask.id);
+        const counterOrbitClass = getSubtaskCounterOrbitClass(subtask.id);
         const isHovered = hoveredSubtaskId === subtask.id;
         const isSelected = selectedSubtaskId === subtask.id;
-        const isDimmed = (hoveredSubtaskId !== null && !isHovered) || (selectedSubtaskId !== null && !isSelected);
+        const isDimmed = (hoveredSubtaskId != null && !isHovered) || (selectedSubtaskId != null && !isSelected);
         const isCompleting = completingSubtaskIds.has(subtask.id);
 
         // Check if this subtask is in focus (show even when paused)
@@ -183,27 +191,29 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
               transform: isCompleting ? 'scale(0.5)' : 'scale(1)',
             }}
           >
-            {/* Orbit rotation */}
-            <div
-              className={`${orbitClass} absolute left-1/2 top-1/2 pointer-events-none`}
-              style={{
-                animationDelay: `${getStableAnimationDelay(subtask.id)}s`,
-                transformStyle: 'preserve-3d',
-                ['--starting-angle' as string]: `${startingAngle}deg`,
-              }}
-            >
-              {/* Radius positioning - smooth transition when radius changes */}
+              {/* Orbit rotation */}
               <div
-                className="absolute transition-transform duration-500 ease-in-out"
+                className={`${orbitClass} absolute left-1/2 top-1/2 pointer-events-none`}
                 style={{
-                  transform: `translateX(${orbitRadius}px)`,
+                  animationDelay: `${getStableAnimationDelay(subtask.id)}s`,
                   transformStyle: 'preserve-3d',
-                  left: '-2.5rem',
-                  top: '-2.5rem',
+                  willChange: 'transform',
+                  ['--starting-angle' as string]: `${startingAngle}deg`,
                 }}
               >
-                {/* Subtask button */}
-                <button
+                {/* Radius positioning - smooth transition when radius changes */}
+                <div
+                  className="absolute transition-transform duration-500 ease-in-out"
+                  style={{
+                    transform: `translateX(${orbitRadius}px) translateZ(0)`,
+                    transformStyle: 'preserve-3d',
+                    willChange: 'transform',
+                    left: '-2.5rem',
+                    top: '-2.5rem',
+                  }}
+                >
+                  {/* Subtask button */}
+                  <button
                   onClick={() => {
                     // Toggle selection: deselect if already selected
                     if (selectedSubtaskId === subtask.id) {
@@ -223,7 +233,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                       ? 'bg-slate-800/40 border-gray-400/40'
                       : 'bg-slate-900/20 border-gray-500/15'
                     }
-                    backdrop-blur-xl border-2
+                    backdrop-blur-xl border
                     flex flex-col items-center justify-center
                     cursor-pointer
                     transition-all duration-300

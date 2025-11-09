@@ -1,7 +1,6 @@
 'use client';
 
 import { Task } from '../lib/types';
-import { getSubtaskAngle, getStableAnimationDelay } from '../lib/orbit-utils';
 
 interface SubtaskMoonsProps {
   task: Task;
@@ -111,7 +110,7 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, 
             <div
               className={`${parentOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
               style={{
-                animationDelay: `${getStableAnimationDelay(task.id)}s`,
+                animationDelay: `${index * -8}s`,
                 transformStyle: 'preserve-3d',
                 ['--starting-angle' as string]: `${startingAngle}deg`,
               }}
@@ -130,7 +129,7 @@ export default function SubtaskMoons({ task, orbitRadius, startingAngle, index, 
                 <div
                   className={`${parentCounterOrbitClass} absolute left-0 top-0 ${isZooming ? 'zooming' : ''}`}
                   style={{
-                    animationDelay: `${getStableAnimationDelay(task.id)}s`,
+                    animationDelay: `${index * -8}s`,
                     transformStyle: 'preserve-3d',
                     ['--starting-angle' as string]: `${startingAngle}deg`,
                     left: '3.5rem',
