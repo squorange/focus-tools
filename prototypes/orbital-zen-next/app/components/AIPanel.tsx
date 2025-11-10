@@ -10,6 +10,7 @@ import {
   initializeSubtaskOrbits,
   getCurrentMarkerRing,
 } from '../lib/orbit-utils';
+import { useFocusTimer } from '../hooks/useFocusTimer';
 
 interface AIPanelProps {
   task: Task;
@@ -59,6 +60,9 @@ export default function AIPanel({
   const subtaskInputRef = useRef<HTMLInputElement>(null);
   const newSubtaskInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
+
+  // Timer hook for active session
+  const timer = useFocusTimer(focusSession);
 
   // Auto-focus and auto-resize
   useEffect(() => {
@@ -331,6 +335,21 @@ export default function AIPanel({
               >
                 {subtask ? subtask.title : task.title}
               </button>
+            )}
+            {/* Timer display for active session */}
+            {hasFocusSession && (
+              <div className="mt-2 flex items-center gap-2">
+                <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                  focusSession.isActive
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {timer.formattedTime}
+                </div>
+                {!focusSession.isActive && (
+                  <span className="text-xs text-gray-500">Paused</span>
+                )}
+              </div>
             )}
           </div>
           <button

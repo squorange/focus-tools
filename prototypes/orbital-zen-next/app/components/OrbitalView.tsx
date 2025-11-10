@@ -7,13 +7,14 @@ import AIPanel from './AIPanel';
 import SolarSystemView from './SolarSystemView';
 import SubtaskMoons from './SubtaskMoons';
 import TimerBadge from './TimerBadge';
+import { saveTask, getTask } from '../lib/offline-store';
 import {
   getActiveFocusSession,
-  saveFocusSession,
-  clearFocusSession,
-  saveTask,
-  getTask,
-} from '../lib/offline-store';
+  startFocusSession,
+  pauseSession,
+  resumeSession,
+  endSession,
+} from '../lib/focus-session';
 
 interface OrbitalViewProps {
   tasks: Task[];
@@ -222,28 +223,11 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     if (!zoomedTask) return;
 
     try {
-      // Auto-pause any existing active session
-      const existingSession = await getActiveFocusSession();
-      if (existingSession && existingSession.isActive) {
-        // Pause the existing session
-        existingSession.isActive = false;
-        existingSession.pausedAt = new Date();
-        await saveFocusSession(existingSession);
-
-        // Update the task/subtask metadata for the paused session
-        await updateTaskFocusMetadata(existingSession);
-      }
-
-      // Create new focus session
-      const newSession: FocusSession = {
-        taskId: zoomedTask.id,
-        subtaskId: selectedSubtask?.id,
-        startTime: new Date(),
-        isActive: true,
-        totalTime: 0,
-      };
-
-      await saveFocusSession(newSession);
+      // startFocusSession automatically pauses any existing active session
+      const newSession = await startFocusSession(
+        zoomedTask.id,
+        selectedSubtask?.id
+      );
       setFocusSession(newSession);
     } catch (error) {
       console.error('Failed to start focus session:', error);
@@ -251,42 +235,26 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   };
 
   const handlePauseFocus = async () => {
-    if (!focusSession || !focusSession.isActive) return;
+    if (!focusSession) return;
 
     try {
-      const pausedSession: FocusSession = {
-        ...focusSession,
-        isActive: false,
-        pausedAt: new Date(),
-      };
-
-      await saveFocusSession(pausedSession);
-      setFocusSession(pausedSession);
+      await pauseSession(focusSession.id);
+      // Reload session to get updated state
+      const updatedSession = await getActiveFocusSession();
+      setFocusSession(updatedSession || null);
     } catch (error) {
       console.error('Failed to pause focus session:', error);
     }
   };
 
   const handleResumeFocus = async () => {
-    if (!focusSession || focusSession.isActive) return;
+    if (!focusSession) return;
 
     try {
-      // Calculate time accumulated during the paused period
-      const now = new Date();
-      const pausedTime = focusSession.pausedAt ? focusSession.pausedAt.getTime() : focusSession.startTime.getTime();
-      const elapsedDuringPreviousSession = Math.floor((pausedTime - focusSession.startTime.getTime()) / 1000);
-
-      // Create resumed session with accumulated time
-      const resumedSession: FocusSession = {
-        ...focusSession,
-        startTime: now,
-        isActive: true,
-        pausedAt: undefined,
-        totalTime: focusSession.totalTime + elapsedDuringPreviousSession,
-      };
-
-      await saveFocusSession(resumedSession);
-      setFocusSession(resumedSession);
+      await resumeSession(focusSession.id);
+      // Reload session to get updated state
+      const updatedSession = await getActiveFocusSession();
+      setFocusSession(updatedSession || null);
     } catch (error) {
       console.error('Failed to resume focus session:', error);
     }
@@ -296,51 +264,11 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     if (!focusSession) return;
 
     try {
-      // Calculate final time
-      const now = new Date();
-      const endTime = focusSession.pausedAt || now;
-      const elapsedDuringSession = Math.floor((endTime.getTime() - focusSession.startTime.getTime()) / 1000);
-      const finalTotalTime = focusSession.totalTime + elapsedDuringSession;
-
-      // Update task/subtask metadata
-      await updateTaskFocusMetadata(focusSession, finalTotalTime);
-
-      // Clear the focus session
-      await clearFocusSession(focusSession.taskId);
+      // End session (creates TimeEntry in database)
+      await endSession(focusSession.id, 'stopped', false);
       setFocusSession(null);
     } catch (error) {
       console.error('Failed to stop focus session:', error);
-    }
-  };
-
-  // Helper to update task/subtask focus metadata
-  const updateTaskFocusMetadata = async (session: FocusSession, finalTime?: number) => {
-    try {
-      const task = await getTask(session.taskId);
-      if (!task) return;
-
-      const timeToAdd = finalTime !== undefined ? finalTime : (() => {
-        const endTime = session.pausedAt || new Date();
-        const elapsed = Math.floor((endTime.getTime() - session.startTime.getTime()) / 1000);
-        return session.totalTime + elapsed;
-      })();
-
-      if (session.subtaskId && task.subtasks) {
-        // Update subtask metadata
-        const subtaskIndex = task.subtasks.findIndex(st => st.id === session.subtaskId);
-        if (subtaskIndex !== -1) {
-          task.subtasks[subtaskIndex].totalFocusTime = (task.subtasks[subtaskIndex].totalFocusTime || 0) + timeToAdd;
-          task.subtasks[subtaskIndex].focusSessionCount = (task.subtasks[subtaskIndex].focusSessionCount || 0) + 1;
-        }
-      } else {
-        // Update task metadata
-        task.totalFocusTime = (task.totalFocusTime || 0) + timeToAdd;
-        task.focusSessionCount = (task.focusSessionCount || 0) + 1;
-      }
-
-      await saveTask(task);
-    } catch (error) {
-      console.error('Failed to update task focus metadata:', error);
     }
   };
 
