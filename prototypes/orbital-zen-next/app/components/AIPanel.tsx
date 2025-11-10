@@ -170,12 +170,19 @@ export default function AIPanel({
         st.id === subtaskId ? { ...st, completed: false } : st
       );
 
+      // Recalculate belt position if this was a priority item
+      let newBeltRing = task.priorityMarkerRing;
+      if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtaskId)) {
+        newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+      }
+
       // Recalculate radii to properly position the newly uncompleted subtask
-      updatedSubtasks = recalculateRadii(updatedSubtasks, task.priorityMarkerRing);
+      updatedSubtasks = recalculateRadii(updatedSubtasks, newBeltRing);
 
       const updatedTask = {
         ...task,
         subtasks: updatedSubtasks,
+        priorityMarkerRing: newBeltRing,
         updatedAt: now
       };
       await saveTask(updatedTask);
@@ -484,18 +491,25 @@ export default function AIPanel({
         }, 1000);
       }, 500);
       } else {
-        // Un-completing subtask - recalculate positions
+        // Un-completing subtask - recalculate positions and belt
         const now = new Date();
         let updatedSubtasks = task.subtasks?.map(st =>
           st.id === subtask.id ? { ...st, completed: false } : st
         );
 
+        // Recalculate belt position if this was a priority item
+        let newBeltRing = task.priorityMarkerRing;
+        if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
+          newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+        }
+
         // Recalculate radii to properly position the newly uncompleted subtask
-        updatedSubtasks = recalculateRadii(updatedSubtasks || [], task.priorityMarkerRing);
+        updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
 
         const updatedTask: Task = {
           ...task,
           subtasks: updatedSubtasks,
+          priorityMarkerRing: newBeltRing,
           updatedAt: now,
         };
         await saveTask(updatedTask);
@@ -746,9 +760,10 @@ export default function AIPanel({
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={async () => {
+                                  const allSubtasks = task.subtasks || [];
                                   const newRing = Math.max(2, currentMarkerPosition - 1);
-                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
-                                  const updatedSubtasks = recalculateRadii(task.subtasks || [], newRing);
+                                  const subtasksInsideBelt = allSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                  const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
                                     subtasks: updatedSubtasks,
@@ -768,9 +783,10 @@ export default function AIPanel({
                               <span className="text-xs text-gray-400">Priority</span>
                               <button
                                 onClick={async () => {
-                                  const newRing = Math.min(subtasks.length + 1, currentMarkerPosition + 1);
-                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
-                                  const updatedSubtasks = recalculateRadii(task.subtasks || [], newRing);
+                                  const allSubtasks = task.subtasks || [];
+                                  const newRing = Math.min(allSubtasks.length + 1, currentMarkerPosition + 1);
+                                  const subtasksInsideBelt = allSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                  const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
                                     subtasks: updatedSubtasks,
@@ -781,7 +797,7 @@ export default function AIPanel({
                                   await saveTask(updatedTask);
                                   onTaskUpdate?.(updatedTask);
                                 }}
-                                disabled={currentMarkerPosition >= subtasks.length + 1}
+                                disabled={currentMarkerPosition >= (task.subtasks || []).length + 1}
                                 className="text-gray-400 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed text-xs"
                                 title="Move down"
                               >

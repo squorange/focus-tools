@@ -219,6 +219,9 @@ export function getSubtaskRadiusWithBelt(
  * Calculate current marker ring position based on remaining original targets
  * Returns the ring position where belt should be
  * Returns 0 if all targets are complete (celebration mode)
+ *
+ * Belt maintains its position in the stacking order (relative to subtasks),
+ * but shifts inward radially as priority items complete.
  */
 export function getCurrentMarkerRing(
   subtasks: Subtask[],
@@ -229,17 +232,20 @@ export function getCurrentMarkerRing(
     return 0;
   }
 
-  // Count how many of the original target set remain incomplete
-  const remainingCount = originalTargetIds.filter(id => {
-    const subtask = subtasks.find(st => st.id === id);
-    return subtask && !subtask.completed;
-  }).length;
-
-  if (remainingCount === 0) {
-    return 0; // Celebration mode
+  // Find the last remaining priority subtask in the array
+  let lastPriorityIndex = -1;
+  for (let i = subtasks.length - 1; i >= 0; i--) {
+    if (originalTargetIds.includes(subtasks[i].id) && !subtasks[i].completed) {
+      lastPriorityIndex = i;
+      break;
+    }
   }
 
-  // Belt position is one after the last remaining target
-  // E.g., if 2 targets remain, belt is at ring 3
-  return remainingCount + 1;
+  if (lastPriorityIndex === -1) {
+    return 0; // All priority items complete - celebration mode
+  }
+
+  // Belt position is one ring after the last priority item
+  // This maintains stacking order while shifting inward as items complete
+  return lastPriorityIndex + 2; // +1 for 1-based ring, +1 for "after"
 }
