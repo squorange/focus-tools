@@ -23,13 +23,15 @@ interface OrbitalViewProps {
 }
 
 // Starting positions for tasks (clock positions)
-// 12, 2, 5, 7, 9 o'clock
+// 12, 2, 5, 7, 9, 10.5, 3.5 o'clock
 const STARTING_ANGLES = [
   -90,   // 12 o'clock (top)
   -30,   // 2 o'clock (top-right)
   60,    // 5 o'clock (bottom-right)
   150,   // 7 o'clock (bottom-left)
   180,   // 9 o'clock (left)
+  -135,  // 10.5 o'clock (top-left)
+  15,    // 3.5 o'clock (right-lower)
 ];
 
 // Priority-based orbit radii (higher priority = closer to center)
@@ -55,9 +57,17 @@ const PRIORITY_Z_INDEX = {
   low: 10,
 };
 
-function getOrbitRadius(priority: TaskPriority, isMobile: boolean): number {
-  const radii = PRIORITY_RADII[priority];
-  return isMobile ? radii.mobile : radii.desktop;
+function getOrbitRadius(priority: TaskPriority, isMobile: boolean, index: number): number {
+  // For the first 4 tasks (indices 0-3), use priority-based radii
+  if (index < 4) {
+    const radii = PRIORITY_RADII[priority];
+    return isMobile ? radii.mobile : radii.desktop;
+  }
+
+  // For additional tasks (indices 4+), use extra orbit radii
+  const extraIndex = index - 4;
+  const extraRadii = isMobile ? EXTRA_ORBIT_RADII.mobile : EXTRA_ORBIT_RADII.desktop;
+  return extraRadii[extraIndex] || extraRadii[extraRadii.length - 1]; // Use last radius if out of bounds
 }
 
 function getPriorityZIndex(priority: TaskPriority): number {
@@ -384,9 +394,9 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
       {/* Orbital task containers */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {tasks.slice(0, 5).map((task, index) => {
-          const desktopRadius = getOrbitRadius(task.priority, false);
-          const mobileRadius = getOrbitRadius(task.priority, true);
+        {tasks.slice(0, 7).map((task, index) => {
+          const desktopRadius = getOrbitRadius(task.priority, false, index);
+          const mobileRadius = getOrbitRadius(task.priority, true, index);
           const startingAngle = STARTING_ANGLES[index] || 0;
           const isHovered = hoveredTaskId === task.id;
           const baseZIndex = getPriorityZIndex(task.priority);

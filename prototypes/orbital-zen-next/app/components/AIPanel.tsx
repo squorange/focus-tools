@@ -385,98 +385,104 @@ export default function AIPanel({
         }
       }
 
-      // Mark subtask as complete
-      let updatedSubtasks = task.subtasks?.map(st =>
-        st.id === subtask.id ? { ...st, completed: true } : st
-      );
-
-      // Calculate new belt ring position and check for celebration
-      let newBeltRing = task.priorityMarkerRing;
-      let shouldCelebrate = false;
-
-      if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
-        newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
-        if (newBeltRing === 0) {
-          shouldCelebrate = true;
-          // Keep the belt at its current position during celebration
-          newBeltRing = task.priorityMarkerRing;
-        }
-      }
-
-      // Recalculate radii for remaining subtasks
-      updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
-
-      const now = new Date();
-      const updatedTask: Task = {
-        ...task,
-        subtasks: updatedSubtasks,
-        priorityMarkerRing: newBeltRing,
-        updatedAt: now,
-      };
-
-      // Trigger completion animation
+      // Trigger completion animation FIRST
       setCompletingSubtaskIds(prev => new Set([...prev, subtask.id]));
-      setTimeout(() => {
-        setCompletingSubtaskIds(prev => {
-          const next = new Set(prev);
-          next.delete(subtask.id);
-          return next;
-        });
-      }, 500);
 
-      await saveTask(updatedTask);
-      onTaskUpdate?.(updatedTask);
+      // Wait for animation to start, then update positions
+      setTimeout(async () => {
+        const now = new Date();
 
-      // Create activity log for completing subtask
-      const activityLog: ActivityLog = {
-        id: crypto.randomUUID(),
-        taskId: task.id,
-        subtaskId: subtask.id,
-        type: 'subtask_completed',
-        timestamp: now,
-        isManualComment: false,
-        createdAt: now,
-      };
-      await createActivityLog(activityLog);
+        // Mark subtask as complete
+        let updatedSubtasks = task.subtasks?.map(st =>
+          st.id === subtask.id ? { ...st, completed: true } : st
+        );
 
-      // Handle celebration after delay
-      if (shouldCelebrate) {
-        setTimeout(async () => {
-          const currentTask = await getTask(task.id);
-          if (currentTask && currentTask.priorityMarkerEnabled) {
-            const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
-            const clearedTask = {
-              ...currentTask,
-              subtasks: clearedSubtasks,
-              priorityMarkerEnabled: false,
-              priorityMarkerRing: undefined,
-              priorityMarkerOriginalIds: undefined,
-              updatedAt: new Date(),
-            };
-            await saveTask(clearedTask);
-            onTaskUpdate?.(clearedTask);
+        // Calculate new belt ring position and check for celebration
+        let newBeltRing = task.priorityMarkerRing;
+        let shouldCelebrate = false;
+
+        if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
+          newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+          if (newBeltRing === 0) {
+            shouldCelebrate = true;
+            // Keep the belt at its current position during celebration
+            newBeltRing = task.priorityMarkerRing;
           }
-        }, 3000);
+        }
 
-        // End session without starting new one
-        if (onStopFocus) {
-          onStopFocus();
-        }
-      } else if (nextSubtask) {
-        // Auto-start focus on next subtask
-        onSubtaskChange?.(nextSubtask);
-        if (onStartFocus) {
-          onStartFocus();
-        }
-      } else {
-        // No more subtasks, just stop focus
-        if (onStopFocus) {
-          onStopFocus();
-        }
-      }
+        // Recalculate radii for remaining subtasks
+        updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
 
-      // Reload time stats
-      loadTimeStats();
+        const updatedTask: Task = {
+          ...task,
+          subtasks: updatedSubtasks,
+          priorityMarkerRing: newBeltRing,
+          updatedAt: now,
+        };
+
+        await saveTask(updatedTask);
+        onTaskUpdate?.(updatedTask);
+
+        // Create activity log for completing subtask
+        const activityLog: ActivityLog = {
+          id: crypto.randomUUID(),
+          taskId: task.id,
+          subtaskId: subtask.id,
+          type: 'subtask_completed',
+          timestamp: now,
+          isManualComment: false,
+          createdAt: now,
+        };
+        await createActivityLog(activityLog);
+
+        // Handle celebration after delay
+        if (shouldCelebrate) {
+          setTimeout(async () => {
+            const currentTask = await getTask(task.id);
+            if (currentTask && currentTask.priorityMarkerEnabled) {
+              const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
+              const clearedTask = {
+                ...currentTask,
+                subtasks: clearedSubtasks,
+                priorityMarkerEnabled: false,
+                priorityMarkerRing: undefined,
+                priorityMarkerOriginalIds: undefined,
+                updatedAt: new Date(),
+              };
+              await saveTask(clearedTask);
+              onTaskUpdate?.(clearedTask);
+            }
+          }, 3000);
+
+          // End session without starting new one
+          if (onStopFocus) {
+            onStopFocus();
+          }
+        } else if (nextSubtask) {
+          // Auto-start focus on next subtask
+          onSubtaskChange?.(nextSubtask);
+          if (onStartFocus) {
+            onStartFocus();
+          }
+        } else {
+          // No more subtasks, just stop focus
+          if (onStopFocus) {
+            onStopFocus();
+          }
+        }
+
+        // Reload time stats
+        loadTimeStats();
+
+        // Remove from completing set after animation
+        setTimeout(() => {
+          setCompletingSubtaskIds(prev => {
+            const next = new Set(prev);
+            next.delete(subtask.id);
+            return next;
+          });
+        }, 1000);
+      }, 500);
       } else {
         // Un-completing subtask - recalculate positions
         const now = new Date();
