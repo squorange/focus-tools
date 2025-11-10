@@ -4,8 +4,9 @@
  * Handles the complete lifecycle of focus sessions and time tracking.
  */
 
-import { FocusSession, TimeEntry, Task, Subtask, TaskTimeStats } from './types';
+import { FocusSession, TimeEntry, Task, Subtask, TaskTimeStats, ActivityLog } from './types';
 import { openDB } from 'idb';
+import { createActivityLog } from './offline-store';
 
 // Helper to generate UUIDs
 function generateUUID(): string {
@@ -223,7 +224,22 @@ export async function endSession(
   const db = await getDB();
   await db.add('timeEntries', entry);
 
-  // 3. Delete active session
+  // 3. Create activity log for session end
+  const activityLog: ActivityLog = {
+    id: generateUUID(),
+    taskId: session.taskId,
+    subtaskId: session.subtaskId,
+    type: 'session_end',
+    timestamp: now,
+    sessionId: entry.id,
+    duration: finalTotalTime,
+    comment: sessionNotes,
+    isManualComment: false,
+    createdAt: now,
+  };
+  await createActivityLog(activityLog);
+
+  // 4. Delete active session
   await db.delete('focusSessions', session.id);
 
   return entry;

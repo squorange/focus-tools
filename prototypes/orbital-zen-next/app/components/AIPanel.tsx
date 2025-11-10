@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Task, Subtask, FocusSession, EnergyLevel, EstimatedTime } from '../lib/types';
-import { saveTask, getTask } from '../lib/offline-store';
+import { Task, Subtask, FocusSession, EnergyLevel, EstimatedTime, ActivityLog } from '../lib/types';
+import { saveTask, getTask, createActivityLog } from '../lib/offline-store';
 import {
   calculateNextAngle,
   calculateNextRadius,
@@ -165,16 +165,30 @@ export default function AIPanel({
 
     // Handle un-completing (simpler case)
     if (subtaskToToggle.completed) {
+      const now = new Date();
       const updatedSubtasks = task.subtasks.map(st =>
         st.id === subtaskId ? { ...st, completed: false } : st
       );
       const updatedTask = {
         ...task,
         subtasks: updatedSubtasks,
-        updatedAt: new Date()
+        updatedAt: now
       };
       await saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
+
+      // Create activity log for uncompleting subtask
+      const activityLog: ActivityLog = {
+        id: crypto.randomUUID(),
+        taskId: task.id,
+        subtaskId: subtaskId,
+        type: 'subtask_uncompleted',
+        timestamp: now,
+        isManualComment: false,
+        createdAt: now,
+      };
+      await createActivityLog(activityLog);
+
       return;
     }
 
@@ -182,6 +196,7 @@ export default function AIPanel({
     setCompletingSubtaskIds(prev => new Set(prev).add(subtaskId));
 
     setTimeout(async () => {
+      const now = new Date();
       let updatedSubtasks = task.subtasks!.map(st =>
         st.id === subtaskId ? { ...st, completed: true } : st
       );
@@ -204,11 +219,23 @@ export default function AIPanel({
         ...task,
         subtasks: updatedSubtasks,
         priorityMarkerRing: newBeltRing,
-        updatedAt: new Date()
+        updatedAt: now
       };
 
       await saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
+
+      // Create activity log for completing subtask
+      const activityLog: ActivityLog = {
+        id: crypto.randomUUID(),
+        taskId: task.id,
+        subtaskId: subtaskId,
+        type: 'subtask_completed',
+        timestamp: now,
+        isManualComment: false,
+        createdAt: now,
+      };
+      await createActivityLog(activityLog);
 
       if (shouldCelebrate) {
         setTimeout(async () => {
@@ -375,11 +402,12 @@ export default function AIPanel({
       // Recalculate radii for remaining subtasks
       updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
 
+      const now = new Date();
       const updatedTask: Task = {
         ...task,
         subtasks: updatedSubtasks,
         priorityMarkerRing: newBeltRing,
-        updatedAt: new Date(),
+        updatedAt: now,
       };
 
       // Trigger completion animation
@@ -394,6 +422,18 @@ export default function AIPanel({
 
       await saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
+
+      // Create activity log for completing subtask
+      const activityLog: ActivityLog = {
+        id: crypto.randomUUID(),
+        taskId: task.id,
+        subtaskId: subtask.id,
+        type: 'subtask_completed',
+        timestamp: now,
+        isManualComment: false,
+        createdAt: now,
+      };
+      await createActivityLog(activityLog);
 
       // Handle celebration after delay
       if (shouldCelebrate) {
@@ -435,16 +475,30 @@ export default function AIPanel({
       loadTimeStats();
       } else {
         // Un-completing subtask - just toggle without session handling
+        const now = new Date();
         const updatedSubtasks = task.subtasks?.map(st =>
           st.id === subtask.id ? { ...st, completed: false } : st
         );
         const updatedTask: Task = {
           ...task,
           subtasks: updatedSubtasks,
-          updatedAt: new Date(),
+          updatedAt: now,
         };
         await saveTask(updatedTask);
         onTaskUpdate?.(updatedTask);
+
+        // Create activity log for uncompleting subtask
+        const activityLog: ActivityLog = {
+          id: crypto.randomUUID(),
+          taskId: task.id,
+          subtaskId: subtask.id,
+          type: 'subtask_uncompleted',
+          timestamp: now,
+          isManualComment: false,
+          createdAt: now,
+        };
+        await createActivityLog(activityLog);
+
         loadTimeStats();
       }
       return;
