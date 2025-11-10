@@ -150,6 +150,48 @@ export interface TaskTimeStats {
   }>;
 }
 
+// Activity log types
+export type ActivityLogType =
+  | 'session_start'
+  | 'session_end'
+  | 'session_pause'
+  | 'session_resume'
+  | 'task_created'
+  | 'task_completed'
+  | 'task_uncompleted'
+  | 'task_cancelled'
+  | 'subtask_created'
+  | 'subtask_completed'
+  | 'subtask_uncompleted'
+  | 'subtask_cancelled'
+  | 'comment'; // Manual user comment
+
+export interface ActivityLog {
+  id: string; // UUID for this log entry
+  taskId: string;
+  subtaskId?: string;
+  type: ActivityLogType;
+  timestamp: Date;
+
+  // Factual data (always present for relevant types)
+  sessionId?: string; // Links to TimeEntry.sessionId
+  duration?: number; // For session_end (active work seconds)
+
+  // Optional rich context (user-added or auto-generated)
+  comment?: string; // User comment or auto-generated description
+
+  // Edit tracking for manual comments
+  isManualComment: boolean; // true for type='comment', false for auto-logs
+  editedAt?: Date;
+  editHistory?: Array<{
+    editedAt: Date;
+    previousComment: string;
+  }>;
+
+  // Metadata
+  createdAt: Date;
+}
+
 // App state
 export interface AppState {
   tasks: Task[];

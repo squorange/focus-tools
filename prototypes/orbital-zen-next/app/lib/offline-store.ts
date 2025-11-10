@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Task, ChatMessage, FocusSession, TimeEntry } from './types';
+import { Task, ChatMessage, FocusSession, TimeEntry, ActivityLog } from './types';
 
 interface OrbitalZenDB extends DBSchema {
   tasks: {
@@ -31,10 +31,20 @@ interface OrbitalZenDB extends DBSchema {
       'by-session': string;
     };
   };
+  activityLogs: {
+    key: string;
+    value: ActivityLog;
+    indexes: {
+      'by-task': string;
+      'by-subtask': [string, string];  // [taskId, subtaskId]
+      'by-timestamp': Date;
+      'by-type': string;
+    };
+  };
 }
 
 const DB_NAME = 'orbital-zen-db';
-const DB_VERSION = 4; // Incremented for TimeEntry and enhanced FocusSession
+const DB_VERSION = 5; // Incremented for ActivityLog
 
 let dbInstance: IDBPDatabase<OrbitalZenDB> | null = null;
 
@@ -76,6 +86,15 @@ async function getDB(): Promise<IDBPDatabase<OrbitalZenDB>> {
         entryStore.createIndex('by-subtask', ['taskId', 'subtaskId']);
         entryStore.createIndex('by-date', 'endTime');
         entryStore.createIndex('by-session', 'sessionId');
+      }
+
+      // Activity logs store (v5: activity timeline and comments)
+      if (!db.objectStoreNames.contains('activityLogs')) {
+        const logStore = db.createObjectStore('activityLogs', { keyPath: 'id' });
+        logStore.createIndex('by-task', 'taskId');
+        logStore.createIndex('by-subtask', ['taskId', 'subtaskId']);
+        logStore.createIndex('by-timestamp', 'timestamp');
+        logStore.createIndex('by-type', 'type');
       }
 
       // Clear existing data on upgrade to version 2 to get subtasks
@@ -244,3 +263,33 @@ export async function initializeSampleData(): Promise<void> {
 }
 
 type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+// Activity log operations
+export async function createActivityLog(log: ActivityLog): Promise<void> {
+  const db = await getDB();
+  await db.put('activityLogs', log);
+}
+
+export async function getActivityLogs(taskId: string, subtaskId?: string): Promise<ActivityLog[]> {
+  const db = await getDB();
+
+  if (subtaskId) {
+    // Get logs for specific subtask
+    const logs = await db.getAllFromIndex('activityLogs', 'by-subtask', [taskId, subtaskId]);
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  } else {
+    // Get all logs for task (including subtasks)
+    const logs = await db.getAllFromIndex('activityLogs', 'by-task', taskId);
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+}
+
+export async function updateActivityLog(log: ActivityLog): Promise<void> {
+  const db = await getDB();
+  await db.put('activityLogs', log);
+}
+
+export async function deleteActivityLog(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('activityLogs', id);
+}
