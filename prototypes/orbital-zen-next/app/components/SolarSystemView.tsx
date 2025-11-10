@@ -221,11 +221,13 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
       <div className="absolute z-20 relative">
         <button
           onClick={() => {
-            // Clear subtask selection when clicking parent
             if (selectedSubtaskId) {
+              // Subtask is selected → deselect it to show parent details
               onSubtaskClick(null);
+            } else {
+              // Parent already selected → zoom out to galaxy view
+              onParentClick?.();
             }
-            onParentClick?.();
           }}
           className={`
             w-28 h-28 rounded-full

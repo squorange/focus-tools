@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Task, ChatMessage, FocusSession } from './types';
+import { Task, ChatMessage, FocusSession, TimeEntry } from './types';
 
 interface OrbitalZenDB extends DBSchema {
   tasks: {
@@ -12,14 +12,29 @@ interface OrbitalZenDB extends DBSchema {
     value: ChatMessage;
     indexes: { 'by-taskId': string };
   };
-  focusSession: {
+  focusSessions: {
     key: string;
     value: FocusSession;
+    indexes: {
+      'by-task': string;
+      'by-active': number;
+      'by-lastActivity': Date;
+    };
+  };
+  timeEntries: {
+    key: string;
+    value: TimeEntry;
+    indexes: {
+      'by-task': string;
+      'by-subtask': [string, string];  // [taskId, subtaskId]
+      'by-date': Date;
+      'by-session': string;
+    };
   };
 }
 
 const DB_NAME = 'orbital-zen-db';
-const DB_VERSION = 3; // Incremented to add focus session support
+const DB_VERSION = 4; // Incremented for TimeEntry and enhanced FocusSession
 
 let dbInstance: IDBPDatabase<OrbitalZenDB> | null = null;
 
@@ -41,9 +56,26 @@ async function getDB(): Promise<IDBPDatabase<OrbitalZenDB>> {
         messageStore.createIndex('by-taskId', 'taskId');
       }
 
-      // Focus session store (single active session)
-      if (!db.objectStoreNames.contains('focusSession')) {
-        db.createObjectStore('focusSession', { keyPath: 'taskId' });
+      // Remove old focusSession store if it exists (migrating to new structure)
+      if (oldVersion < 4 && db.objectStoreNames.contains('focusSession')) {
+        db.deleteObjectStore('focusSession');
+      }
+
+      // Focus sessions store (v4: new enhanced structure)
+      if (!db.objectStoreNames.contains('focusSessions')) {
+        const sessionStore = db.createObjectStore('focusSessions', { keyPath: 'id' });
+        sessionStore.createIndex('by-task', 'taskId');
+        sessionStore.createIndex('by-active', 'isActive');
+        sessionStore.createIndex('by-lastActivity', 'lastActivityTime');
+      }
+
+      // Time entries store (v4: new historical tracking)
+      if (!db.objectStoreNames.contains('timeEntries')) {
+        const entryStore = db.createObjectStore('timeEntries', { keyPath: 'id' });
+        entryStore.createIndex('by-task', 'taskId');
+        entryStore.createIndex('by-subtask', ['taskId', 'subtaskId']);
+        entryStore.createIndex('by-date', 'endTime');
+        entryStore.createIndex('by-session', 'sessionId');
       }
 
       // Clear existing data on upgrade to version 2 to get subtasks

@@ -60,14 +60,86 @@ export interface AIContext {
   recentMessages: ChatMessage[];
 }
 
-// Focus session types
+// Focus session types (active state)
 export interface FocusSession {
+  id: string;  // UUID for this session
   taskId: string;
   subtaskId?: string;
   startTime: Date;
-  pausedAt?: Date;
-  isActive: boolean;
-  totalTime: number; // seconds accumulated
+  isActive: boolean;  // true = running, false = paused
+  pausedAt?: Date;  // When currently paused (if isActive = false)
+  totalTime: number;  // Accumulated active seconds
+
+  // Break tracking
+  currentBreakStartTime?: Date;  // Set when break starts
+  totalBreakTime: number;  // Accumulated break seconds
+  breaksTaken: number;
+
+  // Pause tracking
+  pauseCount: number;
+  totalPauseTime: number;  // Accumulated pause seconds
+  pauseHistory: Array<{
+    pausedAt: Date;
+    resumedAt?: Date;  // undefined = currently paused
+  }>;
+
+  // Break reminder state
+  lastBreakReminderAt?: Date;
+  breakReminderSnoozeCount: number;
+  flowModeEnabled: boolean;  // User dismissed reminders
+
+  // Stale detection
+  lastActivityTime: Date;  // Updated on any user interaction
+
+  device: 'desktop' | 'mobile' | 'unknown';
+}
+
+// Time entry types (historical record)
+export interface TimeEntry {
+  id: string;  // UUID for this entry
+  sessionId: string;  // Links to original FocusSession.id
+  taskId: string;
+  subtaskId?: string;
+
+  // Time data
+  startTime: Date;
+  endTime: Date;
+  duration: number;  // Active work seconds (excludes pauses & breaks)
+
+  // Session metadata
+  pauseCount: number;
+  totalPauseTime: number;  // Seconds
+  breaksTaken: number;
+  totalBreakTime: number;  // Seconds
+
+  // Completion info
+  wasCompleted: boolean;  // true if ended with "Complete" button
+  endReason: 'completed' | 'stopped' | 'stale' | 'manual';
+
+  // Manual entry
+  isManualEntry: boolean;
+  sessionNotes?: string;  // Optional notes for this session
+
+  // Device tracking
+  device: 'desktop' | 'mobile' | 'unknown';
+
+  // Detailed history (optional, for deep analysis)
+  pauseTimestamps?: Array<{ pausedAt: Date; resumedAt: Date }>;
+  breakTimestamps?: Array<{ startedAt: Date; endedAt: Date }>;
+
+  // Metadata
+  createdAt: Date;
+}
+
+// Task time aggregation (computed, not stored)
+export interface TaskTimeStats {
+  totalActiveTime: number;  // Sum of all TimeEntry.duration
+  totalBreakTime: number;   // Sum of all TimeEntry.totalBreakTime
+  totalPauseTime: number;   // Sum of all TimeEntry.totalPauseTime
+  sessionCount: number;     // Count of TimeEntries
+  averageSessionLength: number;  // Mean duration
+  completionRate: number;   // % of sessions that ended with "completed"
+  lastWorkedOn?: Date;      // Most recent TimeEntry.endTime
 }
 
 // App state

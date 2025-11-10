@@ -11,6 +11,8 @@ import {
   getCurrentMarkerRing,
 } from '../lib/orbit-utils';
 import { useFocusTimer } from '../hooks/useFocusTimer';
+import { endSession, getTaskTimeStats } from '../lib/focus-session';
+import type { TaskTimeStats } from '../lib/types';
 
 interface AIPanelProps {
   task: Task;
@@ -54,6 +56,7 @@ export default function AIPanel({
   const [aiInput, setAIInput] = useState('');
   const [newTag, setNewTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
+  const [timeStats, setTimeStats] = useState<TaskTimeStats | null>(null);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,6 +100,19 @@ export default function AIPanel({
       tagInputRef.current.focus();
     }
   }, [showTagInput]);
+
+  // Load time stats when task changes
+  useEffect(() => {
+    async function loadTimeStats() {
+      try {
+        const stats = await getTaskTimeStats(task.id);
+        setTimeStats(stats);
+      } catch (error) {
+        console.error('Failed to load time stats:', error);
+      }
+    }
+    loadTimeStats();
+  }, [task.id]);
 
   // Handlers
   const handleTitleSave = async () => {
@@ -272,6 +288,34 @@ export default function AIPanel({
   };
 
   const handleCompleteTask = async () => {
+    // If completing (not un-completing) and there's an active session, end it with completion
+    if (!task.completed && hasFocusSession && focusSession) {
+      const shouldEndSession = window.confirm(
+        'End the current focus session and mark it as completed?'
+      );
+
+      if (shouldEndSession) {
+        // Optional: prompt for session notes
+        const sessionNotes = window.prompt('Add notes for this session (optional):');
+
+        try {
+          await endSession(
+            focusSession.id,
+            'completed',
+            true,
+            sessionNotes || undefined
+          );
+          // Clear the session from parent component
+          if (onStopFocus) {
+            onStopFocus();
+          }
+        } catch (error) {
+          console.error('Failed to end session:', error);
+        }
+      }
+    }
+
+    // Toggle task completion
     const updatedTask = {
       ...task,
       completed: !task.completed,
@@ -749,17 +793,35 @@ export default function AIPanel({
                   <span className="text-gray-500">Updated</span>
                   <span>{new Date(task.updatedAt).toLocaleDateString()}</span>
                 </div>
-                {task.totalFocusTime !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Total Focus Time</span>
-                    <span>{Math.floor(task.totalFocusTime / 60)} min</span>
-                  </div>
-                )}
-                {task.focusSessionCount !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Focus Sessions</span>
-                    <span>{task.focusSessionCount}</span>
-                  </div>
+
+                {/* Time aggregation stats from TimeEntries */}
+                {timeStats && timeStats.sessionCount > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Total Active Time</span>
+                      <span>{Math.floor(timeStats.totalActiveTime / 60)} min</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Sessions</span>
+                      <span>{timeStats.sessionCount}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Average Session</span>
+                      <span>{Math.floor(timeStats.averageSessionLength / 60)} min</span>
+                    </div>
+                    {timeStats.lastWorkedOn && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Last Worked On</span>
+                        <span>{new Date(timeStats.lastWorkedOn).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    {timeStats.completionRate > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Completion Rate</span>
+                        <span>{Math.round(timeStats.completionRate * 100)}%</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
