@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import OrbitalView from './components/OrbitalView';
 import { Task } from './lib/types';
 import { getTasks, initializeSampleData } from './lib/offline-store';
+import { initializeSubtaskOrbits } from './lib/orbit-utils';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -35,13 +36,26 @@ export default function Home() {
         clearTimeout(timeoutId);
 
         if (storedTasks.length > 0) {
-          setTasks(storedTasks);
+          // Initialize subtask orbits for tasks that don't have them assigned
+          const tasksWithOrbits = storedTasks.map(task => ({
+            ...task,
+            subtasks: task.subtasks
+              ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
+              : undefined,
+          }));
+          setTasks(tasksWithOrbits);
         } else {
           // Fallback to API if no local data
           console.log('[Home] No stored tasks, trying API...');
           const response = await fetch('/api/tasks');
           const data = await response.json();
-          setTasks(data.tasks);
+          const tasksWithOrbits = data.tasks.map((task: Task) => ({
+            ...task,
+            subtasks: task.subtasks
+              ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
+              : undefined,
+          }));
+          setTasks(tasksWithOrbits);
         }
       } catch (error) {
         clearTimeout(timeoutId);
@@ -53,7 +67,13 @@ export default function Home() {
           console.log('[Home] Trying API fallback...');
           const response = await fetch('/api/tasks');
           const data = await response.json();
-          setTasks(data.tasks);
+          const tasksWithOrbits = data.tasks.map((task: Task) => ({
+            ...task,
+            subtasks: task.subtasks
+              ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
+              : undefined,
+          }));
+          setTasks(tasksWithOrbits);
           setError(null); // Clear error if API works
         } catch (apiError) {
           console.error('[Home] Failed to load from API:', apiError);

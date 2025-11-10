@@ -83,22 +83,23 @@ export function calculateNextRadius(existingSubtasks: Subtask[]): number {
 }
 
 /**
- * Recalculate radii for all remaining subtasks after a completion
- * Maintains their assigned angles but updates radii to fill inward
+ * Recalculate radii for all subtasks based on their array position
+ * Maintains their assigned angles but updates radii based on list order
  * Accounts for belt position if present
+ *
+ * IMPORTANT: Subtask positions are determined by array index (list order),
+ * not by completion status. Completed subtasks maintain their radii.
  */
 export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtask[] {
-  const activeSubtasks = subtasks.filter(st => !st.completed);
-
-  return subtasks.map(st => {
+  return subtasks.map((st, arrayIndex) => {
+    // Completed subtasks maintain their current positions
     if (st.completed) return st;
 
-    // Find new index among active subtasks
-    const newIndex = activeSubtasks.findIndex(active => active.id === st.id);
-
+    // Calculate radius based on array position (list order)
+    // This ensures subtask list order and orbital order always match
     return {
       ...st,
-      assignedOrbitRadius: getSubtaskRadiusWithBelt(newIndex, beltRing),
+      assignedOrbitRadius: getSubtaskRadiusWithBelt(arrayIndex, beltRing),
     };
   });
 }
@@ -107,24 +108,24 @@ export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtas
  * Initialize angles and radii for subtasks that don't have them
  * (Migration helper for existing data)
  * Accounts for belt position if present
+ *
+ * IMPORTANT: Angles are based on array index (list order), not active count.
+ * This ensures subtask list order and orbital order always match.
  */
 export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number): Subtask[] {
-  const activeSubtasks = subtasks.filter(st => !st.completed);
+  const totalSubtasks = subtasks.length;
 
-  return subtasks.map((st, index) => {
+  return subtasks.map((st, arrayIndex) => {
     // If already has assigned values, keep them
     if (st.assignedStartingAngle !== undefined && st.assignedOrbitRadius !== undefined) {
       return st;
     }
 
-    // Calculate initial values based on current index
-    const activeIndex = activeSubtasks.findIndex(active => active.id === st.id);
-    const totalActive = activeSubtasks.length;
-
+    // Calculate initial values based on array index (list order)
     return {
       ...st,
-      assignedStartingAngle: st.completed ? st.assignedStartingAngle : getSubtaskAngle(activeIndex, totalActive),
-      assignedOrbitRadius: st.completed ? st.assignedOrbitRadius : getSubtaskRadiusWithBelt(activeIndex, beltRing),
+      assignedStartingAngle: getSubtaskAngle(arrayIndex, totalSubtasks),
+      assignedOrbitRadius: getSubtaskRadiusWithBelt(arrayIndex, beltRing),
     };
   });
 }
