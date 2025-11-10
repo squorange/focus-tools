@@ -10,6 +10,7 @@ import TimerBadge from './TimerBadge';
 import { saveTask, getTask } from '../lib/offline-store';
 import {
   getActiveFocusSession,
+  getAnyFocusSession,
   getFocusSession,
   startFocusSession,
   pauseSession,
@@ -188,13 +189,13 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     }
   }, [viewLevel, isTransitioning, isZooming, selectedTask]);
 
-  // Load active focus session on mount
+  // Load any existing focus session on mount (active or paused)
   useEffect(() => {
     const loadFocusSession = async () => {
       try {
-        const activeSession = await getActiveFocusSession();
-        if (activeSession) {
-          setFocusSession(activeSession);
+        const session = await getAnyFocusSession();
+        if (session) {
+          setFocusSession(session);
         }
       } catch (error) {
         console.error('Failed to load focus session:', error);
@@ -214,9 +215,31 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   };
 
   // Handle subtask toggle
-  const handleToggleSubtask = (subtaskId: string) => {
-    // Toggle subtask completion (would update in database in production)
-    console.log('Toggle subtask:', subtaskId);
+  const handleToggleSubtask = async (subtaskId: string) => {
+    if (!zoomedTask) return;
+
+    // Find and toggle the subtask
+    const updatedSubtasks = zoomedTask.subtasks?.map(st =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    );
+
+    const updatedTask: Task = {
+      ...zoomedTask,
+      subtasks: updatedSubtasks,
+      updatedAt: new Date(),
+    };
+
+    // Optimistic UI update
+    setZoomedTask(updatedTask);
+
+    // Save to database
+    try {
+      await saveTask(updatedTask);
+    } catch (error) {
+      console.error('Failed to save subtask completion:', error);
+      // Revert on error
+      setZoomedTask(zoomedTask);
+    }
   };
 
   // Focus session handlers

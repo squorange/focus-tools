@@ -101,18 +101,22 @@ export default function AIPanel({
     }
   }, [showTagInput]);
 
-  // Load time stats when task changes
-  useEffect(() => {
-    async function loadTimeStats() {
-      try {
-        const stats = await getTaskTimeStats(task.id);
-        setTimeStats(stats);
-      } catch (error) {
-        console.error('Failed to load time stats:', error);
-      }
+  // Helper to load time stats (used on mount and after completion)
+  const loadTimeStats = async () => {
+    try {
+      // Load stats for subtask or parent task
+      const targetId = subtask ? subtask.id : task.id;
+      const stats = await getTaskTimeStats(task.id, subtask?.id, !subtask); // Include breakdown for parent tasks
+      setTimeStats(stats);
+    } catch (error) {
+      console.error('Failed to load time stats:', error);
     }
+  };
+
+  // Load time stats when task or subtask changes
+  useEffect(() => {
     loadTimeStats();
-  }, [task.id]);
+  }, [task.id, subtask?.id]);
 
   // Handlers
   const handleTitleSave = async () => {
@@ -288,16 +292,34 @@ export default function AIPanel({
   };
 
   const handleCompleteTask = async () => {
-    // If completing (not un-completing) and there's an active session, end it with completion
-    if (!task.completed && hasFocusSession && focusSession) {
-      const shouldEndSession = window.confirm(
-        'End the current focus session and mark it as completed?'
-      );
+    const isCompletingSubtask = !!subtask;
+    const isCompletingTask = !subtask;
 
-      if (shouldEndSession) {
-        // Optional: prompt for session notes
-        const sessionNotes = window.prompt('Add notes for this session (optional):');
+    // Handle subtask completion with auto-advance
+    if (isCompletingSubtask && !subtask.completed) {
+      // Find subtasks inside the priority belt (before belt ring)
+      const beltRing = task.priorityMarkerRing || 0;
+      const subtasksInBelt = (task.subtasks || []).slice(0, Math.max(0, beltRing - 1));
+      const currentIndex = subtasksInBelt.findIndex(st => st.id === subtask.id);
+      const nextSubtask = currentIndex >= 0 && currentIndex < subtasksInBelt.length - 1
+        ? subtasksInBelt[currentIndex + 1]
+        : null;
 
+      // Prompt for session notes if there's an active session
+      let sessionNotes: string | null = null;
+      if (hasFocusSession && focusSession) {
+        sessionNotes = window.prompt(
+          nextSubtask
+            ? `Subtask completed! Moving to: "${nextSubtask.title}"\n\nAdd notes for this subtask (optional):`
+            : 'Subtask completed!\n\nAdd notes for this session (optional):'
+        );
+
+        // If user cancelled the prompt, abort completion
+        if (sessionNotes === null) {
+          return;
+        }
+
+        // End current session
         try {
           await endSession(
             focusSession.id,
@@ -305,13 +327,93 @@ export default function AIPanel({
             true,
             sessionNotes || undefined
           );
-          // Clear the session from parent component
-          if (onStopFocus) {
-            onStopFocus();
-          }
         } catch (error) {
           console.error('Failed to end session:', error);
         }
+      }
+
+      // Mark subtask as complete
+      const updatedSubtasks = task.subtasks?.map(st =>
+        st.id === subtask.id ? { ...st, completed: true } : st
+      );
+      const updatedTask: Task = {
+        ...task,
+        subtasks: updatedSubtasks,
+        updatedAt: new Date(),
+      };
+
+      // Trigger completion animation
+      setCompletingSubtaskIds(prev => new Set([...prev, subtask.id]));
+      setTimeout(() => {
+        setCompletingSubtaskIds(prev => {
+          const next = new Set(prev);
+          next.delete(subtask.id);
+          return next;
+        });
+      }, 500);
+
+      await saveTask(updatedTask);
+      onTaskUpdate?.(updatedTask);
+
+      // Check if all belt subtasks are now complete
+      const allBeltComplete = subtasksInBelt.every(st =>
+        st.id === subtask.id || st.completed
+      );
+
+      if (allBeltComplete && beltRing > 0 && task.priorityMarkerEnabled) {
+        // Trigger celebration and clear priority marker
+        const finalTask: Task = {
+          ...updatedTask,
+          priorityMarkerEnabled: false,
+          priorityMarkerRing: 0,
+          priorityMarkerOriginalIds: [],
+          updatedAt: new Date(),
+        };
+        await saveTask(finalTask);
+        onTaskUpdate?.(finalTask);
+
+        // End session without starting new one
+        if (onStopFocus) {
+          onStopFocus();
+        }
+      } else if (nextSubtask) {
+        // Auto-start focus on next subtask
+        onSubtaskChange?.(nextSubtask);
+        if (onStartFocus) {
+          onStartFocus();
+        }
+      } else {
+        // No more subtasks, just stop focus
+        if (onStopFocus) {
+          onStopFocus();
+        }
+      }
+
+      // Reload time stats
+      loadTimeStats();
+      return;
+    }
+
+    // Handle parent task completion
+    if (isCompletingTask && !task.completed && hasFocusSession && focusSession) {
+      const sessionNotes = window.prompt('Task completed!\n\nAdd notes for this session (optional):');
+
+      if (sessionNotes === null) {
+        return; // User cancelled
+      }
+
+      try {
+        await endSession(
+          focusSession.id,
+          'completed',
+          true,
+          sessionNotes || undefined
+        );
+        if (onStopFocus) {
+          onStopFocus();
+        }
+      } catch (error) {
+        console.error('Failed to end session:', error);
       }
     }
 
@@ -324,6 +426,9 @@ export default function AIPanel({
     };
     await saveTask(updatedTask);
     onTaskUpdate?.(updatedTask);
+
+    // Reload time stats
+    loadTimeStats();
   };
 
   const subtasks = (task.subtasks || []).filter(st => !st.completed);

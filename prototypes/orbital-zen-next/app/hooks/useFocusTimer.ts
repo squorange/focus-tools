@@ -48,21 +48,6 @@ export function useFocusTimer(session?: FocusSession): TimerState {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSaveRef = useRef<number>(0);
 
-  // Track page visibility
-  const [isVisible, setIsVisible] = useState(true);
-
-  // Handle page visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
   // Main timer effect
   useEffect(() => {
     // Clear any existing interval
@@ -71,21 +56,25 @@ export function useFocusTimer(session?: FocusSession): TimerState {
       intervalRef.current = null;
     }
 
-    // If no session, not active, or page hidden, don't run timer
-    if (!session || !session.isActive || !isVisible) {
-      setElapsedSeconds(session?.totalTime || 0);
+    // If no session, show 0
+    if (!session) {
+      setElapsedSeconds(0);
       return;
     }
 
-    // Calculate initial elapsed time
+    // Calculate elapsed time from timestamps
     const calculateElapsed = (): number => {
-      const now = Date.now();
-      const startMs = new Date(session.startTime).getTime();
-      const runningSince = session.pausedAt
-        ? new Date(session.pausedAt).getTime()
-        : startMs;
+      // If paused, return stored totalTime
+      if (!session.isActive) {
+        return session.totalTime;
+      }
 
-      // Elapsed = stored totalTime + time since last resume
+      // If active, calculate: totalTime + (now - lastResumedAt)
+      const now = Date.now();
+      const runningSince = session.lastResumedAt
+        ? new Date(session.lastResumedAt).getTime()
+        : new Date(session.startTime).getTime();
+
       const currentRunSeconds = Math.floor((now - runningSince) / 1000);
       return session.totalTime + currentRunSeconds;
     };
@@ -93,7 +82,7 @@ export function useFocusTimer(session?: FocusSession): TimerState {
     // Set initial value
     setElapsedSeconds(calculateElapsed());
 
-    // Start interval
+    // Start interval for live updates (runs even when tab hidden)
     intervalRef.current = setInterval(() => {
       const newElapsed = calculateElapsed();
       setElapsedSeconds(newElapsed);
@@ -113,12 +102,12 @@ export function useFocusTimer(session?: FocusSession): TimerState {
         clearInterval(intervalRef.current);
       }
     };
-  }, [session, isVisible]);
+  }, [session]);
 
   return {
     elapsedSeconds,
     formattedTime: formatTime(elapsedSeconds),
-    isRunning: Boolean(session?.isActive && isVisible),
+    isRunning: Boolean(session?.isActive),
   };
 }
 
@@ -131,19 +120,6 @@ export function useFocusTimer(session?: FocusSession): TimerState {
 export function useBreakTimer(session?: FocusSession): TimerState {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
-
-  // Handle page visibility
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
 
   // Break timer effect
   useEffect(() => {
@@ -152,8 +128,8 @@ export function useBreakTimer(session?: FocusSession): TimerState {
       intervalRef.current = null;
     }
 
-    // Only run if there's an active break and page is visible
-    if (!session?.currentBreakStartTime || !isVisible) {
+    // Only run if there's an active break
+    if (!session?.currentBreakStartTime) {
       setElapsedSeconds(0);
       return;
     }
@@ -175,11 +151,11 @@ export function useBreakTimer(session?: FocusSession): TimerState {
         clearInterval(intervalRef.current);
       }
     };
-  }, [session?.currentBreakStartTime, isVisible]);
+  }, [session?.currentBreakStartTime]);
 
   return {
     elapsedSeconds,
     formattedTime: formatTime(elapsedSeconds),
-    isRunning: Boolean(session?.currentBreakStartTime && isVisible),
+    isRunning: Boolean(session?.currentBreakStartTime),
   };
 }

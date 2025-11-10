@@ -67,8 +67,8 @@ export interface FocusSession {
   subtaskId?: string;
   startTime: Date;
   isActive: boolean;  // true = running, false = paused
-  pausedAt?: Date;  // When currently paused (if isActive = false)
-  totalTime: number;  // Accumulated active seconds
+  lastResumedAt?: Date;  // When most recently resumed (or startTime if never paused)
+  totalTime: number;  // Accumulated active seconds when paused
 
   // Break tracking
   currentBreakStartTime?: Date;  // Set when break starts
@@ -140,6 +140,13 @@ export interface TaskTimeStats {
   averageSessionLength: number;  // Mean duration
   completionRate: number;   // % of sessions that ended with "completed"
   lastWorkedOn?: Date;      // Most recent TimeEntry.endTime
+  lastSessionNotes?: string; // Most recent session notes
+  subtaskBreakdown?: Array<{  // Per-subtask time breakdown (for parent tasks)
+    subtaskId: string;
+    subtaskTitle: string;
+    totalTime: number;
+    sessionCount: number;
+  }>;
 }
 
 // App state
