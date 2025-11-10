@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 interface TimerBadgeProps {
   startTime: Date;
   isActive: boolean;
-  pausedAt?: Date;
-  totalTime: number; // seconds accumulated before this session
+  lastResumedAt?: Date;  // When session was last resumed
+  totalTime: number; // seconds accumulated when paused
 }
 
 function formatTime(seconds: number): string {
@@ -15,30 +15,34 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function TimerBadge({ startTime, isActive, pausedAt, totalTime }: TimerBadgeProps) {
+export default function TimerBadge({ startTime, isActive, lastResumedAt, totalTime }: TimerBadgeProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     if (!isActive) {
-      // If paused, calculate time up to pause point
-      if (pausedAt) {
-        const elapsed = Math.floor((pausedAt.getTime() - startTime.getTime()) / 1000);
-        setElapsedSeconds(totalTime + elapsed);
-      } else {
-        setElapsedSeconds(totalTime);
-      }
+      // Paused - show accumulated time only
+      setElapsedSeconds(totalTime);
       return;
     }
 
-    // Active: update every second
-    const interval = setInterval(() => {
+    // Active - calculate from lastResumedAt or startTime
+    const calculateElapsed = () => {
       const now = new Date();
-      const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      setElapsedSeconds(totalTime + elapsed);
+      const runningSince = lastResumedAt || startTime;
+      const currentRunSeconds = Math.floor((now.getTime() - new Date(runningSince).getTime()) / 1000);
+      return totalTime + currentRunSeconds;
+    };
+
+    // Set initial value
+    setElapsedSeconds(calculateElapsed());
+
+    // Update every second
+    const interval = setInterval(() => {
+      setElapsedSeconds(calculateElapsed());
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [startTime, isActive, pausedAt, totalTime]);
+  }, [startTime, isActive, lastResumedAt, totalTime]);
 
   return (
     <div

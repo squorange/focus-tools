@@ -260,7 +260,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           <TimerBadge
             startTime={focusSession.startTime}
             isActive={focusSession.isActive}
-            pausedAt={focusSession.pausedAt}
+            lastResumedAt={focusSession.lastResumedAt}
             totalTime={focusSession.totalTime}
           />
         )}
@@ -390,7 +390,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                     <TimerBadge
                       startTime={focusSession.startTime}
                       isActive={focusSession.isActive}
-                      pausedAt={focusSession.pausedAt}
+                      lastResumedAt={focusSession.lastResumedAt}
                       totalTime={focusSession.totalTime}
                     />
                   )}

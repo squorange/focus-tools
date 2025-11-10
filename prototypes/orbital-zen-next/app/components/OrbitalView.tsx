@@ -505,7 +505,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
                 <TimerBadge
                   startTime={focusSession.startTime}
                   isActive={focusSession.isActive}
-                  pausedAt={focusSession.pausedAt}
+                  lastResumedAt={focusSession.lastResumedAt}
                   totalTime={focusSession.totalTime}
                 />
               </div>

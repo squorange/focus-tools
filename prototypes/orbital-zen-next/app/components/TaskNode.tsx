@@ -354,7 +354,7 @@ export default function TaskNode({
               <TimerBadge
                 startTime={focusSession.startTime}
                 isActive={focusSession.isActive}
-                pausedAt={focusSession.pausedAt}
+                lastResumedAt={focusSession.lastResumedAt}
                 totalTime={focusSession.totalTime}
               />
             )}
