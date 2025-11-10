@@ -193,10 +193,12 @@ export default function AIPanel({
         newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
         if (newBeltRing === 0) {
           shouldCelebrate = true;
+          // Keep the belt at its current position during celebration
+          newBeltRing = task.priorityMarkerRing;
         }
       }
 
-      updatedSubtasks = recalculateRadii(updatedSubtasks, newBeltRing === 0 ? undefined : newBeltRing);
+      updatedSubtasks = recalculateRadii(updatedSubtasks, newBeltRing);
 
       const updatedTask = {
         ...task,
@@ -211,7 +213,7 @@ export default function AIPanel({
       if (shouldCelebrate) {
         setTimeout(async () => {
           const currentTask = await getTask(task.id);
-          if (currentTask && currentTask.priorityMarkerEnabled && currentTask.priorityMarkerRing === 0) {
+          if (currentTask && currentTask.priorityMarkerEnabled) {
             const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
             const clearedTask = {
               ...currentTask,
@@ -353,12 +355,30 @@ export default function AIPanel({
       }
 
       // Mark subtask as complete
-      const updatedSubtasks = task.subtasks?.map(st =>
+      let updatedSubtasks = task.subtasks?.map(st =>
         st.id === subtask.id ? { ...st, completed: true } : st
       );
+
+      // Calculate new belt ring position and check for celebration
+      let newBeltRing = task.priorityMarkerRing;
+      let shouldCelebrate = false;
+
+      if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
+        newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+        if (newBeltRing === 0) {
+          shouldCelebrate = true;
+          // Keep the belt at its current position during celebration
+          newBeltRing = task.priorityMarkerRing;
+        }
+      }
+
+      // Recalculate radii for remaining subtasks
+      updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
+
       const updatedTask: Task = {
         ...task,
         subtasks: updatedSubtasks,
+        priorityMarkerRing: newBeltRing,
         updatedAt: new Date(),
       };
 
@@ -375,22 +395,24 @@ export default function AIPanel({
       await saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
 
-      // Check if all belt subtasks are now complete
-      const allBeltComplete = subtasksInBelt.every(st =>
-        st.id === subtask.id || st.completed
-      );
-
-      if (allBeltComplete && beltRing > 0 && task.priorityMarkerEnabled) {
-        // Trigger celebration and clear priority marker
-        const finalTask: Task = {
-          ...updatedTask,
-          priorityMarkerEnabled: false,
-          priorityMarkerRing: 0,
-          priorityMarkerOriginalIds: [],
-          updatedAt: new Date(),
-        };
-        await saveTask(finalTask);
-        onTaskUpdate?.(finalTask);
+      // Handle celebration after delay
+      if (shouldCelebrate) {
+        setTimeout(async () => {
+          const currentTask = await getTask(task.id);
+          if (currentTask && currentTask.priorityMarkerEnabled) {
+            const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
+            const clearedTask = {
+              ...currentTask,
+              subtasks: clearedSubtasks,
+              priorityMarkerEnabled: false,
+              priorityMarkerRing: undefined,
+              priorityMarkerOriginalIds: undefined,
+              updatedAt: new Date(),
+            };
+            await saveTask(clearedTask);
+            onTaskUpdate?.(clearedTask);
+          }
+        }, 3000);
 
         // End session without starting new one
         if (onStopFocus) {
