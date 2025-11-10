@@ -173,6 +173,7 @@ export async function initializeSampleData(): Promise<void> {
   const existingTasks = await getTasks();
   if (existingTasks.length > 0) return; // Already initialized
 
+  // NOTE: Array order determines orbital position (index 0 = closest to center)
   const sampleTasks: Task[] = [
     {
       id: '1',
@@ -182,7 +183,6 @@ export async function initializeSampleData(): Promise<void> {
       category: 'personal',
       createdAt: new Date(),
       updatedAt: new Date(),
-      orbitDistance: 1,
       completed: false,
       subtasks: [
         { id: '1-1', title: 'Find dentist number', completed: false, parentTaskId: '1' },
@@ -199,7 +199,6 @@ export async function initializeSampleData(): Promise<void> {
       category: 'work',
       createdAt: new Date(),
       updatedAt: new Date(),
-      orbitDistance: 2,
       completed: false,
       subtasks: [
         { id: '2-1', title: 'Download reports', completed: false, parentTaskId: '2' },
@@ -216,7 +215,6 @@ export async function initializeSampleData(): Promise<void> {
       category: 'personal',
       createdAt: new Date(),
       updatedAt: new Date(),
-      orbitDistance: 3,
       completed: false,
       subtasks: [
         { id: '3-1', title: 'Brainstorm gift ideas', completed: false, parentTaskId: '3' },
@@ -232,7 +230,6 @@ export async function initializeSampleData(): Promise<void> {
       category: 'home',
       createdAt: new Date(),
       updatedAt: new Date(),
-      orbitDistance: 3,
       completed: false,
       subtasks: [
         { id: '4-1', title: 'Buy replacement parts', completed: false, parentTaskId: '4' },
@@ -248,7 +245,6 @@ export async function initializeSampleData(): Promise<void> {
       category: 'maintenance',
       createdAt: new Date(),
       updatedAt: new Date(),
-      orbitDistance: 4,
       completed: false,
       subtasks: [
         { id: '5-1', title: 'Find service center', completed: false, parentTaskId: '5' },

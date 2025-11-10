@@ -16,7 +16,7 @@ export interface Task {
   completedAt?: Date;
   dueDate?: Date;
   targetDate?: Date; // Target completion date (softer than due date)
-  orbitDistance?: number; // Distance from center (1-5, 1 = closest/most urgent)
+  orbitDistance?: number; // DEPRECATED: Position is now determined by array index (0 = closest to center)
   subtasks?: Subtask[];
   completed?: boolean;
   totalFocusTime?: number; // Total seconds spent in focus

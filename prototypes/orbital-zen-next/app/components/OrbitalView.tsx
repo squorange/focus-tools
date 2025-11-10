@@ -34,22 +34,15 @@ const STARTING_ANGLES = [
   15,    // 3.5 o'clock (right-lower)
 ];
 
-// Priority-based orbit radii (higher priority = closer to center)
-const PRIORITY_RADII = {
-  urgent: { desktop: 100, mobile: 70 },
-  high: { desktop: 150, mobile: 105 },
-  medium: { desktop: 200, mobile: 140 },
-  low: { desktop: 250, mobile: 175 },
+// Index-based orbit radii (position in list determines distance from center)
+// Lower index = closer to center = higher priority to tackle
+const ORBIT_RADII = {
+  desktop: [100, 150, 200, 250, 300, 350, 400],
+  mobile: [70, 105, 140, 175, 210, 245, 280],
 };
 
-// Additional orbit radii for tasks beyond the 4 priority levels
-// Useful if we want to show more than 5 tasks
-const EXTRA_ORBIT_RADII = {
-  desktop: [300, 350, 400],
-  mobile: [210, 245, 280],
-};
-
-// Priority-based z-index (higher priority = higher elevation)
+// Priority-based visual styling (colors, borders)
+// Priority affects appearance but NOT position
 const PRIORITY_Z_INDEX = {
   urgent: 40,
   high: 30,
@@ -57,17 +50,9 @@ const PRIORITY_Z_INDEX = {
   low: 10,
 };
 
-function getOrbitRadius(priority: TaskPriority, isMobile: boolean, index: number): number {
-  // For the first 4 tasks (indices 0-3), use priority-based radii
-  if (index < 4) {
-    const radii = PRIORITY_RADII[priority];
-    return isMobile ? radii.mobile : radii.desktop;
-  }
-
-  // For additional tasks (indices 4+), use extra orbit radii
-  const extraIndex = index - 4;
-  const extraRadii = isMobile ? EXTRA_ORBIT_RADII.mobile : EXTRA_ORBIT_RADII.desktop;
-  return extraRadii[extraIndex] || extraRadii[extraRadii.length - 1]; // Use last radius if out of bounds
+function getOrbitRadius(isMobile: boolean, index: number): number {
+  const radii = isMobile ? ORBIT_RADII.mobile : ORBIT_RADII.desktop;
+  return radii[index] || radii[radii.length - 1]; // Use last radius if out of bounds
 }
 
 function getPriorityZIndex(priority: TaskPriority): number {
@@ -395,8 +380,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
       {/* Orbital task containers */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {tasks.slice(0, 7).map((task, index) => {
-          const desktopRadius = getOrbitRadius(task.priority, false, index);
-          const mobileRadius = getOrbitRadius(task.priority, true, index);
+          const desktopRadius = getOrbitRadius(false, index);
+          const mobileRadius = getOrbitRadius(true, index);
           const startingAngle = STARTING_ANGLES[index] || 0;
           const isHovered = hoveredTaskId === task.id;
           const baseZIndex = getPriorityZIndex(task.priority);
