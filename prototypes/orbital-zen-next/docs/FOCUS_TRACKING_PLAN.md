@@ -830,88 +830,110 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 
 ## Outstanding Deliberations
 
-### 1. Session Notes Priority
-
-**Question**: Are session notes critical for primary UI, or hide in "More"?
-
-**Current Thinking**:
-- For some tasks, taking notes during focus is essential (coding, research, writing)
-- But for many tasks, notes are optional
-- **Proposal**: Add "Add session note" link in "More" section, not primary UI
-
-**Decision Needed**: Confirm this approach or elevate to primary UI
+**STATUS**: All deliberations resolved ✅ Ready for Phase 1 implementation
 
 ---
 
-### 2. Break Timer UI Location
+### 1. Session Notes Priority ✅ RESOLVED
 
-**Question**: Where should break timer display during break?
+**Decision**: Keep session notes, make them optional and separate from task notes
 
-**Options**:
-- A) Replace focus timer in header (current plan)
-- B) Show both timers (main paused, break counting down)
-- C) Full-screen break overlay with timer
+**Rationale**:
+- **Session notes** capture "what I accomplished this session" (ephemeral, session-specific)
+- **Task notes** remain clean canonical description/context for dependent tasks
+- Session notes are per TimeEntry, optional field
+- Users can add session note when ending a focus session
 
-**Current Thinking**: Option A (simple replacement)
-
-**Decision Needed**: User preference?
-
----
-
-### 3. Notification Strategy for React Native
-
-**Question**: How to handle break reminders and stale session prompts when app is backgrounded?
-
-**Considerations**:
-- `window.confirm()` won't work in background
-- Need push notifications for cross-device and background scenarios
-- Notification permissions required
-
-**Proposal**:
-- Phase 1 (web): Use alerts/confirms
-- Phase 2 (React Native): Implement local notifications
-- Phase 3 (Multi-device): Remote push notifications via backend
-
-**Decision Needed**: Timeline for React Native migration?
+**Implementation**:
+- Add optional "Add session note" prompt when ending session (Stop/Complete)
+- Store in TimeEntry.sessionNotes field
+- Display in time history view
+- Not required, easily skippable
 
 ---
 
-### 4. Time Entry Retention Policy
+### 2. Break Timer UI Location ✅ RESOLVED
 
-**Question**: Should we auto-delete old TimeEntries, or keep forever?
+**Decision**: Show both timers (main paused + break countdown)
 
-**Considerations**:
-- Storage: 1 entry/day * 365 days = 365 entries/year (tiny in IndexedDB)
-- Privacy: Some users may want to clear history
-- Analytics: More data = better insights
+**Implementation**:
+During break, display in panel header:
+```
+⏸ 23:47 · Paused              ← Main timer (paused state)
+☕ Break: 3:42 remaining       ← Break countdown
+```
 
-**Proposal**:
-- Keep all entries by default
-- Add "Clear time history" option in settings
-- Implement soft-delete (archived flag) instead of hard delete
-
-**Decision Needed**: Confirm approach
+This gives full context - user sees total session time and remaining break time.
 
 ---
 
-### 5. Parent Time Display with Subtasks
+### 3. Notification Strategy for React Native ✅ RESOLVED
 
-**Question**: When viewing parent task with subtasks, which time to show?
+**Decision**: Build web MVP first, migrate to React Native later
 
-**Options**:
-- A) Total time (parent + all subtasks combined)
-- B) Direct parent time only (excluding subtasks)
-- C) Both, separated
+**Timeline**:
+- **Phase 1-3**: Web application with `window.confirm()` / `window.alert()`
+- **Phase 4+**: React Native migration with native modals and push notifications
 
-**Current Thinking**: Show total time primarily, with breakdown on hover/click
+**Implications**:
+- Use simple browser alerts for v1 (acceptable for web)
+- Break reminders, stale session detection use confirm dialogs
+- Timer updates use Page Visibility API (pause when tab hidden)
+- No background notifications needed for web MVP
 
+**Future**: When migrating to React Native:
+- Replace browser alerts → native modal component
+- Add local notifications for break reminders
+- Use background tasks for timer accuracy
+- Implement push notifications for multi-device sync
+
+---
+
+### 4. Time Entry Retention Policy ✅ RESOLVED
+
+**Decision**: Keep all entries by default, add "Clear history" option in settings
+
+**Rationale**:
+- Storage is negligible (1.8 MB/year even with 10 sessions/day)
+- Maximum value for analytics, invoicing, estimation
+- User control via manual clear option
+
+**Implementation**:
+- **Phase 1**: Keep all entries indefinitely
+- **Phase 1**: Add "Clear time history" button in settings (with confirmation)
+- **Phase 2**: Add retention policy options (30/90/365 days)
+- **Phase 3**: Add privacy mode (auto-delete after 7 days)
+
+**No auto-deletion** - user must explicitly choose to delete history
+
+---
+
+### 5. Parent Time Display with Subtasks ✅ RESOLVED
+
+**Decision**: Show total time primarily, with breakdown on hover/click
+
+**Implementation**:
+
+**Primary display** (always visible):
 ```
 Total Focus: 5h 20m
-  ↳ Parent: 1h 15m
-  ↳ Subtasks: 4h 5m
 ```
 
-**Decision Needed**: User preference?
+**On hover/click** (tooltip or expandable):
+```
+Total Focus: 5h 20m
+  ├─ Parent work: 1h 15m
+  ├─ Subtask A: 2h 30m
+  ├─ Subtask B: 1h 5m
+  └─ Subtask C: 30m
+```
+
+**Real-time display**: When actively focusing on a subtask, show elapsed time for that subtask in timer badge
+
+**Calculation**:
+- Total = sum of all TimeEntries where `taskId` matches (includes subtask entries)
+- Parent direct = sum where `taskId` matches AND `subtaskId` is undefined
+- Subtask = sum where `subtaskId` matches
 
 ---
 
