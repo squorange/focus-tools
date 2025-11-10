@@ -10,6 +10,7 @@ import TimerBadge from './TimerBadge';
 import { saveTask, getTask } from '../lib/offline-store';
 import {
   getActiveFocusSession,
+  getFocusSession,
   startFocusSession,
   pauseSession,
   resumeSession,
@@ -239,8 +240,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
     try {
       await pauseSession(focusSession.id);
-      // Reload session to get updated state
-      const updatedSession = await getActiveFocusSession();
+      // Reload session by ID to get updated state (including isActive: false)
+      const updatedSession = await getFocusSession(focusSession.id);
       setFocusSession(updatedSession || null);
     } catch (error) {
       console.error('Failed to pause focus session:', error);
@@ -252,8 +253,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
     try {
       await resumeSession(focusSession.id);
-      // Reload session to get updated state
-      const updatedSession = await getActiveFocusSession();
+      // Reload session by ID to get updated state (including isActive: true)
+      const updatedSession = await getFocusSession(focusSession.id);
       setFocusSession(updatedSession || null);
     } catch (error) {
       console.error('Failed to resume focus session:', error);
