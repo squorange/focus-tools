@@ -680,10 +680,19 @@ export default function AIPanel({
                   {(task.subtasks || []).map((st, index) => {
                     const isEditing = editingSubtaskId === st.id;
                     const isCompleting = completingSubtaskIds.has(st.id);
-                    const activeSubtasks = subtasks;
-                    const activeIndex = activeSubtasks.findIndex(s => s.id === st.id);
+
+                    // Find last priority item to show marker after it
+                    let lastPriorityIndex = -1;
+                    if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds) {
+                      for (let i = task.subtasks!.length - 1; i >= 0; i--) {
+                        if (task.priorityMarkerOriginalIds.includes(task.subtasks![i].id)) {
+                          lastPriorityIndex = i;
+                          break;
+                        }
+                      }
+                    }
                     const showMarkerAfter = task.priorityMarkerEnabled &&
-                      activeIndex === currentMarkerPosition - 2 &&
+                      index === lastPriorityIndex &&
                       currentMarkerPosition > 0;
 
                     return (

@@ -83,23 +83,30 @@ export function calculateNextRadius(existingSubtasks: Subtask[]): number {
 }
 
 /**
- * Recalculate radii for all subtasks based on their array position
- * Maintains their assigned angles but updates radii based on list order
+ * Recalculate radii for all subtasks
+ * Maintains their assigned angles but updates radii
+ * Active (non-completed) subtasks fill inward to rings 1, 2, 3, etc.
  * Accounts for belt position if present
  *
- * IMPORTANT: Subtask positions are determined by array index (list order),
- * not by completion status. Completed subtasks maintain their radii.
+ * IMPORTANT: Active subtasks shift inward as items complete and disappear.
+ * Angles stay fixed (based on original array index), but radii shift inward.
  */
 export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtask[] {
-  return subtasks.map((st, arrayIndex) => {
-    // Completed subtasks maintain their current positions
+  // Build mapping of active subtask positions
+  let activeIndex = 0;
+
+  return subtasks.map((st) => {
+    // Completed subtasks maintain their current positions (invisible in orbital view)
     if (st.completed) return st;
 
-    // Calculate radius based on array position (list order)
-    // This ensures subtask list order and orbital order always match
+    // Calculate radius based on position among active items
+    // This makes remaining items shift inward to fill rings 1, 2, 3, etc.
+    const radius = getSubtaskRadiusWithBelt(activeIndex, beltRing);
+    activeIndex++;
+
     return {
       ...st,
-      assignedOrbitRadius: getSubtaskRadiusWithBelt(arrayIndex, beltRing),
+      assignedOrbitRadius: radius,
     };
   });
 }
@@ -109,11 +116,12 @@ export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtas
  * (Migration helper for existing data)
  * Accounts for belt position if present
  *
- * IMPORTANT: Angles are based on array index (list order), not active count.
- * This ensures subtask list order and orbital order always match.
+ * IMPORTANT: Angles are based on array index (list order) to stay fixed.
+ * Radii are based on active position to fill inward as items complete.
  */
 export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number): Subtask[] {
   const totalSubtasks = subtasks.length;
+  let activeIndex = 0;
 
   return subtasks.map((st, arrayIndex) => {
     // If already has assigned values, keep them
@@ -121,11 +129,21 @@ export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number):
       return st;
     }
 
-    // Calculate initial values based on array index (list order)
+    // Calculate angle based on array index (stays fixed)
+    // Calculate radius based on active position (shifts inward)
+    const angle = getSubtaskAngle(arrayIndex, totalSubtasks);
+    const radius = st.completed
+      ? st.assignedOrbitRadius // Keep existing radius for completed
+      : getSubtaskRadiusWithBelt(activeIndex, beltRing);
+
+    if (!st.completed) {
+      activeIndex++;
+    }
+
     return {
       ...st,
-      assignedStartingAngle: getSubtaskAngle(arrayIndex, totalSubtasks),
-      assignedOrbitRadius: getSubtaskRadiusWithBelt(arrayIndex, beltRing),
+      assignedStartingAngle: angle,
+      assignedOrbitRadius: radius,
     };
   });
 }
@@ -221,7 +239,7 @@ export function getSubtaskRadiusWithBelt(
  * Returns 0 if all targets are complete (celebration mode)
  *
  * Belt maintains its position in the stacking order (relative to subtasks),
- * but shifts inward radially as priority items complete.
+ * but shifts inward radially as priority items complete and disappear from view.
  */
 export function getCurrentMarkerRing(
   subtasks: Subtask[],
@@ -232,20 +250,38 @@ export function getCurrentMarkerRing(
     return 0;
   }
 
-  // Find the last remaining priority subtask in the array
+  // Check if all original priority items are complete (celebration mode)
+  const allPriorityComplete = originalTargetIds.every(id => {
+    const subtask = subtasks.find(st => st.id === id);
+    return !subtask || subtask.completed; // Complete or deleted
+  });
+
+  if (allPriorityComplete) {
+    return 0; // Celebration mode
+  }
+
+  // Find the last priority item in array order (regardless of completion state)
   let lastPriorityIndex = -1;
   for (let i = subtasks.length - 1; i >= 0; i--) {
-    if (originalTargetIds.includes(subtasks[i].id) && !subtasks[i].completed) {
+    if (originalTargetIds.includes(subtasks[i].id)) {
       lastPriorityIndex = i;
       break;
     }
   }
 
   if (lastPriorityIndex === -1) {
-    return 0; // All priority items complete - celebration mode
+    return 0; // All priority items deleted - belt disappears
   }
 
-  // Belt position is one ring after the last priority item
-  // This maintains stacking order while shifting inward as items complete
-  return lastPriorityIndex + 2; // +1 for 1-based ring, +1 for "after"
+  // Count active (non-completed) subtasks from index 0 up to and including the last priority item
+  let activeCount = 0;
+  for (let i = 0; i <= lastPriorityIndex; i++) {
+    if (!subtasks[i].completed) {
+      activeCount++;
+    }
+  }
+
+  // Belt appears on the ring after the active items
+  // This makes belt shift inward as items complete while maintaining stacking order
+  return activeCount + 1;
 }
