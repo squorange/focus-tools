@@ -163,12 +163,16 @@ export default function AIPanel({
     const subtaskToToggle = task.subtasks.find(st => st.id === subtaskId);
     if (!subtaskToToggle) return;
 
-    // Handle un-completing (simpler case)
+    // Handle un-completing
     if (subtaskToToggle.completed) {
       const now = new Date();
-      const updatedSubtasks = task.subtasks.map(st =>
+      let updatedSubtasks = task.subtasks.map(st =>
         st.id === subtaskId ? { ...st, completed: false } : st
       );
+
+      // Recalculate radii to properly position the newly uncompleted subtask
+      updatedSubtasks = recalculateRadii(updatedSubtasks, task.priorityMarkerRing);
+
       const updatedTask = {
         ...task,
         subtasks: updatedSubtasks,
@@ -474,11 +478,15 @@ export default function AIPanel({
       // Reload time stats
       loadTimeStats();
       } else {
-        // Un-completing subtask - just toggle without session handling
+        // Un-completing subtask - recalculate positions
         const now = new Date();
-        const updatedSubtasks = task.subtasks?.map(st =>
+        let updatedSubtasks = task.subtasks?.map(st =>
           st.id === subtask.id ? { ...st, completed: false } : st
         );
+
+        // Recalculate radii to properly position the newly uncompleted subtask
+        updatedSubtasks = recalculateRadii(updatedSubtasks || [], task.priorityMarkerRing);
+
         const updatedTask: Task = {
           ...task,
           subtasks: updatedSubtasks,
