@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Orbital Zen Database</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #b91c1c;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #2a2a2a;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>Clear Orbital Zen Database</h1>
+    <p>If the app is stuck loading, click the button below to clear the IndexedDB database and start fresh.</p>
+    <button onclick="clearDatabase()">Clear Database</button>
+    <div id="status"></div>
+
+    <script>
+        async function clearDatabase() {
+            const status = document.getElementById('status');
+            status.innerHTML = 'Clearing database...';
+
+            try {
+                // Close any open connections first
+                const dbName = 'orbital-zen-db';
+
+                // Delete the database
+                const request = indexedDB.deleteDatabase(dbName);
+
+                request.onsuccess = () => {
+                    status.innerHTML = '<span class="success">✓ Database cleared successfully!</span><br><br>You can now close this tab and refresh the app.';
+                };
+
+                request.onerror = () => {
+                    status.innerHTML = '<span class="error">✗ Error clearing database. Please close all app tabs and try again.</span>';
+                };
+
+                request.onblocked = () => {
+                    status.innerHTML = '<span class="error">✗ Database is blocked. Please close all app tabs first, then try again.</span>';
+                };
+            } catch (error) {
+                status.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

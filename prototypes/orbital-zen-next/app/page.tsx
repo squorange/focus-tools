@@ -8,33 +8,55 @@ import { getTasks, initializeSampleData } from './lib/offline-store';
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTasks() {
+      console.log('[Home] Starting to load tasks...');
+
+      // Set a timeout to detect hanging database operations
+      const timeoutId = setTimeout(() => {
+        console.error('[Home] Task loading timeout - database may be stuck');
+        setError('Database connection timeout. Please clear your browser data and refresh.');
+        setIsLoading(false);
+      }, 10000); // 10 second timeout
+
       try {
         // Initialize sample data if needed
+        console.log('[Home] Initializing sample data...');
         await initializeSampleData();
+        console.log('[Home] Sample data initialized');
 
         // Load tasks from IndexedDB
+        console.log('[Home] Loading tasks from IndexedDB...');
         const storedTasks = await getTasks();
+        console.log('[Home] Loaded', storedTasks.length, 'tasks');
+
+        clearTimeout(timeoutId);
 
         if (storedTasks.length > 0) {
           setTasks(storedTasks);
         } else {
           // Fallback to API if no local data
+          console.log('[Home] No stored tasks, trying API...');
           const response = await fetch('/api/tasks');
           const data = await response.json();
           setTasks(data.tasks);
         }
       } catch (error) {
-        console.error('Failed to load tasks:', error);
+        clearTimeout(timeoutId);
+        console.error('[Home] Failed to load tasks:', error);
+        setError(`Error loading tasks: ${error instanceof Error ? error.message : String(error)}`);
+
         // Fallback to API
         try {
+          console.log('[Home] Trying API fallback...');
           const response = await fetch('/api/tasks');
           const data = await response.json();
           setTasks(data.tasks);
+          setError(null); // Clear error if API works
         } catch (apiError) {
-          console.error('Failed to load from API:', apiError);
+          console.error('[Home] Failed to load from API:', apiError);
         }
       } finally {
         setIsLoading(false);
@@ -47,9 +69,47 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading your tasks...</p>
+          {error && (
+            <div className="mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-300 text-sm">{error}</p>
+              <p className="text-gray-400 text-xs mt-2">
+                Open{' '}
+                <a href="/clear-db.html" className="text-purple-400 hover:underline" target="_blank">
+                  this tool
+                </a>{' '}
+                to clear the database, or check browser DevTools console for details.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && tasks.length === 0) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <p className="text-red-400 mb-4">Failed to load tasks</p>
+          <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+            <p className="text-red-300 text-sm">{error}</p>
+            <p className="text-gray-400 text-xs mt-2">
+              Open{' '}
+              <a href="/clear-db.html" className="text-purple-400 hover:underline" target="_blank">
+                this tool
+              </a>{' '}
+              to clear the database.
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
