@@ -88,8 +88,8 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
   const [hoveredSubtaskId, setHoveredSubtaskId] = useState<string | null>(null);
   const [showSubtasks, setShowSubtasks] = useState(false);
 
-  // Filter out completed subtasks (but keep completing ones for animation)
-  const subtasks = (parentTask.subtasks || []).filter(st => !st.completed || completingSubtaskIds.has(st.id));
+  // Show all subtasks (completed ones will be styled differently)
+  const subtasks = parentTask.subtasks || [];
   const priority = priorityConfig[parentTask.priority];
 
   // Check if parent task is in focus (show even when paused)
@@ -285,6 +285,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
         const isSelected = selectedSubtaskId === subtask.id;
         const isDimmed = (hoveredSubtaskId != null && !isHovered) || (selectedSubtaskId != null && !isSelected);
         const isCompleting = completingSubtaskIds.has(subtask.id);
+        const isCompleted = subtask.completed;
 
         // Check if this subtask is in focus (show even when paused)
         const isSubtaskInFocus = focusSession?.taskId === parentTask.id && focusSession?.subtaskId === subtask.id;
@@ -295,7 +296,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
             className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-500 ease-in-out"
             style={{
               zIndex: 10,
-              opacity: showSubtasks ? (isCompleting ? 0 : isDimmed ? 0.3 : 1) : 0,
+              opacity: showSubtasks ? (isCompleting ? 0 : isCompleted ? 0.4 : isDimmed ? 0.3 : 1) : 0,
               transform: isCompleting ? 'scale(0.5)' : 'scale(1)',
             }}
           >
@@ -370,7 +371,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                     }}
                   >
                     {/* Title */}
-                    <div className={`text-xs text-center px-2 leading-tight transition-colors duration-300 ${(isSelected || isHovered) ? 'text-gray-100' : 'text-gray-300/85'}`}>
+                    <div className={`text-xs text-center px-2 leading-tight transition-colors duration-300 ${(isSelected || isHovered) ? 'text-gray-100' : 'text-gray-300/85'} ${isCompleted ? 'line-through opacity-60' : ''}`}>
                       {subtask.title}
                     </div>
                   </div>

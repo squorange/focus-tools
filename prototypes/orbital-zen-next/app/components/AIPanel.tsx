@@ -292,11 +292,15 @@ export default function AIPanel({
   };
 
   const handleCompleteTask = async () => {
-    const isCompletingSubtask = !!subtask;
-    const isCompletingTask = !subtask;
+    const isSubtask = !!subtask;
+    const isTask = !subtask;
 
-    // Handle subtask completion with auto-advance
-    if (isCompletingSubtask && !subtask.completed) {
+    // Handle subtask completion/un-completion
+    if (isSubtask) {
+      const willBeCompleted = !subtask.completed;
+
+      // Only do auto-advance logic if completing (not un-completing)
+      if (willBeCompleted) {
       // Find subtasks inside the priority belt (before belt ring)
       const beltRing = task.priorityMarkerRing || 0;
       const subtasksInBelt = (task.subtasks || []).slice(0, Math.max(0, beltRing - 1));
@@ -391,11 +395,25 @@ export default function AIPanel({
 
       // Reload time stats
       loadTimeStats();
+      } else {
+        // Un-completing subtask - just toggle without session handling
+        const updatedSubtasks = task.subtasks?.map(st =>
+          st.id === subtask.id ? { ...st, completed: false } : st
+        );
+        const updatedTask: Task = {
+          ...task,
+          subtasks: updatedSubtasks,
+          updatedAt: new Date(),
+        };
+        await saveTask(updatedTask);
+        onTaskUpdate?.(updatedTask);
+        loadTimeStats();
+      }
       return;
     }
 
     // Handle parent task completion
-    if (isCompletingTask && !task.completed && hasFocusSession && focusSession) {
+    if (isTask && !task.completed && hasFocusSession && focusSession) {
       const sessionNotes = window.prompt('Task completed!\n\nAdd notes for this session (optional):');
 
       if (sessionNotes === null) {
@@ -972,7 +990,10 @@ export default function AIPanel({
           onClick={handleCompleteTask}
           className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm"
         >
-          {task.completed ? 'Mark Incomplete' : 'Complete Task'}
+          {subtask
+            ? (subtask.completed ? 'Mark Subtask Incomplete' : 'Complete Subtask')
+            : (task.completed ? 'Mark Task Incomplete' : 'Complete Task')
+          }
         </button>
       </div>
 
