@@ -88,8 +88,8 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
   const [hoveredSubtaskId, setHoveredSubtaskId] = useState<string | null>(null);
   const [showSubtasks, setShowSubtasks] = useState(false);
 
-  // Show all subtasks (completed ones will be styled differently)
-  const subtasks = parentTask.subtasks || [];
+  // Filter out completed subtasks from orbital view (but keep completing ones for animation)
+  const subtasks = (parentTask.subtasks || []).filter(st => !st.completed || completingSubtaskIds.has(st.id));
   const priority = priorityConfig[parentTask.priority];
 
   // Check if parent task is in focus (show even when paused)

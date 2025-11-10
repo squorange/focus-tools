@@ -39,6 +39,7 @@ export interface Subtask {
   title: string;
   completed: boolean;
   parentTaskId: string;
+  notes?: string;  // Subtask-specific scratchpad
   dueDate?: Date;
   totalFocusTime?: number; // Total seconds spent in focus
   focusSessionCount?: number; // Number of focus sessions

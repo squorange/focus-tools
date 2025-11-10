@@ -161,8 +161,24 @@ export default function AIPanel({
     if (!task.subtasks) return;
 
     const subtaskToToggle = task.subtasks.find(st => st.id === subtaskId);
-    if (!subtaskToToggle || subtaskToToggle.completed) return;
+    if (!subtaskToToggle) return;
 
+    // Handle un-completing (simpler case)
+    if (subtaskToToggle.completed) {
+      const updatedSubtasks = task.subtasks.map(st =>
+        st.id === subtaskId ? { ...st, completed: false } : st
+      );
+      const updatedTask = {
+        ...task,
+        subtasks: updatedSubtasks,
+        updatedAt: new Date()
+      };
+      await saveTask(updatedTask);
+      onTaskUpdate?.(updatedTask);
+      return;
+    }
+
+    // Handle completing (with animation and belt logic)
     setCompletingSubtaskIds(prev => new Set(prev).add(subtaskId));
 
     setTimeout(async () => {
@@ -557,7 +573,7 @@ export default function AIPanel({
               {/* Subtask list */}
               {hasSubtasks && (
                 <div className="space-y-2">
-                  {subtasks.map((st, index) => {
+                  {(task.subtasks || []).map((st, index) => {
                     const isEditing = editingSubtaskId === st.id;
                     const isCompleting = completingSubtaskIds.has(st.id);
                     const activeSubtasks = subtasks;
@@ -571,7 +587,7 @@ export default function AIPanel({
                         <div
                           className="flex items-center gap-2 group"
                           style={{
-                            opacity: isCompleting ? 0 : 1,
+                            opacity: isCompleting ? 0 : st.completed ? 0.6 : 1,
                             transform: isCompleting ? 'scale(0.95)' : 'scale(1)',
                             transition: 'all 500ms',
                           }}
@@ -613,7 +629,7 @@ export default function AIPanel({
                             <>
                               <button
                                 onClick={() => onSubtaskChange?.(st)}
-                                className="flex-1 text-left text-sm text-gray-700 hover:text-gray-900"
+                                className={`flex-1 text-left text-sm ${st.completed ? 'line-through text-gray-400' : 'text-gray-700 hover:text-gray-900'}`}
                               >
                                 {st.title}
                               </button>

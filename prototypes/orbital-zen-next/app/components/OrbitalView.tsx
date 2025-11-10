@@ -110,10 +110,26 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
         if (latestTask) {
           setZoomedTask(latestTask);
           setSelectedTask(latestTask); // Set as selected to preserve hover appearance
+
+          // Check if there's an active focus session on a subtask for this task
+          if (focusSession && focusSession.taskId === task.id && focusSession.subtaskId) {
+            const activeSubtask = latestTask.subtasks?.find(st => st.id === focusSession.subtaskId);
+            if (activeSubtask) {
+              setSelectedSubtask(activeSubtask);
+            }
+          }
         } else {
           // Fallback to the task from props if not found
           setZoomedTask(task);
           setSelectedTask(task);
+
+          // Check for active focus session on subtask
+          if (focusSession && focusSession.taskId === task.id && focusSession.subtaskId) {
+            const activeSubtask = task.subtasks?.find(st => st.id === focusSession.subtaskId);
+            if (activeSubtask) {
+              setSelectedSubtask(activeSubtask);
+            }
+          }
         }
       });
 
