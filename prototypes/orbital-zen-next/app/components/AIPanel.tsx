@@ -23,6 +23,7 @@ interface AIPanelProps {
   onPauseFocus?: () => void;
   onResumeFocus?: () => void;
   onStopFocus?: () => void;
+  onClearFocusSession?: () => void;
   onTaskUpdate?: (task: Task) => void;
   onSubtaskChange?: (subtask: Subtask | null) => void;
   completingSubtaskIds: Set<string>;
@@ -38,6 +39,7 @@ export default function AIPanel({
   onPauseFocus,
   onResumeFocus,
   onStopFocus,
+  onClearFocusSession,
   onTaskUpdate,
   onSubtaskChange,
   completingSubtaskIds,
@@ -140,12 +142,12 @@ export default function AIPanel({
     }
   };
 
-  // Load activity logs when task or subtask changes, or when activity section is expanded
+  // Load activity logs when task, subtask, or focus session changes, or when activity section is expanded
   useEffect(() => {
     if (showActivity) {
       loadActivityLogs();
     }
-  }, [task.id, subtask?.id, showActivity]);
+  }, [task.id, subtask?.id, showActivity, focusSession?.id]);
 
   // Helper to format activity log entry
   const formatActivityEntry = (log: ActivityLog) => {
@@ -562,6 +564,8 @@ export default function AIPanel({
             true,
             sessionNotes || undefined
           );
+          // Clear focus session state after ending it
+          onClearFocusSession?.();
         } catch (error) {
           console.error('Failed to end session:', error);
         }
@@ -635,11 +639,6 @@ export default function AIPanel({
               onTaskUpdate?.(clearedTask);
             }
           }, 3000);
-
-          // End session without starting new one
-          if (onStopFocus) {
-            onStopFocus();
-          }
         } else if (nextSubtask) {
           // Auto-start focus on next subtask
           onSubtaskChange?.(nextSubtask);
@@ -647,14 +646,15 @@ export default function AIPanel({
             onStartFocus();
           }
         } else {
-          // No more subtasks, just stop focus
-          if (onStopFocus) {
-            onStopFocus();
-          }
+          // No celebration, no next subtask - return to parent view
+          onSubtaskChange?.(null);
         }
 
-        // Reload time stats
+        // Reload time stats and activity logs
         loadTimeStats();
+        if (showActivity) {
+          loadActivityLogs();
+        }
 
         // Remove from completing set after animation
         setTimeout(() => {

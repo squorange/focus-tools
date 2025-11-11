@@ -317,6 +317,12 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     }
   };
 
+  // Just clear focus session state without ending it
+  // Used when session has already been ended elsewhere (e.g., during task completion)
+  const handleClearFocusSession = () => {
+    setFocusSession(null);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -561,6 +567,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
               onPauseFocus={handlePauseFocus}
               onResumeFocus={handleResumeFocus}
               onStopFocus={handleStopFocus}
+              onClearFocusSession={handleClearFocusSession}
               onTaskUpdate={(updatedTask) => setZoomedTask(updatedTask)}
               onSubtaskChange={handleSubtaskChange}
               completingSubtaskIds={completingSubtaskIds}
