@@ -219,8 +219,8 @@ export default function AIPanel({
         newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
         if (newBeltRing === 0) {
           shouldCelebrate = true;
-          // Move belt to ring 1 for celebration animation (innermost ring around parent)
-          newBeltRing = 1;
+          // Ring 0 = celebration mode at radius 70 (around parent task)
+          // Belt stays at ring 0 during celebration
         }
       }
 
@@ -412,8 +412,8 @@ export default function AIPanel({
           newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
           if (newBeltRing === 0) {
             shouldCelebrate = true;
-            // Move belt to ring 1 for celebration animation (innermost ring around parent)
-            newBeltRing = 1;
+            // Ring 0 = celebration mode at radius 70 (around parent task)
+            // Belt stays at ring 0 during celebration
           }
         }
 
