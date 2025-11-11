@@ -1,5 +1,99 @@
 import { Subtask } from './types';
 
+/**
+ * ORBITAL POSITIONING SYSTEM - CRITICAL INVARIANTS
+ *
+ * This file manages the positioning of subtasks in orbital rings around their parent task.
+ * To prevent regressions, the following invariants MUST be maintained:
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * INVARIANT #1: ANGULAR POSITION STABILITY
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Subtask angles (assignedStartingAngle) MUST be calculated based on ORIGINAL array index,
+ * NOT filtered/active array index. This ensures angles stay fixed when items complete.
+ *
+ * ✅ CORRECT:   getSubtaskAngle(originalArrayIndex, task.subtasks.length)
+ * ❌ INCORRECT: getSubtaskAngle(activeArrayIndex, activeSubtasks.length)
+ *
+ * Why: When a subtask completes and fades away, remaining subtasks should maintain their
+ * angular positions while smoothly transitioning inward radially. If angles are based on
+ * filtered index, they will "jump" to new positions after the completion animation.
+ *
+ * Test: Complete a subtask and verify remaining subtasks shift inward radially but stay
+ * at the same angular positions (no rotation during transition).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * INVARIANT #2: RADIAL POSITION DYNAMICS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Subtask radii (assignedOrbitRadius) SHOULD be calculated based on ACTIVE position,
+ * allowing remaining items to shift inward as items complete.
+ *
+ * ✅ CORRECT: Calculate radius based on active index (0, 1, 2... for non-completed items)
+ *
+ * Why: When items complete, we want remaining items to smoothly move to inner rings,
+ * creating a satisfying "collapsing inward" effect.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * INVARIANT #3: PERSISTENCE REQUIREMENT
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * ALL subtasks MUST have assignedStartingAngle and assignedOrbitRadius persisted to
+ * the database immediately after creation or initialization.
+ *
+ * When to persist:
+ * - After calling initializeSubtaskOrbits() → ALWAYS call saveTask()
+ * - After creating new subtasks → Initialize orbital positions + save
+ * - After loading from API → Initialize orbital positions + save
+ * - After duplicating tasks → Re-initialize orbital positions + save
+ *
+ * Why: If these values are not persisted, they will be recalculated on next render,
+ * potentially using incorrect indices (see Invariant #1).
+ *
+ * Checklist when modifying task/subtask creation code:
+ * [ ] Does new code call initializeSubtaskOrbits()?
+ * [ ] Does it call saveTask() after initialization?
+ * [ ] Have you tested subtask completion to verify no angular jumps?
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * INVARIANT #4: BELT POSITION TRACKING
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * The priority belt maintains its position in STACKING ORDER (relative to which subtasks
+ * are inside/outside) while shifting inward RADIALLY as items complete.
+ *
+ * Belt position is determined by:
+ * 1. Find last priority item in original array order
+ * 2. Count active items from start up to that position
+ * 3. Belt appears on the ring after those active items
+ *
+ * This ensures belt maintains logical grouping while responding to completions.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * REGRESSION HISTORY
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * This bug has appeared multiple times. Common causes:
+ *
+ * 1. New code paths that load/create tasks without persisting orbital positions
+ * 2. Using filtered array index instead of original array index for angles
+ * 3. Sample data missing orbital position initialization
+ * 4. Database migrations not initializing orbital positions for existing data
+ *
+ * Last occurrences:
+ * - 2025-11-10: Fixed sample data initialization + persistence in page.tsx
+ * - [Add date here when this recurs to track pattern]
+ *
+ * If you're reading this because the bug returned:
+ * 1. Check if assignedStartingAngle exists in database (console.log the subtask)
+ * 2. Check if new code path is missing initializeSubtaskOrbits() + saveTask()
+ * 3. Check if angle calculation uses filtered vs original index
+ * 4. Add this occurrence to the history above with date and root cause
+ *
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 // Orbit radii for subtasks (matching SolarSystemView.tsx)
 export const SUBTASK_ORBIT_RADII = [115, 155, 195, 235, 275];
 
@@ -90,6 +184,16 @@ export function calculateNextRadius(existingSubtasks: Subtask[]): number {
  *
  * IMPORTANT: Active subtasks shift inward as items complete and disappear.
  * Angles stay fixed (based on original array index), but radii shift inward.
+ *
+ * CRITICAL: This function MUST preserve assignedStartingAngle values.
+ * Only radii should be recalculated. Angles must remain unchanged to prevent jumps.
+ *
+ * CHECKLIST when modifying this function:
+ * [ ] Preserve assignedStartingAngle (do NOT recalculate)
+ * [ ] Only update assignedOrbitRadius based on active position
+ * [ ] Account for belt position when calculating radii
+ * [ ] Test: Complete subtask → radii shift inward, angles stay same
+ * [ ] See INVARIANT #1 and #2 in file header for details
  */
 export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtask[] {
   // Build mapping of active subtask positions
@@ -107,6 +211,8 @@ export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtas
     return {
       ...st,
       assignedOrbitRadius: radius,
+      // Explicitly preserve angle - critical to prevent angular jumps
+      assignedStartingAngle: st.assignedStartingAngle,
     };
   });
 }
@@ -118,6 +224,21 @@ export function recalculateRadii(subtasks: Subtask[], beltRing?: number): Subtas
  *
  * IMPORTANT: Angles are based on array index (list order) to stay fixed.
  * Radii are based on active position to fill inward as items complete.
+ *
+ * CRITICAL: Caller MUST call saveTask() after this function to persist
+ * the initialized orbital positions to the database. If not saved, positions
+ * will be lost on next render and may cause angular jumps.
+ *
+ * CHECKLIST for callers of this function:
+ * [ ] Call saveTask() immediately after initializeSubtaskOrbits()
+ * [ ] Verify all subtasks in result have assignedStartingAngle defined
+ * [ ] Verify all subtasks in result have assignedOrbitRadius defined
+ * [ ] Test: Complete a subtask and verify no angular jumps
+ * [ ] See INVARIANT #3 in file header for persistence requirements
+ *
+ * @example
+ * const initialized = initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing);
+ * await saveTask({ ...task, subtasks: initialized }); // ← MUST SAVE!
  */
 export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number): Subtask[] {
   const totalSubtasks = subtasks.length;
@@ -231,6 +352,94 @@ export function getSubtaskRadiusWithBelt(
   // Subtasks at or after belt position: shifted by +1 ring AND add double buffer
   // This creates equal 20px gaps on both sides of the belt
   return MIN_RADIUS + (subtaskIndex + 1) * RADIUS_SPACING + (BELT_SPACING_BUFFER * 2);
+}
+
+/**
+ * Runtime validation for orbital positioning system
+ * Checks if all invariants are maintained
+ * Only runs in development mode
+ */
+export interface ValidationResult {
+  errors: string[];
+  warnings: string[];
+  isValid: boolean;
+}
+
+export function validateOrbitalInvariants(
+  subtasks: Subtask[],
+  taskId: string
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!subtasks || subtasks.length === 0) {
+    return { errors, warnings, isValid: true };
+  }
+
+  subtasks.forEach((st, index) => {
+    // INVARIANT #3: Persistence requirement
+    // All subtasks must have orbital positions assigned
+    if (st.assignedStartingAngle === undefined) {
+      errors.push(
+        `[${taskId}] Subtask "${st.title}" (${st.id}) missing assignedStartingAngle. ` +
+        `This will cause angular jumps on completion. Call initializeSubtaskOrbits() and saveTask().`
+      );
+    }
+
+    if (st.assignedOrbitRadius === undefined) {
+      errors.push(
+        `[${taskId}] Subtask "${st.title}" (${st.id}) missing assignedOrbitRadius. ` +
+        `This will cause layout issues. Call initializeSubtaskOrbits() and saveTask().`
+      );
+    }
+
+    // INVARIANT #1: Angular position stability
+    // Check if angle looks reasonable (warning only, as intentional reordering is valid)
+    if (st.assignedStartingAngle !== undefined) {
+      const expectedAngle = getSubtaskAngle(index, subtasks.length);
+      const angleDiff = Math.abs(st.assignedStartingAngle - expectedAngle);
+
+      // Allow some tolerance for custom positioning
+      if (angleDiff > 5 && angleDiff < 355) {
+        warnings.push(
+          `[${taskId}] Subtask "${st.title}" angle ${st.assignedStartingAngle.toFixed(1)}° ` +
+          `differs from expected ${expectedAngle.toFixed(1)}° (index ${index}). ` +
+          `This may be intentional (reordered) or indicate calculation from wrong index.`
+        );
+      }
+    }
+  });
+
+  return {
+    errors,
+    warnings,
+    isValid: errors.length === 0,
+  };
+}
+
+/**
+ * Log validation results to console (development only)
+ */
+export function logValidationResults(result: ValidationResult, taskTitle?: string): void {
+  if (typeof window === 'undefined') return;
+  if (process.env.NODE_ENV !== 'development') return;
+
+  const prefix = taskTitle ? `[Orbital Validation: ${taskTitle}]` : '[Orbital Validation]';
+
+  if (result.errors.length > 0) {
+    console.error(`${prefix} ERRORS:`, result.errors);
+    console.error(
+      `${prefix} See orbit-utils.ts header for invariants and KNOWN_ISSUES.md for prevention strategies.`
+    );
+  }
+
+  if (result.warnings.length > 0) {
+    console.warn(`${prefix} Warnings:`, result.warnings);
+  }
+
+  if (result.isValid && result.warnings.length === 0) {
+    // Silent success - only log errors and warnings
+  }
 }
 
 /**

@@ -185,10 +185,10 @@ export async function initializeSampleData(): Promise<void> {
       updatedAt: new Date(),
       completed: false,
       subtasks: [
-        { id: '1-1', title: 'Find dentist number', completed: false, parentTaskId: '1' },
-        { id: '1-2', title: 'Check insurance', completed: false, parentTaskId: '1' },
-        { id: '1-3', title: 'Schedule time off', completed: false, parentTaskId: '1' },
-        { id: '1-4', title: 'Prepare questions', completed: false, parentTaskId: '1' },
+        { id: '1-1', title: 'Find dentist number', completed: false, parentTaskId: '1', assignedStartingAngle: -90, assignedOrbitRadius: 115 },
+        { id: '1-2', title: 'Check insurance', completed: false, parentTaskId: '1', assignedStartingAngle: 0, assignedOrbitRadius: 155 },
+        { id: '1-3', title: 'Schedule time off', completed: false, parentTaskId: '1', assignedStartingAngle: 90, assignedOrbitRadius: 195 },
+        { id: '1-4', title: 'Prepare questions', completed: false, parentTaskId: '1', assignedStartingAngle: 180, assignedOrbitRadius: 235 },
       ],
     },
     {
@@ -201,10 +201,10 @@ export async function initializeSampleData(): Promise<void> {
       updatedAt: new Date(),
       completed: false,
       subtasks: [
-        { id: '2-1', title: 'Download reports', completed: false, parentTaskId: '2' },
-        { id: '2-2', title: 'Analyze variances', completed: false, parentTaskId: '2' },
-        { id: '2-3', title: 'Draft summary', completed: false, parentTaskId: '2' },
-        { id: '2-4', title: 'Schedule review meeting', completed: false, parentTaskId: '2' },
+        { id: '2-1', title: 'Download reports', completed: false, parentTaskId: '2', assignedStartingAngle: -90, assignedOrbitRadius: 115 },
+        { id: '2-2', title: 'Analyze variances', completed: false, parentTaskId: '2', assignedStartingAngle: 0, assignedOrbitRadius: 155 },
+        { id: '2-3', title: 'Draft summary', completed: false, parentTaskId: '2', assignedStartingAngle: 90, assignedOrbitRadius: 195 },
+        { id: '2-4', title: 'Schedule review meeting', completed: false, parentTaskId: '2', assignedStartingAngle: 180, assignedOrbitRadius: 235 },
       ],
     },
     {
@@ -217,9 +217,9 @@ export async function initializeSampleData(): Promise<void> {
       updatedAt: new Date(),
       completed: false,
       subtasks: [
-        { id: '3-1', title: 'Brainstorm gift ideas', completed: false, parentTaskId: '3' },
-        { id: '3-2', title: 'Check budget', completed: false, parentTaskId: '3' },
-        { id: '3-3', title: 'Order or purchase', completed: false, parentTaskId: '3' },
+        { id: '3-1', title: 'Brainstorm gift ideas', completed: false, parentTaskId: '3', assignedStartingAngle: -90, assignedOrbitRadius: 115 },
+        { id: '3-2', title: 'Check budget', completed: false, parentTaskId: '3', assignedStartingAngle: 30, assignedOrbitRadius: 155 },
+        { id: '3-3', title: 'Order or purchase', completed: false, parentTaskId: '3', assignedStartingAngle: 150, assignedOrbitRadius: 195 },
       ],
     },
     {
@@ -232,9 +232,9 @@ export async function initializeSampleData(): Promise<void> {
       updatedAt: new Date(),
       completed: false,
       subtasks: [
-        { id: '4-1', title: 'Buy replacement parts', completed: false, parentTaskId: '4' },
-        { id: '4-2', title: 'Watch repair tutorial', completed: false, parentTaskId: '4' },
-        { id: '4-3', title: 'Fix the faucet', completed: false, parentTaskId: '4' },
+        { id: '4-1', title: 'Buy replacement parts', completed: false, parentTaskId: '4', assignedStartingAngle: -90, assignedOrbitRadius: 115 },
+        { id: '4-2', title: 'Watch repair tutorial', completed: false, parentTaskId: '4', assignedStartingAngle: 30, assignedOrbitRadius: 155 },
+        { id: '4-3', title: 'Fix the faucet', completed: false, parentTaskId: '4', assignedStartingAngle: 150, assignedOrbitRadius: 195 },
       ],
     },
     {
@@ -247,8 +247,8 @@ export async function initializeSampleData(): Promise<void> {
       updatedAt: new Date(),
       completed: false,
       subtasks: [
-        { id: '5-1', title: 'Find service center', completed: false, parentTaskId: '5' },
-        { id: '5-2', title: 'Book appointment', completed: false, parentTaskId: '5' },
+        { id: '5-1', title: 'Find service center', completed: false, parentTaskId: '5', assignedStartingAngle: -90, assignedOrbitRadius: 115 },
+        { id: '5-2', title: 'Book appointment', completed: false, parentTaskId: '5', assignedStartingAngle: 90, assignedOrbitRadius: 155 },
       ],
     },
   ];

@@ -7,6 +7,7 @@ import AIPanel from './AIPanel';
 import SolarSystemView from './SolarSystemView';
 import SubtaskMoons from './SubtaskMoons';
 import TimerBadge from './TimerBadge';
+import OrbitalRing from './OrbitalRing';
 import { saveTask, getTask } from '../lib/offline-store';
 import {
   getActiveFocusSession,
@@ -111,7 +112,11 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
             const activeSubtask = latestTask.subtasks?.find(st => st.id === focusSession.subtaskId);
             if (activeSubtask) {
               setSelectedSubtask(activeSubtask);
+            } else {
+              setSelectedSubtask(null); // Clear if focus session subtask not found
             }
+          } else {
+            setSelectedSubtask(null); // Clear subtask when switching tasks
           }
         } else {
           // Fallback to the task from props if not found
@@ -123,7 +128,11 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
             const activeSubtask = task.subtasks?.find(st => st.id === focusSession.subtaskId);
             if (activeSubtask) {
               setSelectedSubtask(activeSubtask);
+            } else {
+              setSelectedSubtask(null); // Clear if focus session subtask not found
             }
+          } else {
+            setSelectedSubtask(null); // Clear subtask when switching tasks
           }
         }
       });
@@ -160,6 +169,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
         // Clear selection after transition completes
         setTimeout(() => {
           setSelectedTask(null);
+          setSelectedSubtask(null); // Clear subtask selection when leaving task view
         }, 150);
       }, 800);
 
@@ -343,25 +353,11 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         {/* Desktop rings */}
         {[100, 150, 200, 250].map((radius) => (
-          <div
-            key={radius}
-            className="absolute border border-gray-700/20 rounded-full hidden md:block"
-            style={{
-              width: `${radius * 2}px`,
-              height: `${radius * 2}px`,
-            }}
-          />
+          <OrbitalRing key={radius} radius={radius} className="hidden md:block" />
         ))}
         {/* Mobile rings */}
         {[70, 105, 140, 175].map((radius) => (
-          <div
-            key={`mobile-${radius}`}
-            className="absolute border border-gray-700/20 rounded-full md:hidden"
-            style={{
-              width: `${radius * 2}px`,
-              height: `${radius * 2}px`,
-            }}
-          />
+          <OrbitalRing key={`mobile-${radius}`} radius={radius} className="md:hidden" />
         ))}
       </div>
 

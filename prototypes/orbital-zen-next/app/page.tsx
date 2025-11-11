@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import OrbitalView from './components/OrbitalView';
 import { Task } from './lib/types';
-import { getTasks, initializeSampleData } from './lib/offline-store';
-import { initializeSubtaskOrbits } from './lib/orbit-utils';
+import { getTasks, initializeSampleData, saveTask } from './lib/offline-store';
+import { initializeSubtaskOrbits, validateOrbitalInvariants, logValidationResults } from './lib/orbit-utils';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -43,7 +43,23 @@ export default function Home() {
               ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
               : undefined,
           }));
+
+          // Save initialized tasks back to database to persist angles/radii
+          for (const task of tasksWithOrbits) {
+            await saveTask(task);
+          }
+
           setTasks(tasksWithOrbits);
+
+          // Validate orbital positions in development mode
+          if (process.env.NODE_ENV === 'development') {
+            tasksWithOrbits.forEach(task => {
+              if (task.subtasks && task.subtasks.length > 0) {
+                const result = validateOrbitalInvariants(task.subtasks, task.id);
+                logValidationResults(result, task.title);
+              }
+            });
+          }
         } else {
           // Fallback to API if no local data
           console.log('[Home] No stored tasks, trying API...');
@@ -55,7 +71,23 @@ export default function Home() {
               ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
               : undefined,
           }));
+
+          // Save initialized tasks back to database to persist angles/radii
+          for (const task of tasksWithOrbits) {
+            await saveTask(task);
+          }
+
           setTasks(tasksWithOrbits);
+
+          // Validate orbital positions in development mode
+          if (process.env.NODE_ENV === 'development') {
+            tasksWithOrbits.forEach(task => {
+              if (task.subtasks && task.subtasks.length > 0) {
+                const result = validateOrbitalInvariants(task.subtasks, task.id);
+                logValidationResults(result, task.title);
+              }
+            });
+          }
         }
       } catch (error) {
         clearTimeout(timeoutId);
@@ -73,8 +105,24 @@ export default function Home() {
               ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
               : undefined,
           }));
+
+          // Save initialized tasks back to database to persist angles/radii
+          for (const task of tasksWithOrbits) {
+            await saveTask(task);
+          }
+
           setTasks(tasksWithOrbits);
           setError(null); // Clear error if API works
+
+          // Validate orbital positions in development mode
+          if (process.env.NODE_ENV === 'development') {
+            tasksWithOrbits.forEach(task => {
+              if (task.subtasks && task.subtasks.length > 0) {
+                const result = validateOrbitalInvariants(task.subtasks, task.id);
+                logValidationResults(result, task.title);
+              }
+            });
+          }
         } catch (apiError) {
           console.error('[Home] Failed to load from API:', apiError);
         }

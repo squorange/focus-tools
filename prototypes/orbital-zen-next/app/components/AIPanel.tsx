@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Task, Subtask, FocusSession, EnergyLevel, EstimatedTime, ActivityLog } from '../lib/types';
-import { saveTask, getTask, createActivityLog } from '../lib/offline-store';
+import { saveTask, getTask, createActivityLog, getActivityLogs, updateActivityLog, deleteActivityLog } from '../lib/offline-store';
 import {
   calculateNextAngle,
   calculateNextRadius,
@@ -57,6 +57,13 @@ export default function AIPanel({
   const [newTag, setNewTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
   const [timeStats, setTimeStats] = useState<TaskTimeStats | null>(null);
+  const [showActivity, setShowActivity] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedComment, setEditedComment] = useState('');
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -118,7 +125,152 @@ export default function AIPanel({
     loadTimeStats();
   }, [task.id, subtask?.id]);
 
+  // Helper to load activity logs (context-aware)
+  const loadActivityLogs = async () => {
+    setLoadingActivity(true);
+    try {
+      // Load logs for subtask or parent task (context-aware)
+      const logs = await getActivityLogs(task.id, subtask?.id);
+      // Limit to last 20 entries
+      setActivityLogs(logs.slice(0, 20));
+    } catch (error) {
+      console.error('Failed to load activity logs:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
+  // Load activity logs when task or subtask changes, or when activity section is expanded
+  useEffect(() => {
+    if (showActivity) {
+      loadActivityLogs();
+    }
+  }, [task.id, subtask?.id, showActivity]);
+
+  // Helper to format activity log entry
+  const formatActivityEntry = (log: ActivityLog) => {
+    const getIcon = () => {
+      switch (log.type) {
+        case 'session_end':
+          return '⏱️';
+        case 'subtask_completed':
+          return '✅';
+        case 'subtask_uncompleted':
+          return '↩️';
+        case 'comment':
+          return '💬';
+        default:
+          return '•';
+      }
+    };
+
+    const getText = () => {
+      switch (log.type) {
+        case 'session_end':
+          const minutes = Math.floor((log.duration || 0) / 60);
+          return `Focus session: ${minutes}m`;
+        case 'subtask_completed':
+          const completedSubtask = task.subtasks?.find(st => st.id === log.subtaskId);
+          return `Completed "${completedSubtask?.title || 'subtask'}"`;
+        case 'subtask_uncompleted':
+          const uncompletedSubtask = task.subtasks?.find(st => st.id === log.subtaskId);
+          return `Uncompleted "${uncompletedSubtask?.title || 'subtask'}"`;
+        case 'comment':
+          return log.comment || '';
+        default:
+          return log.type;
+      }
+    };
+
+    const getTimestamp = () => {
+      const now = new Date();
+      const logTime = new Date(log.timestamp);
+      const diffMs = now.getTime() - logTime.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return logTime.toLocaleDateString();
+    };
+
+    return {
+      icon: getIcon(),
+      text: getText(),
+      timestamp: getTimestamp(),
+      isManual: log.isManualComment,
+      hasSecondaryContent: !!log.comment && log.type === 'session_end',
+      secondaryContent: log.type === 'session_end' ? log.comment : undefined,
+    };
+  };
+
   // Handlers
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    const now = new Date();
+
+    // Context-aware: add comment to task or subtask based on current selection
+    await createActivityLog({
+      id: `${task.id}-comment-${Date.now()}`,
+      taskId: task.id,
+      subtaskId: subtask?.id,
+      type: 'comment',
+      timestamp: now,
+      comment: newComment.trim(),
+      isManualComment: true,
+      createdAt: now,
+    });
+
+    // Reload activity logs to show the new comment
+    await loadActivityLogs();
+
+    // Clear input and hide
+    setNewComment('');
+    setShowAddComment(false);
+  };
+
+  const handleEditComment = async (log: ActivityLog) => {
+    if (!editedComment.trim()) return;
+    if (editedComment === log.comment) {
+      // No changes, just cancel
+      setEditingCommentId(null);
+      setEditedComment('');
+      return;
+    }
+
+    // Update with edit history
+    const updatedLog: ActivityLog = {
+      ...log,
+      comment: editedComment.trim(),
+      editedAt: new Date(),
+      editHistory: [
+        ...(log.editHistory || []),
+        {
+          editedAt: new Date(),
+          previousComment: log.comment || '',
+        },
+      ],
+    };
+
+    await updateActivityLog(updatedLog);
+    await loadActivityLogs();
+
+    // Clear editing state
+    setEditingCommentId(null);
+    setEditedComment('');
+  };
+
+  const handleDeleteComment = async (logId: string) => {
+    if (!confirm('Delete this comment?')) return;
+
+    await deleteActivityLog(logId);
+    await loadActivityLogs();
+  };
+
   const handleTitleSave = async () => {
     if (taskTitle.trim() && taskTitle !== task.title) {
       const updatedTask = { ...task, title: taskTitle.trim(), updatedAt: new Date() };
@@ -136,6 +288,17 @@ export default function AIPanel({
     }
   };
 
+  /**
+   * Add a new subtask to the task
+   *
+   * CHECKLIST when modifying this function:
+   * [ ] New subtask has assignedStartingAngle (use calculateNextAngle)
+   * [ ] New subtask has assignedOrbitRadius (use calculateNextRadius)
+   * [ ] Call initializeSubtaskOrbits() to ensure all subtasks have positions
+   * [ ] Call saveTask() to persist orbital positions to database
+   * [ ] Test: Add subtask, complete it, verify no angular jumps
+   * [ ] See orbit-utils.ts INVARIANT #1 and #3 for details
+   */
   const handleAddSubtask = async () => {
     if (!newSubtaskTitle.trim()) return;
 
@@ -157,6 +320,18 @@ export default function AIPanel({
     setShowAddSubtask(false);
   };
 
+  /**
+   * Toggle subtask completion status (checkbox click)
+   *
+   * CHECKLIST when modifying this function:
+   * [ ] Preserve assignedStartingAngle during completion/uncompletion
+   * [ ] Call recalculateRadii() to update radii for remaining active items
+   * [ ] Recalculate belt position via getCurrentMarkerRing() if priority item
+   * [ ] Call saveTask() to persist updated state to database
+   * [ ] Test: Complete subtask → remaining items stay at same angles
+   * [ ] Test: Undo completion → item returns, belt moves outward
+   * [ ] See orbit-utils.ts INVARIANT #1, #2, #4 for details
+   */
   const handleSubtaskToggle = async (subtaskId: string) => {
     if (!task.subtasks) return;
 
@@ -771,7 +946,8 @@ export default function AIPanel({
                                 onClick={async () => {
                                   const allSubtasks = task.subtasks || [];
                                   const newRing = Math.max(2, currentMarkerPosition - 1);
-                                  const subtasksInsideBelt = allSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                  // Use only ACTIVE subtasks to determine which are inside the belt
+                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
                                   const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
@@ -793,8 +969,9 @@ export default function AIPanel({
                               <button
                                 onClick={async () => {
                                   const allSubtasks = task.subtasks || [];
-                                  const newRing = Math.min(allSubtasks.length + 1, currentMarkerPosition + 1);
-                                  const subtasksInsideBelt = allSubtasks.slice(0, newRing - 1).map(s => s.id);
+                                  const newRing = Math.min(subtasks.length + 1, currentMarkerPosition + 1);
+                                  // Use only ACTIVE subtasks to determine which are inside the belt
+                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
                                   const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
@@ -806,7 +983,7 @@ export default function AIPanel({
                                   await saveTask(updatedTask);
                                   onTaskUpdate?.(updatedTask);
                                 }}
-                                disabled={currentMarkerPosition >= (task.subtasks || []).length + 1}
+                                disabled={currentMarkerPosition >= subtasks.length + 1}
                                 className="text-gray-400 hover:text-gray-600 disabled:text-gray-300 disabled:cursor-not-allowed text-xs"
                                 title="Move down"
                               >
@@ -906,6 +1083,173 @@ export default function AIPanel({
               )}
             </div>
           )}
+
+          {/* Activity */}
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowActivity(!showActivity)}
+              className="flex items-center justify-between w-full text-sm text-gray-500 hover:text-gray-700"
+            >
+              <span>
+                Activity {activityLogs.length > 0 && <span className="text-gray-400">({activityLogs.length})</span>}
+              </span>
+              <span className="text-xs">{showActivity ? '▼' : '▶'}</span>
+            </button>
+
+            {showActivity && (
+              <div className="space-y-3">
+                {/* Add comment input - at top for intuitive flow */}
+                {showAddComment ? (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleAddComment();
+                        } else if (e.key === 'Escape') {
+                          setNewComment('');
+                          setShowAddComment(false);
+                        }
+                      }}
+                      placeholder="Add a comment..."
+                      autoFocus
+                      className="flex-1 text-sm text-gray-900 bg-gray-100 rounded px-3 py-2 border-none outline-none"
+                    />
+                    <button
+                      onClick={() => {
+                        setNewComment('');
+                        setShowAddComment(false);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddComment}
+                      className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                    >
+                      Add
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowAddComment(true)}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    + Add comment
+                  </button>
+                )}
+
+                {/* Activity list */}
+                {loadingActivity ? (
+                  <div className="text-sm text-gray-400 text-center py-4">Loading activity...</div>
+                ) : activityLogs.length === 0 ? (
+                  <div className="text-sm text-gray-400 text-center py-4">No activity yet</div>
+                ) : (
+                  <div className="space-y-2">
+                    {activityLogs.map((log) => {
+                      const entry = formatActivityEntry(log);
+                      const isEditing = editingCommentId === log.id;
+
+                      return (
+                        <div
+                          key={log.id}
+                          className="flex gap-2 text-sm group"
+                        >
+                          <span className="text-base flex-shrink-0">{entry.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            {isEditing ? (
+                              // Edit mode
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="text"
+                                  value={editedComment}
+                                  onChange={(e) => setEditedComment(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleEditComment(log);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingCommentId(null);
+                                      setEditedComment('');
+                                    }
+                                  }}
+                                  autoFocus
+                                  className="flex-1 text-sm text-gray-900 bg-gray-100 rounded px-2 py-1 border-none outline-none"
+                                />
+                                <button
+                                  onClick={() => {
+                                    setEditingCommentId(null);
+                                    setEditedComment('');
+                                  }}
+                                  className="text-gray-400 hover:text-gray-600 text-xs"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleEditComment(log)}
+                                  className="text-gray-600 hover:text-gray-800 text-xs font-medium"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            ) : (
+                              // View mode
+                              <>
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className="text-gray-700 flex-1">
+                                    {entry.text}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {/* Action menu for manual comments */}
+                                    {log.isManualComment && (
+                                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                        <button
+                                          onClick={() => {
+                                            setEditingCommentId(log.id);
+                                            setEditedComment(log.comment || '');
+                                          }}
+                                          className="text-gray-400 hover:text-gray-600 text-xs"
+                                          title="Edit comment"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteComment(log.id)}
+                                          className="text-gray-400 hover:text-red-600 text-xs"
+                                          title="Delete comment"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                    <span className="text-xs text-gray-400 flex-shrink-0">
+                                      {entry.timestamp}
+                                    </span>
+                                  </div>
+                                </div>
+                                {entry.hasSecondaryContent && entry.secondaryContent && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {entry.secondaryContent}
+                                  </div>
+                                )}
+                                {log.editedAt && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    (edited)
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Schedule */}
           <div className="space-y-3">
@@ -1067,12 +1411,6 @@ export default function AIPanel({
                       <div className="flex justify-between">
                         <span className="text-gray-500">Last Worked On</span>
                         <span>{new Date(timeStats.lastWorkedOn).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    {timeStats.completionRate > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Completion Rate</span>
-                        <span>{Math.round(timeStats.completionRate * 100)}%</span>
                       </div>
                     )}
                   </>

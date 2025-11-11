@@ -4,6 +4,7 @@ import { Task, Subtask, TaskPriority, FocusSession } from '../lib/types';
 import { useState, useEffect } from 'react';
 import TimerBadge from './TimerBadge';
 import PriorityMarker from './PriorityMarker';
+import OrbitalRing from './OrbitalRing';
 import { saveTask } from '../lib/offline-store';
 import {
   getSubtaskAngle,
@@ -206,14 +207,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
         }}
       >
         {orbitalRingRadii.map((radius) => (
-          <div
-            key={radius}
-            className="absolute border border-gray-700/20 rounded-full transition-all duration-500 ease-in-out"
-            style={{
-              width: `${radius * 2}px`,
-              height: `${radius * 2}px`,
-            }}
-          />
+          <OrbitalRing key={radius} radius={radius} />
         ))}
       </div>
 
@@ -268,10 +262,16 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
 
       {/* Subtasks orbiting the parent */}
       {subtasks.map((subtask, index) => {
-        // Use assigned angle if available, otherwise fallback to calculated
+        // CRITICAL: Use original array index for angle calculation to prevent angular jumps
+        // When assignedStartingAngle is missing, we must calculate from the ORIGINAL array position,
+        // not the filtered position, otherwise angles shift when items complete
+        const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id) ?? index;
+        const totalSubtasks = parentTask.subtasks?.length ?? subtasks.length;
+
+        // Use assigned angle if available, otherwise fallback to calculated from ORIGINAL index
         const startingAngle = subtask.assignedStartingAngle !== undefined
           ? subtask.assignedStartingAngle
-          : getSubtaskAngle(index, subtasks.length);
+          : getSubtaskAngle(originalIndex, totalSubtasks);
 
         // Use assigned radius if available, otherwise fallback to calculated
         const orbitRadius = subtask.assignedOrbitRadius !== undefined
