@@ -26,7 +26,7 @@ function detectDevice(): 'desktop' | 'mobile' | 'unknown' {
 
 // Get database instance
 async function getDB() {
-  return openDB('orbital-zen-db', 4);
+  return openDB('orbital-zen-db', 5); // Match version with offline-store.ts
 }
 
 // ============================================================================
