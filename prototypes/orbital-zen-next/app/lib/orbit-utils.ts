@@ -118,8 +118,8 @@ export function getSubtaskOrbitRadius(index: number): number {
 export function findLargestGap(existingSubtasks: Subtask[]): number {
   // Filter to only non-completed subtasks with assigned angles
   const activeWithAngles = existingSubtasks
-    .filter(st => !st.completed && st.assignedStartingAngle !== undefined)
-    .map(st => st.assignedStartingAngle!)
+    .filter((st) => !st.completed && st.assignedStartingAngle !== undefined)
+    .map((st) => st.assignedStartingAngle!)
     .sort((a, b) => a - b); // Sort by angle
 
   if (activeWithAngles.length === 0) {
@@ -141,9 +141,7 @@ export function findLargestGap(existingSubtasks: Subtask[]): number {
     const next = activeWithAngles[(i + 1) % activeWithAngles.length];
 
     // Calculate gap (handle wrap-around at 360°)
-    const gap = next > current
-      ? next - current
-      : (360 - current) + next;
+    const gap = next > current ? next - current : 360 - current + next;
 
     if (gap > largestGap) {
       largestGap = gap;
@@ -171,7 +169,7 @@ export function calculateNextAngle(existingSubtasks: Subtask[]): number {
  * Finds the next index position (considering completed subtasks)
  */
 export function calculateNextRadius(existingSubtasks: Subtask[]): number {
-  const activeSubtasks = existingSubtasks.filter(st => !st.completed);
+  const activeSubtasks = existingSubtasks.filter((st) => !st.completed);
   const nextIndex = activeSubtasks.length;
   return getSubtaskOrbitRadius(nextIndex);
 }
@@ -277,7 +275,7 @@ export function getStableAnimationDelay(id: string): number {
   // Simple hash function to convert id to a number between 0-10
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
-    hash = ((hash << 5) - hash) + id.charCodeAt(i);
+    hash = (hash << 5) - hash + id.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   // Return a delay between 0 and -30 seconds (negative to start at different positions)
@@ -302,7 +300,7 @@ export function getMarkerRadius(ringPosition: number): number {
     return 70; // Celebration mode: ring around parent task (parent is 28px radius)
   }
   // Belt occupies its ring with extra spacing buffer
-  return MIN_RADIUS + ((ringPosition - 1) * RADIUS_SPACING) + BELT_SPACING_BUFFER;
+  return MIN_RADIUS + (ringPosition - 1) * RADIUS_SPACING + BELT_SPACING_BUFFER;
 }
 
 /**
@@ -333,25 +331,22 @@ export function getDefaultMarkerRing(subtaskCount: number): number {
  * Belt: occupies its ring position + BUFFER (20px gap before it)
  * Subtasks at/after belt: shifted by +1 ring + BUFFER*2 (20px gap before + 20px gap after)
  */
-export function getSubtaskRadiusWithBelt(
-  subtaskIndex: number,
-  beltRing?: number
-): number {
+export function getSubtaskRadiusWithBelt(subtaskIndex: number, beltRing?: number): number {
   const baseRing = subtaskIndex + 1; // Convert 0-based index to 1-based ring
 
   if (!beltRing) {
     // No belt, use normal radius
-    return MIN_RADIUS + (subtaskIndex * RADIUS_SPACING);
+    return MIN_RADIUS + subtaskIndex * RADIUS_SPACING;
   }
 
   // Subtasks before belt: normal positions (no buffer)
   if (baseRing < beltRing) {
-    return MIN_RADIUS + (subtaskIndex * RADIUS_SPACING);
+    return MIN_RADIUS + subtaskIndex * RADIUS_SPACING;
   }
 
   // Subtasks at or after belt position: shifted by +1 ring AND add double buffer
   // This creates equal 20px gaps on both sides of the belt
-  return MIN_RADIUS + (subtaskIndex + 1) * RADIUS_SPACING + (BELT_SPACING_BUFFER * 2);
+  return MIN_RADIUS + (subtaskIndex + 1) * RADIUS_SPACING + BELT_SPACING_BUFFER * 2;
 }
 
 /**
@@ -365,10 +360,7 @@ export interface ValidationResult {
   isValid: boolean;
 }
 
-export function validateOrbitalInvariants(
-  subtasks: Subtask[],
-  taskId: string
-): ValidationResult {
+export function validateOrbitalInvariants(subtasks: Subtask[], taskId: string): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -382,14 +374,14 @@ export function validateOrbitalInvariants(
     if (st.assignedStartingAngle === undefined) {
       errors.push(
         `[${taskId}] Subtask "${st.title}" (${st.id}) missing assignedStartingAngle. ` +
-        `This will cause angular jumps on completion. Call initializeSubtaskOrbits() and saveTask().`
+          `This will cause angular jumps on completion. Call initializeSubtaskOrbits() and saveTask().`
       );
     }
 
     if (st.assignedOrbitRadius === undefined) {
       errors.push(
         `[${taskId}] Subtask "${st.title}" (${st.id}) missing assignedOrbitRadius. ` +
-        `This will cause layout issues. Call initializeSubtaskOrbits() and saveTask().`
+          `This will cause layout issues. Call initializeSubtaskOrbits() and saveTask().`
       );
     }
 
@@ -403,8 +395,8 @@ export function validateOrbitalInvariants(
       if (angleDiff > 5 && angleDiff < 355) {
         warnings.push(
           `[${taskId}] Subtask "${st.title}" angle ${st.assignedStartingAngle.toFixed(1)}° ` +
-          `differs from expected ${expectedAngle.toFixed(1)}° (index ${index}). ` +
-          `This may be intentional (reordered) or indicate calculation from wrong index.`
+            `differs from expected ${expectedAngle.toFixed(1)}° (index ${index}). ` +
+            `This may be intentional (reordered) or indicate calculation from wrong index.`
         );
       }
     }
@@ -460,8 +452,8 @@ export function getCurrentMarkerRing(
   }
 
   // Check if all original priority items are complete (celebration mode)
-  const allPriorityComplete = originalTargetIds.every(id => {
-    const subtask = subtasks.find(st => st.id === id);
+  const allPriorityComplete = originalTargetIds.every((id) => {
+    const subtask = subtasks.find((st) => st.id === id);
     return !subtask || subtask.completed; // Complete or deleted
   });
 

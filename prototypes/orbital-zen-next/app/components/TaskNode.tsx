@@ -139,45 +139,67 @@ export default function TaskNode({
   }, [isTransitioning, isClone, isHovered]);
 
   // Computed style values - priority-specific colors for matching fill appearance
-  const computedBgColor = (showAsSelected || effectiveHovered)
-    ? (task.priority === 'urgent' ? 'rgba(127, 29, 29, 0.3)'      // red-900
-       : task.priority === 'high' ? 'rgba(124, 45, 18, 0.3)'      // orange-900
-       : task.priority === 'medium' ? 'rgba(113, 63, 18, 0.3)'    // yellow-900
-       : 'rgba(30, 58, 138, 0.3)')                                // blue-900
-    : 'rgba(15, 23, 42, 0.2)';  // slate-900 default
+  const computedBgColor =
+    showAsSelected || effectiveHovered
+      ? task.priority === 'urgent'
+        ? 'rgba(127, 29, 29, 0.3)' // red-900
+        : task.priority === 'high'
+          ? 'rgba(124, 45, 18, 0.3)' // orange-900
+          : task.priority === 'medium'
+            ? 'rgba(113, 63, 18, 0.3)' // yellow-900
+            : 'rgba(30, 58, 138, 0.3)' // blue-900
+      : 'rgba(15, 23, 42, 0.2)'; // slate-900 default
 
-  const computedBorderColor = (showAsSelected || effectiveHovered)
-    ? (task.priority === 'urgent' ? 'rgba(248, 113, 113, 0.4)'
-       : task.priority === 'high' ? 'rgba(251, 146, 60, 0.4)'
-       : task.priority === 'medium' ? 'rgba(250, 204, 21, 0.4)'
-       : 'rgba(96, 165, 250, 0.4)')
-    : (task.priority === 'urgent' ? 'rgba(239, 68, 68, 0.15)'
-       : task.priority === 'high' ? 'rgba(249, 115, 22, 0.15)'
-       : task.priority === 'medium' ? 'rgba(234, 179, 8, 0.15)'
-       : 'rgba(59, 130, 246, 0.15)');
+  const computedBorderColor =
+    showAsSelected || effectiveHovered
+      ? task.priority === 'urgent'
+        ? 'rgba(248, 113, 113, 0.4)'
+        : task.priority === 'high'
+          ? 'rgba(251, 146, 60, 0.4)'
+          : task.priority === 'medium'
+            ? 'rgba(250, 204, 21, 0.4)'
+            : 'rgba(96, 165, 250, 0.4)'
+      : task.priority === 'urgent'
+        ? 'rgba(239, 68, 68, 0.15)'
+        : task.priority === 'high'
+          ? 'rgba(249, 115, 22, 0.15)'
+          : task.priority === 'medium'
+            ? 'rgba(234, 179, 8, 0.15)'
+            : 'rgba(59, 130, 246, 0.15)';
 
-  const computedTextColor = (showAsSelected || effectiveHovered)
-    ? (task.priority === 'urgent' ? '#fecaca'
-       : task.priority === 'high' ? '#fed7aa'
-       : task.priority === 'medium' ? '#fef08a'
-       : '#bfdbfe')
-    : 'rgba(209, 213, 219, 0.85)';
+  const computedTextColor =
+    showAsSelected || effectiveHovered
+      ? task.priority === 'urgent'
+        ? '#fecaca'
+        : task.priority === 'high'
+          ? '#fed7aa'
+          : task.priority === 'medium'
+            ? '#fef08a'
+            : '#bfdbfe'
+      : 'rgba(209, 213, 219, 0.85)';
 
-  const computedGradient = (showAsSelected || effectiveHovered)
-    ? 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))'
-    : 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08))';
+  const computedGradient =
+    showAsSelected || effectiveHovered
+      ? 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))'
+      : 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08))';
 
   // Apply styles directly to DOM with !important to override Tailwind
   useEffect(() => {
     if (!isClone && buttonRef.current) {
       buttonRef.current.style.setProperty('background-color', computedBgColor, 'important');
       buttonRef.current.style.setProperty('border-color', computedBorderColor, 'important');
-      buttonRef.current.style.setProperty('transition', 'background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), border-color 300ms cubic-bezier(0.4, 0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0, 0.2, 1)');
+      buttonRef.current.style.setProperty(
+        'transition',
+        'background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), border-color 300ms cubic-bezier(0.4, 0, 0.2, 1), transform 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+      );
     }
 
     if (!isClone && gradientRef.current) {
       gradientRef.current.style.setProperty('background', computedGradient, 'important');
-      gradientRef.current.style.setProperty('transition', 'background 300ms cubic-bezier(0.4, 0, 0.2, 1)');
+      gradientRef.current.style.setProperty(
+        'transition',
+        'background 300ms cubic-bezier(0.4, 0, 0.2, 1)'
+      );
     }
 
     if (!isClone && textRef.current) {
@@ -224,7 +246,9 @@ export default function TaskNode({
       <div
         className="absolute transition-transform duration-300"
         style={{
-          transform: effectiveHovered ? 'translate(-50%, -50%) scale(1.05)' : 'translate(-50%, -50%) scale(1)',
+          transform: effectiveHovered
+            ? 'translate(-50%, -50%) scale(1.05)'
+            : 'translate(-50%, -50%) scale(1)',
           filter: 'drop-shadow(0 15px 30px rgba(0,0,0,0.8))',
         }}
       >
@@ -258,7 +282,9 @@ export default function TaskNode({
             }}
           />
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className={`${effectiveHovered ? priority.textSelected : priority.text} text-xs md:text-sm font-medium text-center px-3 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-colors duration-300`}>
+            <div
+              className={`${effectiveHovered ? priority.textSelected : priority.text} text-xs md:text-sm font-medium text-center px-3 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] transition-colors duration-300`}
+            >
               {task.title}
             </div>
           </div>
@@ -275,7 +301,7 @@ export default function TaskNode({
       style={{
         transformStyle: 'preserve-3d',
         transition: 'opacity 0.8s ease',
-        opacity: shouldFadeOut ? 0 : (showDimmed ? 0.3 : 1),
+        opacity: shouldFadeOut ? 0 : showDimmed ? 0.3 : 1,
       }}
     >
       {/* Layer 2: Orbit rotation (0 to 360deg) + starting angle offset */}
@@ -310,17 +336,14 @@ export default function TaskNode({
               width: '7rem',
               height: '7rem',
               pointerEvents: isTransitioning ? 'none' : 'auto',
-              transform: (effectiveHovered && !isZooming) ? 'scale(1.05)' : 'scale(1)',
+              transform: effectiveHovered && !isZooming ? 'scale(1.05)' : 'scale(1)',
               borderWidth: '1px',
               borderStyle: 'solid',
               // Transitions are applied via useEffect + setProperty()
             }}
           >
             {/* Subtle gradient overlay matching center point */}
-            <div
-              ref={gradientRef}
-              className="absolute inset-0 rounded-full pointer-events-none"
-            />
+            <div ref={gradientRef} className="absolute inset-0 rounded-full pointer-events-none" />
             {/* Layer 5: Counter-orbit animation (cancels orbit rotation to keep text horizontal) */}
             <div
               className={`${counterOrbitClass} absolute inset-0 flex items-center justify-center ${isZooming ? 'zooming' : ''}`}

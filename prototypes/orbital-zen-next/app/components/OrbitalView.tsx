@@ -17,6 +17,7 @@ import {
   pauseSession,
   resumeSession,
   endSession,
+  updateFocusSession,
 } from '../lib/focus-session';
 
 interface OrbitalViewProps {
@@ -26,13 +27,13 @@ interface OrbitalViewProps {
 // Starting positions for tasks (clock positions)
 // 12, 2, 5, 7, 9, 10.5, 3.5 o'clock
 const STARTING_ANGLES = [
-  -90,   // 12 o'clock (top)
-  -30,   // 2 o'clock (top-right)
-  60,    // 5 o'clock (bottom-right)
-  150,   // 7 o'clock (bottom-left)
-  180,   // 9 o'clock (left)
-  -135,  // 10.5 o'clock (top-left)
-  15,    // 3.5 o'clock (right-lower)
+  -90, // 12 o'clock (top)
+  -30, // 2 o'clock (top-right)
+  60, // 5 o'clock (bottom-right)
+  150, // 7 o'clock (bottom-left)
+  180, // 9 o'clock (left)
+  -135, // 10.5 o'clock (top-left)
+  15, // 3.5 o'clock (right-lower)
 ];
 
 // Index-based orbit radii (position in list determines distance from center)
@@ -66,7 +67,9 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedSubtask, setSelectedSubtask] = useState<Subtask | null>(null);
   const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
-  const [hoveredTaskPosition, setHoveredTaskPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredTaskPosition, setHoveredTaskPosition] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const [cloneAnimated, setCloneAnimated] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -84,8 +87,8 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
   const [completingSubtaskIds, setCompletingSubtaskIds] = useState<Set<string>>(new Set());
 
   // Find the hovered task data
-  const hoveredTask = tasks.find(t => t.id === hoveredTaskId);
-  const hoveredTaskIndex = tasks.findIndex(t => t.id === hoveredTaskId);
+  const hoveredTask = tasks.find((t) => t.id === hoveredTaskId);
+  const hoveredTaskIndex = tasks.findIndex((t) => t.id === hoveredTaskId);
 
   // Handle task click for zoom navigation
   const handleTaskClick = (task: Task) => {
@@ -109,7 +112,9 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
           // Check if there's an active focus session on a subtask for this task
           if (focusSession && focusSession.taskId === task.id && focusSession.subtaskId) {
-            const activeSubtask = latestTask.subtasks?.find(st => st.id === focusSession.subtaskId);
+            const activeSubtask = latestTask.subtasks?.find(
+              (st) => st.id === focusSession.subtaskId
+            );
             if (activeSubtask) {
               setSelectedSubtask(activeSubtask);
             } else {
@@ -125,7 +130,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
           // Check for active focus session on subtask
           if (focusSession && focusSession.taskId === task.id && focusSession.subtaskId) {
-            const activeSubtask = task.subtasks?.find(st => st.id === focusSession.subtaskId);
+            const activeSubtask = task.subtasks?.find((st) => st.id === focusSession.subtaskId);
             if (activeSubtask) {
               setSelectedSubtask(activeSubtask);
             } else {
@@ -216,7 +221,27 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
       try {
         const session = await getAnyFocusSession();
         if (session) {
-          setFocusSession(session);
+          // If session was active, just update lastResumedAt to now
+          // Don't update totalTime - that only tracks paused time accumulation
+          // The timer will calculate elapsed time from lastResumedAt
+          if (session.isActive && session.lastResumedAt) {
+            const now = new Date();
+
+            // Update session with new resume timestamp (don't touch totalTime)
+            const updatedSession = {
+              ...session,
+              lastResumedAt: now,
+              lastActivityTime: now,
+            };
+
+            // Save updated session to database
+            await updateFocusSession(updatedSession);
+
+            setFocusSession(updatedSession);
+          } else {
+            // Paused session - load as-is
+            setFocusSession(session);
+          }
         }
       } catch (error) {
         console.error('Failed to load focus session:', error);
@@ -240,7 +265,7 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     if (!zoomedTask) return;
 
     // Find and toggle the subtask
-    const updatedSubtasks = zoomedTask.subtasks?.map(st =>
+    const updatedSubtasks = zoomedTask.subtasks?.map((st) =>
       st.id === subtaskId ? { ...st, completed: !st.completed } : st
     );
 
@@ -268,11 +293,39 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     if (!zoomedTask) return;
 
     try {
-      // startFocusSession automatically pauses any existing active session
-      const newSession = await startFocusSession(
-        zoomedTask.id,
-        selectedSubtask?.id
-      );
+      // Check if there's any existing session (active or paused) on a different task
+      const existingSession = await getAnyFocusSession();
+
+      if (
+        existingSession &&
+        (existingSession.taskId !== zoomedTask.id ||
+          existingSession.subtaskId !== selectedSubtask?.id)
+      ) {
+        // Find the task name for the prompt
+        const existingTask = tasks.find((t) => t.id === existingSession.taskId);
+        const existingTaskName = existingTask?.title || 'another task';
+
+        const existingSubtask = existingTask?.subtasks?.find(
+          (st) => st.id === existingSession.subtaskId
+        );
+        const focusLocation = existingSubtask
+          ? `"${existingSubtask.title}" in ${existingTaskName}`
+          : existingTaskName;
+
+        const confirmed = window.confirm(
+          `You have an active focus session on ${focusLocation}.\n\nEnd that session and start a new one here?`
+        );
+
+        if (!confirmed) {
+          return; // User cancelled, keep existing session
+        }
+
+        // End the existing session
+        await endSession(existingSession.id, 'stopped', false);
+      }
+
+      // Start new session
+      const newSession = await startFocusSession(zoomedTask.id, selectedSubtask?.id);
       setFocusSession(newSession);
     } catch (error) {
       console.error('Failed to start focus session:', error);
@@ -341,7 +394,12 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
           className="absolute top-6 left-6 z-50 px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-gray-600/40 rounded-full text-gray-300 hover:text-white hover:border-gray-500 transition-all duration-200 flex items-center gap-2 shadow-lg pointer-events-auto"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back to Galaxy
         </button>
@@ -357,184 +415,187 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
       >
         {/* Orbit rings for visual reference */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {/* Desktop rings */}
-        {[100, 150, 200, 250].map((radius) => (
-          <OrbitalRing key={radius} radius={radius} className="hidden md:block" />
-        ))}
-        {/* Mobile rings */}
-        {[70, 105, 140, 175].map((radius) => (
-          <OrbitalRing key={`mobile-${radius}`} radius={radius} className="md:hidden" />
-        ))}
-      </div>
-
-      {/* Central focus area - subtle indicator */}
-      <div
-        className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-500"
-        style={{
-          opacity: showCenterCircle ? 1 : 0,
-        }}
-      >
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm border border-purple-400/30 flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400/40 to-blue-400/40 animate-pulse" />
+          {/* Desktop rings */}
+          {[100, 150, 200, 250].map((radius) => (
+            <OrbitalRing key={radius} radius={radius} className="hidden md:block" />
+          ))}
+          {/* Mobile rings */}
+          {[70, 105, 140, 175].map((radius) => (
+            <OrbitalRing key={`mobile-${radius}`} radius={radius} className="md:hidden" />
+          ))}
         </div>
-      </div>
 
-      {/* Orbital task containers */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {tasks.slice(0, 7).map((task, index) => {
-          const desktopRadius = getOrbitRadius(false, index);
-          const mobileRadius = getOrbitRadius(true, index);
-          const startingAngle = STARTING_ANGLES[index] || 0;
-          const isHovered = hoveredTaskId === task.id;
-          const baseZIndex = getPriorityZIndex(task.priority);
-
-          return (
-            <div
-              key={task.id}
-              className="absolute inset-0 flex items-center justify-center"
-              style={{
-                zIndex: baseZIndex,
-              }}
-            >
-              {/* Desktop version */}
-              <div className="hidden md:block absolute left-1/2 top-1/2 pointer-events-none">
-                <TaskNode
-                  task={task}
-                  isSelected={selectedTask?.id === task.id}
-                  onClick={() => handleTaskClick(task)}
-                  index={index}
-                  orbitRadius={desktopRadius}
-                  startingAngle={startingAngle}
-                  viewLevel={viewLevel}
-                  onHoverChange={(id, position) => {
-                    // Clear selection when hovering in galaxy view (after transition completes)
-                    if (id && viewLevel === 'galaxy' && !isTransitioning && selectedTask) {
-                      setSelectedTask(null);
-                    }
-                    setHoveredTaskId(id);
-                    if (position) {
-                      setHoveredTaskPosition(position);
-                    } else {
-                      setHoveredTaskPosition(null);
-                    }
-                  }}
-                  isHoveredElsewhere={hoveredTaskId !== null && hoveredTaskId !== task.id}
-                  isZooming={isZooming && zoomedTask?.id === task.id}
-                  shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
-                  isTransitioning={isTransitioning}
-                  focusSession={focusSession || undefined}
-                />
-                {/* Subtask moon indicators */}
-                <SubtaskMoons
-                  task={task}
-                  orbitRadius={desktopRadius}
-                  startingAngle={startingAngle}
-                  index={index}
-                  isZooming={isZooming && zoomedTask?.id === task.id}
-                  showCenterCircle={showCenterCircle}
-                  completingSubtaskIds={completingSubtaskIds}
-                />
-              </div>
-              {/* Mobile version */}
-              <div className="md:hidden absolute left-1/2 top-1/2 pointer-events-none">
-                <TaskNode
-                  task={task}
-                  isSelected={selectedTask?.id === task.id}
-                  onClick={() => handleTaskClick(task)}
-                  index={index}
-                  orbitRadius={mobileRadius}
-                  startingAngle={startingAngle}
-                  viewLevel={viewLevel}
-                  onHoverChange={(id, position) => {
-                    // Clear selection when hovering in galaxy view (after transition completes)
-                    if (id && viewLevel === 'galaxy' && !isTransitioning && selectedTask) {
-                      setSelectedTask(null);
-                    }
-                    setHoveredTaskId(id);
-                    if (position) {
-                      setHoveredTaskPosition(position);
-                    } else {
-                      setHoveredTaskPosition(null);
-                    }
-                  }}
-                  isHoveredElsewhere={hoveredTaskId !== null && hoveredTaskId !== task.id}
-                  isZooming={isZooming && zoomedTask?.id === task.id}
-                  shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
-                  isTransitioning={isTransitioning}
-                  focusSession={focusSession || undefined}
-                />
-                {/* Subtask moon indicators */}
-                <SubtaskMoons
-                  task={task}
-                  orbitRadius={mobileRadius}
-                  startingAngle={startingAngle}
-                  index={index}
-                  isZooming={isZooming && zoomedTask?.id === task.id}
-                  showCenterCircle={showCenterCircle}
-                  completingSubtaskIds={completingSubtaskIds}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Overlay clone for hovered task - renders on top with matching style */}
-      {hoveredTask && hoveredTaskPosition && hoveredTaskIndex !== -1 && (
-        <>
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              left: hoveredTaskPosition.x,
-              top: hoveredTaskPosition.y,
-              zIndex: 9999,
-            }}
-          >
-            <TaskNode
-              task={hoveredTask}
-              isSelected={false}
-              onClick={() => {}}
-              index={hoveredTaskIndex}
-              orbitRadius={getOrbitRadius(hoveredTask.priority, false)}
-              startingAngle={STARTING_ANGLES[hoveredTaskIndex] || 0}
-              onHoverChange={() => {}}
-              isClone={true}
-              isHoveredElsewhere={false}
-              forceHovered={cloneAnimated}
-            />
+        {/* Central focus area - subtle indicator */}
+        <div
+          className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none transition-opacity duration-500"
+          style={{
+            opacity: showCenterCircle ? 1 : 0,
+          }}
+        >
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm border border-purple-400/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400/40 to-blue-400/40 animate-pulse" />
           </div>
+        </div>
 
-          {/* Timer badge for clone - rendered outside to avoid filter stacking context */}
-          {focusSession?.taskId === hoveredTask.id && (
+        {/* Orbital task containers */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {tasks.slice(0, 7).map((task, index) => {
+            const desktopRadius = getOrbitRadius(false, index);
+            const mobileRadius = getOrbitRadius(true, index);
+            const startingAngle = STARTING_ANGLES[index] || 0;
+            const isHovered = hoveredTaskId === task.id;
+            const baseZIndex = getPriorityZIndex(task.priority);
+
+            return (
+              <div
+                key={task.id}
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  zIndex: baseZIndex,
+                }}
+              >
+                {/* Desktop version */}
+                <div className="hidden md:block absolute left-1/2 top-1/2 pointer-events-none">
+                  <TaskNode
+                    task={task}
+                    isSelected={selectedTask?.id === task.id}
+                    onClick={() => handleTaskClick(task)}
+                    index={index}
+                    orbitRadius={desktopRadius}
+                    startingAngle={startingAngle}
+                    viewLevel={viewLevel}
+                    onHoverChange={(id, position) => {
+                      // Clear selection when hovering in galaxy view (after transition completes)
+                      if (id && viewLevel === 'galaxy' && !isTransitioning && selectedTask) {
+                        setSelectedTask(null);
+                      }
+                      setHoveredTaskId(id);
+                      if (position) {
+                        setHoveredTaskPosition(position);
+                      } else {
+                        setHoveredTaskPosition(null);
+                      }
+                    }}
+                    isHoveredElsewhere={hoveredTaskId !== null && hoveredTaskId !== task.id}
+                    isZooming={isZooming && zoomedTask?.id === task.id}
+                    shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
+                    isTransitioning={isTransitioning}
+                    focusSession={focusSession || undefined}
+                  />
+                  {/* Subtask moon indicators */}
+                  <SubtaskMoons
+                    task={task}
+                    orbitRadius={desktopRadius}
+                    startingAngle={startingAngle}
+                    index={index}
+                    isZooming={isZooming && zoomedTask?.id === task.id}
+                    showCenterCircle={showCenterCircle}
+                    completingSubtaskIds={completingSubtaskIds}
+                  />
+                </div>
+                {/* Mobile version */}
+                <div className="md:hidden absolute left-1/2 top-1/2 pointer-events-none">
+                  <TaskNode
+                    task={task}
+                    isSelected={selectedTask?.id === task.id}
+                    onClick={() => handleTaskClick(task)}
+                    index={index}
+                    orbitRadius={mobileRadius}
+                    startingAngle={startingAngle}
+                    viewLevel={viewLevel}
+                    onHoverChange={(id, position) => {
+                      // Clear selection when hovering in galaxy view (after transition completes)
+                      if (id && viewLevel === 'galaxy' && !isTransitioning && selectedTask) {
+                        setSelectedTask(null);
+                      }
+                      setHoveredTaskId(id);
+                      if (position) {
+                        setHoveredTaskPosition(position);
+                      } else {
+                        setHoveredTaskPosition(null);
+                      }
+                    }}
+                    isHoveredElsewhere={hoveredTaskId !== null && hoveredTaskId !== task.id}
+                    isZooming={isZooming && zoomedTask?.id === task.id}
+                    shouldFadeOut={isZooming && zoomedTask?.id !== task.id}
+                    isTransitioning={isTransitioning}
+                    focusSession={focusSession || undefined}
+                  />
+                  {/* Subtask moon indicators */}
+                  <SubtaskMoons
+                    task={task}
+                    orbitRadius={mobileRadius}
+                    startingAngle={startingAngle}
+                    index={index}
+                    isZooming={isZooming && zoomedTask?.id === task.id}
+                    showCenterCircle={showCenterCircle}
+                    completingSubtaskIds={completingSubtaskIds}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Overlay clone for hovered task - renders on top with matching style */}
+        {hoveredTask && hoveredTaskPosition && hoveredTaskIndex !== -1 && (
+          <>
             <div
               className="absolute pointer-events-none"
               style={{
                 left: hoveredTaskPosition.x,
                 top: hoveredTaskPosition.y,
-                zIndex: 10000,
+                zIndex: 9999,
               }}
             >
-              <div className="absolute inset-0" style={{ width: '7rem', height: '7rem', transform: 'translate(-50%, -50%)' }}>
-                <TimerBadge
-                  startTime={focusSession.startTime}
-                  isActive={focusSession.isActive}
-                  lastResumedAt={focusSession.lastResumedAt}
-                  totalTime={focusSession.totalTime}
-                />
-              </div>
+              <TaskNode
+                task={hoveredTask}
+                isSelected={false}
+                onClick={() => {}}
+                index={hoveredTaskIndex}
+                orbitRadius={getOrbitRadius(hoveredTask.priority, false)}
+                startingAngle={STARTING_ANGLES[hoveredTaskIndex] || 0}
+                onHoverChange={() => {}}
+                isClone={true}
+                isHoveredElsewhere={false}
+                forceHovered={cloneAnimated}
+              />
             </div>
-          )}
-        </>
-      )}
 
-      {/* Instructions */}
-      {!selectedTask && viewLevel === 'galaxy' && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center text-gray-400 text-sm z-10 pointer-events-none">
-          <p className="bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded-full">
-            Click a task to zoom in and see subtasks
-          </p>
-        </div>
-      )}
+            {/* Timer badge for clone - rendered outside to avoid filter stacking context */}
+            {focusSession?.taskId === hoveredTask.id && (
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: hoveredTaskPosition.x,
+                  top: hoveredTaskPosition.y,
+                  zIndex: 10000,
+                }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{ width: '7rem', height: '7rem', transform: 'translate(-50%, -50%)' }}
+                >
+                  <TimerBadge
+                    startTime={focusSession.startTime}
+                    isActive={focusSession.isActive}
+                    lastResumedAt={focusSession.lastResumedAt}
+                    totalTime={focusSession.totalTime}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Instructions */}
+        {!selectedTask && viewLevel === 'galaxy' && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center text-gray-400 text-sm z-10 pointer-events-none">
+            <p className="bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded-full">
+              Click a task to zoom in and see subtasks
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Solar System View */}

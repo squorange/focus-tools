@@ -7,6 +7,7 @@ How to maintain project knowledge across development sessions and prevent contex
 ## The Problem
 
 **Context Loss Sources:**
+
 1. **AI Session Boundaries:** Each session starts with limited context from summaries
 2. **Human Memory Decay:** Developers forget implementation details over days/weeks
 3. **Undocumented Decisions:** "Why did we do it this way?" gets lost
@@ -14,6 +15,7 @@ How to maintain project knowledge across development sessions and prevent contex
 5. **Regression Amnesia:** Same bugs recur because fixes aren't well-documented
 
 **Impact:**
+
 - Rework: Solving same problems multiple times
 - Regressions: Reintroducing fixed bugs
 - Inefficiency: Debugging instead of building
@@ -30,6 +32,7 @@ How to maintain project knowledge across development sessions and prevent contex
 #### A. Critical Invariants Comments
 
 **Pattern:**
+
 ```typescript
 /**
  * CRITICAL INVARIANT: [Rule that must not be broken]
@@ -51,6 +54,7 @@ How to maintain project knowledge across development sessions and prevent contex
 **Example:** See `app/lib/orbit-utils.ts` lines 1-95
 
 **When to use:**
+
 - Logic that has caused bugs multiple times
 - Non-obvious requirements (e.g., "use original index not filtered index")
 - Performance-critical code paths
@@ -59,6 +63,7 @@ How to maintain project knowledge across development sessions and prevent contex
 #### B. Checklist Comments at Risk Points
 
 **Pattern:**
+
 ```typescript
 // CHECKLIST before modifying this function:
 // [ ] Does new code maintain X invariant?
@@ -68,12 +73,14 @@ How to maintain project knowledge across development sessions and prevent contex
 ```
 
 **Where to place:**
+
 - Functions that have caused regressions
 - State update logic
 - Database operations
 - Complex algorithms
 
 **Example:**
+
 ```typescript
 export function initializeSubtaskOrbits(subtasks: Subtask[]): Subtask[] {
   // CHECKLIST when modifying:
@@ -81,7 +88,6 @@ export function initializeSubtaskOrbits(subtasks: Subtask[]): Subtask[] {
   // [ ] Radii calculated from active position
   // [ ] Caller must saveTask() after this function
   // [ ] Test: Complete subtask → no angular jumps
-
   // ... implementation
 }
 ```
@@ -89,12 +95,14 @@ export function initializeSubtaskOrbits(subtasks: Subtask[]): Subtask[] {
 #### C. Why-Comments vs What-Comments
 
 **Avoid:**
+
 ```typescript
 // Increment counter
 counter++;
 ```
 
 **Prefer:**
+
 ```typescript
 // Track active position separately from array index to enable inward shifting
 // as items complete while keeping angular positions stable
@@ -102,11 +110,13 @@ let activeIndex = 0;
 ```
 
 **Pattern:**
+
 - **What:** Visible from code itself
 - **Why:** Context about decisions, tradeoffs, alternatives considered
 - **Why Not:** What was tried and didn't work
 
 **Example:**
+
 ```typescript
 // We use findIndex() to get original position instead of filtered index
 // because angles must stay fixed when items complete (see INVARIANT #1).
@@ -114,12 +124,13 @@ let activeIndex = 0;
 // Tried: Using filtered index - caused angular jumps on completion
 // Tried: Recalculating all angles - caused jarring repositioning
 // Final: Persist original angles, find original index for fallback
-const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id);
+const originalIndex = parentTask.subtasks?.findIndex((st) => st.id === subtask.id);
 ```
 
 #### D. ADR (Architecture Decision Records) in Comments
 
 **Pattern:**
+
 ```typescript
 /**
  * ADR: Why orbital positions are persisted vs calculated
@@ -164,6 +175,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 **Purpose:** Track recurring bugs and prevention strategies
 
 **Structure:**
+
 - Issue name, status, severity, frequency
 - Symptom (what user sees)
 - Root cause (technical explanation)
@@ -172,6 +184,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 - Related files and concepts
 
 **Maintenance:**
+
 - Update when bug recurs (add date to history)
 - Add new issues as discovered
 - Mark as "Monitoring" after fix to track recurrence
@@ -181,6 +194,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 **Current:** High-level feature documentation
 
 **Proposed additions:**
+
 - **Core Invariants Section:**
   - Cross-reference to code files
   - Visual diagrams explaining concepts
@@ -201,6 +215,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 **Current:** Session continuity notes
 
 **Proposed improvements:**
+
 - **Active Issues Section:** Link to KNOWN_ISSUES.md entries
 - **Next Session Checklist:** What to check before starting work
 - **Quick Test Procedures:** How to verify core functionality
@@ -210,6 +225,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 **Purpose:** Explain system design and key decisions
 
 **Sections:**
+
 1. **System Overview**
    - Component hierarchy
    - Data flow
@@ -238,6 +254,7 @@ const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id)
 #### A. Type-Level Documentation
 
 **Current:**
+
 ```typescript
 export interface Subtask {
   assignedStartingAngle?: number;
@@ -246,6 +263,7 @@ export interface Subtask {
 ```
 
 **Improved:**
+
 ```typescript
 export interface Subtask {
   /**
@@ -275,6 +293,7 @@ export interface Subtask {
 #### B. Function Documentation
 
 **Pattern:**
+
 ```typescript
 /**
  * Initialize orbital positions for subtasks that lack them.
@@ -293,10 +312,7 @@ export interface Subtask {
  *
  * @see INVARIANT #3 in file header for persistence requirements
  */
-export function initializeSubtaskOrbits(
-  subtasks: Subtask[],
-  beltRing?: number
-): Subtask[] {
+export function initializeSubtaskOrbits(subtasks: Subtask[], beltRing?: number): Subtask[] {
   // ...
 }
 ```
@@ -329,8 +345,10 @@ describe('Orbital Position Persistence', () => {
 #### A. Pre-Session Checklist
 
 **For AI Assistants:**
+
 ```markdown
 Before starting work in a new session:
+
 1. Read docs/HANDOFF.md
 2. Read docs/KNOWN_ISSUES.md
 3. If working with subtasks: Read orbit-utils.ts header
@@ -339,8 +357,10 @@ Before starting work in a new session:
 ```
 
 **For Developers:**
+
 ```markdown
 After a break (1+ days):
+
 1. Review HANDOFF.md for session state
 2. Scan KNOWN_ISSUES.md for active problems
 3. Run quick test: Create task, add subtasks, complete one
@@ -350,12 +370,14 @@ After a break (1+ days):
 #### B. Post-Session Updates
 
 **AI Assistants should:**
+
 1. Update HANDOFF.md with session accomplishments
 2. Add to KNOWN_ISSUES.md if bugs recurred
 3. Update regression history with dates
 4. Flag architectural concerns for human review
 
 **Developers should:**
+
 1. Update HANDOFF.md with next steps
 2. Document decisions in commit messages
 3. Add to KNOWN_ISSUES.md if discovering patterns
@@ -364,6 +386,7 @@ After a break (1+ days):
 #### C. Code Review Checklist
 
 When reviewing PRs that touch tasks/subtasks:
+
 - [ ] Are orbital positions initialized?
 - [ ] Is saveTask() called after initialization?
 - [ ] Have angular jump tests been run?
@@ -397,7 +420,7 @@ export function validateOrbitalInvariants(task: Task): ValidationResult {
     if (actualAngle !== undefined && Math.abs(actualAngle - expectedAngle) > 1) {
       warnings.push(
         `Subtask ${st.id} angle ${actualAngle} doesn't match expected ${expectedAngle} ` +
-        `(may be intentional if reordered)`
+          `(may be intentional if reordered)`
       );
     }
   });
@@ -429,7 +452,7 @@ describe('Orbital Position Regression Tests', () => {
   test('KNOWN_ISSUE_1: Angular jumps on completion', async () => {
     // Create task with 3 subtasks
     const task = await createTestTask(['A', 'B', 'C']);
-    const initialAngles = task.subtasks.map(st => st.assignedStartingAngle);
+    const initialAngles = task.subtasks.map((st) => st.assignedStartingAngle);
 
     // Complete middle subtask
     await completeSubtask(task.id, 'B');
@@ -437,8 +460,8 @@ describe('Orbital Position Regression Tests', () => {
     // Verify remaining angles unchanged
     const updated = await getTask(task.id);
     const remainingAngles = updated.subtasks
-      .filter(st => !st.completed)
-      .map(st => st.assignedStartingAngle);
+      .filter((st) => !st.completed)
+      .map((st) => st.assignedStartingAngle);
 
     expect(remainingAngles).toEqual([initialAngles[0], initialAngles[2]]);
   });
@@ -450,8 +473,8 @@ describe('Orbital Position Regression Tests', () => {
 
     // Verify all subtasks have positions
     const tasks = await getTasks();
-    tasks.forEach(task => {
-      task.subtasks?.forEach(st => {
+    tasks.forEach((task) => {
+      task.subtasks?.forEach((st) => {
         expect(st.assignedStartingAngle).toBeDefined();
         expect(st.assignedOrbitRadius).toBeDefined();
       });
@@ -489,6 +512,7 @@ fi
 ## Practical Implementation Plan
 
 ### Week 1: Quick Wins (4 hours)
+
 - ✅ Add invariants header to orbit-utils.ts
 - ✅ Create KNOWN_ISSUES.md with existing issues
 - ✅ Fix sample data initialization
@@ -496,18 +520,21 @@ fi
 - [ ] Add checklist comments to high-risk functions (1 hour)
 
 ### Week 2: Documentation (4 hours)
+
 - [ ] Enhance CONCEPTS.md with diagrams
 - [ ] Create ARCHITECTURE.md
 - [ ] Add JSDoc to key functions
 - [ ] Update HANDOFF.md with checklists
 
 ### Week 3: Testing (6 hours)
+
 - [ ] Write regression tests for known issues
 - [ ] Add integration tests for orbital system
 - [ ] Set up test coverage reporting
 - [ ] Document test procedures in KNOWN_ISSUES.md
 
 ### Week 4: Automation (4 hours)
+
 - [ ] Add runtime validation in dev mode
 - [ ] Create git pre-commit hooks
 - [ ] Set up automated visual regression testing
@@ -574,4 +601,4 @@ fi
 
 ---
 
-*Last Updated: 2025-11-10*
+_Last Updated: 2025-11-10_

@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import OrbitalView from './components/OrbitalView';
 import { Task } from './lib/types';
 import { getTasks, initializeSampleData, saveTask } from './lib/offline-store';
-import { initializeSubtaskOrbits, validateOrbitalInvariants, logValidationResults } from './lib/orbit-utils';
+import {
+  initializeSubtaskOrbits,
+  validateOrbitalInvariants,
+  logValidationResults,
+} from './lib/orbit-utils';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -37,7 +41,7 @@ export default function Home() {
 
         if (storedTasks.length > 0) {
           // Initialize subtask orbits for tasks that don't have them assigned
-          const tasksWithOrbits = storedTasks.map(task => ({
+          const tasksWithOrbits = storedTasks.map((task) => ({
             ...task,
             subtasks: task.subtasks
               ? initializeSubtaskOrbits(task.subtasks, task.priorityMarkerRing)
@@ -53,7 +57,7 @@ export default function Home() {
 
           // Validate orbital positions in development mode
           if (process.env.NODE_ENV === 'development') {
-            tasksWithOrbits.forEach(task => {
+            tasksWithOrbits.forEach((task) => {
               if (task.subtasks && task.subtasks.length > 0) {
                 const result = validateOrbitalInvariants(task.subtasks, task.id);
                 logValidationResults(result, task.title);
@@ -81,7 +85,7 @@ export default function Home() {
 
           // Validate orbital positions in development mode
           if (process.env.NODE_ENV === 'development') {
-            tasksWithOrbits.forEach(task => {
+            tasksWithOrbits.forEach((task) => {
               if (task.subtasks && task.subtasks.length > 0) {
                 const result = validateOrbitalInvariants(task.subtasks, task.id);
                 logValidationResults(result, task.title);
@@ -116,7 +120,7 @@ export default function Home() {
 
           // Validate orbital positions in development mode
           if (process.env.NODE_ENV === 'development') {
-            tasksWithOrbits.forEach(task => {
+            tasksWithOrbits.forEach((task) => {
               if (task.subtasks && task.subtasks.length > 0) {
                 const result = validateOrbitalInvariants(task.subtasks, task.id);
                 logValidationResults(result, task.title);
@@ -145,7 +149,11 @@ export default function Home() {
               <p className="text-red-300 text-sm">{error}</p>
               <p className="text-gray-400 text-xs mt-2">
                 Open{' '}
-                <a href="/clear-db.html" className="text-purple-400 hover:underline" target="_blank">
+                <a
+                  href="/clear-db.html"
+                  className="text-purple-400 hover:underline"
+                  target="_blank"
+                >
                   this tool
                 </a>{' '}
                 to clear the database, or check browser DevTools console for details.

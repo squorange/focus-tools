@@ -8,6 +8,7 @@ Future improvements to reduce clutter and improve UX.
 
 **Current State:**
 Task/subtask details panel has multiple expanded sections:
+
 - Description (text area)
 - Schedule section (date fields)
 - Organization section (energy, tags, estimated time)
@@ -19,6 +20,7 @@ Task/subtask details panel has multiple expanded sections:
 ### Enhancement Option 1: Chip/Pill Row
 
 **Design:**
+
 ```
 ┌────────────────────────────────────┐
 │ Task Title                    [⋮]  │
@@ -39,12 +41,14 @@ On click any chip → expands to edit mode:
 ```
 
 **Benefits:**
+
 - Compact view
 - Quick visual scan
 - Edit-on-demand
 - Only shows filled properties
 
 **Implementation:**
+
 - Clickable chips for each property
 - Inline or modal edit mode
 - Hide empty properties or show "[+ Add]" chip
@@ -54,6 +58,7 @@ On click any chip → expands to edit mode:
 ### Enhancement Option 2: Notion-Style Properties
 
 **Design:**
+
 ```
 ┌────────────────────────────────────┐
 │ Task Title                    [⋮]  │
@@ -75,12 +80,14 @@ Click any property → inline edit:
 ```
 
 **Benefits:**
+
 - Familiar pattern (Notion, Linear, Height)
 - Scannable
 - Extensible (easy to add properties)
 - Works well for keyboard navigation
 
 **Implementation:**
+
 - Table/grid layout
 - Click to edit inline
 - Show only populated properties + "[+ Add]"
@@ -89,6 +96,7 @@ Click any property → inline edit:
 ---
 
 ### Recommendation
+
 Start with **Option 1** (Chip/Pill Row) - simpler to implement, less structural change.
 
 Later consider **Option 2** if we add more properties or need better organization.
@@ -98,15 +106,18 @@ Later consider **Option 2** if we add more properties or need better organizatio
 ## Related Considerations
 
 **Mobile/Tablet:**
+
 - Pills work well on mobile (tappable)
 - Notion-style might be cramped on small screens
 
 **Accessibility:**
+
 - Ensure chips are keyboard accessible
 - Clear focus states
 - Screen reader friendly labels
 
 **Data Density:**
+
 - User preference toggle: "Compact view" vs "Expanded view"
 - Remember preference per user
 
@@ -116,4 +127,4 @@ Later consider **Option 2** if we add more properties or need better organizatio
 **Priority:** Medium (UX improvement, not critical)
 **Dependencies:** None (can implement independently)
 
-*Last Updated: 2025-11-10*
+_Last Updated: 2025-11-10_

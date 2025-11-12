@@ -85,12 +85,23 @@ function getSubtaskCounterOrbitClass(subtaskId: string): string {
   return 'counter-orbit-subtask-slow';
 }
 
-export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubtaskClick, onToggleSubtask, onParentClick, onTaskUpdate, focusSession, completingSubtaskIds }: SolarSystemViewProps) {
+export default function SolarSystemView({
+  parentTask,
+  selectedSubtaskId,
+  onSubtaskClick,
+  onToggleSubtask,
+  onParentClick,
+  onTaskUpdate,
+  focusSession,
+  completingSubtaskIds,
+}: SolarSystemViewProps) {
   const [hoveredSubtaskId, setHoveredSubtaskId] = useState<string | null>(null);
   const [showSubtasks, setShowSubtasks] = useState(false);
 
   // Filter out completed subtasks from orbital view (but keep completing ones for animation)
-  const subtasks = (parentTask.subtasks || []).filter(st => !st.completed || completingSubtaskIds.has(st.id));
+  const subtasks = (parentTask.subtasks || []).filter(
+    (st) => !st.completed || completingSubtaskIds.has(st.id)
+  );
   const priority = priorityConfig[parentTask.priority];
 
   // Check if parent task is in focus (show even when paused)
@@ -102,10 +113,11 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
 
   // Celebration only happens when all original targets are complete
   // Check that we have targets AND they're all complete
-  const allTargetsComplete = parentTask.priorityMarkerOriginalIds &&
+  const allTargetsComplete =
+    parentTask.priorityMarkerOriginalIds &&
     parentTask.priorityMarkerOriginalIds.length > 0 &&
-    parentTask.priorityMarkerOriginalIds.every(id => {
-      const subtask = parentTask.subtasks?.find(st => st.id === id);
+    parentTask.priorityMarkerOriginalIds.every((id) => {
+      const subtask = parentTask.subtasks?.find((st) => st.id === id);
       return subtask?.completed === true;
     });
   const isCelebrating = allTargetsComplete && parentTask.priorityMarkerEnabled;
@@ -127,7 +139,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
     const newRing = Math.max(2, currentMarkerRing - 1);
 
     // Get subtask IDs that are inside the belt (before the belt ring)
-    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(st => st.id);
+    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map((st) => st.id);
 
     // Recalculate subtask radii with new belt position
     const updatedSubtasks = recalculateRadii(parentTask.subtasks || [], newRing);
@@ -150,7 +162,7 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
     const newRing = Math.min(subtasks.length + 1, currentMarkerRing + 1);
 
     // Get subtask IDs that are inside the belt (before the belt ring)
-    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(st => st.id);
+    const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map((st) => st.id);
 
     // Recalculate subtask radii with new belt position
     const updatedSubtasks = recalculateRadii(parentTask.subtasks || [], newRing);
@@ -175,9 +187,10 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
 
     // Add a ring for each subtask position
     for (let i = 0; i < subtasks.length; i++) {
-      const radius = subtasks[i].assignedOrbitRadius !== undefined
-        ? subtasks[i].assignedOrbitRadius!
-        : getSubtaskRadiusWithBelt(i, parentTask.priorityMarkerRing);
+      const radius =
+        subtasks[i].assignedOrbitRadius !== undefined
+          ? subtasks[i].assignedOrbitRadius!
+          : getSubtaskRadiusWithBelt(i, parentTask.priorityMarkerRing);
 
       if (!radii.includes(radius)) {
         radii.push(radius);
@@ -241,10 +254,13 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
           <div
             className="absolute inset-0 rounded-full pointer-events-none"
             style={{
-              background: 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))',
+              background:
+                'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))',
             }}
           />
-          <div className={`${priority.textHover} text-xs md:text-sm font-medium text-center px-3 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`}>
+          <div
+            className={`${priority.textHover} text-xs md:text-sm font-medium text-center px-3 leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`}
+          >
             {parentTask.title}
           </div>
         </button>
@@ -265,30 +281,34 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
         // CRITICAL: Use original array index for angle calculation to prevent angular jumps
         // When assignedStartingAngle is missing, we must calculate from the ORIGINAL array position,
         // not the filtered position, otherwise angles shift when items complete
-        const originalIndex = parentTask.subtasks?.findIndex(st => st.id === subtask.id) ?? index;
+        const originalIndex = parentTask.subtasks?.findIndex((st) => st.id === subtask.id) ?? index;
         const totalSubtasks = parentTask.subtasks?.length ?? subtasks.length;
 
         // Use assigned angle if available, otherwise fallback to calculated from ORIGINAL index
-        const startingAngle = subtask.assignedStartingAngle !== undefined
-          ? subtask.assignedStartingAngle
-          : getSubtaskAngle(originalIndex, totalSubtasks);
+        const startingAngle =
+          subtask.assignedStartingAngle !== undefined
+            ? subtask.assignedStartingAngle
+            : getSubtaskAngle(originalIndex, totalSubtasks);
 
         // Use assigned radius if available, otherwise fallback to calculated
-        const orbitRadius = subtask.assignedOrbitRadius !== undefined
-          ? subtask.assignedOrbitRadius
-          : getSubtaskOrbitRadius(index);
+        const orbitRadius =
+          subtask.assignedOrbitRadius !== undefined
+            ? subtask.assignedOrbitRadius
+            : getSubtaskOrbitRadius(index);
 
         // Use stable classes based on ID, not radius
         const orbitClass = getSubtaskOrbitClass(subtask.id);
         const counterOrbitClass = getSubtaskCounterOrbitClass(subtask.id);
         const isHovered = hoveredSubtaskId === subtask.id;
         const isSelected = selectedSubtaskId === subtask.id;
-        const isDimmed = (hoveredSubtaskId != null && !isHovered) || (selectedSubtaskId != null && !isSelected);
+        const isDimmed =
+          (hoveredSubtaskId != null && !isHovered) || (selectedSubtaskId != null && !isSelected);
         const isCompleting = completingSubtaskIds.has(subtask.id);
         const isCompleted = subtask.completed;
 
         // Check if this subtask is in focus (show even when paused)
-        const isSubtaskInFocus = focusSession?.taskId === parentTask.id && focusSession?.subtaskId === subtask.id;
+        const isSubtaskInFocus =
+          focusSession?.taskId === parentTask.id && focusSession?.subtaskId === subtask.id;
 
         return (
           <div
@@ -296,33 +316,41 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
             className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-500 ease-in-out"
             style={{
               zIndex: 10,
-              opacity: showSubtasks ? (isCompleting ? 0 : isCompleted ? 0.4 : isDimmed ? 0.3 : 1) : 0,
+              opacity: showSubtasks
+                ? isCompleting
+                  ? 0
+                  : isCompleted
+                    ? 0.4
+                    : isDimmed
+                      ? 0.3
+                      : 1
+                : 0,
               transform: isCompleting ? 'scale(0.5)' : 'scale(1)',
             }}
           >
-              {/* Orbit rotation */}
+            {/* Orbit rotation */}
+            <div
+              className={`${orbitClass} absolute left-1/2 top-1/2 pointer-events-none`}
+              style={{
+                animationDelay: `${getStableAnimationDelay(subtask.id)}s`,
+                transformStyle: 'preserve-3d',
+                willChange: 'transform',
+                ['--starting-angle' as string]: `${startingAngle}deg`,
+              }}
+            >
+              {/* Radius positioning - smooth transition when radius changes */}
               <div
-                className={`${orbitClass} absolute left-1/2 top-1/2 pointer-events-none`}
+                className="absolute transition-transform duration-500 ease-in-out"
                 style={{
-                  animationDelay: `${getStableAnimationDelay(subtask.id)}s`,
+                  transform: `translateX(${orbitRadius}px) translateZ(0)`,
                   transformStyle: 'preserve-3d',
                   willChange: 'transform',
-                  ['--starting-angle' as string]: `${startingAngle}deg`,
+                  left: '-2.5rem',
+                  top: '-2.5rem',
                 }}
               >
-                {/* Radius positioning - smooth transition when radius changes */}
-                <div
-                  className="absolute transition-transform duration-500 ease-in-out"
-                  style={{
-                    transform: `translateX(${orbitRadius}px) translateZ(0)`,
-                    transformStyle: 'preserve-3d',
-                    willChange: 'transform',
-                    left: '-2.5rem',
-                    top: '-2.5rem',
-                  }}
-                >
-                  {/* Subtask button */}
-                  <button
+                {/* Subtask button */}
+                <button
                   onClick={() => {
                     // Toggle selection: deselect if already selected
                     if (selectedSubtaskId === subtask.id) {
@@ -336,11 +364,12 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                   className={`
                     subtask-node
                     w-20 h-20 rounded-full
-                    ${isSelected
-                      ? 'bg-slate-800/40 border-gray-400/40'
-                      : isHovered
-                      ? 'bg-slate-800/40 border-gray-400/40'
-                      : 'bg-slate-900/20 border-gray-500/15'
+                    ${
+                      isSelected
+                        ? 'bg-slate-800/40 border-gray-400/40'
+                        : isHovered
+                          ? 'bg-slate-800/40 border-gray-400/40'
+                          : 'bg-slate-900/20 border-gray-500/15'
                     }
                     backdrop-blur-xl border
                     flex flex-col items-center justify-center
@@ -356,9 +385,10 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                   <div
                     className="absolute inset-0 rounded-full pointer-events-none transition-all duration-300"
                     style={{
-                      background: (isSelected || isHovered)
-                        ? 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))'
-                        : 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08))',
+                      background:
+                        isSelected || isHovered
+                          ? 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15))'
+                          : 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.08))',
                     }}
                   />
 
@@ -371,7 +401,9 @@ export default function SolarSystemView({ parentTask, selectedSubtaskId, onSubta
                     }}
                   >
                     {/* Title */}
-                    <div className={`text-xs text-center px-2 leading-tight transition-colors duration-300 ${(isSelected || isHovered) ? 'text-gray-100' : 'text-gray-300/85'} ${isCompleted ? 'line-through opacity-60' : ''}`}>
+                    <div
+                      className={`text-xs text-center px-2 leading-tight transition-colors duration-300 ${isSelected || isHovered ? 'text-gray-100' : 'text-gray-300/85'} ${isCompleted ? 'line-through opacity-60' : ''}`}
+                    >
                       {subtask.title}
                     </div>
                   </div>

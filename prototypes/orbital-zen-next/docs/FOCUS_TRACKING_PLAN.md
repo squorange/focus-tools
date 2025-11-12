@@ -19,18 +19,21 @@ Comprehensive focus and time tracking system with session management, break remi
 ### Dual Model System
 
 **1. FocusSession (Active State)**
+
 - Represents current/active focus session
 - Single instance in memory + IndexedDB
 - Lives in React state at app level
 - Gets converted to TimeEntry when session ends
 
 **2. TimeEntry (Historical Record)**
+
 - Persistent log of all completed sessions
 - Stored as collection in IndexedDB
 - Created when FocusSession ends (Stop/Complete/Stale)
 - Used for time aggregation and analytics
 
 **Relationship Flow**:
+
 ```
 User clicks "Start Focus"
   → Create/Update FocusSession (active)
@@ -47,34 +50,34 @@ User clicks "Start Focus"
 
 ```typescript
 interface FocusSession {
-  id: string;  // UUID for this session
+  id: string; // UUID for this session
   taskId: string;
   subtaskId?: string;
   startTime: Date;
-  isActive: boolean;  // true = running, false = paused
-  pausedAt?: Date;  // When currently paused (if isActive = false)
-  totalTime: number;  // Accumulated active seconds
+  isActive: boolean; // true = running, false = paused
+  pausedAt?: Date; // When currently paused (if isActive = false)
+  totalTime: number; // Accumulated active seconds
 
   // Break tracking
-  currentBreakStartTime?: Date;  // Set when break starts
-  totalBreakTime: number;  // Accumulated break seconds
+  currentBreakStartTime?: Date; // Set when break starts
+  totalBreakTime: number; // Accumulated break seconds
   breaksTaken: number;
 
   // Pause tracking
   pauseCount: number;
-  totalPauseTime: number;  // Accumulated pause seconds
+  totalPauseTime: number; // Accumulated pause seconds
   pauseHistory: Array<{
     pausedAt: Date;
-    resumedAt?: Date;  // undefined = currently paused
+    resumedAt?: Date; // undefined = currently paused
   }>;
 
   // Break reminder state
   lastBreakReminderAt?: Date;
   breakReminderSnoozeCount: number;
-  flowModeEnabled: boolean;  // User dismissed reminders
+  flowModeEnabled: boolean; // User dismissed reminders
 
   // Stale detection
-  lastActivityTime: Date;  // Updated on any user interaction
+  lastActivityTime: Date; // Updated on any user interaction
 
   device: 'desktop' | 'mobile' | 'unknown';
 }
@@ -84,24 +87,24 @@ interface FocusSession {
 
 ```typescript
 interface TimeEntry {
-  id: string;  // UUID for this entry
-  sessionId: string;  // Links to original FocusSession.id
+  id: string; // UUID for this entry
+  sessionId: string; // Links to original FocusSession.id
   taskId: string;
   subtaskId?: string;
 
   // Time data
   startTime: Date;
   endTime: Date;
-  duration: number;  // Active work seconds (excludes pauses & breaks)
+  duration: number; // Active work seconds (excludes pauses & breaks)
 
   // Session metadata
   pauseCount: number;
-  totalPauseTime: number;  // Seconds
+  totalPauseTime: number; // Seconds
   breaksTaken: number;
-  totalBreakTime: number;  // Seconds
+  totalBreakTime: number; // Seconds
 
   // Completion info
-  wasCompleted: boolean;  // true if ended with "Complete" button
+  wasCompleted: boolean; // true if ended with "Complete" button
   endReason: 'completed' | 'stopped' | 'stale' | 'manual';
 
   // Manual entry
@@ -126,23 +129,22 @@ Tasks get computed fields (not stored, calculated on-demand):
 
 ```typescript
 interface TaskTimeStats {
-  totalActiveTime: number;  // Sum of all TimeEntry.duration
-  totalBreakTime: number;   // Sum of all TimeEntry.totalBreakTime
-  totalPauseTime: number;   // Sum of all TimeEntry.totalPauseTime
-  sessionCount: number;     // Count of TimeEntries
-  averageSessionLength: number;  // Mean duration
-  completionRate: number;   // % of sessions that ended with "completed"
-  lastWorkedOn?: Date;      // Most recent TimeEntry.endTime
+  totalActiveTime: number; // Sum of all TimeEntry.duration
+  totalBreakTime: number; // Sum of all TimeEntry.totalBreakTime
+  totalPauseTime: number; // Sum of all TimeEntry.totalPauseTime
+  sessionCount: number; // Count of TimeEntries
+  averageSessionLength: number; // Mean duration
+  completionRate: number; // % of sessions that ended with "completed"
+  lastWorkedOn?: Date; // Most recent TimeEntry.endTime
 }
 ```
 
 **Parent-Subtask Relationship**:
+
 ```typescript
 function getTotalTaskTime(taskId: string): number {
   // Automatically includes subtask time since all entries have taskId
-  const entries = await db.timeEntries
-    .where('taskId').equals(taskId)
-    .toArray();
+  const entries = await db.timeEntries.where('taskId').equals(taskId).toArray();
 
   return entries.reduce((sum, e) => sum + e.duration, 0);
 }
@@ -150,8 +152,9 @@ function getTotalTaskTime(taskId: string): number {
 function getDirectParentTime(taskId: string): number {
   // Time spent on parent without subtask focus
   const entries = await db.timeEntries
-    .where('taskId').equals(taskId)
-    .filter(e => !e.subtaskId)
+    .where('taskId')
+    .equals(taskId)
+    .filter((e) => !e.subtaskId)
     .toArray();
 
   return entries.reduce((sum, e) => sum + e.duration, 0);
@@ -223,6 +226,7 @@ ACTIVE (resumed)
 ### 1. Focus Button States
 
 **Idle State** (no active session):
+
 ```
 ┌──────────────────┐
 │   Start Focus    │  ← Primary button (bg-gray-900)
@@ -230,6 +234,7 @@ ACTIVE (resumed)
 ```
 
 **Active State** (timer running):
+
 ```
 ┌──────────────┐  ┌──────────────┐
 │  ⏸ Pause    │  │  ✓ Complete  │
@@ -238,6 +243,7 @@ ACTIVE (resumed)
 ```
 
 **Paused State** (timer paused):
+
 ```
 ┌──────────────┐  ┌──────────────┐
 │  ▶ Resume   │  │  ■ Stop      │
@@ -246,6 +252,7 @@ ACTIVE (resumed)
 ```
 
 **On Break**:
+
 ```
 Break: 3:42 remaining
 
@@ -259,6 +266,7 @@ Break: 3:42 remaining
 **Location**: AIPanel header, below title
 
 **Active/Paused**:
+
 ```
 ┌─────────────────────────────────┐
 │  Task Title                   × │
@@ -267,6 +275,7 @@ Break: 3:42 remaining
 ```
 
 **On Break**:
+
 ```
 ┌─────────────────────────────────┐
 │  Task Title                   × │
@@ -275,6 +284,7 @@ Break: 3:42 remaining
 ```
 
 **In Details View** (collapsed, showing total time):
+
 ```
 Organization
   Energy: [High] [Med] [Low] [Rest]
@@ -288,9 +298,7 @@ When completing a subtask with "Complete" button:
 ```javascript
 // Simple window.confirm for v1
 const nextAction = window.confirm(
-  "Subtask completed!\n\n" +
-  "Continue to next subtask?\n" +
-  "OK = Continue | Cancel = End Session"
+  'Subtask completed!\n\n' + 'Continue to next subtask?\n' + 'OK = Continue | Cancel = End Session'
 );
 
 if (nextAction) {
@@ -308,6 +316,7 @@ if (nextAction) {
 ```
 
 **Future Enhancement**: Replace with modal showing:
+
 ```
 ✓ Subtask completed!
 
@@ -337,19 +346,23 @@ function formatDuration(seconds: number): string {
   }
 
   // Historical time (rounded)
-  if (seconds < 300) {  // < 5 min
+  if (seconds < 300) {
+    // < 5 min
     return `${minutes}m ${seconds % 60}s`;
   }
-  if (seconds < 1800) {  // 5-30 min
+  if (seconds < 1800) {
+    // 5-30 min
     return `${minutes}m`;
   }
-  if (seconds < 7200) {  // 30min - 2hr
+  if (seconds < 7200) {
+    // 30min - 2hr
     const roundedMin = Math.round(minutes / 5) * 5;
     const h = Math.floor(roundedMin / 60);
     const m = roundedMin % 60;
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   }
-  if (seconds < 28800) {  // 2hr - 8hr
+  if (seconds < 28800) {
+    // 2hr - 8hr
     const roundedMin = Math.round(minutes / 15) * 15;
     const h = Math.floor(roundedMin / 60);
     const m = roundedMin % 60;
@@ -391,7 +404,7 @@ useEffect(() => {
 
 ```typescript
 const BREAK_CONFIG = {
-  intervalMinutes: 25,  // Remind after this many minutes
+  intervalMinutes: 25, // Remind after this many minutes
   breakDurationMinutes: 5,
   maxSnoozes: 2,
   snoozeDurationMinutes: 10,
@@ -404,10 +417,11 @@ const BREAK_CONFIG = {
 function checkBreakReminder(session: FocusSession): void {
   // Don't remind if:
   if (
-    !session.isActive ||  // Session paused
-    session.flowModeEnabled ||  // User enabled flow mode
-    session.currentBreakStartTime  // Already on break
-  ) return;
+    !session.isActive || // Session paused
+    session.flowModeEnabled || // User enabled flow mode
+    session.currentBreakStartTime // Already on break
+  )
+    return;
 
   const minutesSinceStart = (Date.now() - session.lastBreakReminderAt.getTime()) / 60000;
 
@@ -420,8 +434,8 @@ function showBreakReminder(session: FocusSession): void {
   // V1: Simple confirm
   const action = window.confirm(
     `You've been focusing for ${BREAK_CONFIG.intervalMinutes} minutes.\n\n` +
-    `Take a ${BREAK_CONFIG.breakDurationMinutes} minute break?\n\n` +
-    `OK = Take Break | Cancel = Snooze`
+      `Take a ${BREAK_CONFIG.breakDurationMinutes} minute break?\n\n` +
+      `OK = Take Break | Cancel = Snooze`
   );
 
   if (action) {
@@ -439,7 +453,7 @@ function snoozeBreakReminder(session: FocusSession): void {
     // Third snooze = ask about flow mode
     const enableFlow = window.confirm(
       "You've snoozed twice. Are you in flow state?\n\n" +
-      "OK = Yes, stop reminding me | Cancel = Keep reminding"
+        'OK = Yes, stop reminding me | Cancel = Keep reminding'
     );
 
     if (enableFlow) {
@@ -464,23 +478,24 @@ function startBreak(session: FocusSession): void {
   saveFocusSession(session);
 
   // Set timeout to auto-end break
-  setTimeout(() => {
-    if (session.currentBreakStartTime) {
-      endBreak(session);
-    }
-  }, BREAK_CONFIG.breakDurationMinutes * 60 * 1000);
+  setTimeout(
+    () => {
+      if (session.currentBreakStartTime) {
+        endBreak(session);
+      }
+    },
+    BREAK_CONFIG.breakDurationMinutes * 60 * 1000
+  );
 }
 
 function endBreak(session: FocusSession): void {
   if (!session.currentBreakStartTime) return;
 
-  const breakDuration = Math.floor(
-    (Date.now() - session.currentBreakStartTime.getTime()) / 1000
-  );
+  const breakDuration = Math.floor((Date.now() - session.currentBreakStartTime.getTime()) / 1000);
 
   session.totalBreakTime += breakDuration;
   session.currentBreakStartTime = undefined;
-  session.lastBreakReminderAt = new Date();  // Reset reminder
+  session.lastBreakReminderAt = new Date(); // Reset reminder
   session.breakReminderSnoozeCount = 0;
 
   // Resume main timer
@@ -501,7 +516,7 @@ function checkStaleSession(session: FocusSession): boolean {
   if (!session.isActive) return false;
 
   const activeMinutes = session.totalTime / 60;
-  return activeMinutes > 120;  // 2 hours
+  return activeMinutes > 120; // 2 hours
 }
 
 // On app mount/focus
@@ -517,8 +532,8 @@ async function detectStaleSessions(): Promise<void> {
 function handleStaleSession(session: FocusSession): void {
   const action = window.confirm(
     `You have a focus session running for ${formatDuration(session.totalTime)}.\n\n` +
-    `Is this still accurate?\n\n` +
-    `OK = Keep as-is | Cancel = I forgot to stop`
+      `Is this still accurate?\n\n` +
+      `OK = Keep as-is | Cancel = I forgot to stop`
   );
 
   if (!action) {
@@ -544,7 +559,8 @@ db.version(2).stores({
 
   // New tables
   focusSessions: 'id, taskId, subtaskId, isActive, startTime, lastActivityTime',
-  timeEntries: 'id, sessionId, taskId, subtaskId, startTime, endTime, wasCompleted, endReason, isManualEntry',
+  timeEntries:
+    'id, sessionId, taskId, subtaskId, startTime, endTime, wasCompleted, endReason, isManualEntry',
 });
 
 // Indexes for fast queries
@@ -560,11 +576,10 @@ db.timeEntries.createIndex('byDate', 'endTime');
 // We don't need to migrate since this is a clean slate
 // But if we did:
 
-db.version(2).upgrade(tx => {
+db.version(2).upgrade((tx) => {
   // Option 1: Keep old fields for reference, populate new system from scratch
   // Option 2: Create synthetic TimeEntries from aggregated data (not recommended)
   // Option 3: Reset all time data (cleanest)
-
   // We chose clean slate, so no migration needed
 });
 ```
@@ -576,10 +591,7 @@ db.version(2).upgrade(tx => {
 ### Session Management
 
 ```typescript
-async function startFocusSession(
-  taskId: string,
-  subtaskId?: string
-): Promise<FocusSession> {
+async function startFocusSession(taskId: string, subtaskId?: string): Promise<FocusSession> {
   // 1. Check for existing active session
   const existing = await getActiveFocusSession();
   if (existing) {
@@ -629,9 +641,7 @@ async function resumeSession(session: FocusSession): Promise<void> {
 
   // Calculate pause duration
   if (session.pausedAt) {
-    const pauseDuration = Math.floor(
-      (Date.now() - session.pausedAt.getTime()) / 1000
-    );
+    const pauseDuration = Math.floor((Date.now() - session.pausedAt.getTime()) / 1000);
     session.totalPauseTime += pauseDuration;
 
     // Update pause history
@@ -683,10 +693,7 @@ async function endSession(
   return entry;
 }
 
-async function completeTaskFromSession(
-  session: FocusSession,
-  task: Task
-): Promise<void> {
+async function completeTaskFromSession(session: FocusSession, task: Task): Promise<void> {
   // 1. End session
   await endSession(session, 'completed', true);
 
@@ -703,10 +710,7 @@ async function completeTaskFromSession(
 
 ```typescript
 async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
-  const entries = await db.timeEntries
-    .where('taskId')
-    .equals(taskId)
-    .toArray();
+  const entries = await db.timeEntries.where('taskId').equals(taskId).toArray();
 
   if (entries.length === 0) {
     return {
@@ -722,7 +726,7 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
   const totalActiveTime = entries.reduce((sum, e) => sum + e.duration, 0);
   const totalBreakTime = entries.reduce((sum, e) => sum + e.totalBreakTime, 0);
   const totalPauseTime = entries.reduce((sum, e) => sum + e.totalPauseTime, 0);
-  const completedCount = entries.filter(e => e.wasCompleted).length;
+  const completedCount = entries.filter((e) => e.wasCompleted).length;
 
   return {
     totalActiveTime,
@@ -745,6 +749,7 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 **Goal**: Basic focus/pause/stop/complete with time tracking
 
 **Tasks**:
+
 - [ ] Create TimeEntry and FocusSession data models
 - [ ] Set up IndexedDB tables (version 2 upgrade)
 - [ ] Implement session lifecycle functions (start/pause/resume/end)
@@ -763,6 +768,7 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 **Goal**: Break reminders, stale detection, manual entries
 
 **Tasks**:
+
 - [ ] Implement break reminder system
 - [ ] Add break timer with pause/resume logic
 - [ ] Implement stale session detection on app mount
@@ -779,6 +785,7 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 **Goal**: View past sessions, see insights
 
 **Tasks**:
+
 - [ ] Create TimeHistory component (modal or panel section)
 - [ ] Display list of TimeEntries for a task
 - [ ] Show aggregated stats in task details
@@ -794,11 +801,13 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 **Goal**: Sync sessions across devices
 
 **Prerequisites**:
+
 - Backend API (Supabase, Firebase, or custom)
 - Authentication system
 - WebSocket or polling for real-time updates
 
 **Tasks**:
+
 - [ ] Design sync protocol
 - [ ] Handle conflict resolution
 - [ ] Implement optimistic updates
@@ -812,19 +821,19 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 
 ## Technical Decisions Made
 
-| Decision | Rationale |
-|----------|-----------|
-| **Dual model (FocusSession + TimeEntry)** | Separates active state from history, cleaner queries |
-| **Break timer pauses main timer** | Clearer separation of work vs. break time |
-| **Stale = excessive duration, not activity tracking** | Simpler to implement, still catches most issues |
-| **Local-only for Phase 1** | Faster development, add sync later when backend ready |
-| **2 button states (Active/Paused)** | Cleaner UI, less cognitive load |
-| **Auto-start next subtask on "Continue"** | Maintains focus momentum |
-| **Simple alerts for v1** | Ship faster, upgrade to modal later |
-| **Round time display in details view** | Reduces noise, shows approximate effort |
-| **Exact time in active session** | User wants precision when actively working |
-| **IndexedDB for all storage** | Consistent with existing system, offline-first |
-| **No migration from old time fields** | Clean slate, better data quality going forward |
+| Decision                                              | Rationale                                             |
+| ----------------------------------------------------- | ----------------------------------------------------- |
+| **Dual model (FocusSession + TimeEntry)**             | Separates active state from history, cleaner queries  |
+| **Break timer pauses main timer**                     | Clearer separation of work vs. break time             |
+| **Stale = excessive duration, not activity tracking** | Simpler to implement, still catches most issues       |
+| **Local-only for Phase 1**                            | Faster development, add sync later when backend ready |
+| **2 button states (Active/Paused)**                   | Cleaner UI, less cognitive load                       |
+| **Auto-start next subtask on "Continue"**             | Maintains focus momentum                              |
+| **Simple alerts for v1**                              | Ship faster, upgrade to modal later                   |
+| **Round time display in details view**                | Reduces noise, shows approximate effort               |
+| **Exact time in active session**                      | User wants precision when actively working            |
+| **IndexedDB for all storage**                         | Consistent with existing system, offline-first        |
+| **No migration from old time fields**                 | Clean slate, better data quality going forward        |
 
 ---
 
@@ -839,12 +848,14 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 **Decision**: Keep session notes, make them optional and separate from task notes
 
 **Rationale**:
+
 - **Session notes** capture "what I accomplished this session" (ephemeral, session-specific)
 - **Task notes** remain clean canonical description/context for dependent tasks
 - Session notes are per TimeEntry, optional field
 - Users can add session note when ending a focus session
 
 **Implementation**:
+
 - Add optional "Add session note" prompt when ending session (Stop/Complete)
 - Store in TimeEntry.sessionNotes field
 - Display in time history view
@@ -858,6 +869,7 @@ async function getTaskTimeStats(taskId: string): Promise<TaskTimeStats> {
 
 **Implementation**:
 During break, display in panel header:
+
 ```
 ⏸ 23:47 · Paused              ← Main timer (paused state)
 ☕ Break: 3:42 remaining       ← Break countdown
@@ -872,16 +884,19 @@ This gives full context - user sees total session time and remaining break time.
 **Decision**: Build web MVP first, migrate to React Native later
 
 **Timeline**:
+
 - **Phase 1-3**: Web application with `window.confirm()` / `window.alert()`
 - **Phase 4+**: React Native migration with native modals and push notifications
 
 **Implications**:
+
 - Use simple browser alerts for v1 (acceptable for web)
 - Break reminders, stale session detection use confirm dialogs
 - Timer updates use Page Visibility API (pause when tab hidden)
 - No background notifications needed for web MVP
 
 **Future**: When migrating to React Native:
+
 - Replace browser alerts → native modal component
 - Add local notifications for break reminders
 - Use background tasks for timer accuracy
@@ -894,11 +909,13 @@ This gives full context - user sees total session time and remaining break time.
 **Decision**: Keep all entries by default, add "Clear history" option in settings
 
 **Rationale**:
+
 - Storage is negligible (1.8 MB/year even with 10 sessions/day)
 - Maximum value for analytics, invoicing, estimation
 - User control via manual clear option
 
 **Implementation**:
+
 - **Phase 1**: Keep all entries indefinitely
 - **Phase 1**: Add "Clear time history" button in settings (with confirmation)
 - **Phase 2**: Add retention policy options (30/90/365 days)
@@ -915,11 +932,13 @@ This gives full context - user sees total session time and remaining break time.
 **Implementation**:
 
 **Primary display** (always visible):
+
 ```
 Total Focus: 5h 20m
 ```
 
 **On hover/click** (tooltip or expandable):
+
 ```
 Total Focus: 5h 20m
   ├─ Parent work: 1h 15m
@@ -931,6 +950,7 @@ Total Focus: 5h 20m
 **Real-time display**: When actively focusing on a subtask, show elapsed time for that subtask in timer badge
 
 **Calculation**:
+
 - Total = sum of all TimeEntries where `taskId` matches (includes subtask entries)
 - Parent direct = sum where `taskId` matches AND `subtaskId` is undefined
 - Subtask = sum where `subtaskId` matches

@@ -268,7 +268,8 @@ body {
 
 /* Focus mode animations */
 @keyframes pulse-gentle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -281,7 +282,8 @@ body {
 }
 
 @keyframes glow-focus {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 15px rgba(168, 85, 247, 0.3),
       0 0 30px rgba(59, 130, 246, 0.2),

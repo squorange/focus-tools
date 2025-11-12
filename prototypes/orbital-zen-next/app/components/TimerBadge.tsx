@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 interface TimerBadgeProps {
   startTime: Date;
   isActive: boolean;
-  lastResumedAt?: Date;  // When session was last resumed
+  lastResumedAt?: Date; // When session was last resumed
   totalTime: number; // seconds accumulated when paused
 }
 
@@ -15,7 +15,12 @@ function formatTime(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function TimerBadge({ startTime, isActive, lastResumedAt, totalTime }: TimerBadgeProps) {
+export default function TimerBadge({
+  startTime,
+  isActive,
+  lastResumedAt,
+  totalTime,
+}: TimerBadgeProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -29,7 +34,9 @@ export default function TimerBadge({ startTime, isActive, lastResumedAt, totalTi
     const calculateElapsed = () => {
       const now = new Date();
       const runningSince = lastResumedAt || startTime;
-      const currentRunSeconds = Math.floor((now.getTime() - new Date(runningSince).getTime()) / 1000);
+      const currentRunSeconds = Math.floor(
+        (now.getTime() - new Date(runningSince).getTime()) / 1000
+      );
       return totalTime + currentRunSeconds;
     };
 
@@ -58,7 +65,8 @@ export default function TimerBadge({ startTime, isActive, lastResumedAt, totalTi
       `}
       style={{
         zIndex: 10000,
-        background: 'linear-gradient(to bottom right, rgba(168, 85, 247, 0.7), rgba(59, 130, 246, 0.7))',
+        background:
+          'linear-gradient(to bottom right, rgba(168, 85, 247, 0.7), rgba(59, 130, 246, 0.7))',
         borderColor: 'rgba(168, 85, 247, 0.4)',
         color: '#e0d7f5',
         boxShadow: '0 4px 6px rgba(168, 85, 247, 0.2), 0 2px 4px rgba(59, 130, 246, 0.15)',

@@ -91,7 +91,7 @@ export function useFocusTimer(session?: FocusSession): TimerState {
       const now = Date.now();
       if (now - lastSaveRef.current >= 10000) {
         lastSaveRef.current = now;
-        updateSessionTime(session.id, newElapsed).catch(err => {
+        updateSessionTime(session.id, newElapsed).catch((err) => {
           console.error('Failed to persist session time:', err);
         });
       }

@@ -65,10 +65,7 @@ export async function getFocusSession(sessionId: string): Promise<FocusSession |
  * Start a new focus session
  * Automatically pauses any existing active session
  */
-export async function startFocusSession(
-  taskId: string,
-  subtaskId?: string
-): Promise<FocusSession> {
+export async function startFocusSession(taskId: string, subtaskId?: string): Promise<FocusSession> {
   // 1. Check for existing active session and pause it
   const existing = await getActiveFocusSession();
   if (existing) {
@@ -83,7 +80,7 @@ export async function startFocusSession(
     subtaskId,
     startTime: now,
     isActive: true,
-    lastResumedAt: now,  // Initialize to start time
+    lastResumedAt: now, // Initialize to start time
     totalTime: 0,
     totalBreakTime: 0,
     breaksTaken: 0,
@@ -98,6 +95,20 @@ export async function startFocusSession(
 
   const db = await getDB();
   await db.put('focusSessions', session);
+
+  // 3. Create activity log for session start
+  const activityLog: ActivityLog = {
+    id: generateUUID(),
+    taskId,
+    subtaskId,
+    type: 'session_start',
+    timestamp: now,
+    sessionId: session.id,
+    isManualComment: false,
+    createdAt: now,
+  };
+  await createActivityLog(activityLog);
+
   return session;
 }
 
@@ -130,6 +141,14 @@ export async function pauseSession(sessionId: string): Promise<void> {
 }
 
 /**
+ * Update an existing focus session in the database
+ */
+export async function updateFocusSession(session: FocusSession): Promise<void> {
+  const db = await getDB();
+  await db.put('focusSessions', session);
+}
+
+/**
  * Resume a paused session
  */
 export async function resumeSession(sessionId: string): Promise<void> {
@@ -149,7 +168,7 @@ export async function resumeSession(sessionId: string): Promise<void> {
   }
 
   session.isActive = true;
-  session.lastResumedAt = now;  // Set resume timestamp
+  session.lastResumedAt = now; // Set resume timestamp
   session.lastActivityTime = now;
 
   const db = await getDB();
@@ -186,14 +205,34 @@ export async function endSession(
 
   const now = new Date();
 
-  // Calculate final total time if session is still active
+  // ==================================================================================
+  // CRITICAL: Time Calculation - Calculate from First Principles
+  // ==================================================================================
+  // IMPORTANT: This calculation MUST use first principles to avoid double-counting.
+  //
+  // BUG HISTORY: Previously calculated as: session.totalTime + elapsedSinceResume
+  // This caused DOUBLE-COUNTING when page reloads occurred during active sessions,
+  // because reload logic incorrectly added elapsed time to totalTime, then endSession
+  // added it again. Result: 60s sessions showing as 120s/2min.
+  //
+  // CORRECT APPROACH: Calculate from start time, subtract all pauses
+  // - totalElapsed = (endTime - startTime)
+  // - finalTotalTime = totalElapsed - totalPauseTime
+  //
+  // This approach is immune to corruption from reloads or state inconsistencies.
+  //
+  // DO NOT change this to use session.totalTime + elapsedSinceResume!
+  // See: docs/TEST_EXECUTION.md - Test 4.1 for full bug details
+  // ==================================================================================
+
   let finalTotalTime = session.totalTime;
-  if (session.isActive && session.lastResumedAt) {
-    const elapsedSinceResume = Math.floor(
-      (now.getTime() - new Date(session.lastResumedAt).getTime()) / 1000
-    );
-    finalTotalTime += elapsedSinceResume;
+  if (session.isActive) {
+    // Active session: calculate total elapsed time from session start
+    const totalElapsed = Math.floor((now.getTime() - new Date(session.startTime).getTime()) / 1000);
+    // Subtract accumulated pause time to get active time only
+    finalTotalTime = totalElapsed - session.totalPauseTime;
   }
+  // Paused sessions: totalTime already contains correct active time
 
   // 1. Create TimeEntry from session
   const entry: TimeEntry = {
@@ -213,7 +252,7 @@ export async function endSession(
     isManualEntry: false,
     sessionNotes,
     device: session.device,
-    pauseTimestamps: session.pauseHistory.filter(p => p.resumedAt) as Array<{
+    pauseTimestamps: session.pauseHistory.filter((p) => p.resumedAt) as Array<{
       pausedAt: Date;
       resumedAt: Date;
     }>,
@@ -286,9 +325,7 @@ export async function endBreak(sessionId: string): Promise<void> {
   const session = await getFocusSession(sessionId);
   if (!session || !session.currentBreakStartTime) return;
 
-  const breakDuration = Math.floor(
-    (Date.now() - session.currentBreakStartTime.getTime()) / 1000
-  );
+  const breakDuration = Math.floor((Date.now() - session.currentBreakStartTime.getTime()) / 1000);
 
   session.totalBreakTime += breakDuration;
   session.currentBreakStartTime = undefined;
@@ -361,7 +398,7 @@ export async function getTimeEntriesByDateRange(
   const db = await getDB();
   const allEntries = await db.getAllFromIndex('timeEntries', 'by-date');
 
-  return allEntries.filter(entry => {
+  return allEntries.filter((entry) => {
     const entryTime = new Date(entry.endTime).getTime();
     return entryTime >= startDate.getTime() && entryTime <= endDate.getTime();
   });
@@ -417,9 +454,7 @@ export async function clearTaskTimeHistory(taskId: string): Promise<void> {
   const entries = await getTaskTimeEntries(taskId);
   const db = await getDB();
 
-  await Promise.all(
-    entries.map(entry => db.delete('timeEntries', entry.id))
-  );
+  await Promise.all(entries.map((entry) => db.delete('timeEntries', entry.id)));
 }
 
 // ============================================================================
@@ -441,7 +476,7 @@ export async function getTaskTimeStats(
 
   // Filter to specific subtask if requested
   if (subtaskId) {
-    entries = entries.filter(e => e.subtaskId === subtaskId);
+    entries = entries.filter((e) => e.subtaskId === subtaskId);
   }
 
   if (entries.length === 0) {
@@ -458,7 +493,7 @@ export async function getTaskTimeStats(
   const totalActiveTime = entries.reduce((sum, e) => sum + e.duration, 0);
   const totalBreakTime = entries.reduce((sum, e) => sum + e.totalBreakTime, 0);
   const totalPauseTime = entries.reduce((sum, e) => sum + e.totalPauseTime, 0);
-  const completedCount = entries.filter(e => e.wasCompleted).length;
+  const completedCount = entries.filter((e) => e.wasCompleted).length;
 
   // Sort by end time to get most recent
   const sortedEntries = [...entries].sort(
@@ -479,7 +514,10 @@ export async function getTaskTimeStats(
   // Add subtask breakdown if requested (for parent task view)
   if (includeSubtaskBreakdown && !subtaskId) {
     const allEntries = await getTaskTimeEntries(taskId);
-    const subtaskMap = new Map<string, { totalTime: number; sessionCount: number; title: string }>();
+    const subtaskMap = new Map<
+      string,
+      { totalTime: number; sessionCount: number; title: string }
+    >();
 
     // Group by subtask
     for (const entry of allEntries) {
@@ -514,7 +552,7 @@ export async function getTaskTimeStats(
  */
 export async function getDirectParentTimeStats(taskId: string): Promise<TaskTimeStats> {
   const entries = await getTaskTimeEntries(taskId);
-  const parentEntries = entries.filter(e => !e.subtaskId);
+  const parentEntries = entries.filter((e) => !e.subtaskId);
 
   if (parentEntries.length === 0) {
     return {
@@ -530,7 +568,7 @@ export async function getDirectParentTimeStats(taskId: string): Promise<TaskTime
   const totalActiveTime = parentEntries.reduce((sum, e) => sum + e.duration, 0);
   const totalBreakTime = parentEntries.reduce((sum, e) => sum + e.totalBreakTime, 0);
   const totalPauseTime = parentEntries.reduce((sum, e) => sum + e.totalPauseTime, 0);
-  const completedCount = parentEntries.filter(e => e.wasCompleted).length;
+  const completedCount = parentEntries.filter((e) => e.wasCompleted).length;
 
   const sortedEntries = [...parentEntries].sort(
     (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()

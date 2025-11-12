@@ -102,10 +102,7 @@ export default function PriorityMarker({
 
       {/* Interactive SVG layer (separate container to avoid flex interference) */}
       {/* z-index 5 keeps it below subtasks (z-index 10) but above orbital rings */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ zIndex: 5 }}
-      >
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5 }}>
         <svg
           ref={svgRef}
           className="absolute inset-0 pointer-events-auto"
@@ -119,16 +116,9 @@ export default function PriorityMarker({
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
-        {/* Invisible full-size rect to capture all mouse events */}
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="transparent"
-          pointerEvents="all"
-        />
-      </svg>
+          {/* Invisible full-size rect to capture all mouse events */}
+          <rect x="0" y="0" width="100%" height="100%" fill="transparent" pointerEvents="all" />
+        </svg>
       </div>
     </>
   );

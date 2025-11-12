@@ -178,63 +178,63 @@ export interface AIContext {
 
 // Focus session types (active state)
 export interface FocusSession {
-  id: string;  // UUID for this session
+  id: string; // UUID for this session
   taskId: string;
   subtaskId?: string;
   startTime: Date;
-  isActive: boolean;  // true = running, false = paused
-  lastResumedAt?: Date;  // When most recently resumed (or startTime if never paused)
-  totalTime: number;  // Accumulated active seconds when paused
+  isActive: boolean; // true = running, false = paused
+  lastResumedAt?: Date; // When most recently resumed (or startTime if never paused)
+  totalTime: number; // Accumulated active seconds when paused
 
   // Break tracking
-  currentBreakStartTime?: Date;  // Set when break starts
-  totalBreakTime: number;  // Accumulated break seconds
+  currentBreakStartTime?: Date; // Set when break starts
+  totalBreakTime: number; // Accumulated break seconds
   breaksTaken: number;
 
   // Pause tracking
   pauseCount: number;
-  totalPauseTime: number;  // Accumulated pause seconds
+  totalPauseTime: number; // Accumulated pause seconds
   pauseHistory: Array<{
     pausedAt: Date;
-    resumedAt?: Date;  // undefined = currently paused
+    resumedAt?: Date; // undefined = currently paused
   }>;
 
   // Break reminder state
   lastBreakReminderAt?: Date;
   breakReminderSnoozeCount: number;
-  flowModeEnabled: boolean;  // User dismissed reminders
+  flowModeEnabled: boolean; // User dismissed reminders
 
   // Stale detection
-  lastActivityTime: Date;  // Updated on any user interaction
+  lastActivityTime: Date; // Updated on any user interaction
 
   device: 'desktop' | 'mobile' | 'unknown';
 }
 
 // Time entry types (historical record)
 export interface TimeEntry {
-  id: string;  // UUID for this entry
-  sessionId: string;  // Links to original FocusSession.id
+  id: string; // UUID for this entry
+  sessionId: string; // Links to original FocusSession.id
   taskId: string;
   subtaskId?: string;
 
   // Time data
   startTime: Date;
   endTime: Date;
-  duration: number;  // Active work seconds (excludes pauses & breaks)
+  duration: number; // Active work seconds (excludes pauses & breaks)
 
   // Session metadata
   pauseCount: number;
-  totalPauseTime: number;  // Seconds
+  totalPauseTime: number; // Seconds
   breaksTaken: number;
-  totalBreakTime: number;  // Seconds
+  totalBreakTime: number; // Seconds
 
   // Completion info
-  wasCompleted: boolean;  // true if ended with "Complete" button
+  wasCompleted: boolean; // true if ended with "Complete" button
   endReason: 'completed' | 'stopped' | 'stale' | 'manual';
 
   // Manual entry
   isManualEntry: boolean;
-  sessionNotes?: string;  // Optional notes for this session
+  sessionNotes?: string; // Optional notes for this session
 
   // Device tracking
   device: 'desktop' | 'mobile' | 'unknown';
@@ -249,15 +249,16 @@ export interface TimeEntry {
 
 // Task time aggregation (computed, not stored)
 export interface TaskTimeStats {
-  totalActiveTime: number;  // Sum of all TimeEntry.duration
-  totalBreakTime: number;   // Sum of all TimeEntry.totalBreakTime
-  totalPauseTime: number;   // Sum of all TimeEntry.totalPauseTime
-  sessionCount: number;     // Count of TimeEntries
-  averageSessionLength: number;  // Mean duration
-  completionRate: number;   // % of sessions that ended with "completed"
-  lastWorkedOn?: Date;      // Most recent TimeEntry.endTime
+  totalActiveTime: number; // Sum of all TimeEntry.duration
+  totalBreakTime: number; // Sum of all TimeEntry.totalBreakTime
+  totalPauseTime: number; // Sum of all TimeEntry.totalPauseTime
+  sessionCount: number; // Count of TimeEntries
+  averageSessionLength: number; // Mean duration
+  completionRate: number; // % of sessions that ended with "completed"
+  lastWorkedOn?: Date; // Most recent TimeEntry.endTime
   lastSessionNotes?: string; // Most recent session notes
-  subtaskBreakdown?: Array<{  // Per-subtask time breakdown (for parent tasks)
+  subtaskBreakdown?: Array<{
+    // Per-subtask time breakdown (for parent tasks)
     subtaskId: string;
     subtaskTitle: string;
     totalTime: number;

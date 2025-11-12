@@ -2,7 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Task, Subtask, FocusSession, EnergyLevel, EstimatedTime, ActivityLog } from '../lib/types';
-import { saveTask, getTask, createActivityLog, getActivityLogs, updateActivityLog, deleteActivityLog } from '../lib/offline-store';
+import {
+  saveTask,
+  getTask,
+  createActivityLog,
+  getActivityLogs,
+  updateActivityLog,
+  deleteActivityLog,
+} from '../lib/offline-store';
 import {
   calculateNextAngle,
   calculateNextRadius,
@@ -110,7 +117,40 @@ export default function AIPanel({
     }
   }, [showTagInput]);
 
-  // Helper to load time stats (used on mount and after completion)
+  /**
+   * Format duration in seconds to human-readable string
+   *
+   * IMPORTANT: This helper ensures consistent time display across the entire app.
+   *
+   * BUG PREVENTION: Previously, durations < 60s were displayed as "0 min" because
+   * of Math.floor(seconds / 60) rounding down. This was confusing for users seeing
+   * multiple short sessions averaged to "0 min".
+   *
+   * BEHAVIOR:
+   * - < 60s: Shows seconds (e.g., "45s")
+   * - 60-3599s: Shows minutes + seconds (e.g., "1m 30s" or "2m")
+   * - >= 3600s: Shows hours + minutes (e.g., "1h 15m" or "2h")
+   *
+   * Used in: Time stats display, activity logs, session summaries
+   * See: docs/TEST_EXECUTION.md - Test 4.2 for details
+   *
+   * @param seconds - Duration in seconds to format
+   * @returns Human-readable duration string
+   */
+  const formatDuration = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) {
+      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  };
+
   const loadTimeStats = async () => {
     try {
       // Load stats for subtask or parent task
@@ -122,10 +162,26 @@ export default function AIPanel({
     }
   };
 
-  // Load time stats when task or subtask changes
+  // ==================================================================================
+  // CRITICAL: Time Stats Auto-Refresh
+  // ==================================================================================
+  // Load time stats when task, subtask, or focus session changes.
+  //
+  // IMPORTANT: focusSession?.id MUST be in dependency array!
+  //
+  // BUG PREVENTION: Without focusSession?.id as a dependency, stats only reload when
+  // switching tasks/subtasks. When a session ends (focusSession changes from active
+  // to null), stats don't update immediately - user has to navigate away and back
+  // to see updated totals.
+  //
+  // WHY IT WORKS: When session ends, focusSession changes from {id: "..."} to null,
+  // triggering this effect to reload stats and display the just-completed session.
+  //
+  // See: docs/TEST_EXECUTION.md - Test 4.2 for details
+  // ==================================================================================
   useEffect(() => {
     loadTimeStats();
-  }, [task.id, subtask?.id]);
+  }, [task.id, subtask?.id, focusSession?.id]);
 
   // Helper to load activity logs (context-aware)
   const loadActivityLogs = async () => {
@@ -153,8 +209,14 @@ export default function AIPanel({
   const formatActivityEntry = (log: ActivityLog) => {
     const getIcon = () => {
       switch (log.type) {
+        case 'session_start':
+          return '▶️';
         case 'session_end':
           return '⏱️';
+        case 'task_completed':
+          return '✅';
+        case 'task_uncompleted':
+          return '↩️';
         case 'subtask_completed':
           return '✅';
         case 'subtask_uncompleted':
@@ -168,14 +230,28 @@ export default function AIPanel({
 
     const getText = () => {
       switch (log.type) {
+        case 'session_start':
+          if (log.subtaskId) {
+            const startSubtask = task.subtasks?.find((st) => st.id === log.subtaskId);
+            return `Started focus on "${startSubtask?.title || 'subtask'}"`;
+          }
+          return 'Started focus session';
         case 'session_end':
-          const minutes = Math.floor((log.duration || 0) / 60);
-          return `Focus session: ${minutes}m`;
+          const durationText = formatDuration(Math.floor(log.duration || 0));
+          if (log.subtaskId) {
+            const endSubtask = task.subtasks?.find((st) => st.id === log.subtaskId);
+            return `"${endSubtask?.title || 'subtask'}": ${durationText}`;
+          }
+          return `Focus session: ${durationText}`;
+        case 'task_completed':
+          return 'Completed task';
+        case 'task_uncompleted':
+          return 'Marked task incomplete';
         case 'subtask_completed':
-          const completedSubtask = task.subtasks?.find(st => st.id === log.subtaskId);
+          const completedSubtask = task.subtasks?.find((st) => st.id === log.subtaskId);
           return `Completed "${completedSubtask?.title || 'subtask'}"`;
         case 'subtask_uncompleted':
-          const uncompletedSubtask = task.subtasks?.find(st => st.id === log.subtaskId);
+          const uncompletedSubtask = task.subtasks?.find((st) => st.id === log.subtaskId);
           return `Uncompleted "${uncompletedSubtask?.title || 'subtask'}"`;
         case 'comment':
           return log.comment || '';
@@ -337,20 +413,24 @@ export default function AIPanel({
   const handleSubtaskToggle = async (subtaskId: string) => {
     if (!task.subtasks) return;
 
-    const subtaskToToggle = task.subtasks.find(st => st.id === subtaskId);
+    const subtaskToToggle = task.subtasks.find((st) => st.id === subtaskId);
     if (!subtaskToToggle) return;
 
     // Handle un-completing
     if (subtaskToToggle.completed) {
       const now = new Date();
-      let updatedSubtasks = task.subtasks.map(st =>
+      let updatedSubtasks = task.subtasks.map((st) =>
         st.id === subtaskId ? { ...st, completed: false } : st
       );
 
       // Recalculate belt position if this was a priority item
       let newBeltRing = task.priorityMarkerRing;
       if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtaskId)) {
-        newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+        newBeltRing = getCurrentMarkerRing(
+          updatedSubtasks,
+          task.priorityMarkerRing,
+          task.priorityMarkerOriginalIds
+        );
       }
 
       // Recalculate radii to properly position the newly uncompleted subtask
@@ -360,7 +440,7 @@ export default function AIPanel({
         ...task,
         subtasks: updatedSubtasks,
         priorityMarkerRing: newBeltRing,
-        updatedAt: now
+        updatedAt: now,
       };
       await saveTask(updatedTask);
       onTaskUpdate?.(updatedTask);
@@ -381,11 +461,11 @@ export default function AIPanel({
     }
 
     // Handle completing (with animation and belt logic)
-    setCompletingSubtaskIds(prev => new Set(prev).add(subtaskId));
+    setCompletingSubtaskIds((prev) => new Set(prev).add(subtaskId));
 
     setTimeout(async () => {
       const now = new Date();
-      let updatedSubtasks = task.subtasks!.map(st =>
+      let updatedSubtasks = task.subtasks!.map((st) =>
         st.id === subtaskId ? { ...st, completed: true } : st
       );
 
@@ -393,7 +473,11 @@ export default function AIPanel({
       let shouldCelebrate = false;
 
       if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtaskId)) {
-        newBeltRing = getCurrentMarkerRing(updatedSubtasks, task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+        newBeltRing = getCurrentMarkerRing(
+          updatedSubtasks,
+          task.priorityMarkerRing,
+          task.priorityMarkerOriginalIds
+        );
         if (newBeltRing === 0) {
           shouldCelebrate = true;
           // Ring 0 = celebration mode at radius 70 (around parent task)
@@ -407,7 +491,7 @@ export default function AIPanel({
         ...task,
         subtasks: updatedSubtasks,
         priorityMarkerRing: newBeltRing,
-        updatedAt: now
+        updatedAt: now,
       };
 
       await saveTask(updatedTask);
@@ -445,7 +529,7 @@ export default function AIPanel({
       }
 
       setTimeout(() => {
-        setCompletingSubtaskIds(prev => {
+        setCompletingSubtaskIds((prev) => {
           const next = new Set(prev);
           next.delete(subtaskId);
           return next;
@@ -462,7 +546,7 @@ export default function AIPanel({
   const handleSaveSubtaskEdit = async () => {
     if (!editedSubtaskTitle.trim() || !task.subtasks || !editingSubtaskId) return;
 
-    const updatedSubtasks = task.subtasks.map(st =>
+    const updatedSubtasks = task.subtasks.map((st) =>
       st.id === editingSubtaskId ? { ...st, title: editedSubtaskTitle.trim() } : st
     );
     const updatedTask = { ...task, subtasks: updatedSubtasks, updatedAt: new Date() };
@@ -480,7 +564,7 @@ export default function AIPanel({
   const handleDeleteSubtask = async (subtaskId: string) => {
     if (!task.subtasks) return;
 
-    const updatedSubtasks = task.subtasks.filter(st => st.id !== subtaskId);
+    const updatedSubtasks = task.subtasks.filter((st) => st.id !== subtaskId);
     const recalculatedSubtasks = recalculateRadii(updatedSubtasks, task.priorityMarkerRing);
     const updatedTask = { ...task, subtasks: recalculatedSubtasks, updatedAt: new Date() };
     await saveTask(updatedTask);
@@ -511,7 +595,7 @@ export default function AIPanel({
   };
 
   const handleRemoveTag = async (tagToRemove: string) => {
-    const tags = (task.tags || []).filter(t => t !== tagToRemove);
+    const tags = (task.tags || []).filter((t) => t !== tagToRemove);
     const updatedTask = { ...task, tags, updatedAt: new Date() };
     await saveTask(updatedTask);
     onTaskUpdate?.(updatedTask);
@@ -534,148 +618,152 @@ export default function AIPanel({
 
       // Only do auto-advance logic if completing (not un-completing)
       if (willBeCompleted) {
-      // Find subtasks inside the priority belt (before belt ring)
-      const beltRing = task.priorityMarkerRing || 0;
-      const subtasksInBelt = (task.subtasks || []).slice(0, Math.max(0, beltRing - 1));
-      const currentIndex = subtasksInBelt.findIndex(st => st.id === subtask.id);
-      const nextSubtask = currentIndex >= 0 && currentIndex < subtasksInBelt.length - 1
-        ? subtasksInBelt[currentIndex + 1]
-        : null;
+        // Find subtasks inside the priority belt (before belt ring)
+        const beltRing = task.priorityMarkerRing || 0;
+        const subtasksInBelt = (task.subtasks || []).slice(0, Math.max(0, beltRing - 1));
+        const currentIndex = subtasksInBelt.findIndex((st) => st.id === subtask.id);
+        const nextSubtask =
+          currentIndex >= 0 && currentIndex < subtasksInBelt.length - 1
+            ? subtasksInBelt[currentIndex + 1]
+            : null;
 
-      // Prompt for session notes if there's an active session
-      let sessionNotes: string | null = null;
-      if (hasFocusSession && focusSession) {
-        sessionNotes = window.prompt(
-          nextSubtask
-            ? `Subtask completed! Moving to: "${nextSubtask.title}"\n\nAdd notes for this subtask (optional):`
-            : 'Subtask completed!\n\nAdd notes for this session (optional):'
-        );
-
-        // If user cancelled the prompt, abort completion
-        if (sessionNotes === null) {
-          return;
-        }
-
-        // End current session
-        try {
-          await endSession(
-            focusSession.id,
-            'completed',
-            true,
-            sessionNotes || undefined
+        // Prompt for session notes if there's an active session
+        let sessionNotes: string | null = null;
+        if (hasFocusSession && focusSession) {
+          sessionNotes = window.prompt(
+            nextSubtask
+              ? `Subtask completed! Moving to: "${nextSubtask.title}"\n\nAdd notes for this subtask (optional):`
+              : 'Subtask completed!\n\nAdd notes for this session (optional):'
           );
-          // Clear focus session state after ending it
-          onClearFocusSession?.();
-        } catch (error) {
-          console.error('Failed to end session:', error);
-        }
-      }
 
-      // Trigger completion animation FIRST
-      setCompletingSubtaskIds(prev => new Set([...prev, subtask.id]));
+          // If user cancelled the prompt, abort completion
+          if (sessionNotes === null) {
+            return;
+          }
 
-      // Wait for animation to start, then update positions
-      setTimeout(async () => {
-        const now = new Date();
-
-        // Mark subtask as complete
-        let updatedSubtasks = task.subtasks?.map(st =>
-          st.id === subtask.id ? { ...st, completed: true } : st
-        );
-
-        // Calculate new belt ring position and check for celebration
-        let newBeltRing = task.priorityMarkerRing;
-        let shouldCelebrate = false;
-
-        if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
-          newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
-          if (newBeltRing === 0) {
-            shouldCelebrate = true;
-            // Ring 0 = celebration mode at radius 70 (around parent task)
-            // Belt stays at ring 0 during celebration
+          // End current session
+          try {
+            await endSession(focusSession.id, 'completed', true, sessionNotes || undefined);
+            // Clear focus session state after ending it
+            onClearFocusSession?.();
+          } catch (error) {
+            console.error('Failed to end session:', error);
           }
         }
 
-        // Recalculate radii for remaining subtasks
-        updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
+        // Trigger completion animation FIRST
+        setCompletingSubtaskIds((prev) => new Set([...prev, subtask.id]));
 
-        const updatedTask: Task = {
-          ...task,
-          subtasks: updatedSubtasks,
-          priorityMarkerRing: newBeltRing,
-          updatedAt: now,
-        };
+        // Wait for animation to start, then update positions
+        setTimeout(async () => {
+          const now = new Date();
 
-        await saveTask(updatedTask);
-        onTaskUpdate?.(updatedTask);
+          // Mark subtask as complete
+          let updatedSubtasks = task.subtasks?.map((st) =>
+            st.id === subtask.id ? { ...st, completed: true } : st
+          );
 
-        // Create activity log for completing subtask
-        const activityLog: ActivityLog = {
-          id: crypto.randomUUID(),
-          taskId: task.id,
-          subtaskId: subtask.id,
-          type: 'subtask_completed',
-          timestamp: now,
-          isManualComment: false,
-          createdAt: now,
-        };
-        await createActivityLog(activityLog);
+          // Calculate new belt ring position and check for celebration
+          let newBeltRing = task.priorityMarkerRing;
+          let shouldCelebrate = false;
 
-        // Handle celebration after delay
-        if (shouldCelebrate) {
-          setTimeout(async () => {
-            const currentTask = await getTask(task.id);
-            if (currentTask && currentTask.priorityMarkerEnabled) {
-              const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
-              const clearedTask = {
-                ...currentTask,
-                subtasks: clearedSubtasks,
-                priorityMarkerEnabled: false,
-                priorityMarkerRing: undefined,
-                priorityMarkerOriginalIds: undefined,
-                updatedAt: new Date(),
-              };
-              await saveTask(clearedTask);
-              onTaskUpdate?.(clearedTask);
+          if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
+            newBeltRing = getCurrentMarkerRing(
+              updatedSubtasks || [],
+              task.priorityMarkerRing,
+              task.priorityMarkerOriginalIds
+            );
+            if (newBeltRing === 0) {
+              shouldCelebrate = true;
+              // Ring 0 = celebration mode at radius 70 (around parent task)
+              // Belt stays at ring 0 during celebration
             }
-          }, 3000);
-        } else if (nextSubtask) {
-          // Auto-start focus on next subtask
-          onSubtaskChange?.(nextSubtask);
-          if (onStartFocus) {
-            onStartFocus();
           }
-        } else {
-          // No celebration, no next subtask - return to parent view
-          onSubtaskChange?.(null);
-        }
 
-        // Reload time stats and activity logs
-        loadTimeStats();
-        if (showActivity) {
-          loadActivityLogs();
-        }
+          // Recalculate radii for remaining subtasks
+          updatedSubtasks = recalculateRadii(updatedSubtasks || [], newBeltRing);
 
-        // Remove from completing set after animation
-        setTimeout(() => {
-          setCompletingSubtaskIds(prev => {
-            const next = new Set(prev);
-            next.delete(subtask.id);
-            return next;
-          });
-        }, 1000);
-      }, 500);
+          const updatedTask: Task = {
+            ...task,
+            subtasks: updatedSubtasks,
+            priorityMarkerRing: newBeltRing,
+            updatedAt: now,
+          };
+
+          await saveTask(updatedTask);
+          onTaskUpdate?.(updatedTask);
+
+          // Create activity log for completing subtask
+          const activityLog: ActivityLog = {
+            id: crypto.randomUUID(),
+            taskId: task.id,
+            subtaskId: subtask.id,
+            type: 'subtask_completed',
+            timestamp: now,
+            isManualComment: false,
+            createdAt: now,
+          };
+          await createActivityLog(activityLog);
+
+          // Handle celebration after delay
+          if (shouldCelebrate) {
+            setTimeout(async () => {
+              const currentTask = await getTask(task.id);
+              if (currentTask && currentTask.priorityMarkerEnabled) {
+                const clearedSubtasks = recalculateRadii(currentTask.subtasks || [], undefined);
+                const clearedTask = {
+                  ...currentTask,
+                  subtasks: clearedSubtasks,
+                  priorityMarkerEnabled: false,
+                  priorityMarkerRing: undefined,
+                  priorityMarkerOriginalIds: undefined,
+                  updatedAt: new Date(),
+                };
+                await saveTask(clearedTask);
+                onTaskUpdate?.(clearedTask);
+              }
+            }, 3000);
+          } else if (nextSubtask) {
+            // Auto-start focus on next subtask
+            onSubtaskChange?.(nextSubtask);
+            if (onStartFocus) {
+              onStartFocus();
+            }
+          } else {
+            // No celebration, no next subtask - return to parent view
+            onSubtaskChange?.(null);
+          }
+
+          // Reload time stats and activity logs
+          loadTimeStats();
+          if (showActivity) {
+            loadActivityLogs();
+          }
+
+          // Remove from completing set after animation
+          setTimeout(() => {
+            setCompletingSubtaskIds((prev) => {
+              const next = new Set(prev);
+              next.delete(subtask.id);
+              return next;
+            });
+          }, 1000);
+        }, 500);
       } else {
         // Un-completing subtask - recalculate positions and belt
         const now = new Date();
-        let updatedSubtasks = task.subtasks?.map(st =>
+        let updatedSubtasks = task.subtasks?.map((st) =>
           st.id === subtask.id ? { ...st, completed: false } : st
         );
 
         // Recalculate belt position if this was a priority item
         let newBeltRing = task.priorityMarkerRing;
         if (task.priorityMarkerEnabled && task.priorityMarkerOriginalIds?.includes(subtask.id)) {
-          newBeltRing = getCurrentMarkerRing(updatedSubtasks || [], task.priorityMarkerRing, task.priorityMarkerOriginalIds);
+          newBeltRing = getCurrentMarkerRing(
+            updatedSubtasks || [],
+            task.priorityMarkerRing,
+            task.priorityMarkerOriginalIds
+          );
         }
 
         // Recalculate radii to properly position the newly uncompleted subtask
@@ -703,54 +791,86 @@ export default function AIPanel({
         await createActivityLog(activityLog);
 
         loadTimeStats();
+        if (showActivity) {
+          loadActivityLogs();
+        }
       }
       return;
     }
 
     // Handle parent task completion
     if (isTask && !task.completed && hasFocusSession && focusSession) {
-      const sessionNotes = window.prompt('Task completed!\n\nAdd notes for this session (optional):');
+      const sessionNotes = window.prompt(
+        'Task completed!\n\nAdd notes for this session (optional):'
+      );
 
       if (sessionNotes === null) {
         return; // User cancelled
       }
 
       try {
-        await endSession(
-          focusSession.id,
-          'completed',
-          true,
-          sessionNotes || undefined
-        );
-        if (onStopFocus) {
-          onStopFocus();
-        }
+        await endSession(focusSession.id, 'completed', true, sessionNotes || undefined);
+
+        // ============================================================================
+        // CRITICAL: Use onClearFocusSession() NOT onStopFocus()
+        // ============================================================================
+        // IMPORTANT: Must call onClearFocusSession() to clear UI state, not onStopFocus().
+        //
+        // BUG PREVENTION: onStopFocus() calls endSession() internally. Since we already
+        // called endSession() above, calling onStopFocus() would attempt to end the
+        // session TWICE (double-end bug). This causes errors and leaves the timer
+        // badge visible after task completion.
+        //
+        // CORRECT PATTERN:
+        // - When UI action ends session: call onStopFocus() (handles both DB + state)
+        // - When already called endSession(): call onClearFocusSession() (state only)
+        //
+        // See: docs/TEST_EXECUTION.md - Test 5.3 for details
+        // ============================================================================
+        onClearFocusSession?.();
       } catch (error) {
         console.error('Failed to end session:', error);
       }
     }
 
     // Toggle task completion
+    const willBeCompleted = !task.completed;
+    const now = new Date();
     const updatedTask = {
       ...task,
-      completed: !task.completed,
-      completedAt: !task.completed ? new Date() : undefined,
-      updatedAt: new Date(),
+      completed: willBeCompleted,
+      completedAt: willBeCompleted ? now : undefined,
+      updatedAt: now,
     };
     await saveTask(updatedTask);
     onTaskUpdate?.(updatedTask);
 
-    // Reload time stats
+    // Create activity log for task completion/incompletion
+    const activityLog: ActivityLog = {
+      id: crypto.randomUUID(),
+      taskId: task.id,
+      type: willBeCompleted ? 'task_completed' : 'task_uncompleted',
+      timestamp: now,
+      isManualComment: false,
+      createdAt: now,
+    };
+    await createActivityLog(activityLog);
+
+    // Reload time stats and activity logs
     loadTimeStats();
+    if (showActivity) {
+      loadActivityLogs();
+    }
   };
 
-  const subtasks = (task.subtasks || []).filter(st => !st.completed);
-  const completedSubtasks = (task.subtasks || []).filter(st => st.completed);
+  const subtasks = (task.subtasks || []).filter((st) => !st.completed);
+  const completedSubtasks = (task.subtasks || []).filter((st) => st.completed);
   const hasSubtasks = subtasks.length > 0 || completedSubtasks.length > 0;
   const totalCount = subtasks.length + completedSubtasks.length;
   const completedCount = completedSubtasks.length;
   const currentMarkerPosition = task.priorityMarkerRing || 0;
-  const hasFocusSession = focusSession?.taskId === task.id && (!subtask || focusSession.subtaskId === subtask?.id);
+  const hasFocusSession =
+    focusSession?.taskId === task.id && (!subtask || focusSession.subtaskId === subtask?.id);
 
   // Format dates for input fields
   const formatDateForInput = (date?: Date) => {
@@ -801,23 +921,18 @@ export default function AIPanel({
             {/* Timer display for active session */}
             {hasFocusSession && (
               <div className="mt-2 flex items-center gap-2">
-                <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  focusSession.isActive
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
+                <div
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    focusSession.isActive ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
                   {timer.formattedTime}
                 </div>
-                {!focusSession.isActive && (
-                  <span className="text-xs text-gray-500">Paused</span>
-                )}
+                {!focusSession.isActive && <span className="text-xs text-gray-500">Paused</span>}
               </div>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 flex-shrink-0"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
             ✕
           </button>
         </div>
@@ -845,7 +960,12 @@ export default function AIPanel({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm text-gray-500">
-                  Subtasks {hasSubtasks && <span className="text-gray-400">({completedCount}/{totalCount})</span>}
+                  Subtasks{' '}
+                  {hasSubtasks && (
+                    <span className="text-gray-400">
+                      ({completedCount}/{totalCount})
+                    </span>
+                  )}
                 </label>
               </div>
 
@@ -866,7 +986,8 @@ export default function AIPanel({
                         }
                       }
                     }
-                    const showMarkerAfter = task.priorityMarkerEnabled &&
+                    const showMarkerAfter =
+                      task.priorityMarkerEnabled &&
                       index === lastPriorityIndex &&
                       currentMarkerPosition > 0;
 
@@ -947,7 +1068,9 @@ export default function AIPanel({
                                   const allSubtasks = task.subtasks || [];
                                   const newRing = Math.max(2, currentMarkerPosition - 1);
                                   // Use only ACTIVE subtasks to determine which are inside the belt
-                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
+                                  const subtasksInsideBelt = subtasks
+                                    .slice(0, newRing - 1)
+                                    .map((s) => s.id);
                                   const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
@@ -969,9 +1092,14 @@ export default function AIPanel({
                               <button
                                 onClick={async () => {
                                   const allSubtasks = task.subtasks || [];
-                                  const newRing = Math.min(subtasks.length + 1, currentMarkerPosition + 1);
+                                  const newRing = Math.min(
+                                    subtasks.length + 1,
+                                    currentMarkerPosition + 1
+                                  );
                                   // Use only ACTIVE subtasks to determine which are inside the belt
-                                  const subtasksInsideBelt = subtasks.slice(0, newRing - 1).map(s => s.id);
+                                  const subtasksInsideBelt = subtasks
+                                    .slice(0, newRing - 1)
+                                    .map((s) => s.id);
                                   const updatedSubtasks = recalculateRadii(allSubtasks, newRing);
                                   const updatedTask = {
                                     ...task,
@@ -1061,7 +1189,7 @@ export default function AIPanel({
                     } else {
                       const activeSubtasks = subtasks;
                       const outerRing = activeSubtasks.length + 1;
-                      const subtasksInsideBelt = activeSubtasks.map(st => st.id);
+                      const subtasksInsideBelt = activeSubtasks.map((st) => st.id);
                       const updatedSubtasks = recalculateRadii(task.subtasks || [], outerRing);
 
                       const updatedTask = {
@@ -1078,7 +1206,9 @@ export default function AIPanel({
                   }}
                   className="text-sm text-gray-500 hover:text-gray-700"
                 >
-                  {task.priorityMarkerEnabled ? 'Remove Priority Indicator' : 'Add Priority Indicator'}
+                  {task.priorityMarkerEnabled
+                    ? 'Remove Priority Indicator'
+                    : 'Add Priority Indicator'}
                 </button>
               )}
             </div>
@@ -1091,7 +1221,10 @@ export default function AIPanel({
               className="flex items-center justify-between w-full text-sm text-gray-500 hover:text-gray-700"
             >
               <span>
-                Activity {activityLogs.length > 0 && <span className="text-gray-400">({activityLogs.length})</span>}
+                Activity{' '}
+                {activityLogs.length > 0 && (
+                  <span className="text-gray-400">({activityLogs.length})</span>
+                )}
               </span>
               <span className="text-xs">{showActivity ? '▼' : '▶'}</span>
             </button>
@@ -1154,10 +1287,7 @@ export default function AIPanel({
                       const isEditing = editingCommentId === log.id;
 
                       return (
-                        <div
-                          key={log.id}
-                          className="flex gap-2 text-sm group"
-                        >
+                        <div key={log.id} className="flex gap-2 text-sm group">
                           <span className="text-base flex-shrink-0">{entry.icon}</span>
                           <div className="flex-1 min-w-0">
                             {isEditing ? (
@@ -1198,9 +1328,7 @@ export default function AIPanel({
                               // View mode
                               <>
                                 <div className="flex items-baseline justify-between gap-2">
-                                  <span className="text-gray-700 flex-1">
-                                    {entry.text}
-                                  </span>
+                                  <span className="text-gray-700 flex-1">{entry.text}</span>
                                   <div className="flex items-center gap-2">
                                     {/* Action menu for manual comments */}
                                     {log.isManualComment && (
@@ -1235,9 +1363,7 @@ export default function AIPanel({
                                   </div>
                                 )}
                                 {log.editedAt && (
-                                  <div className="text-xs text-gray-400 mt-1">
-                                    (edited)
-                                  </div>
+                                  <div className="text-xs text-gray-400 mt-1">(edited)</div>
                                 )}
                               </>
                             )}
@@ -1397,7 +1523,7 @@ export default function AIPanel({
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Total Active Time</span>
-                      <span>{Math.floor(timeStats.totalActiveTime / 60)} min</span>
+                      <span>{formatDuration(Math.floor(timeStats.totalActiveTime))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Sessions</span>
@@ -1405,12 +1531,44 @@ export default function AIPanel({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Average Session</span>
-                      <span>{Math.floor(timeStats.averageSessionLength / 60)} min</span>
+                      <span>{formatDuration(Math.floor(timeStats.averageSessionLength))}</span>
                     </div>
                     {timeStats.lastWorkedOn && (
                       <div className="flex justify-between">
                         <span className="text-gray-500">Last Worked On</span>
                         <span>{new Date(timeStats.lastWorkedOn).toLocaleDateString()}</span>
+                      </div>
+                    )}
+
+                    {/* Subtask breakdown (only for parent task view) */}
+                    {timeStats.subtaskBreakdown && timeStats.subtaskBreakdown.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="text-sm font-medium text-gray-700 mb-2">
+                          Subtask Breakdown
+                        </div>
+                        <div className="space-y-2">
+                          {timeStats.subtaskBreakdown.map((breakdown) => {
+                            const subtaskData = task.subtasks?.find(
+                              (st) => st.id === breakdown.subtaskId
+                            );
+                            const title =
+                              subtaskData?.title || breakdown.subtaskTitle || 'Unknown subtask';
+                            return (
+                              <div
+                                key={breakdown.subtaskId}
+                                className="flex justify-between text-sm"
+                              >
+                                <span className="text-gray-600 truncate flex-1 pr-2">{title}</span>
+                                <span className="text-gray-900 font-medium">
+                                  {formatDuration(Math.floor(breakdown.totalTime))}
+                                  <span className="text-gray-400 ml-1">
+                                    ({breakdown.sessionCount})
+                                  </span>
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </>
@@ -1460,9 +1618,12 @@ export default function AIPanel({
           className="w-full py-2 text-gray-600 hover:text-gray-800 text-sm"
         >
           {subtask
-            ? (subtask.completed ? 'Mark Subtask Incomplete' : 'Complete Subtask')
-            : (task.completed ? 'Mark Task Incomplete' : 'Complete Task')
-          }
+            ? subtask.completed
+              ? 'Mark Subtask Incomplete'
+              : 'Complete Subtask'
+            : task.completed
+              ? 'Mark Task Incomplete'
+              : 'Complete Task'}
         </button>
       </div>
 
