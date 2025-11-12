@@ -33,7 +33,7 @@ Calculate session duration from first principles at the point of ending:
 
 ```typescript
 // CORRECT:
-const totalElapsed = (endTime - startTime);
+const totalElapsed = endTime - startTime;
 const activeTime = totalElapsed - totalPauseTime;
 ```
 

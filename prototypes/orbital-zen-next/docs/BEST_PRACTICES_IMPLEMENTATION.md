@@ -336,9 +336,10 @@ npm run type-check   # Verify types
 
 ```typescript
 // ❌ Old way
-console.log('Session ended', totalTime);  // Unstructured logging
-if (user) { // No type safety for undefined
-  user.name // Might be undefined, no check
+console.log('Session ended', totalTime); // Unstructured logging
+if (user) {
+  // No type safety for undefined
+  user.name; // Might be undefined, no check
 }
 // Commit: "fixed bug" // Meaningless message
 ```
@@ -347,8 +348,9 @@ if (user) { // No type safety for undefined
 
 ```typescript
 // ✅ New way
-logger.info('Session ended', { sessionId, totalTime });  // Structured
-if (user?.name) {  // Safe optional chaining
+logger.info('Session ended', { sessionId, totalTime }); // Structured
+if (user?.name) {
+  // Safe optional chaining
   // TypeScript ensures type safety
 }
 // Commit: "fix(focus): prevent double time counting on page reload"
