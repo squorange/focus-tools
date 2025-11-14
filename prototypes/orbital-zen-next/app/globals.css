@@ -325,3 +325,97 @@ body {
   animation: moon-orbit 70s linear infinite;
   transform-style: preserve-3d;
 }
+
+/* Cloud drift animations for planet atmosphere - organic movement with larger range */
+@keyframes cloud-drift-1 {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+  25% {
+    background-position: 15% -12%, -10% 18%, 20% 10%, -15% -14%, 8% -6%;
+  }
+  50% {
+    background-position: 25% -20%, -18% 28%, 30% 18%, -25% -22%, 15% -12%;
+  }
+  75% {
+    background-position: 12% -10%, -12% 15%, 18% 8%, -10% -16%, 6% -8%;
+  }
+  100% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+}
+
+@keyframes cloud-drift-2 {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+  33% {
+    background-position: -18% 20%, 22% -12%, -14% 18%, 16% -20%;
+  }
+  66% {
+    background-position: -28% 32%, 35% -22%, -24% 30%, 28% -32%;
+  }
+  100% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+}
+
+@keyframes cloud-drift-3 {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+  20% {
+    background-position: 10% 15%, -12% -8%, 18% -12%, -10% 20%;
+  }
+  40% {
+    background-position: 20% 25%, -22% -16%, 28% -20%, -18% 32%;
+  }
+  60% {
+    background-position: 15% 20%, -18% -12%, 22% -16%, -14% 26%;
+  }
+  80% {
+    background-position: 8% 10%, -10% -6%, 14% -8%, -6% 15%;
+  }
+  100% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
+  }
+}
+
+/* Opacity pulse animations for color shifting */
+@keyframes opacity-pulse-1 {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes opacity-pulse-2 {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.animate-cloud-drift-1 {
+  animation: cloud-drift-1 35s ease-in-out infinite;
+}
+
+.animate-cloud-drift-2 {
+  animation: cloud-drift-2 45s ease-in-out infinite;
+}
+
+.animate-cloud-drift-3 {
+  animation: cloud-drift-3 55s ease-in-out infinite;
+}
+
+.animate-opacity-pulse-1 {
+  animation: opacity-pulse-1 25s ease-in-out infinite;
+}
+
+.animate-opacity-pulse-2 {
+  animation: opacity-pulse-2 35s ease-in-out infinite;
+}

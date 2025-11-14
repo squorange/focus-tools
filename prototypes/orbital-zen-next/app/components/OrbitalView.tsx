@@ -410,6 +410,22 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     setZoomedTask(updatedTask);
   };
 
+  // Conditional render: show focus mode OR orbital view (not both)
+  if (focusModeActive && zoomedTask && focusSession) {
+    return (
+      <FocusModeView
+        task={zoomedTask}
+        subtask={selectedSubtask || undefined}
+        focusSession={focusSession}
+        onExitFocusMode={handleExitFocusMode}
+        onPauseSession={handlePauseFocus}
+        onStopSession={handleStopFocus}
+        onCompleteTask={handleCompleteTaskFromFocusMode}
+        onUpdateTask={handleUpdateTaskFromFocusMode}
+      />
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -672,20 +688,6 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
           </>
         )}
       </div>
-
-      {/* Focus Mode View (overlay) */}
-      {focusModeActive && zoomedTask && focusSession && (
-        <FocusModeView
-          task={zoomedTask}
-          subtask={selectedSubtask || undefined}
-          focusSession={focusSession}
-          onExitFocusMode={handleExitFocusMode}
-          onPauseSession={handlePauseFocus}
-          onStopSession={handleStopFocus}
-          onCompleteTask={handleCompleteTaskFromFocusMode}
-          onUpdateTask={handleUpdateTaskFromFocusMode}
-        />
-      )}
     </div>
   );
 }

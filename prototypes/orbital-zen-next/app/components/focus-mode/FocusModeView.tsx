@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Task, Subtask, FocusSession } from '@/app/lib/types';
 import FocusModeTopNav from './FocusModeTopNav';
 import FocusModeSky from './FocusModeSky';
-import FocusModeHorizon from './FocusModeHorizon';
 import AIDrawer from './AIDrawer';
 
 interface FocusModeViewProps {
@@ -41,47 +40,49 @@ export default function FocusModeView({
 }: FocusModeViewProps) {
   const [drawerState, setDrawerState] = useState<'minimal' | 'intermediate' | 'full'>('minimal');
 
-  // Timer appears in top nav when drawer is full (to save space)
-  const timerInTopNav = drawerState === 'full';
-
   // Determine task color for theming
   const taskColor = task.color || '#8b5cf6'; // Default purple
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col overflow-visible">
       {/* Top Navigation Bar */}
       <FocusModeTopNav
-        taskName={task.name}
+        taskName={task.title}
+        subtaskName={subtask?.title}
         focusSession={focusSession}
-        showTimer={timerInTopNav}
+        showTimer={false}
         onBack={onExitFocusMode}
         onPause={onPauseSession}
         onStop={onStopSession}
+        onComplete={onCompleteTask}
       />
 
       {/* Main Content Area - Sky + Drawer */}
       <div className="relative flex-1 flex flex-col">
-        {/* Sky Area (grows/shrinks based on drawer state) */}
+        {/* Sky Area - full height background layer */}
         <FocusModeSky
           task={task}
           subtask={subtask}
           focusSession={focusSession}
           drawerState={drawerState}
-          showTimerOnMoon={!timerInTopNav}
+          showTimerOnMoon={true}
+          showNotesField={drawerState !== 'full'}
           taskColor={taskColor}
           onUpdateNotes={(notes) => onUpdateTask({ notes })}
           onCompleteTask={onCompleteTask}
         />
 
-        {/* Horizon Line (decorative transition between sky and drawer) */}
-        <FocusModeHorizon taskColor={taskColor} drawerState={drawerState} />
-
-        {/* AI Drawer (three states: minimal, intermediate, full) */}
-        <AIDrawer
-          drawerState={drawerState}
-          taskColor={taskColor}
-          onChangeDrawerState={setDrawerState}
-        />
+        {/* AI Drawer - foreground layer with planet surface */}
+        <div className="absolute inset-x-0 bottom-0 z-10">
+          <AIDrawer
+            drawerState={drawerState}
+            task={task}
+            taskColor={taskColor}
+            taskNotes={task.notes || ''}
+            onChangeDrawerState={setDrawerState}
+            onUpdateNotes={(notes) => onUpdateTask({ notes })}
+          />
+        </div>
       </div>
     </div>
   );

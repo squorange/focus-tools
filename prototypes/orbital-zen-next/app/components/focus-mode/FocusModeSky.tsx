@@ -10,6 +10,7 @@ interface FocusModeSkyProps {
   focusSession: FocusSession;
   drawerState: 'minimal' | 'intermediate' | 'full';
   showTimerOnMoon: boolean;
+  showNotesField: boolean;
   taskColor: string;
   onUpdateNotes: (notes: string) => void;
   onCompleteTask: () => void;
@@ -35,6 +36,7 @@ export default function FocusModeSky({
   focusSession,
   drawerState,
   showTimerOnMoon,
+  showNotesField,
   taskColor,
   onUpdateNotes,
   onCompleteTask,
@@ -52,18 +54,15 @@ export default function FocusModeSky({
     []
   );
 
-  // Sky height adjusts based on drawer state
-  const skyHeightClass = {
-    minimal: 'h-[85vh]',
-    intermediate: 'h-[70vh]',
-    full: 'h-[35vh]',
-  }[drawerState];
-
   return (
     <div
-      className={`relative ${skyHeightClass} transition-all duration-500 ease-out overflow-hidden`}
+      className="absolute inset-0 overflow-visible"
       style={{
-        background: `linear-gradient(to bottom, #1a1a3c 0%, #32285a 50%, #463264 100%)`,
+        background: `
+          radial-gradient(circle at 50% 20%, rgba(139, 92, 246, 0.04), transparent 60%),
+          radial-gradient(circle at 30% 70%, rgba(59, 130, 246, 0.03), transparent 50%),
+          linear-gradient(to bottom, #11112a 0%, #1c1c38 50%, #20234a 100%)
+        `,
       }}
     >
       {/* Star Field */}
@@ -92,35 +91,25 @@ export default function FocusModeSky({
       />
 
       {/* Main Content Container */}
-      <div className="relative h-full flex flex-col items-center justify-between py-8 px-4">
+      <div className="relative h-full flex flex-col items-center py-8 px-4">
         {/* Moon Area (current subtask or empty for parent task) */}
-        <div className="flex-1 flex items-center justify-center">
+        <div
+          className={`flex items-center justify-center transition-all duration-500 ${
+            drawerState === 'minimal' ? 'mt-[12vh]' :
+            drawerState === 'intermediate' ? 'mt-[8vh]' :
+            'mt-[calc(4vh+18px)]'
+          }`}
+        >
           {subtask ? (
-            <div className="relative">
+            <div className="relative" style={{ background: 'transparent', border: 'none' }}>
               {/* Render single moon for current subtask */}
               <FocusModeMoon
                 subtask={subtask}
                 taskColor={taskColor}
                 focusSession={focusSession}
                 showTimer={showTimerOnMoon}
+                drawerState={drawerState}
               />
-
-              {/* Atmospheric glow around moon */}
-              <div
-                className="absolute inset-0 -z-10 blur-3xl opacity-30 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle, ${taskColor} 0%, transparent 70%)`,
-                  transform: 'scale(2)',
-                }}
-              />
-
-              {/* Complete Subtask button (appears on hover) */}
-              <button
-                onClick={onCompleteTask}
-                className="absolute -bottom-32 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all opacity-0 hover:opacity-100"
-              >
-                Complete Subtask
-              </button>
             </div>
           ) : (
             // Parent task focus mode: empty sky with just stars
@@ -141,16 +130,22 @@ export default function FocusModeSky({
           )}
         </div>
 
-        {/* Task Notes Field */}
-        <div className="w-full max-w-2xl">
-          <textarea
-            className="w-full px-4 py-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:bg-white/10 focus:border-white/20 focus:outline-none resize-none transition-all"
-            placeholder="Task notes..."
-            value={task.notes || ''}
-            onChange={(e) => onUpdateNotes(e.target.value)}
-            rows={drawerState === 'full' ? 2 : 3}
-          />
-        </div>
+        {/* Task Notes Field (hidden when drawer is full - notes move to drawer) */}
+        {showNotesField && (
+          <div className={`w-full max-w-2xl transition-all duration-500 ${
+            drawerState === 'minimal' ? 'mt-[calc(21vh-30px)]' :
+            drawerState === 'intermediate' ? 'mt-[11vh]' :
+            'mt-[4vh]'
+          }`}>
+            <textarea
+              className="w-full px-4 py-3 bg-black/30 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder:text-white/40 focus:bg-black/40 focus:border-white/30 focus:outline-none resize-none transition-all duration-200 shadow-lg"
+              placeholder="Task notes..."
+              value={task.notes || ''}
+              onChange={(e) => onUpdateNotes(e.target.value)}
+              rows={4}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
