@@ -30,6 +30,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+  stepId?: string;  // For focus mode: which step this message belongs to
 }
 
 // ============================================

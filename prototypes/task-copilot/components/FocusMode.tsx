@@ -524,6 +524,8 @@ export default function FocusMode({
         isLoading={isLoading}
         onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
         onSendMessage={onSendMessage}
+        currentStepId={currentStep?.id}
+        steps={steps}
       />
 
       {/* Stuck Menu */}

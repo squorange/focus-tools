@@ -745,6 +745,7 @@ export default function Home() {
       role: "user",
       content: userMessage,
       timestamp: Date.now(),
+      stepId: state.focusMode.stepId || undefined,
     };
 
     setState((prev) => ({
@@ -788,6 +789,7 @@ export default function Home() {
         role: "assistant",
         content: JSON.stringify(data),
         timestamp: Date.now(),
+        stepId: state.focusMode.stepId || undefined,
       };
 
       setState((prev) => {

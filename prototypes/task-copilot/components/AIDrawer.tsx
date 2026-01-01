@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Message } from "@/lib/types";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Message, Step } from "@/lib/types";
 
 interface AIDrawerProps {
   messages: Message[];
@@ -10,6 +10,17 @@ interface AIDrawerProps {
   onToggle: () => void;
   onSendMessage: (message: string) => void;
   variant?: "planning" | "focus";
+  // For focus mode collapsible sections
+  currentStepId?: string | null;
+  steps?: Step[];
+}
+
+// Group messages by stepId
+interface MessageGroup {
+  stepId: string | undefined;
+  messages: Message[];
+  stepNumber?: number;
+  stepText?: string;
 }
 
 // Variant-specific copy
@@ -33,11 +44,52 @@ export default function AIDrawer({
   onToggle,
   onSendMessage,
   variant = "planning",
+  currentStepId,
+  steps = [],
 }: AIDrawerProps) {
   const config = VARIANT_CONFIG[variant];
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Track which step sections are expanded (for focus mode)
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
+
+  // Group messages by stepId (for focus mode)
+  const messageGroups = useMemo((): MessageGroup[] => {
+    if (variant !== "focus") return [];
+
+    const groups: MessageGroup[] = [];
+    let currentGroup: MessageGroup | null = null;
+
+    for (const message of messages) {
+      const stepId = message.stepId;
+
+      if (!currentGroup || currentGroup.stepId !== stepId) {
+        // Start new group
+        const step = steps.find(s => s.id === stepId);
+        const stepIndex = steps.findIndex(s => s.id === stepId);
+        currentGroup = {
+          stepId,
+          messages: [],
+          stepNumber: stepIndex >= 0 ? stepIndex + 1 : undefined,
+          stepText: step?.text,
+        };
+        groups.push(currentGroup);
+      }
+
+      currentGroup.messages.push(message);
+    }
+
+    return groups;
+  }, [messages, steps, variant]);
+
+  // Auto-collapse previous steps and expand only current step when step changes
+  useEffect(() => {
+    if (currentStepId) {
+      setExpandedSteps(new Set([currentStepId]));  // Reset to only current step
+    }
+  }, [currentStepId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -53,12 +105,29 @@ export default function AIDrawer({
     }
   }, [isOpen]);
 
+  // Toggle a step section's expanded state
+  const toggleStepExpanded = (stepId: string) => {
+    setExpandedSteps(prev => {
+      const next = new Set(prev);
+      if (next.has(stepId)) {
+        next.delete(stepId);
+      } else {
+        next.add(stepId);
+      }
+      return next;
+    });
+  };
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     onSendMessage(input.trim());
     setInput("");
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
   }
 
   return (
@@ -161,7 +230,73 @@ export default function AIDrawer({
                     {config.emptySubtitle}
                   </p>
                 </div>
+              ) : variant === "focus" ? (
+                // Focus mode: render collapsible step sections
+                <>
+                  {messageGroups.map((group, groupIndex) => {
+                    const isCurrentStep = group.stepId === currentStepId;
+                    const isExpanded = group.stepId ? expandedSteps.has(group.stepId) : true;
+                    const isLastGroup = groupIndex === messageGroups.length - 1;
+
+                    return (
+                      <div key={group.stepId || groupIndex} className="relative">
+                        {/* Collapsible header for previous steps */}
+                        {!isCurrentStep && group.stepId && (
+                          <button
+                            onClick={() => toggleStepExpanded(group.stepId!)}
+                            className="w-full flex items-center gap-2 py-2 px-3 -mx-3 mb-2
+                                       text-left text-sm text-neutral-500 dark:text-neutral-400
+                                       hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg
+                                       transition-colors"
+                          >
+                            <svg
+                              className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span className="font-medium">
+                              Step {group.stepNumber}
+                            </span>
+                            <span className="text-neutral-400 dark:text-neutral-500">
+                              · {group.messages.length} message{group.messages.length !== 1 ? "s" : ""}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Messages (expanded or current step) */}
+                        {(isExpanded || isCurrentStep) && (
+                          <div className="space-y-3">
+                            {group.messages.map((message, msgIndex) => (
+                              <ChatMessage key={msgIndex} message={message} />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Separator between groups */}
+                        {!isLastGroup && isExpanded && (
+                          <div className="my-4 border-t border-neutral-200 dark:border-neutral-700" />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Empty state for current step when no messages yet */}
+                  {!messageGroups.some(g => g.stepId === currentStepId) && (
+                    <div className="py-8 text-center">
+                      <p className="text-neutral-500 dark:text-neutral-400 mb-1">
+                        {config.emptyTitle}
+                      </p>
+                      <p className="text-sm text-neutral-400 dark:text-neutral-500">
+                        {config.emptySubtitle}
+                      </p>
+                    </div>
+                  )}
+                </>
               ) : (
+                // Planning mode: flat list of messages
                 messages.map((message, index) => (
                   <ChatMessage key={index} message={message} />
                 ))
@@ -190,31 +325,53 @@ export default function AIDrawer({
         </div>
 
         {/* Input - sticky at bottom */}
-        <div className="flex-shrink-0 px-4 pr-5 pb-4 pt-2 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={config.placeholder}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800
-                         border border-transparent focus:border-blue-500
-                         rounded-lg outline-none transition-colors
-                         text-neutral-800 dark:text-neutral-100
-                         placeholder-neutral-400 dark:placeholder-neutral-500
-                         disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700
-                         disabled:bg-neutral-400 disabled:cursor-not-allowed
-                         text-white font-medium rounded-lg transition-colors"
-            >
-              Send
-            </button>
+        <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <form onSubmit={handleSubmit}>
+            <div className="bg-neutral-100 dark:bg-neutral-800 rounded-xl border border-transparent
+                            focus-within:border-blue-500 transition-colors">
+              {/* Auto-growing textarea */}
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-resize
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                }}
+                onKeyDown={(e) => {
+                  // Enter sends, Shift+Enter for newline
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder={config.placeholder}
+                disabled={isLoading}
+                rows={1}
+                className="w-full px-4 pt-3 pb-1 bg-transparent border-0 resize-none
+                           outline-none text-neutral-800 dark:text-neutral-100
+                           placeholder-neutral-400 dark:placeholder-neutral-500
+                           disabled:opacity-60 min-h-[44px] max-h-[200px]"
+              />
+              {/* Controls row */}
+              <div className="flex items-center justify-between px-3 pb-2">
+                <div className="flex gap-2">
+                  {/* Future: attach, voice buttons */}
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="p-2 bg-blue-600 hover:bg-blue-700
+                             disabled:bg-neutral-300 dark:disabled:bg-neutral-600 disabled:cursor-not-allowed
+                             text-white rounded-full transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </form>
         </div>
         </div>
