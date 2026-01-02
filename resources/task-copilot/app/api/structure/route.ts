@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, FOCUS_MODE_PROMPT } from "@/lib/prompts";
-import { StructureRequest, StructureResponse, Substep } from "@/lib/types";
-
-// Extended request body for focus mode
-interface ExtendedStructureRequest extends StructureRequest {
-  taskNotes?: string;
-  focusMode?: {
-    currentStepId: string;
-    currentStepText: string;
-    currentSubsteps: Substep[];
-    stepIndex: number;
-    totalSteps: number;
-  };
-}
+import { SYSTEM_PROMPT } from "@/lib/prompts";
+import { StructureRequest, StructureResponse } from "@/lib/types";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -21,14 +9,11 @@ const anthropic = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, conversationHistory, taskNotes, focusMode } = body;
-
-    // Determine which prompt to use
-    const systemPrompt = focusMode ? FOCUS_MODE_PROMPT : SYSTEM_PROMPT;
+    const body: StructureRequest = await request.json();
+    const { userMessage, currentList, taskTitle, conversationHistory } = body;
 
     // Build context message with current state
-    const contextMessage = buildContextMessage(userMessage, currentList, taskTitle, taskNotes, focusMode);
+    const contextMessage = buildContextMessage(userMessage, currentList, taskTitle);
 
     // Build messages array for Claude
     const messages: { role: "user" | "assistant"; content: string }[] = [];
@@ -51,7 +36,7 @@ export async function POST(request: NextRequest) {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: systemPrompt,
+      system: SYSTEM_PROMPT,
       messages: messages,
     });
 
@@ -86,10 +71,8 @@ export async function POST(request: NextRequest) {
     const validatedResponse: StructureResponse = {
       action: parsed.action || "none",
       taskTitle: parsed.taskTitle || null,
-      suggestedTitle: parsed.suggestedTitle || undefined,
       steps: parsed.steps || null,
       suggestions: parsed.suggestions || null,
-      edits: parsed.edits || null,
       message: parsed.message || "I'm not sure how to help with that.",
     };
 
@@ -106,7 +89,6 @@ export async function POST(request: NextRequest) {
         taskTitle: null,
         steps: null,
         suggestions: null,
-        edits: null,
         message: `Sorry, something went wrong: ${errorMessage}`,
       } as StructureResponse,
       { status: 500 }
@@ -118,37 +100,10 @@ export async function POST(request: NextRequest) {
 function buildContextMessage(
   userMessage: string,
   currentList: StructureRequest["currentList"],
-  taskTitle: string | null,
-  taskNotes?: string,
-  focusMode?: ExtendedStructureRequest["focusMode"]
+  taskTitle: string | null
 ): string {
   let context = "";
 
-  // Focus mode specific context
-  if (focusMode) {
-    context += `=== FOCUS MODE CONTEXT ===\n`;
-    context += `Task: "${taskTitle || "Untitled"}"\n`;
-    context += `Progress: Step ${focusMode.stepIndex + 1} of ${focusMode.totalSteps}\n\n`;
-    context += `Current Step: ${focusMode.currentStepText}\n`;
-
-    if (focusMode.currentSubsteps && focusMode.currentSubsteps.length > 0) {
-      context += `Substeps:\n`;
-      focusMode.currentSubsteps.forEach((sub) => {
-        const status = sub.completed ? "[x]" : "[ ]";
-        context += `  ${status} ${sub.id}. ${sub.text}\n`;
-      });
-    }
-
-    if (taskNotes) {
-      context += `\nTask Notes:\n${taskNotes}\n`;
-    }
-
-    context += `\n=========================\n\n`;
-    context += `User message: ${userMessage}`;
-    return context;
-  }
-
-  // Normal task list context
   if (currentList && currentList.length > 0) {
     context += `Current task: "${taskTitle || "Untitled"}"\n`;
     context += `Current list (${currentList.length} items):\n`;
@@ -162,8 +117,7 @@ function buildContextMessage(
     });
     context += "\n";
   } else {
-    context += `Current task: "${taskTitle || "Untitled"}"\n`;
-    context += "Current list: EMPTY (no steps added yet)\n\n";
+    context += "Current list: EMPTY\n\n";
   }
 
   context += `User message: ${userMessage}`;

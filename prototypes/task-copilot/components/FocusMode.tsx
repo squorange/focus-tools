@@ -198,7 +198,7 @@ export default function FocusMode({
   };
 
   return (
-    <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+    <div className="h-screen flex flex-col lg:flex-row lg:overflow-hidden">
       {/* Left side: header + content */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Header - h-14 to match task list header */}

@@ -6,9 +6,13 @@ import { SuggestedStep, EditSuggestion } from "@/lib/types";
 interface StagingAreaProps {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
+  suggestedTitle?: string | null;
+  currentTitle?: string;
   onAcceptOne: (suggestion: SuggestedStep) => void;
   onAcceptEdit: (edit: EditSuggestion) => void;
   onRejectEdit: (edit: EditSuggestion) => void;
+  onAcceptTitle?: () => void;
+  onRejectTitle?: () => void;
   onAcceptAll: () => void;
   onDismiss: () => void;
   defaultExpanded?: boolean;
@@ -17,9 +21,13 @@ interface StagingAreaProps {
 export default function StagingArea({
   suggestions,
   edits,
+  suggestedTitle,
+  currentTitle,
   onAcceptOne,
   onAcceptEdit,
   onRejectEdit,
+  onAcceptTitle,
+  onRejectTitle,
   onAcceptAll,
   onDismiss,
   defaultExpanded = true,
@@ -27,7 +35,9 @@ export default function StagingArea({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const safeEdits = edits || [];
   const safeSuggestions = suggestions || [];
-  const totalItems = safeSuggestions.length + safeEdits.length;
+  // More robust check - ensure suggestedTitle is truthy and different from current
+  const hasTitleSuggestion = Boolean(suggestedTitle) && suggestedTitle !== (currentTitle || '');
+  const totalItems = safeSuggestions.length + safeEdits.length + (hasTitleSuggestion ? 1 : 0);
 
   if (totalItems === 0) {
     return null;
@@ -64,6 +74,50 @@ export default function StagingArea({
       {/* Collapsible Content */}
       {isExpanded && (
         <div className="px-4 pb-4">
+          {/* Title suggestion */}
+          {hasTitleSuggestion && (
+            <div className="mb-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg border border-purple-200 dark:border-purple-700">
+              <div className="flex items-start gap-3">
+                {/* Title badge */}
+                <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                  TITLE
+                </span>
+
+                {/* Content: old → new */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-neutral-400 dark:text-neutral-500 line-through text-sm">
+                    {currentTitle}
+                  </p>
+                  <p className="text-neutral-700 dark:text-neutral-200 mt-1">
+                    {suggestedTitle}
+                  </p>
+                </div>
+
+                {/* Accept/Reject buttons */}
+                <div className="flex-shrink-0 flex gap-1">
+                  <button
+                    onClick={onAcceptTitle}
+                    className="px-2 py-1 text-sm font-medium
+                               text-green-600 dark:text-green-400
+                               hover:bg-green-50 dark:hover:bg-green-900/20
+                               rounded transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={onRejectTitle}
+                    className="px-2 py-1 text-sm font-medium
+                               text-neutral-500 dark:text-neutral-400
+                               hover:bg-neutral-100 dark:hover:bg-neutral-700
+                               rounded transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Edit suggestions */}
           {safeEdits.length > 0 && (
             <ul className="space-y-2 mb-2">
