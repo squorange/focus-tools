@@ -16,8 +16,6 @@ interface QueueItemProps {
   onRemoveFromQueue: (queueItemId: string) => void;
   onMoveUp?: (queueItemId: string) => void;
   onMoveDown?: (queueItemId: string) => void;
-  onMarkComplete?: (taskId: string) => void;
-  onMarkIncomplete?: (taskId: string) => void;
 }
 
 // Calculate progress
@@ -95,14 +93,11 @@ export default function QueueItem({
   onRemoveFromQueue,
   onMoveUp,
   onMoveDown,
-  onMarkComplete,
-  onMarkIncomplete,
 }: QueueItemProps) {
   const [showMenu, setShowMenu] = useState(false);
   const progress = getProgress(task, item);
   const estimate = getEstimate(task, item);
-  // Task is complete if status is 'complete' OR all steps are done
-  const isComplete = task.status === 'complete' || (progress.total > 0 && progress.completed === progress.total);
+  const isComplete = progress.total > 0 && progress.completed === progress.total;
   const hasWaiting = !!task.waitingOn;
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
 
@@ -267,29 +262,6 @@ export default function QueueItem({
                   </button>
                 )}
                 {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
-                {!isComplete && onMarkComplete && (
-                  <button
-                    onClick={() => { onMarkComplete(task.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-green-600 dark:text-green-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Mark Complete
-                  </button>
-                )}
-                {isComplete && onMarkIncomplete && (
-                  <button
-                    onClick={() => { onMarkIncomplete(task.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Mark Incomplete
-                  </button>
-                )}
-                <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
                 <button
                   onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
                   className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
@@ -404,29 +376,6 @@ export default function QueueItem({
                       </button>
                     )}
                     {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
-                    {!isComplete && onMarkComplete && (
-                      <button
-                        onClick={() => { onMarkComplete(task.id); setShowMenu(false); }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-green-600 dark:text-green-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Mark Complete
-                      </button>
-                    )}
-                    {isComplete && onMarkIncomplete && (
-                      <button
-                        onClick={() => { onMarkIncomplete(task.id); setShowMenu(false); }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Mark Incomplete
-                      </button>
-                    )}
-                    <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
                     <button
                       onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
                       className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"

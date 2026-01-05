@@ -19,8 +19,6 @@ interface QueueViewProps {
   onMoveItemDown: (queueItemId: string) => void;
   onMoveTodayLine: (newIndex: number) => void;
   onGoToInbox: () => void;
-  onMarkComplete: (taskId: string) => void;
-  onMarkIncomplete: (taskId: string) => void;
 }
 
 // Get total estimated time for items
@@ -64,8 +62,6 @@ export default function QueueView({
   onMoveItemDown,
   onMoveTodayLine,
   onGoToInbox,
-  onMarkComplete,
-  onMarkIncomplete,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -313,8 +309,6 @@ export default function QueueView({
                     onRemoveFromQueue={onRemoveFromQueue}
                     onMoveUp={onMoveItemUp}
                     onMoveDown={onMoveItemDown}
-                    onMarkComplete={onMarkComplete}
-                    onMarkIncomplete={onMarkIncomplete}
                   />
                 </div>
               );
@@ -431,8 +425,6 @@ export default function QueueView({
                         onRemoveFromQueue={onRemoveFromQueue}
                         onMoveUp={onMoveItemUp}
                         onMoveDown={onMoveItemDown}
-                        onMarkComplete={onMarkComplete}
-                        onMarkIncomplete={onMarkIncomplete}
                       />
                     </div>
                   );

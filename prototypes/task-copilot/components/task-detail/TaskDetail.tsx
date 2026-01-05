@@ -125,15 +125,47 @@ export default function TaskDetail({
   const progress = task.steps.length > 0
     ? { completed: task.steps.filter((s) => s.completed).length, total: task.steps.length }
     : null;
-  const hasNoSteps = task.steps.length === 0;
   const isTaskComplete = task.status === 'complete';
-  const canMarkComplete = hasNoSteps && !isTaskComplete;
+  const canMarkComplete = !isTaskComplete;
+  const canMarkIncomplete = isTaskComplete;
 
   const handleMarkTaskComplete = () => {
+    const now = Date.now();
+    // Mark task complete and all steps/substeps complete
+    const updatedSteps = task.steps.map((s) => ({
+      ...s,
+      completed: true,
+      completedAt: s.completedAt || now,
+      substeps: s.substeps.map((sub) => ({
+        ...sub,
+        completed: true,
+        completedAt: sub.completedAt || now,
+      })),
+    }));
     onUpdateTask(task.id, {
       status: 'complete',
-      completedAt: Date.now(),
-      completionType: 'manual'
+      completedAt: now,
+      completionType: 'manual',
+      steps: updatedSteps,
+    });
+  };
+
+  const handleMarkTaskIncomplete = () => {
+    // Uncheck all steps/substeps and set status back to pool
+    const updatedSteps = task.steps.map((s) => ({
+      ...s,
+      completed: false,
+      completedAt: null,
+      substeps: s.substeps.map((sub) => ({
+        ...sub,
+        completed: false,
+        completedAt: null,
+      })),
+    }));
+    onUpdateTask(task.id, {
+      status: 'pool',
+      completedAt: null,
+      steps: updatedSteps,
     });
   };
 
@@ -215,6 +247,14 @@ export default function TaskDetail({
                 Mark Complete
               </button>
             )}
+            {canMarkIncomplete && (
+              <button
+                onClick={handleMarkTaskIncomplete}
+                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+              >
+                Mark Incomplete
+              </button>
+            )}
             {isInQueue ? (
               <button
                 onClick={() => onStartFocus(queueItem!.id)}
@@ -251,6 +291,14 @@ export default function TaskDetail({
               className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
             >
               Mark Complete
+            </button>
+          )}
+          {canMarkIncomplete && (
+            <button
+              onClick={handleMarkTaskIncomplete}
+              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+            >
+              Mark Incomplete
             </button>
           )}
           {isInQueue ? (

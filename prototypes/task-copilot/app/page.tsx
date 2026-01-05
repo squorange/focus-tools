@@ -706,84 +706,6 @@ export default function Home() {
     });
   }, []);
 
-  // Mark task complete from queue
-  const handleMarkCompleteFromQueue = useCallback((taskId: string) => {
-    setState((prev) => {
-      const now = Date.now();
-      return {
-        ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          return {
-            ...t,
-            status: 'complete' as const,
-            completedAt: now,
-            // Mark all steps complete too
-            steps: t.steps.map((s) => ({
-              ...s,
-              completed: true,
-              completedAt: s.completedAt || now,
-              substeps: s.substeps.map((sub) => ({
-                ...sub,
-                completed: true,
-                completedAt: sub.completedAt || now,
-              })),
-            })),
-            updatedAt: now,
-          };
-        }),
-        // Mark the queue item as completed
-        focusQueue: {
-          ...prev.focusQueue,
-          items: prev.focusQueue.items.map((i) =>
-            i.taskId === taskId
-              ? { ...i, completed: true, completedAt: now }
-              : i
-          ),
-        },
-      };
-    });
-  }, []);
-
-  // Mark task incomplete from queue (undo accidental completion)
-  const handleMarkIncompleteFromQueue = useCallback((taskId: string) => {
-    setState((prev) => {
-      const now = Date.now();
-      return {
-        ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          return {
-            ...t,
-            status: 'pool' as const,
-            completedAt: null,
-            // Uncheck all steps
-            steps: t.steps.map((s) => ({
-              ...s,
-              completed: false,
-              completedAt: null,
-              substeps: s.substeps.map((sub) => ({
-                ...sub,
-                completed: false,
-                completedAt: null,
-              })),
-            })),
-            updatedAt: now,
-          };
-        }),
-        // Mark the queue item as not completed (restore to queue)
-        focusQueue: {
-          ...prev.focusQueue,
-          items: prev.focusQueue.items.map((i) =>
-            i.taskId === taskId
-              ? { ...i, completed: false, completedAt: null }
-              : i
-          ),
-        },
-      };
-    });
-  }, []);
-
   // Move queue item to a new position
   const handleMoveQueueItem = useCallback((queueItemId: string, newIndex: number) => {
     setState((prev) => {
@@ -1880,8 +1802,6 @@ export default function Home() {
                 onMoveItemDown={handleMoveQueueItemDown}
                 onMoveTodayLine={handleMoveTodayLine}
                 onGoToInbox={handleGoToInbox}
-                onMarkComplete={handleMarkCompleteFromQueue}
-                onMarkIncomplete={handleMarkIncompleteFromQueue}
               />
             )}
 
