@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Task, FocusQueueItem } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 
 interface TaskRowProps {
   task: Task;
@@ -11,20 +12,6 @@ interface TaskRowProps {
   onDelete?: (id: string) => void;
   onDefer?: (id: string, until: string) => void;
   onPark?: (id: string) => void;
-}
-
-// Format date for display
-function formatDate(dateStr: string | null): string | null {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  if (dateStr === today.toISOString().split("T")[0]) return "Today";
-  if (dateStr === tomorrow.toISOString().split("T")[0]) return "Tomorrow";
-
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 // Get priority indicator
@@ -58,12 +45,12 @@ export default function TaskRow({
   onPark,
 }: TaskRowProps) {
   const [showMenu, setShowMenu] = useState(false);
+
   const priority = getPriorityIndicator(task.priority);
   const progress = getProgress(task);
   const isInQueue = !!queueItem;
   const isWaiting = !!task.waitingOn;
-  const targetDate = task.targetDate || task.deadlineDate;
-  const isDeadline = !!task.deadlineDate;
+  const isDeadlineOverdue = task.deadlineDate && task.deadlineDate < new Date().toISOString().split('T')[0];
 
   // Calculate defer dates
   const getDeferDate = (days: number) => {
@@ -72,10 +59,59 @@ export default function TaskRow({
     return date.toISOString().split('T')[0];
   };
 
+  // Shared menu dropdown
+  const MenuDropdown = () => (
+    <div
+      className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {onDefer && (
+        <>
+          <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Tomorrow
+          </button>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Next week
+          </button>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Next month
+          </button>
+          <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+        </>
+      )}
+      {onPark && (
+        <button
+          onClick={() => { onPark(task.id); setShowMenu(false); }}
+          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+        >
+          Archive
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={() => { onDelete(task.id); setShowMenu(false); }}
+          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+        >
+          Delete
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div
       className={`
-        group flex items-center gap-3 px-4 py-3
+        group px-3 sm:px-4 py-3
         bg-white dark:bg-zinc-800
         border rounded-lg
         hover:border-violet-300 dark:hover:border-violet-700
@@ -88,167 +124,152 @@ export default function TaskRow({
       `}
       onClick={() => onOpenTask(task.id)}
     >
-      {/* Priority indicator */}
-      {priority && (
-        <div
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${priority.bg}`}
-          title={priority.label}
-        />
-      )}
+      {/* Desktop layout */}
+      <div className="hidden sm:flex sm:items-center sm:gap-3">
+        {/* Priority indicator */}
+        {priority && (
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priority.bg}`} title={priority.label} />
+        )}
 
-      {/* Waiting indicator */}
-      {isWaiting && (
-        <span
-          className="flex-shrink-0 text-amber-500"
-          title={`Waiting on: ${task.waitingOn?.who}`}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </span>
-      )}
-
-      {/* Title */}
-      <span className="flex-1 text-zinc-900 dark:text-zinc-100 truncate">
-        {task.title || "Untitled"}
-      </span>
-
-      {/* Progress */}
-      {progress.total > 0 && (
-        <span className="flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-          {progress.completed}/{progress.total}
-        </span>
-      )}
-
-      {/* Date */}
-      {targetDate && (
-        <span
-          className={`flex-shrink-0 text-xs ${
-            isDeadline
-              ? "text-red-500 font-medium"
-              : "text-zinc-500 dark:text-zinc-400"
-          }`}
-        >
-          {isDeadline && "⚠️ "}
-          {formatDate(targetDate)}
-        </span>
-      )}
-
-      {/* Queue status or Add button */}
-      {isInQueue ? (
-        <span className="flex-shrink-0 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
-          In Focus
-        </span>
-      ) : (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToQueue(task.id);
-          }}
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-none rounded px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
-        >
-          Add to Focus
-        </button>
-      )}
-
-      {/* Actions menu */}
-      {(onDelete || onDefer || onPark) && (
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu(!showMenu);
-            }}
-            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-            title="More actions"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+        {/* Waiting indicator */}
+        {isWaiting && (
+          <span className="flex-shrink-0 text-amber-500" title={`Waiting on: ${task.waitingOn?.who}`}>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
             </svg>
+          </span>
+        )}
+
+        {/* Title */}
+        <span className="flex-1 text-zinc-900 dark:text-zinc-100 truncate">
+          {task.title || "Untitled"}
+        </span>
+
+        {/* Progress */}
+        {progress.total > 0 && (
+          <span className="flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+            {progress.completed}/{progress.total}
+          </span>
+        )}
+
+        {/* Target Date */}
+        {task.targetDate && (
+          <span className="flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+            Target {formatDate(task.targetDate)}
+          </span>
+        )}
+
+        {/* Deadline Date */}
+        {task.deadlineDate && (
+          <span className={`flex-shrink-0 text-xs font-medium ${isDeadlineOverdue ? "text-red-600 dark:text-red-400" : "text-red-500"}`}>
+            Due {formatDate(task.deadlineDate)}
+          </span>
+        )}
+
+        {/* Queue status or Add button */}
+        {isInQueue ? (
+          <span className="flex-shrink-0 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+            In Focus
+          </span>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
+            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-none rounded px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
+          >
+            Add to Focus
           </button>
-          {showMenu && (
-            <div
-              className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
-              onClick={(e) => e.stopPropagation()}
+        )}
+
+        {/* Actions menu */}
+        {(onDelete || onDefer || onPark) && (
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              title="More actions"
             >
-              {onDefer && (
-                <>
-                  <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
-                  <button
-                    onClick={() => {
-                      onDefer(task.id, getDeferDate(1));
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                  >
-                    Tomorrow
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDefer(task.id, getDeferDate(7));
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                  >
-                    Next week
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDefer(task.id, getDeferDate(30));
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                  >
-                    Next month
-                  </button>
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
-                </>
-              )}
-              {onPark && (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+            {showMenu && <MenuDropdown />}
+          </div>
+        )}
+
+        {/* Chevron */}
+        <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
+
+      {/* Mobile layout */}
+      <div className="sm:hidden">
+        {/* Row 1: Title + Actions */}
+        <div className="flex items-start gap-2">
+          <span className="flex-1 min-w-0 text-zinc-900 dark:text-zinc-100">
+            {task.title || "Untitled"}
+          </span>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {isInQueue ? (
+              <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                In Focus
+              </span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
+                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded px-2 py-1"
+              >
+                Add
+              </button>
+            )}
+            {(onDelete || onDefer || onPark) && (
+              <div className="relative">
                 <button
-                  onClick={() => {
-                    onPark(task.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                 >
-                  Archive
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
                 </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={() => {
-                    onDelete(task.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                >
-                  Delete
-                </button>
-              )}
+                {showMenu && <MenuDropdown />}
+              </div>
+            )}
+            <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Row 2: Metadata */}
+        <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-zinc-500 dark:text-zinc-400">
+          {priority && (
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${priority.bg}`} />
+              <span>{priority.label}</span>
             </div>
           )}
+          {isWaiting && (
+            <span className="text-amber-500 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              Waiting
+            </span>
+          )}
+          {progress.total > 0 && (
+            <span>{progress.completed}/{progress.total} steps</span>
+          )}
+          {task.targetDate && (
+            <span>Target {formatDate(task.targetDate)}</span>
+          )}
+          {task.deadlineDate && (
+            <span className={`font-medium ${isDeadlineOverdue ? "text-red-600 dark:text-red-400" : "text-red-500"}`}>
+              Due {formatDate(task.deadlineDate)}
+            </span>
+          )}
         </div>
-      )}
-
-      {/* Chevron */}
-      <svg
-        className="w-4 h-4 text-zinc-400 flex-shrink-0"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 5l7 7-7 7"
-        />
-      </svg>
+      </div>
     </div>
   );
 }

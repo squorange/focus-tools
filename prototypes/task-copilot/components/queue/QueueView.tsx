@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { Task, FocusQueue, FocusQueueItem, Project } from "@/lib/types";
 import QueueItem from "./QueueItem";
+import QuickCapture from "@/components/inbox/QuickCapture";
 
 interface QueueViewProps {
   queue: FocusQueue;
   tasks: Task[];
   projects: Project[];
-  poolCount: number;
   inboxCount: number;
   onOpenTask: (id: string) => void;
   onCreateTask: (title: string) => void;
@@ -18,8 +18,9 @@ interface QueueViewProps {
   onMoveItemUp: (queueItemId: string) => void;
   onMoveItemDown: (queueItemId: string) => void;
   onMoveTodayLine: (newIndex: number) => void;
-  onGoToPool: () => void;
   onGoToInbox: () => void;
+  onMarkComplete: (taskId: string) => void;
+  onMarkIncomplete: (taskId: string) => void;
 }
 
 // Get total estimated time for items
@@ -53,21 +54,28 @@ export default function QueueView({
   queue,
   tasks,
   projects,
-  poolCount,
   inboxCount,
   onOpenTask,
+  onCreateTask,
   onStartFocus,
   onRemoveFromQueue,
   onMoveItem,
   onMoveItemUp,
   onMoveItemDown,
   onMoveTodayLine,
-  onGoToPool,
   onGoToInbox,
+  onMarkComplete,
+  onMarkIncomplete,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
+
+  // Touch drag state
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const touchStartY = useRef<number>(0);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const lineRef = useRef<HTMLDivElement>(null);
 
   // Filter out completed items for display (but keep them in data)
   const activeItems = useMemo(
@@ -126,10 +134,89 @@ export default function QueueView({
     setDragOverIndex(null);
   };
 
+  // Touch handlers for mobile drag
+  const calculateTouchOverIndex = useCallback((touchY: number): number => {
+    // Only include actual items, not the today line
+    // The onMoveItem handler in page.tsx handles crossing the today line correctly
+    const positions: { index: number; top: number; bottom: number }[] = [];
+
+    activeItems.forEach((item, index) => {
+      const el = itemRefs.current.get(item.id);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        positions.push({ index, top: rect.top, bottom: rect.bottom });
+      }
+    });
+
+    // Sort by visual position
+    positions.sort((a, b) => a.top - b.top);
+
+    // Find which index the touch is over
+    for (let i = 0; i < positions.length; i++) {
+      const midpoint = (positions[i].top + positions[i].bottom) / 2;
+      if (touchY < midpoint) {
+        return positions[i].index;
+      }
+    }
+
+    // If below all items, return last index
+    return activeItems.length;
+  }, [activeItems]);
+
+  const handleTouchStart = (e: React.TouchEvent, itemId: string) => {
+    const touch = e.touches[0];
+    touchStartY.current = touch.clientY;
+    setDraggedItem(itemId);
+    setIsTouchDragging(true);
+  };
+
+  const handleLineTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartY.current = touch.clientY;
+    setIsDraggingLine(true);
+    setIsTouchDragging(true);
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isTouchDragging) return;
+    e.preventDefault(); // Prevent scrolling while dragging
+
+    const touch = e.touches[0];
+    const overIndex = calculateTouchOverIndex(touch.clientY);
+    setDragOverIndex(overIndex);
+  }, [isTouchDragging, calculateTouchOverIndex]);
+
+  const handleTouchEnd = () => {
+    if (draggedItem && dragOverIndex !== null) {
+      onMoveItem(draggedItem, dragOverIndex);
+    } else if (isDraggingLine && dragOverIndex !== null) {
+      onMoveTodayLine(dragOverIndex);
+    }
+
+    setDraggedItem(null);
+    setDragOverIndex(null);
+    setIsDraggingLine(false);
+    setIsTouchDragging(false);
+  };
+
+  // Ref callback for storing item refs
+  const setItemRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    if (el) {
+      itemRefs.current.set(id, el);
+    } else {
+      itemRefs.current.delete(id);
+    }
+  }, []);
+
   const totalItems = activeItems.length;
 
   return (
     <div className="flex flex-col">
+      {/* Quick Capture */}
+      <div className="mb-4">
+        <QuickCapture onCapture={onCreateTask} placeholder="Add a task to focus..." />
+      </div>
+
       {/* Header with today estimate */}
       <div className="flex items-center justify-between px-1 mb-3">
         <div className="flex items-center gap-2">
@@ -174,30 +261,18 @@ export default function QueueView({
               Queue is clear
             </h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6">
-              {poolCount > 0
-                ? "Add tasks from your pool to get started"
-                : inboxCount > 0
-                ? "Triage your inbox items first"
-                : "Capture a new task to begin"}
+              {inboxCount > 0
+                ? "Triage your inbox items first, or capture a new task above"
+                : "Capture a new task above to begin"}
             </p>
-            <div className="flex gap-3">
-              {poolCount > 0 && (
-                <button
-                  onClick={onGoToPool}
-                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-                >
-                  Add from Tasks ({poolCount})
-                </button>
-              )}
-              {inboxCount > 0 && (
-                <button
-                  onClick={onGoToInbox}
-                  className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                >
-                  Go to Inbox ({inboxCount})
-                </button>
-              )}
-            </div>
+            {inboxCount > 0 && (
+              <button
+                onClick={onGoToInbox}
+                className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+              >
+                Go to Inbox ({inboxCount})
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2" onDragEnd={handleDragEnd}>
@@ -216,10 +291,14 @@ export default function QueueView({
               return (
                 <div
                   key={item.id}
+                  ref={setItemRef(item.id)}
                   draggable
                   onDragStart={(e) => handleDragStart(e, item.id)}
                   onDragOver={(e) => handleDragOver(e, index)}
-                  className={`transition-transform duration-150 ease-out ${
+                  onTouchStart={(e) => handleTouchStart(e, item.id)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                  className={`transition-transform duration-150 ease-out touch-none ${
                     isBeingDragged ? "opacity-50" : ""
                   } ${shouldSlideDownLine || shouldSlideDownItem ? "translate-y-14" : ""}`}
                 >
@@ -234,13 +313,15 @@ export default function QueueView({
                     onRemoveFromQueue={onRemoveFromQueue}
                     onMoveUp={onMoveItemUp}
                     onMoveDown={onMoveItemDown}
+                    onMarkComplete={onMarkComplete}
+                    onMarkIncomplete={onMarkIncomplete}
                   />
                 </div>
               );
             })}
 
             {/* The Today Line (draggable divider with tap arrows) */}
-            <div className="group relative my-6">
+            <div ref={lineRef} className="group relative my-6">
               {/* Up arrow - tap to move line up */}
               <button
                 onClick={() => onMoveTodayLine(queue.todayLineIndex - 1)}
@@ -262,8 +343,11 @@ export default function QueueView({
                   e.preventDefault();
                   setDragOverIndex(queue.todayLineIndex);
                 }}
+                onTouchStart={handleLineTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 className={`
-                  relative py-2 cursor-grab active:cursor-grabbing
+                  relative py-2 cursor-grab active:cursor-grabbing touch-none
                   ${isDraggingLine ? "opacity-50" : ""}
                   ${dragOverIndex === queue.todayLineIndex && !isDraggingLine && draggedItem
                     ? "border-t-2 border-violet-500"
@@ -289,7 +373,7 @@ export default function QueueView({
                 </div>
                 {/* Label - absolutely centered over the line with opaque background */}
                 <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700 rounded">
-                  ── TODAY ──
+                  Today
                 </span>
               </div>
 
@@ -325,10 +409,14 @@ export default function QueueView({
                   return (
                     <div
                       key={item.id}
+                      ref={setItemRef(item.id)}
                       draggable
                       onDragStart={(e) => handleDragStart(e, item.id)}
                       onDragOver={(e) => handleDragOver(e, actualIndex)}
-                      className={`transition-transform duration-150 ease-out ${
+                      onTouchStart={(e) => handleTouchStart(e, item.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      className={`transition-transform duration-150 ease-out touch-none ${
                         isBeingDragged ? "opacity-50" : ""
                       } ${shouldSlideUpLine ? "-translate-y-14" : ""} ${shouldSlideDownItem ? "translate-y-14" : ""}`}
                     >
@@ -343,6 +431,8 @@ export default function QueueView({
                         onRemoveFromQueue={onRemoveFromQueue}
                         onMoveUp={onMoveItemUp}
                         onMoveDown={onMoveItemDown}
+                        onMarkComplete={onMarkComplete}
+                        onMarkIncomplete={onMarkIncomplete}
                       />
                     </div>
                   );
@@ -366,19 +456,6 @@ export default function QueueView({
         )}
       </div>
 
-      {/* Quick Add (always visible at bottom) */}
-      {totalItems > 0 && (
-        <div className="mt-4 pt-4">
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={onGoToPool}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-            >
-              + Add from Tasks
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

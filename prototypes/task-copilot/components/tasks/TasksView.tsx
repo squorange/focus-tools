@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Task, FocusQueue, Project } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 import QuickCapture from "@/components/inbox/QuickCapture";
 import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
@@ -114,30 +115,6 @@ export default function TasksView({
               {project.name}
             </button>
           ))}
-          <button
-            onClick={() => onOpenProjectModal()}
-            className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 flex items-center gap-1"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add project
-          </button>
-        </div>
-      )}
-
-      {/* Empty state for projects */}
-      {activeProjects.length === 0 && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onOpenProjectModal()}
-            className="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-lg transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create your first project
-          </button>
         </div>
       )}
 
@@ -299,12 +276,6 @@ function isOverdue(dateStr: string | null): boolean {
   return dateStr < today;
 }
 
-// Format date for display
-function formatDateShort(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 // Task Row Component
 interface TaskRowProps {
   task: Task;
@@ -330,68 +301,107 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
     return date.toISOString().split('T')[0];
   };
 
+  // Shared menu dropdown
+  const MenuDropdown = () => (
+    <div
+      className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {onDefer && (
+        <>
+          <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Tomorrow
+          </button>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Next week
+          </button>
+          <button
+            onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
+            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            Next month
+          </button>
+          <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+        </>
+      )}
+      {onPark && (
+        <button
+          onClick={() => { onPark(task.id); setShowMenu(false); }}
+          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+        >
+          Archive
+        </button>
+      )}
+      {onDelete && (
+        <button
+          onClick={() => { onDelete(task.id); setShowMenu(false); }}
+          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+        >
+          Delete
+        </button>
+      )}
+    </div>
+  );
+
+  // Metadata pills component
+  const MetadataPills = () => (
+    <>
+      {totalSteps > 0 && (
+        <MetadataPill>{completedSteps}/{totalSteps} steps</MetadataPill>
+      )}
+      {task.targetDate && (
+        <MetadataPill>Target {formatDate(task.targetDate)}</MetadataPill>
+      )}
+      {task.deadlineDate && (
+        <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+          Due {formatDate(task.deadlineDate)}
+        </MetadataPill>
+      )}
+      {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
+      {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
+      {project && (
+        <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+          {project.name}
+        </MetadataPill>
+      )}
+      {badge && <MetadataPill>{badge}</MetadataPill>}
+    </>
+  );
+
   return (
-    <div className="group bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
-      <div className="flex items-start justify-between gap-3">
+    <div className="group bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
+      {/* Desktop layout */}
+      <div className="hidden sm:flex sm:items-start sm:justify-between sm:gap-3">
         <button onClick={onOpen} className="flex-1 text-left min-w-0">
           <span className="text-zinc-900 dark:text-zinc-100 font-medium truncate block">
             {task.title}
           </span>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            {/* Progress pill */}
-            {totalSteps > 0 && (
-              <MetadataPill>
-                {completedSteps}/{totalSteps} steps
-              </MetadataPill>
-            )}
-            {/* Due date pill */}
-            {task.deadlineDate && (
-              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
-                Due {formatDateShort(task.deadlineDate)}
-              </MetadataPill>
-            )}
-            {/* Priority pill */}
-            {task.priority === "high" && (
-              <MetadataPill variant="priority-high">High</MetadataPill>
-            )}
-            {task.priority === "medium" && (
-              <MetadataPill variant="priority-medium">Medium</MetadataPill>
-            )}
-            {/* Project pill */}
-            {project && (
-              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
-                {project.name}
-              </MetadataPill>
-            )}
-            {/* Badge (for waiting, deferred, etc) */}
-            {badge && <MetadataPill>{badge}</MetadataPill>}
+            <MetadataPills />
           </div>
         </button>
         <div className="flex items-center gap-2 flex-shrink-0">
           {isInQueue ? (
-            <span className="text-xs text-green-600 dark:text-green-400">
-              In Focus
-            </span>
+            <span className="text-xs text-green-600 dark:text-green-400">In Focus</span>
           ) : (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddToQueue();
-              }}
+              onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
               className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900"
             >
               Add to Focus
             </button>
           )}
-
-          {/* Actions menu */}
           {(onDelete || onDefer || onPark) && (
             <div className="relative">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
                 className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
                 title="More actions"
               >
@@ -399,89 +409,60 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              {showMenu && (
-                <div
-                  className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {onDefer && (
-                    <>
-                      <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(1));
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Tomorrow
-                      </button>
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(7));
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Next week
-                      </button>
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(30));
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Next month
-                      </button>
-                      <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
-                    </>
-                  )}
-                  {onPark && (
-                    <button
-                      onClick={() => {
-                        onPark(task.id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Archive
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      onClick={() => {
-                        onDelete(task.id);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              )}
+              {showMenu && <MenuDropdown />}
             </div>
           )}
-
-          <button
-            onClick={onOpen}
-            className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
-          >
-            <svg
-              className="w-4 h-4 text-zinc-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+          <button onClick={onOpen} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
+            <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+        </div>
+      </div>
+
+      {/* Mobile layout */}
+      <div className="sm:hidden">
+        {/* Row 1: Title + Actions */}
+        <div className="flex items-start gap-2">
+          <button onClick={onOpen} className="flex-1 min-w-0 text-left">
+            <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+              {task.title}
+            </span>
+          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {isInQueue ? (
+              <span className="text-xs text-green-600 dark:text-green-400 px-1">In Focus</span>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
+                className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
+              >
+                Add
+              </button>
+            )}
+            {(onDelete || onDefer || onPark) && (
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+                {showMenu && <MenuDropdown />}
+              </div>
+            )}
+            <button onClick={onOpen} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
+              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        {/* Row 2: Metadata pills */}
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          <MetadataPills />
         </div>
       </div>
     </div>

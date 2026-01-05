@@ -47,6 +47,7 @@ interface TaskDetailProps {
   onRejectDeletion: (deletion: DeletionSuggestion) => void;
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
+  onOpenProjectModal: (project?: Project) => void;
 }
 
 // Get queue item for this task
@@ -105,6 +106,7 @@ export default function TaskDetail({
   onRejectDeletion,
   onAcceptTitle,
   onRejectTitle,
+  onOpenProjectModal,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -123,6 +125,17 @@ export default function TaskDetail({
   const progress = task.steps.length > 0
     ? { completed: task.steps.filter((s) => s.completed).length, total: task.steps.length }
     : null;
+  const hasNoSteps = task.steps.length === 0;
+  const isTaskComplete = task.status === 'complete';
+  const canMarkComplete = hasNoSteps && !isTaskComplete;
+
+  const handleMarkTaskComplete = () => {
+    onUpdateTask(task.id, {
+      status: 'complete',
+      completedAt: Date.now(),
+      completionType: 'manual'
+    });
+  };
 
   const handleTitleSave = () => {
     if (titleInput.trim() && titleInput !== task.title) {
@@ -140,72 +153,106 @@ export default function TaskDetail({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       {/* Header */}
-      <div className="flex items-start gap-3 mb-6">
-        <button
-          onClick={onBack}
-          className="p-2 -ml-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+      <div className="mb-6">
+        {/* Row 1: Back + Title + Status + Desktop buttons */}
+        <div className="flex items-start gap-3">
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        {/* Title + Status */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            {editingTitle ? (
-              <textarea
-                value={titleInput}
-                onChange={(e) => setTitleInput(e.target.value)}
-                onBlur={handleTitleSave}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleTitleSave();
-                  }
-                  if (e.key === "Escape") {
-                    setTitleInput(task.title);
-                    setEditingTitle(false);
-                  }
-                }}
-                onInput={(e) => {
-                  const target = e.currentTarget;
-                  target.style.height = 'auto';
-                  target.style.height = target.scrollHeight + 'px';
-                }}
-                className="flex-1 text-xl font-semibold text-zinc-900 dark:text-zinc-100 bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none overflow-hidden min-h-[1.75rem]"
-                autoFocus
-                rows={1}
-              />
-            ) : (
-              <h1
-                onClick={() => setEditingTitle(true)}
-                className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 break-words line-clamp-3 sm:line-clamp-2 cursor-text hover:text-violet-600 dark:hover:text-violet-400"
+          {/* Title + Status */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 flex-wrap">
+              {editingTitle ? (
+                <textarea
+                  value={titleInput}
+                  onChange={(e) => setTitleInput(e.target.value)}
+                  onBlur={handleTitleSave}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleTitleSave();
+                    }
+                    if (e.key === "Escape") {
+                      setTitleInput(task.title);
+                      setEditingTitle(false);
+                    }
+                  }}
+                  onInput={(e) => {
+                    const target = e.currentTarget;
+                    target.style.height = 'auto';
+                    target.style.height = target.scrollHeight + 'px';
+                  }}
+                  className="flex-1 min-w-0 text-xl font-semibold text-zinc-900 dark:text-zinc-100 bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none overflow-hidden min-h-[1.75rem]"
+                  autoFocus
+                  rows={1}
+                />
+              ) : (
+                <h1
+                  onClick={() => setEditingTitle(true)}
+                  className="flex-1 min-w-0 text-xl font-semibold text-zinc-900 dark:text-zinc-100 break-words cursor-text hover:text-violet-600 dark:hover:text-violet-400"
+                >
+                  {task.title || "Untitled Task"}
+                </h1>
+              )}
+            </div>
+          </div>
+
+          {/* Queue/Focus actions - Desktop only */}
+          <div className="hidden sm:flex items-start gap-2 pt-0.5 flex-shrink-0">
+            {canMarkComplete && (
+              <button
+                onClick={handleMarkTaskComplete}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
               >
-                {task.title || "Untitled Task"}
-              </h1>
+                Mark Complete
+              </button>
             )}
-            {/* Status badge */}
-            <span
-              className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${
-                task.status === 'inbox'
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : task.status === 'pool'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : task.status === 'complete'
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
-              }`}
-            >
-              {task.status === 'inbox' ? 'Inbox' : task.status === 'pool' ? 'Ready' : task.status === 'complete' ? 'Done' : 'Archived'}
-            </span>
+            {isInQueue ? (
+              <button
+                onClick={() => onStartFocus(queueItem!.id)}
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              >
+                Start Focus
+              </button>
+            ) : (
+              <>
+                {task.status === "inbox" && (
+                  <button
+                    onClick={() => onSendToPool(task.id)}
+                    className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  >
+                    Move to Ready
+                  </button>
+                )}
+                <button
+                  onClick={() => onAddToQueue(task.id)}
+                  className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                >
+                  Add to Focus
+                </button>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Queue/Focus actions */}
-        <div className="flex items-start gap-2 pt-0.5">
+        {/* Row 2: Mobile buttons */}
+        <div className="flex sm:hidden items-center gap-2 mt-3 ml-8 flex-wrap">
+          {canMarkComplete && (
+            <button
+              onClick={handleMarkTaskComplete}
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              Mark Complete
+            </button>
+          )}
           {isInQueue ? (
             <button
               onClick={() => onStartFocus(queueItem!.id)}
@@ -215,7 +262,6 @@ export default function TaskDetail({
             </button>
           ) : (
             <>
-              {/* Move to Ready button for inbox tasks */}
               {task.status === "inbox" && (
                 <button
                   onClick={() => onSendToPool(task.id)}
@@ -277,8 +323,8 @@ export default function TaskDetail({
         </div>
       )}
 
-      {/* Main content - scrollable */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Main content */}
+      <div className="flex-1">
         {/* Steps section */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
@@ -349,94 +395,152 @@ export default function TaskDetail({
           </form>
         </div>
 
-        {/* Metadata section */}
-        <div className="space-y-4 pb-6">
-          <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
+        {/* Metadata section - 2 column grid */}
+        <div className="pb-4">
+          <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-3">
             Details
           </h2>
 
-          {/* Priority */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Priority</span>
-            <div className="flex gap-2">
-              {(["high", "medium", "low"] as const).map((priority) => (
-                <button
-                  key={priority}
-                  onClick={() => onUpdateTask(task.id, { priority })}
-                  className={`
-                    px-3 py-1 text-xs rounded-full capitalize transition-colors
-                    ${
-                      task.priority === priority
-                        ? priority === "high"
-                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                          : priority === "medium"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                        : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
-                    }
-                  `}
-                >
-                  {priority}
-                </button>
-              ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+            {/* Status */}
+            <div>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
+              <span
+                className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                  task.status === 'inbox'
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                    : task.status === 'pool'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                    : task.status === 'complete'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
+                }`}
+              >
+                {task.status === 'inbox' ? 'Inbox' : task.status === 'pool' ? 'Ready' : task.status === 'complete' ? 'Done' : 'Archived'}
+              </span>
             </div>
-          </div>
 
-          {/* Project */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Project</span>
-            <select
-              value={task.projectId || ""}
-              onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
-              className="px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-            >
-              <option value="">No project</option>
-              {projects.filter(p => p.status === 'active').map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Priority */}
+            <div>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
+              <div className="flex gap-1.5">
+                {(["high", "medium", "low"] as const).map((priority) => (
+                  <button
+                    key={priority}
+                    onClick={() => onUpdateTask(task.id, { priority })}
+                    className={`
+                      px-2 py-0.5 text-xs rounded-full capitalize transition-colors
+                      ${
+                        task.priority === priority
+                          ? priority === "high"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : priority === "medium"
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                      }
+                    `}
+                  >
+                    {priority}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Target Date */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Target Date</span>
-            <input
-              type="date"
-              value={task.targetDate || ""}
-              onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
-              className="px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
+            {/* Project - full width */}
+            <div className="col-span-2">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={task.projectId || ""}
+                  onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
+                  className="flex-1 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  <option value="">No project</option>
+                  {projects.filter(p => p.status === 'active').map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => onOpenProjectModal()}
+                  className="p-1.5 text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+                  title="Create project"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-          {/* Deadline */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Deadline</span>
-            <input
-              type="date"
-              value={task.deadlineDate || ""}
-              onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
-              className="px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
+            {/* Date Fields - Side by side */}
+            <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
+              {/* Target Date */}
+              <div className="min-w-0 relative">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
+                <input
+                  type="date"
+                  value={task.targetDate || ""}
+                  onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
+                  className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                {task.targetDate && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateTask(task.id, { targetDate: null })}
+                    className="absolute right-2 bottom-1.5 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    title="Clear date"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
 
-          {/* Waiting On */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">Waiting On</span>
-            <input
-              type="text"
-              value={task.waitingOn?.who || ""}
-              onChange={(e) =>
-                onUpdateTask(task.id, {
-                  waitingOn: e.target.value
-                    ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
-                    : null,
-                })
-              }
-              placeholder="Nobody"
-              className="px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500 w-40 text-right"
-            />
+              {/* Deadline */}
+              <div className="min-w-0 relative">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+                <input
+                  type="date"
+                  value={task.deadlineDate || ""}
+                  onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
+                  className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                />
+                {task.deadlineDate && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
+                    className="absolute right-2 bottom-1.5 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    title="Clear date"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Waiting On - full width */}
+            <div className="col-span-2">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
+              <input
+                type="text"
+                value={task.waitingOn?.who || ""}
+                onChange={(e) =>
+                  onUpdateTask(task.id, {
+                    waitingOn: e.target.value
+                      ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
+                      : null,
+                  })
+                }
+                placeholder="Nobody"
+                className="w-full px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
           </div>
         </div>
 
@@ -476,7 +580,7 @@ export default function TaskDetail({
               {showDeferMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowDeferMenu(false)} />
-                  <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+                  <div className="absolute left-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
                     <button
                       onClick={() => {
                         onDefer(task.id, getDeferDate(1));

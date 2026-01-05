@@ -332,13 +332,13 @@ body {
     background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
   }
   25% {
-    background-position: 15% -12%, -10% 18%, 20% 10%, -15% -14%, 8% -6%;
+    background-position: 17% -14%, -12% 20%, 22% 12%, -17% -16%, 10% -8%;
   }
   50% {
-    background-position: 25% -20%, -18% 28%, 30% 18%, -25% -22%, 15% -12%;
+    background-position: 28% -22%, -20% 31%, 33% 20%, -28% -24%, 17% -14%;
   }
   75% {
-    background-position: 12% -10%, -12% 15%, 18% 8%, -10% -16%, 6% -8%;
+    background-position: 14% -12%, -14% 17%, 20% 10%, -12% -18%, 8% -10%;
   }
   100% {
     background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%;
@@ -381,6 +381,149 @@ body {
   }
 }
 
+/* Organic cloud animations - pulse and drift */
+@keyframes cloud-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(var(--blur-base, 35px));
+  }
+  33% {
+    transform: translate(-50%, -50%) scale(1.08) rotate(1deg);
+    filter: blur(calc(var(--blur-base, 35px) + 3px));
+  }
+  66% {
+    transform: translate(-50%, -50%) scale(0.95) rotate(-0.5deg);
+    filter: blur(calc(var(--blur-base, 35px) - 3px));
+  }
+}
+
+@keyframes cloud-drift {
+  0%, 100% {
+    translate: 0 0;
+  }
+  25% {
+    translate: 4vw -1.5vw;
+  }
+  50% {
+    translate: 7vw 1vw;
+  }
+  75% {
+    translate: 2.5vw 2vw;
+  }
+}
+
+.animate-cloud-pulse {
+  animation: cloud-pulse var(--pulse-duration, 50s) ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.animate-cloud-drift {
+  animation: cloud-drift var(--drift-duration, 100s) ease-in-out infinite;
+  /* GPU acceleration hint */
+  transform: translate3d(0, 0, 0);
+}
+
+/* Large atmospheric feature animations */
+@keyframes atmosphere-drift-1 {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 8vw -2vw;
+  }
+}
+
+@keyframes atmosphere-drift-2 {
+  0%, 100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: -7vw 1.5vw;
+  }
+}
+
+.animate-atmosphere-drift-1 {
+  animation: atmosphere-drift-1 130s ease-in-out infinite;
+}
+
+.animate-atmosphere-drift-2 {
+  animation: atmosphere-drift-2 140s ease-in-out infinite;
+}
+
+/* Weather wander animation - flat elliptical traverse left-to-right (viewport-scaled) */
+@keyframes weather-traverse-1 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateX(0vw) translateY(0vw);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(10.5vw) translateY(-1.2vw);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(18vw) translateY(-0.6vw);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(10.5vw) translateY(1.2vw);
+  }
+}
+
+@keyframes weather-traverse-2 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateX(0vw) translateY(0vw);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(-7vw) translateY(0.9vw);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(-12vw) translateY(0.4vw);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(-7vw) translateY(-0.9vw);
+  }
+}
+
+@keyframes weather-traverse-3 {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateX(0vw) translateY(0vw);
+  }
+  25% {
+    transform: translate(-50%, -50%) translateX(5.5vw) translateY(-1.1vw);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateX(9vw) translateY(-0.5vw);
+  }
+  75% {
+    transform: translate(-50%, -50%) translateX(5.5vw) translateY(1.1vw);
+  }
+}
+
+/* Weather fade animations - varied timing and opacity ranges */
+@keyframes weather-fade-1 {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes weather-fade-2 {
+  0%, 100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes weather-fade-3 {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* Opacity pulse animations for color shifting */
 @keyframes opacity-pulse-1 {
   0%, 100% {
@@ -401,7 +544,7 @@ body {
 }
 
 .animate-cloud-drift-1 {
-  animation: cloud-drift-1 35s ease-in-out infinite;
+  animation: cloud-drift-1 25s ease-in-out infinite;
 }
 
 .animate-cloud-drift-2 {
@@ -418,4 +561,20 @@ body {
 
 .animate-opacity-pulse-2 {
   animation: opacity-pulse-2 35s ease-in-out infinite;
+}
+
+.animate-weather-traverse-1 {
+  animation: weather-traverse-1 45s ease-in-out infinite, weather-fade-1 38s ease-in-out infinite;
+}
+
+.animate-weather-traverse-2 {
+  animation: weather-traverse-2 60s ease-in-out infinite, weather-fade-2 52s ease-in-out infinite;
+}
+
+.animate-weather-traverse-3 {
+  animation: weather-traverse-3 30s ease-in-out infinite, weather-fade-3 25s ease-in-out infinite;
+}
+
+.animate-weather-fade {
+  animation: weather-fade 45s ease-in-out infinite;
 }

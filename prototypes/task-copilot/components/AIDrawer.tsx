@@ -28,7 +28,7 @@ const VARIANT_CONFIG = {
   planning: {
     emptyTitle: "What would you like to accomplish?",
     emptySubtitle: "I'll help break it into actionable steps.",
-    placeholder: "I need to do taxes somehow...",
+    placeholder: "Ask about this task or how to break it down...",
   },
   focus: {
     emptyTitle: "Here if you need me.",
@@ -347,7 +347,7 @@ export default function AIDrawer({
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="lg:hidden fixed bottom-4 left-4 right-4 z-40 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3"
+          className="lg:hidden fixed bottom-5 left-5 right-5 z-40 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-lg border border-zinc-200/50 dark:border-zinc-700/50 rounded-full shadow-lg px-4 py-3 flex items-center gap-3"
         >
           <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

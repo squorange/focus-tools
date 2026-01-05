@@ -36,11 +36,11 @@ export default function FocusModeMoon({
   // Moon size - larger for focus mode prominence
   const moonSize = drawerState === 'full' ? 120 : 160;
 
-  // Glow scales with moon size and is much more subtle when drawer is full
-  const glowScale = moonSize / 160; // Normalized to base size
-  const glowIntensity = drawerState === 'full' ? 0.3 : 1; // Reduce to 30% when drawer full
-  const purpleGlow = `0 0 ${15 * glowScale * glowIntensity}px ${2 * glowScale * glowIntensity}px rgba(168, 85, 247, ${0.08 * glowIntensity})`;
-  const whiteGlow = `0 0 ${20 * glowScale * glowIntensity}px ${4 * glowScale * glowIntensity}px rgba(255, 255, 255, ${0.10 * glowIntensity})`;
+  // Glow scales with moon size - tighter spread for smaller moon, consistent opacity
+  const glowScale = moonSize / 160; // Normalized to base size (0.75 when full, 1.0 otherwise)
+  const spreadReduction = drawerState === 'full' ? 0.6 : 1; // Tighter spread for full state
+  const purpleGlow = `0 0 ${15 * glowScale * spreadReduction}px ${2 * glowScale * spreadReduction}px rgba(168, 85, 247, 0.08)`;
+  const whiteGlow = `0 0 ${20 * glowScale * spreadReduction}px ${4 * glowScale * spreadReduction}px rgba(255, 255, 255, 0.10)`;
 
   // Live elapsed time (updates every second for smooth animation)
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -140,6 +140,7 @@ export default function FocusModeMoon({
           width: `${moonSize}px`,
           height: `${moonSize}px`,
           boxShadow: `${purpleGlow}, ${whiteGlow}`,
+          transition: 'all 0.5s ease-out',
         }}
       >
         {/* The Moon - SVG with realistic phases */}
@@ -147,10 +148,11 @@ export default function FocusModeMoon({
           width={moonSize}
           height={moonSize}
           viewBox="0 0 100 100"
-          className="transition-all duration-500 ease-out block"
+          className="block"
           style={{
             background: 'transparent',
             display: 'block',
+            transition: 'all 0.5s ease-out',
           }}
         >
           {/* Gradients matching solar system style */}
@@ -179,7 +181,12 @@ export default function FocusModeMoon({
 
       {/* Timer Badge (if showing) - gap adjusts based on drawer state */}
       {showTimer && focusSession && (
-        <div style={{ marginTop: drawerState === 'full' ? '0px' : '24px', position: 'relative', height: '28px' }}>
+        <div style={{
+          marginTop: drawerState === 'full' ? '0px' : '24px',
+          position: 'relative',
+          height: '28px',
+          transition: 'margin-top 0.5s ease-out',
+        }}>
           <TimerBadge
             startTime={focusSession.startTime}
             isActive={focusSession.isActive}

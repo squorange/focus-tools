@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Task } from '@/app/lib/types';
 
 interface AIDrawerProps {
@@ -64,6 +64,112 @@ export default function AIDrawer({
           ? 'rgba(234, 179, 8, 0.08)' // yellow
           : 'rgba(59, 130, 246, 0.08)'; // blue
 
+  // Cloud color variants - mix of priority accent and purple/blue (boosted opacity for visibility)
+  const cloudColors = useMemo(() => {
+    const accentBase = priorityAccentColor.replace('0.08', '');
+    const purple = 'rgba(168, 85, 247, ';
+    const blue = 'rgba(59, 130, 246, ';
+    const purpleBlue = 'rgba(139, 92, 246, ';
+
+    return [
+      accentBase + '0.55)', // Priority accent - high opacity
+      accentBase + '0.45)', // Priority accent - medium opacity
+      purple + '0.50)',      // Purple
+      blue + '0.48)',        // Blue
+      purpleBlue + '0.52)',  // Purple-blue mix
+      accentBase + '0.40)', // Priority accent - lower opacity
+    ];
+  }, [priorityAccentColor]);
+
+  // Generate scattered cloud puffs (10-12 clouds in 3 depth layers)
+  // Positioned in -30° to +30° sector, outer 40% of radius
+  const cloudPuffs = useMemo(() => {
+    const clouds = [];
+    const seed = task.id.charCodeAt(0); // Consistent randomization per task
+
+    // Position clouds in upper arc (-30° to +30°, outer 40%)
+    // X: 35-65% (centered at 50%, ±15% = ~30° arc)
+    // Y: 5-20% (outer 40% of visible hemisphere)
+
+    // Deep layer (3-4 large, slow clouds) - sizes reduced 50%, wider horizontal spread
+    for (let i = 0; i < 4; i++) {
+      clouds.push({
+        id: `deep-${i}`,
+        layer: 'deep',
+        x: 28 + ((seed * 13 + i * 23) % 44), // 28-72% (increased from 35-65%, +25% spread)
+        y: 5 + ((seed * 7 + i * 17) % 15),   // 5-20%
+        size: 6 + ((seed + i * 11) % 4),     // 6-10% of planet (was 12-20%)
+        baseOpacity: 0.70 + ((seed + i * 7) % 10) / 100, // 0.70-0.80 for visibility
+        color: cloudColors[(seed + i * 3) % cloudColors.length],
+        blurAmount: 15 + ((seed + i) % 8),   // Reduced from 50-65 to 15-23
+        pulseSpeed: 50 + ((seed + i * 5) % 30),
+        driftSpeed: 120 + ((seed + i * 7) % 30),
+        pulseDelay: (i * 15) % 60,
+        driftDelay: (i * 20) % 80,
+      });
+    }
+
+    // Mid layer (8 medium clouds) - sizes reduced 50%, concentrated near middle-top
+    for (let i = 0; i < 8; i++) {
+      // Last 2 clouds positioned much higher (can clip edge)
+      const yOffset = i >= 6 ? -1 : 6; // -1 to 12% for newest (clips edge), 6-19% for others
+      const yRange = i >= 6 ? 13 : 13;
+
+      clouds.push({
+        id: `mid-${i}`,
+        layer: 'mid',
+        x: 37 + ((seed * 17 + i * 29) % 26), // 37-63%
+        y: yOffset + ((seed * 11 + i * 19) % yRange),
+        size: 4 + ((seed + i * 13) % 3),     // 4-7% of planet (was 8-14%)
+        baseOpacity: 0.80 + ((seed + i * 9) % 10) / 100, // 0.80-0.90 for visibility
+        color: cloudColors[(seed + i * 5) % cloudColors.length],
+        blurAmount: 12 + ((seed + i) % 8),   // Reduced from 35-50 to 12-20
+        pulseSpeed: 40 + ((seed + i * 7) % 25),
+        driftSpeed: 90 + ((seed + i * 9) % 30),
+        pulseDelay: (i * 12) % 50,
+        driftDelay: (i * 18) % 70,
+      });
+    }
+
+    // Surface layer (60 small pinkish clouds) - arranged in clusters around planet for mottled effect
+    // Create 8 clumps distributed around visible surface
+    const clumpCenters = [
+      { x: 33, y: 4 },   // Left-upper clump
+      { x: 42, y: 6 },   // Center-upper clump
+      { x: 35, y: 10 },  // Left-middle clump
+      { x: 58, y: 3 },   // Right-upper clump
+      { x: 48, y: 12 },  // Center-middle clump
+      { x: 28, y: 7 },   // Far-left clump
+      { x: 52, y: 8 },   // Right-center clump (new)
+      { x: 38, y: 14 },  // Center-lower clump (new)
+    ];
+
+    for (let i = 0; i < 60; i++) {
+      const clumpIndex = i % 8; // Cycle through all 8 clumps
+      const clump = clumpCenters[clumpIndex];
+
+      // Varied ellipse heights for shape variation (50-75% of width) - more horizontal stretching
+      const heightRatio = 0.50 + ((seed + i * 7) % 25) / 100; // 0.50-0.75
+
+      clouds.push({
+        id: `surface-${i}`,
+        layer: 'surface',
+        x: clump.x + ((seed * 19 + i * 31) % 12) - 6, // ±6% from clump center
+        y: clump.y + ((seed * 13 + i * 21) % 10) - 5, // ±5% from clump center
+        size: 6 + ((seed + i * 15) % 4), // 6-10% of planet (2x width: was 3-5%)
+        heightRatio: heightRatio, // More horizontal ellipses
+        baseOpacity: 0.30 + ((seed + i * 11) % 15) / 100, // 0.30-0.45 for blending
+        color: priorityAccentColor.replace('0.08', '0.55'), // Only priority accent (pinkish)
+        pulseSpeed: 35 + ((seed + i * 9) % 20),
+        driftSpeed: 80 + ((seed + i * 11) % 25),
+        pulseDelay: (i * 10) % 40,
+        driftDelay: (i * 15) % 60,
+      });
+    }
+
+    return clouds;
+  }, [task.id, cloudColors]);
+
   // Priority glow color for atmospheric effect
   const priorityGlowColor =
     task.priority === 'urgent'
@@ -123,45 +229,33 @@ export default function AIDrawer({
           boxShadow: planetGlow,
         }}
       >
-        {/* Animated cloud gradients - Layer 1: Primary colors */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none animate-cloud-drift-1"
-          style={{
-            background: `
-              radial-gradient(ellipse 60% 45% at 20% 12%, ${priorityAccentColor.replace('0.08', '0.15')}, transparent 65%),
-              radial-gradient(ellipse 35% 55% at 50% 8%, rgba(168, 85, 247, 0.18), transparent 70%),
-              radial-gradient(ellipse 70% 30% at 75% 18%, rgba(59, 130, 246, 0.12), transparent 60%),
-              radial-gradient(ellipse 25% 40% at 35% 22%, ${priorityAccentColor.replace('0.08', '0.10')}, transparent 75%),
-              radial-gradient(ellipse 50% 25% at 65% 15%, rgba(147, 51, 234, 0.14), transparent 68%)
-            `,
-          }}
-        />
+        {/* Scattered cloud puffs - radial gradients with varied ellipse shapes */}
+        {/* Note: No individual blur - planet's backdrop-blur-xl handles all softening */}
+        {cloudPuffs.map((cloud) => {
+          // Use heightRatio if available (surface layer), otherwise default 75%
+          const heightMultiplier = cloud.heightRatio || 0.75;
 
-        {/* Animated cloud gradients - Layer 2: Complementary hues with opacity fade */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none animate-cloud-drift-2 animate-opacity-pulse-1"
-          style={{
-            background: `
-              radial-gradient(ellipse 45% 60% at 65% 10%, rgba(139, 92, 246, 0.16), transparent 68%),
-              radial-gradient(ellipse 55% 35% at 25% 18%, rgba(59, 130, 246, 0.14), transparent 65%),
-              radial-gradient(ellipse 40% 50% at 80% 15%, ${priorityAccentColor.replace('0.08', '0.12')}, transparent 70%),
-              radial-gradient(ellipse 65% 40% at 45% 8%, rgba(168, 85, 247, 0.10), transparent 62%)
-            `,
-          }}
-        />
-
-        {/* Animated cloud gradients - Layer 3: Accent variations with slower fade */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none animate-cloud-drift-3 animate-opacity-pulse-2"
-          style={{
-            background: `
-              radial-gradient(ellipse 50% 55% at 15% 20%, rgba(147, 51, 234, 0.13), transparent 66%),
-              radial-gradient(ellipse 38% 48% at 70% 12%, rgba(99, 102, 241, 0.11), transparent 72%),
-              radial-gradient(ellipse 58% 42% at 40% 15%, ${priorityAccentColor.replace('0.08', '0.11')}, transparent 68%),
-              radial-gradient(ellipse 42% 52% at 85% 18%, rgba(59, 130, 246, 0.09), transparent 70%)
-            `,
-          }}
-        />
+          return (
+            <div
+              key={cloud.id}
+              className="absolute rounded-full pointer-events-none animate-cloud-pulse animate-cloud-drift"
+              style={{
+                left: `${cloud.x}%`,
+                top: `${cloud.y}%`,
+                width: `${cloud.size}%`,
+                height: `${cloud.size * heightMultiplier}%`,
+                background: `radial-gradient(ellipse, ${cloud.color}, transparent 70%)`,
+                opacity: cloud.baseOpacity,
+                '--base-opacity': cloud.baseOpacity,
+                '--pulse-duration': `${cloud.pulseSpeed}s`,
+                '--drift-duration': `${cloud.driftSpeed}s`,
+                animationDelay: `${cloud.pulseDelay}s, ${cloud.driftDelay}s`,
+                transform: 'translate(-50%, -50%)',
+                willChange: cloud.layer === 'surface' || cloud.layer === 'mid' ? 'transform' : 'auto',
+              } as React.CSSProperties}
+            />
+          );
+        })}
 
         {/* Base color wash for cohesion */}
         <div
@@ -171,11 +265,50 @@ export default function AIDrawer({
           }}
         />
 
-        {/* Depth/Atmospheric gradient - dims upper (further) part of planet */}
+        {/* Dramatic depth gradient - dark at top edge to light at center */}
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 25%, transparent 50%)',
+            background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.25) 40%, rgba(0, 0, 0, 0.55) 70%, rgba(0, 0, 0, 0.75) 100%)',
+          }}
+        />
+      </div>
+
+      {/* Large atmospheric features - TEMP: solid for positioning */}
+      <div
+        className="absolute left-1/2 top-0 -translate-x-1/2 pointer-events-none transition-all duration-500 ease-out"
+        style={{
+          width: planetRadius,
+          height: planetRadius,
+          zIndex: -5,
+        }}
+      >
+        {/* Feature 1 - large atmospheric swirl (priority accent variant) */}
+        <div
+          className="absolute rounded-full animate-atmosphere-drift-1"
+          style={{
+            width: '12.5%',
+            height: '6.25%',
+            left: '38%',
+            top: '8%',
+            background: `radial-gradient(ellipse, ${priorityAccentColor.replace('0.08', '0.18')}, ${priorityAccentColor.replace('0.08', '0.12')} 40%, transparent 70%)`,
+            filter: 'blur(45px)',
+            opacity: 0.7,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+        {/* Feature 2 - large atmospheric swirl (purplish) */}
+        <div
+          className="absolute rounded-full animate-atmosphere-drift-2"
+          style={{
+            width: '11%',
+            height: '5.5%',
+            left: '58%',
+            top: '12%',
+            background: 'radial-gradient(ellipse, rgba(168, 85, 247, 0.16), rgba(139, 92, 246, 0.10) 40%, transparent 70%)',
+            filter: 'blur(40px)',
+            opacity: 0.7,
+            transform: 'translate(-50%, -50%)',
           }}
         />
       </div>

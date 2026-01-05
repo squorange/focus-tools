@@ -25,6 +25,27 @@ button, input, textarea {
   transition: all 0.15s ease;
 }
 
+/* Force date inputs to respect container width (iOS Safari fix) */
+input[type="date"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  min-height: 2rem; /* Ensure consistent height when empty */
+}
+
+/* iOS Safari specific override */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 2rem;
+  }
+}
+
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
   width: 6px;

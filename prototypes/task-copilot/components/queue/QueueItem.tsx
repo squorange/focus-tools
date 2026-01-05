@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Task, FocusQueueItem, Project } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
 
 interface QueueItemProps {
@@ -15,6 +16,8 @@ interface QueueItemProps {
   onRemoveFromQueue: (queueItemId: string) => void;
   onMoveUp?: (queueItemId: string) => void;
   onMoveDown?: (queueItemId: string) => void;
+  onMarkComplete?: (taskId: string) => void;
+  onMarkIncomplete?: (taskId: string) => void;
 }
 
 // Calculate progress
@@ -81,12 +84,6 @@ function isOverdue(dateStr: string | null): boolean {
   return dateStr < today;
 }
 
-// Format date for display
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 export default function QueueItem({
   item,
   task,
@@ -98,18 +95,21 @@ export default function QueueItem({
   onRemoveFromQueue,
   onMoveUp,
   onMoveDown,
+  onMarkComplete,
+  onMarkIncomplete,
 }: QueueItemProps) {
   const [showMenu, setShowMenu] = useState(false);
   const progress = getProgress(task, item);
   const estimate = getEstimate(task, item);
-  const isComplete = progress.total > 0 && progress.completed === progress.total;
+  // Task is complete if status is 'complete' OR all steps are done
+  const isComplete = task.status === 'complete' || (progress.total > 0 && progress.completed === progress.total);
   const hasWaiting = !!task.waitingOn;
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
 
   return (
     <div
       className={`
-        group relative flex items-center gap-3 px-4 py-3
+        group relative px-2 sm:px-3 py-3
         bg-white dark:bg-zinc-800
         border rounded-lg
         transition-all
@@ -120,185 +120,359 @@ export default function QueueItem({
         }
       `}
     >
-      {/* Drag handle (visible on hover) */}
-      <div className="flex-shrink-0 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="9" cy="7" r="1.5" />
-          <circle cx="15" cy="7" r="1.5" />
-          <circle cx="9" cy="12" r="1.5" />
-          <circle cx="15" cy="12" r="1.5" />
-          <circle cx="9" cy="17" r="1.5" />
-          <circle cx="15" cy="17" r="1.5" />
-        </svg>
+      {/* Desktop layout */}
+      <div className="hidden sm:flex sm:items-center sm:gap-2">
+        {/* Drag handle (visible on hover) */}
+        <div className="flex-shrink-0 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="9" cy="7" r="1.5" />
+            <circle cx="15" cy="7" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="17" r="1.5" />
+            <circle cx="15" cy="17" r="1.5" />
+          </svg>
+        </div>
+
+        {/* Checkbox */}
+        <button
+          onClick={() => onOpenTask(task.id)}
+          className={`
+            flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
+            transition-colors
+            ${
+              isComplete
+                ? "bg-green-500 border-green-500 text-white"
+                : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+            }
+          `}
+        >
+          {isComplete && (
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </button>
+
+        {/* Content */}
+        <button
+          onClick={() => onOpenTask(task.id)}
+          className="flex-1 text-left min-w-0"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-zinc-900 dark:text-zinc-100 truncate ${
+                isComplete ? "line-through opacity-60" : ""
+              }`}
+            >
+              {task.title || "Untitled"}
+            </span>
+            {hasWaiting && (
+              <span
+                className="flex-shrink-0 text-amber-500"
+                title={`Waiting on: ${task.waitingOn?.who}`}
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
+            {estimate && <MetadataPill>{estimate}</MetadataPill>}
+            {task.targetDate && (
+              <MetadataPill>Target {formatDate(task.targetDate)}</MetadataPill>
+            )}
+            {task.deadlineDate && (
+              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+                Due {formatDate(task.deadlineDate)}
+              </MetadataPill>
+            )}
+            {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
+            {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
+            {project && (
+              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+                {project.name}
+              </MetadataPill>
+            )}
+          </div>
+        </button>
+
+        {/* Progress bar (small) */}
+        {progress.total > 0 && !isComplete && (
+          <div className="flex-shrink-0 w-16 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-violet-500 rounded-full transition-all"
+              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+            />
+          </div>
+        )}
+
+        {/* Focus button */}
+        {!isComplete && (
+          <button
+            onClick={() => onStartFocus(item.id)}
+            className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
+          >
+            Focus
+          </button>
+        )}
+
+        {/* Menu button - Desktop */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+            title="More actions"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px]">
+                {onMoveUp && (
+                  <button
+                    onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
+                    disabled={isFirst}
+                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                    Move Up
+                  </button>
+                )}
+                {onMoveDown && (
+                  <button
+                    onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
+                    disabled={isLast}
+                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Move Down
+                  </button>
+                )}
+                {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                {!isComplete && onMarkComplete && (
+                  <button
+                    onClick={() => { onMarkComplete(task.id); setShowMenu(false); }}
+                    className="w-full px-3 py-1.5 text-sm text-left text-green-600 dark:text-green-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Mark Complete
+                  </button>
+                )}
+                {isComplete && onMarkIncomplete && (
+                  <button
+                    onClick={() => { onMarkIncomplete(task.id); setShowMenu(false); }}
+                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Mark Incomplete
+                  </button>
+                )}
+                <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                <button
+                  onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
+                  className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Remove
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Checkbox */}
-      <button
-        onClick={() => onOpenTask(task.id)}
-        className={`
-          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
-          transition-colors
-          ${
-            isComplete
-              ? "bg-green-500 border-green-500 text-white"
-              : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
-          }
-        `}
-      >
-        {isComplete && (
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </button>
-
-      {/* Content */}
-      <button
-        onClick={() => onOpenTask(task.id)}
-        className="flex-1 text-left min-w-0"
-      >
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-zinc-900 dark:text-zinc-100 truncate ${
-              isComplete ? "line-through opacity-60" : ""
-            }`}
+      {/* Mobile layout */}
+      <div className="sm:hidden">
+        {/* Row 1: Checkbox + Title + Actions */}
+        <div className="flex items-start gap-2">
+          <button
+            onClick={() => onOpenTask(task.id)}
+            className={`
+              flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center
+              transition-colors
+              ${
+                isComplete
+                  ? "bg-green-500 border-green-500 text-white"
+                  : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+              }
+            `}
           >
-            {task.title || "Untitled"}
-          </span>
-          {hasWaiting && (
-            <span
-              className="flex-shrink-0 text-amber-500"
-              title={`Waiting on: ${task.waitingOn?.who}`}
-            >
+            {isComplete && (
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                   clipRule="evenodd"
                 />
               </svg>
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {/* Progress pill */}
-          {progress.total > 0 && (
-            <MetadataPill>{progress.label}</MetadataPill>
-          )}
-          {/* Time estimate pill */}
-          {estimate && <MetadataPill>{estimate}</MetadataPill>}
-          {/* Due date pill */}
-          {task.deadlineDate && (
-            <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
-              Due {formatDate(task.deadlineDate)}
-            </MetadataPill>
-          )}
-          {/* Priority pill */}
-          {task.priority === "high" && (
-            <MetadataPill variant="priority-high">High</MetadataPill>
-          )}
-          {task.priority === "medium" && (
-            <MetadataPill variant="priority-medium">Medium</MetadataPill>
-          )}
-          {/* Project pill */}
-          {project && (
-            <MetadataPill variant="project" color={project.color || "#9ca3af"}>
-              {project.name}
-            </MetadataPill>
-          )}
-        </div>
-      </button>
-
-      {/* Progress bar (small) */}
-      {progress.total > 0 && !isComplete && (
-        <div className="flex-shrink-0 w-16 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-violet-500 rounded-full transition-all"
-            style={{
-              width: `${(progress.completed / progress.total) * 100}%`,
-            }}
-          />
-        </div>
-      )}
-
-      {/* Actions */}
-      {!isComplete && (
-        <button
-          onClick={() => onStartFocus(item.id)}
-          className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
-        >
-          Focus
-        </button>
-      )}
-
-      {/* Actions menu */}
-      <div className="relative">
-        <button
-          onClick={() => setShowMenu(!showMenu)}
-          className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-          title="More actions"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </button>
-        {showMenu && (
-          <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
-            {/* Move Up */}
-            {onMoveUp && (
-              <button
-                onClick={() => {
-                  onMoveUp(item.id);
-                  setShowMenu(false);
-                }}
-                disabled={isFirst}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-                Move Up
-              </button>
             )}
-            {/* Move Down */}
-            {onMoveDown && (
-              <button
-                onClick={() => {
-                  onMoveDown(item.id);
-                  setShowMenu(false);
-                }}
-                disabled={isLast}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                Move Down
-              </button>
-            )}
-            {/* Divider */}
-            {(onMoveUp || onMoveDown) && (
-              <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
-            )}
-            {/* Remove */}
-            <button
-              onClick={() => {
-                onRemoveFromQueue(item.id);
-                setShowMenu(false);
-              }}
-              className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+          </button>
+
+          <button
+            onClick={() => onOpenTask(task.id)}
+            className="flex-1 min-w-0 text-left"
+          >
+            <span
+              className={`text-zinc-900 dark:text-zinc-100 ${
+                isComplete ? "line-through opacity-60" : ""
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Remove
-            </button>
+              {task.title || "Untitled"}
+            </span>
+          </button>
+
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {hasWaiting && (
+              <span className="text-amber-500" title={`Waiting on: ${task.waitingOn?.who}`}>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            )}
+            {!isComplete && (
+              <button
+                onClick={() => onStartFocus(item.id)}
+                className="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
+              >
+                Focus
+              </button>
+            )}
+            {/* Menu button - Mobile */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px]">
+                    {onMoveUp && (
+                      <button
+                        onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
+                        disabled={isFirst}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                        Move Up
+                      </button>
+                    )}
+                    {onMoveDown && (
+                      <button
+                        onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
+                        disabled={isLast}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        Move Down
+                      </button>
+                    )}
+                    {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                    {!isComplete && onMarkComplete && (
+                      <button
+                        onClick={() => { onMarkComplete(task.id); setShowMenu(false); }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-green-600 dark:text-green-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Mark Complete
+                      </button>
+                    )}
+                    {isComplete && onMarkIncomplete && (
+                      <button
+                        onClick={() => { onMarkIncomplete(task.id); setShowMenu(false); }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Mark Incomplete
+                      </button>
+                    )}
+                    <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                    <button
+                      onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
+                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Remove
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* Row 2: Metadata pills + progress bar */}
+        <div className="flex items-center gap-2 mt-2 ml-6">
+          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+            {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
+            {estimate && <MetadataPill>{estimate}</MetadataPill>}
+            {task.targetDate && (
+              <MetadataPill>{formatDate(task.targetDate)}</MetadataPill>
+            )}
+            {task.deadlineDate && (
+              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+                {formatDate(task.deadlineDate)}
+              </MetadataPill>
+            )}
+            {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
+            {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
+            {project && (
+              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+                {project.name}
+              </MetadataPill>
+            )}
+          </div>
+          {progress.total > 0 && !isComplete && (
+            <div className="flex-shrink-0 w-12 h-1 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-violet-500 rounded-full"
+                style={{ width: `${(progress.completed / progress.total) * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

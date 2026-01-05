@@ -18,18 +18,19 @@ export default function NotesModule({
   placeholder = "Add note...",
 }: NotesModuleProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded || !collapsible);
+  const [userExpanded, setUserExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-focus and move cursor to end when expanding
+  // Auto-focus and move cursor to end when user explicitly expands (not on initial load)
   useEffect(() => {
-    if (isExpanded && textareaRef.current) {
+    if (isExpanded && userExpanded && textareaRef.current) {
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(
         textareaRef.current.value.length,
         textareaRef.current.value.length
       );
     }
-  }, [isExpanded]);
+  }, [isExpanded, userExpanded]);
 
   // Auto-resize textarea to fit content
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function NotesModule({
 
   const handleExpand = () => {
     if (collapsible && !isExpanded) {
+      setUserExpanded(true);
       setIsExpanded(true);
     }
   };
@@ -82,7 +84,6 @@ export default function NotesModule({
                    text-left"
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-sm flex-shrink-0">📝</span>
           <span className={`text-sm truncate ${notes ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400 dark:text-neutral-500"}`}>
             {getPreview()}
           </span>
@@ -106,7 +107,6 @@ export default function NotesModule({
                  border border-neutral-200 dark:border-neutral-700 rounded-lg"
     >
       <div className="flex items-start gap-2">
-        <span className="text-sm flex-shrink-0 mt-0.5">📝</span>
         <textarea
           ref={textareaRef}
           value={notes}

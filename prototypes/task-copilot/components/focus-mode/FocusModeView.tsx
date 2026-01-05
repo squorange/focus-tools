@@ -147,11 +147,21 @@ export default function FocusModeView({
   const currentStep = getCurrentStep(stepsInScope, focusState.currentStepId);
   const currentStepIndex = currentStep ? stepsInScope.findIndex((s) => s.id === currentStep.id) : -1;
   const isComplete = progress.completed === progress.total && progress.total > 0;
+  const hasNoSteps = stepsInScope.length === 0;
+  const isTaskComplete = task.status === 'complete';
 
   const handleMarkDone = () => {
     if (currentStep) {
       onStepComplete(task.id, currentStep.id, true);
     }
+  };
+
+  const handleMarkTaskComplete = () => {
+    onUpdateTask(task.id, {
+      status: 'complete',
+      completedAt: Date.now(),
+      completionType: 'manual'
+    });
   };
 
   return (
@@ -234,18 +244,22 @@ export default function FocusModeView({
           </h1>
         )}
 
-        {/* Step indicator */}
-        <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
-          Step {currentStepIndex + 1} of {stepsInScope.length}
-        </div>
+        {/* Step indicator - only show if there are steps */}
+        {!hasNoSteps && (
+          <>
+            <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+              Step {currentStepIndex + 1} of {stepsInScope.length}
+            </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-700 rounded-full mb-8 overflow-hidden">
-          <div
-            className="h-full bg-violet-500 rounded-full transition-all duration-500"
-            style={{ width: `${(progress.completed / Math.max(progress.total, 1)) * 100}%` }}
-          />
-        </div>
+            {/* Progress bar */}
+            <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-700 rounded-full mb-8 overflow-hidden">
+              <div
+                className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                style={{ width: `${(progress.completed / Math.max(progress.total, 1)) * 100}%` }}
+              />
+            </div>
+          </>
+        )}
 
         {/* Current Step Card */}
         {isComplete ? (
@@ -437,8 +451,11 @@ export default function FocusModeView({
                   I&apos;m Stuck
                 </button>
                 {showStuckMenu && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[220px]">
-                    <button
+                  <>
+                    {/* Backdrop to dismiss menu */}
+                    <div className="fixed inset-0 z-10" onClick={() => setShowStuckMenu(false)} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[220px]">
+                      <button
                       onClick={() => {
                         setShowStuckMenu(false);
                         onStuckBreakdown();
@@ -487,11 +504,55 @@ export default function FocusModeView({
                       </svg>
                       Talk it through with AI
                     </button>
-                  </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
           </div>
+        ) : hasNoSteps ? (
+          /* Task with no steps - show mark complete option */
+          isTaskComplete ? (
+            <div className="w-full p-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">
+                Task Complete!
+              </h2>
+              <p className="text-green-600 dark:text-green-400 mb-6">
+                Great work!
+              </p>
+              <button
+                onClick={onExit}
+                className="px-6 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <div className="w-full p-8 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-center">
+              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+                Ready to complete this task?
+              </p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={handleMarkTaskComplete}
+                  className="px-8 py-3 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                >
+                  Mark Complete
+                </button>
+                <button
+                  onClick={onOpenAIDrawer}
+                  className="px-6 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                >
+                  Talk to AI
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="w-full p-6 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-center">
             <p className="text-zinc-500 dark:text-zinc-400">

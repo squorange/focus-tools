@@ -314,6 +314,45 @@ export default function Home() {
     });
   }, [state.currentView]);
 
+  // Create task and add to today's focus queue (for Focus view QuickCapture)
+  const handleCreateTaskForFocus = useCallback((title: string) => {
+    const newTask = createTask(title);
+    // Update to pool status immediately since we're adding to queue
+    newTask.status = 'pool';
+
+    setState((prev) => {
+      const newTasks = [...prev.tasks, newTask];
+      logTaskCreated(newTask, newTasks);
+
+      // Create queue item for today
+      const newItem = createFocusQueueItem(newTask.id, 'today');
+      const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+      const completedItems = prev.focusQueue.items.filter((i) => i.completed);
+
+      // Insert at todayLineIndex position (end of today section), increment line
+      const todaySection = activeItems.slice(0, prev.focusQueue.todayLineIndex);
+      const laterSection = activeItems.slice(prev.focusQueue.todayLineIndex);
+      const newItems = [...todaySection, { ...newItem, order: todaySection.length }, ...laterSection, ...completedItems];
+      const newTodayLineIndex = prev.focusQueue.todayLineIndex + 1;
+
+      // Re-assign orders
+      const reorderedItems = newItems.map((item, idx) => ({
+        ...item,
+        order: idx,
+      }));
+
+      return {
+        ...prev,
+        tasks: newTasks,
+        focusQueue: {
+          ...prev.focusQueue,
+          items: reorderedItems,
+          todayLineIndex: newTodayLineIndex,
+        },
+      };
+    });
+  }, []);
+
   const handleUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
     setState((prev) => ({
       ...prev,
@@ -662,6 +701,84 @@ export default function Home() {
           ...prev.focusQueue,
           items: newItems,
           todayLineIndex: Math.max(0, newTodayLineIndex),
+        },
+      };
+    });
+  }, []);
+
+  // Mark task complete from queue
+  const handleMarkCompleteFromQueue = useCallback((taskId: string) => {
+    setState((prev) => {
+      const now = Date.now();
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          return {
+            ...t,
+            status: 'complete' as const,
+            completedAt: now,
+            // Mark all steps complete too
+            steps: t.steps.map((s) => ({
+              ...s,
+              completed: true,
+              completedAt: s.completedAt || now,
+              substeps: s.substeps.map((sub) => ({
+                ...sub,
+                completed: true,
+                completedAt: sub.completedAt || now,
+              })),
+            })),
+            updatedAt: now,
+          };
+        }),
+        // Mark the queue item as completed
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.map((i) =>
+            i.taskId === taskId
+              ? { ...i, completed: true, completedAt: now }
+              : i
+          ),
+        },
+      };
+    });
+  }, []);
+
+  // Mark task incomplete from queue (undo accidental completion)
+  const handleMarkIncompleteFromQueue = useCallback((taskId: string) => {
+    setState((prev) => {
+      const now = Date.now();
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          return {
+            ...t,
+            status: 'pool' as const,
+            completedAt: null,
+            // Uncheck all steps
+            steps: t.steps.map((s) => ({
+              ...s,
+              completed: false,
+              completedAt: null,
+              substeps: s.substeps.map((sub) => ({
+                ...sub,
+                completed: false,
+                completedAt: null,
+              })),
+            })),
+            updatedAt: now,
+          };
+        }),
+        // Mark the queue item as not completed (restore to queue)
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.map((i) =>
+            i.taskId === taskId
+              ? { ...i, completed: false, completedAt: null }
+              : i
+          ),
         },
       };
     });
@@ -1745,26 +1862,26 @@ export default function Home() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
-          {/* Mobile: pb-20 clears floating AI bar; when open pb-[52vh] for bottom sheet */}
-          <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-6 pb-[52vh]' : 'pb-20 lg:pb-6'}`}>
+          {/* Mobile: pb-48 clears floating AI bar + gives room for dropdowns; when AI open pb-[52vh] for bottom sheet */}
+          <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-6 pb-[52vh]' : 'pb-48 lg:pb-6'}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
                 queue={state.focusQueue}
                 tasks={state.tasks}
                 projects={state.projects}
-                poolCount={poolTasks.length}
                 inboxCount={inboxTasks.length}
                 onOpenTask={handleOpenTask}
-                onCreateTask={handleCreateTask}
+                onCreateTask={handleCreateTaskForFocus}
                 onStartFocus={handleStartFocus}
                 onRemoveFromQueue={handleRemoveFromQueue}
                 onMoveItem={handleMoveQueueItem}
                 onMoveItemUp={handleMoveQueueItemUp}
                 onMoveItemDown={handleMoveQueueItemDown}
                 onMoveTodayLine={handleMoveTodayLine}
-                onGoToPool={handleGoToTasks}
                 onGoToInbox={handleGoToInbox}
+                onMarkComplete={handleMarkCompleteFromQueue}
+                onMarkIncomplete={handleMarkIncompleteFromQueue}
               />
             )}
 
@@ -1865,6 +1982,7 @@ export default function Home() {
                 onRejectDeletion={handleRejectDeletion}
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
+                onOpenProjectModal={handleOpenProjectModal}
               />
             )}
 
