@@ -233,7 +233,7 @@ export default function TaskItem({
         <div className="relative flex-shrink-0" ref={menuRef}>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity
+            className="p-1 focus:opacity-100 transition-colors
                        text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -465,7 +465,7 @@ function SubstepItem({
       <div className="relative flex-shrink-0" ref={menuRef}>
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="p-1 opacity-0 group-hover/sub:opacity-100 focus:opacity-100 transition-opacity
+          className="p-1 focus:opacity-100 transition-colors
                      text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

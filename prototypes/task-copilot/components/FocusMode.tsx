@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Step, Message, SuggestedStep, EditSuggestion } from "@/lib/types";
+import { Step, Message, SuggestedStep, EditSuggestion, DeletionSuggestion } from "@/lib/types";
 import NotesModule from "./NotesModule";
 import AIDrawer from "./AIDrawer";
 import StuckMenu, { StuckOption } from "./StuckMenu";
@@ -31,9 +31,12 @@ interface FocusModeProps {
   // Staging Area props
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
+  deletions: DeletionSuggestion[];
   onAcceptOne: (suggestion: SuggestedStep) => void;
   onAcceptEdit: (edit: EditSuggestion) => void;
   onRejectEdit: (edit: EditSuggestion) => void;
+  onAcceptDeletion: (deletion: DeletionSuggestion) => void;
+  onRejectDeletion: (deletion: DeletionSuggestion) => void;
   onAcceptAll: () => void;
   onDismissSuggestions: () => void;
   // Editing props
@@ -76,9 +79,12 @@ export default function FocusMode({
   onSendMessage,
   suggestions,
   edits,
+  deletions,
   onAcceptOne,
   onAcceptEdit,
   onRejectEdit,
+  onAcceptDeletion,
+  onRejectDeletion,
   onAcceptAll,
   onDismissSuggestions,
   onStepUpdate,
@@ -466,9 +472,12 @@ export default function FocusMode({
           <StagingArea
             suggestions={suggestions}
             edits={edits}
+            deletions={deletions}
             onAcceptOne={onAcceptOne}
             onAcceptEdit={onAcceptEdit}
             onRejectEdit={onRejectEdit}
+            onAcceptDeletion={onAcceptDeletion}
+            onRejectDeletion={onRejectDeletion}
             onAcceptAll={onAcceptAll}
             onDismiss={onDismissSuggestions}
           />

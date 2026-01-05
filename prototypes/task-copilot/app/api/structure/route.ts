@@ -1,37 +1,103 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, FOCUS_MODE_PROMPT } from "@/lib/prompts";
-import { StructureRequest, StructureResponse, Substep } from "@/lib/types";
+import { StructureRequest, StructureResponse, Substep, Step } from "@/lib/types";
+import {
+  structuringTools,
+  focusModeTools,
+  ReplaceStepsInput,
+  SuggestAdditionsInput,
+  EditStepsInput,
+  DeleteStepsInput,
+  EditTitleInput,
+  ConversationalInput,
+  BreakDownStepInput,
+  SuggestFirstActionInput,
+  ExplainStepInput,
+  EncourageInput,
+} from "@/lib/ai-tools";
 
 // Extended request body for focus mode
 interface ExtendedStructureRequest extends StructureRequest {
+  taskDescription?: string | null;
   taskNotes?: string;
-  focusMode?: {
+  // Legacy format (full object)
+  focusMode?: boolean | {
     currentStepId: string;
     currentStepText: string;
     currentSubsteps: Substep[];
     stepIndex: number;
     totalSteps: number;
   };
+  // Simplified format (separate fields)
+  currentStep?: {
+    id: string;
+    text: string;
+    completed: boolean;
+  } | null;
 }
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Extract embedded time estimates from step text and clean up
+// Fallback for when AI incorrectly embeds times like "Buy groceries ~15 min"
+function extractEmbeddedTime(text: string): { cleanText: string; minutes: number | null } {
+  // Match patterns like "~15 min", "~2h", "~1h 30m", "15 min", "(30 min)", etc.
+  const timePatterns = [
+    /\s*[~≈]?\s*\(?\s*(\d+)\s*(?:hr?s?|hours?)\s*(?:(\d+)\s*(?:min|mins?|m))?\s*\)?$/i,
+    /\s*[~≈]?\s*\(?\s*(\d+)\s*(?:min|mins?|minutes?|m)\s*\)?$/i,
+  ];
+
+  for (const pattern of timePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      const cleanText = text.replace(pattern, "").trim();
+      // First pattern handles hours + optional minutes
+      if (pattern.source.includes("hr")) {
+        const hours = parseInt(match[1]);
+        const mins = match[2] ? parseInt(match[2]) : 0;
+        return { cleanText, minutes: hours * 60 + mins };
+      } else {
+        // Second pattern handles minutes only
+        return { cleanText, minutes: parseInt(match[1]) };
+      }
+    }
+  }
+
+  return { cleanText: text, minutes: null };
+}
+
+// Apply extraction to step data if estimatedMinutes is not already set
+function cleanStepText<T extends { text: string; estimatedMinutes?: number | null }>(step: T): T {
+  if (step.estimatedMinutes) return step; // Already has estimate, don't override
+
+  const { cleanText, minutes } = extractEmbeddedTime(step.text);
+  if (minutes) {
+    return { ...step, text: cleanText, estimatedMinutes: minutes };
+  }
+  return step;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, conversationHistory, taskNotes, focusMode } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep } = body;
 
-    // Determine which prompt to use
-    const systemPrompt = focusMode ? FOCUS_MODE_PROMPT : SYSTEM_PROMPT;
+    // Determine which prompt and tools to use
+    const isFocusMode = Boolean(focusMode);
+    const systemPrompt = isFocusMode ? FOCUS_MODE_PROMPT : SYSTEM_PROMPT;
+    const tools = isFocusMode ? focusModeTools : structuringTools;
 
     // Build context message with current state
-    const contextMessage = buildContextMessage(userMessage, currentList, taskTitle, taskNotes, focusMode);
+    const contextMessage = buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep);
+    console.log("[AI Debug] Context message:", contextMessage);
+    console.log("[AI Debug] Focus mode:", isFocusMode);
+    console.log("[AI Debug] Current list length:", currentList?.length || 0);
 
     // Build messages array for Claude
-    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    const messages: Anthropic.MessageParam[] = [];
 
     // Add conversation history (excluding the current message)
     for (const msg of conversationHistory) {
@@ -47,51 +113,39 @@ export async function POST(request: NextRequest) {
       content: contextMessage,
     });
 
-    // Call Claude API
+    // Call Claude API with tools
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: systemPrompt,
       messages: messages,
+      tools: tools,
+      tool_choice: { type: "any" }, // Must call one of the tools
     });
 
-    // Extract text content
-    const textContent = response.content.find((block) => block.type === "text");
-    if (!textContent || textContent.type !== "text") {
-      throw new Error("No text response from Claude");
+    // Find the tool use block
+    const toolUse = response.content.find((block) => block.type === "tool_use");
+    console.log("[AI Debug] Tool called:", toolUse?.type === "tool_use" ? toolUse.name : "none");
+    console.log("[AI Debug] Tool input:", JSON.stringify(toolUse?.type === "tool_use" ? toolUse.input : null, null, 2));
+    if (!toolUse || toolUse.type !== "tool_use") {
+      // Fallback if no tool was called (shouldn't happen with tool_choice: any)
+      const textContent = response.content.find((block) => block.type === "text");
+      return NextResponse.json({
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: textContent?.type === "text" ? textContent.text : "I'm not sure how to help with that.",
+      } as StructureResponse);
     }
 
-    // Parse JSON response
-    let parsed: StructureResponse;
-    try {
-      // Clean potential markdown code fences
-      let jsonText = textContent.text.trim();
-      if (jsonText.startsWith("```json")) {
-        jsonText = jsonText.slice(7);
-      } else if (jsonText.startsWith("```")) {
-        jsonText = jsonText.slice(3);
-      }
-      if (jsonText.endsWith("```")) {
-        jsonText = jsonText.slice(0, -3);
-      }
-      jsonText = jsonText.trim();
-
-      parsed = JSON.parse(jsonText);
-    } catch (parseError) {
-      console.error("Failed to parse Claude response:", textContent.text);
-      throw new Error("Failed to parse AI response as JSON");
-    }
-
-    // Validate response structure
-    const validatedResponse: StructureResponse = {
-      action: parsed.action || "none",
-      taskTitle: parsed.taskTitle || null,
-      suggestedTitle: parsed.suggestedTitle || undefined,
-      steps: parsed.steps || null,
-      suggestions: parsed.suggestions || null,
-      edits: parsed.edits || null,
-      message: parsed.message || "I'm not sure how to help with that.",
-    };
+    // Process the tool result based on which tool was called
+    const validatedResponse = processToolResult(toolUse.name, toolUse.input, isFocusMode, currentStep);
+    console.log("[AI Debug] Final response action:", validatedResponse.action);
+    console.log("[AI Debug] Suggestions count:", validatedResponse.suggestions?.length || 0);
+    console.log("[AI Debug] Steps count:", validatedResponse.steps?.length || 0);
 
     return NextResponse.json(validatedResponse);
   } catch (error) {
@@ -107,10 +161,237 @@ export async function POST(request: NextRequest) {
         steps: null,
         suggestions: null,
         edits: null,
+        deletions: null,
         message: `Sorry, something went wrong: ${errorMessage}`,
       } as StructureResponse,
       { status: 500 }
     );
+  }
+}
+
+// Process tool result and map to StructureResponse format
+function processToolResult(
+  toolName: string,
+  input: unknown,
+  isFocusMode: boolean,
+  currentStep?: { id: string; text: string; completed: boolean } | null
+): StructureResponse {
+  switch (toolName) {
+    case "replace_task_steps": {
+      const data = input as ReplaceStepsInput;
+      // Clean step text and extract any embedded times
+      const cleanedSteps = data.steps.map(cleanStepText);
+      return {
+        action: "replace",
+        taskTitle: data.taskTitle || null,
+        steps: cleanedSteps.map((s) => ({
+          id: s.id,
+          text: s.text,
+          shortLabel: null,
+          substeps: (s.substeps || []).map((sub) => ({
+            id: sub.id,
+            text: sub.text,
+            shortLabel: null,
+            completed: false,
+            completedAt: null,
+            skipped: false,
+            source: "ai_generated" as const,
+          })),
+          completed: false,
+          completedAt: null,
+          effort: null,
+          estimatedMinutes: s.estimatedMinutes || null,
+          estimateSource: s.estimatedMinutes ? "ai" as const : null,
+          timeSpent: 0,
+          firstFocusedAt: null,
+          estimationAccuracy: null,
+          complexity: null,
+          context: null,
+          timesStuck: 0,
+          skipped: false,
+          source: "ai_generated" as const,
+          wasEdited: false,
+        })) as Step[],
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    case "suggest_additions": {
+      const data = input as SuggestAdditionsInput;
+      // Clean suggestion text and extract any embedded times
+      const cleanedSuggestions = data.suggestions.map((s) => {
+        const cleaned = cleanStepText(s);
+        return {
+          ...cleaned,
+          substeps: (s.substeps || []).map((sub) => cleanStepText(sub)),
+        };
+      });
+      return {
+        action: "suggest",
+        taskTitle: null,
+        suggestedTitle: data.suggestedTitle,
+        steps: null,
+        suggestions: cleanedSuggestions.map((s) => ({
+          id: s.id,
+          text: s.text,
+          substeps: (s.substeps || []).map((sub) => ({
+            id: sub.id,
+            text: sub.text,
+          })),
+          parentStepId: s.parentStepId,
+          insertAfterStepId: s.insertAfterStepId,
+          estimatedMinutes: s.estimatedMinutes,
+        })),
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    case "edit_steps": {
+      const data = input as EditStepsInput;
+      return {
+        action: "edit",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: data.edits.map((e) => ({
+          targetId: e.targetId,
+          targetType: e.targetType,
+          parentId: e.parentId,
+          originalText: e.originalText,
+          newText: e.newText,
+        })),
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    case "delete_steps": {
+      const data = input as DeleteStepsInput;
+      return {
+        action: "delete",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: data.deletions.map((d) => ({
+          targetId: d.targetId,
+          targetType: d.targetType,
+          parentId: d.parentId,
+          originalText: d.originalText,
+          reason: d.reason,
+        })),
+        message: data.message,
+      };
+    }
+
+    case "edit_title": {
+      const data = input as EditTitleInput;
+      return {
+        action: "suggest",
+        taskTitle: null,
+        suggestedTitle: data.newTitle,
+        steps: null,
+        suggestions: [],  // Empty but present so staging shows
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    case "conversational_response": {
+      const data = input as ConversationalInput;
+      return {
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    // Focus mode tools
+    case "break_down_step": {
+      const data = input as BreakDownStepInput;
+      return {
+        action: "suggest",
+        taskTitle: null,
+        steps: null,
+        suggestions: data.substeps.map((sub) => ({
+          id: sub.id,
+          text: sub.text,
+          substeps: [],
+          parentStepId: data.parentStepId,
+        })),
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    case "suggest_first_action": {
+      const data = input as SuggestFirstActionInput;
+      // Return the first action as a message (it's guidance, not a new step)
+      return {
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: `${data.message}\n\n**Try this:** ${data.firstAction}`,
+      };
+    }
+
+    case "explain_step": {
+      const data = input as ExplainStepInput;
+      let message = data.explanation;
+      if (data.tips && data.tips.length > 0) {
+        message += "\n\n**Tips:**\n" + data.tips.map((t) => `• ${t}`).join("\n");
+      }
+      if (data.message) {
+        message += "\n\n" + data.message;
+      }
+      return {
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message,
+      };
+    }
+
+    case "encourage": {
+      const data = input as EncourageInput;
+      return {
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: data.message,
+      };
+    }
+
+    default:
+      return {
+        action: "none",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: "I'm not sure how to help with that.",
+      };
   }
 }
 
@@ -119,8 +400,10 @@ function buildContextMessage(
   userMessage: string,
   currentList: StructureRequest["currentList"],
   taskTitle: string | null,
+  taskDescription: string | null | undefined,
   taskNotes?: string,
-  focusMode?: ExtendedStructureRequest["focusMode"]
+  focusMode?: ExtendedStructureRequest["focusMode"],
+  currentStep?: ExtendedStructureRequest["currentStep"]
 ): string {
   let context = "";
 
@@ -128,15 +411,44 @@ function buildContextMessage(
   if (focusMode) {
     context += `=== FOCUS MODE CONTEXT ===\n`;
     context += `Task: "${taskTitle || "Untitled"}"\n`;
-    context += `Progress: Step ${focusMode.stepIndex + 1} of ${focusMode.totalSteps}\n\n`;
-    context += `Current Step: ${focusMode.currentStepText}\n`;
+    if (taskDescription) {
+      context += `Description: ${taskDescription}\n`;
+    }
 
-    if (focusMode.currentSubsteps && focusMode.currentSubsteps.length > 0) {
-      context += `Substeps:\n`;
-      focusMode.currentSubsteps.forEach((sub) => {
-        const status = sub.completed ? "[x]" : "[ ]";
-        context += `  ${status} ${sub.id}. ${sub.text}\n`;
-      });
+    // Handle both legacy object format and simple boolean + currentStep format
+    if (typeof focusMode === 'object') {
+      // Legacy format with full focusMode object
+      const stepNum = focusMode.stepIndex + 1;
+      context += `Progress: Step ${stepNum} of ${focusMode.totalSteps}\n\n`;
+      context += `Current Step (id: ${focusMode.currentStepId}): ${focusMode.currentStepText}\n`;
+
+      if (focusMode.currentSubsteps && focusMode.currentSubsteps.length > 0) {
+        context += `Substeps:\n`;
+        focusMode.currentSubsteps.forEach((sub, subIndex) => {
+          const subNum = String.fromCharCode(97 + subIndex); // 'a', 'b', 'c'...
+          const status = sub.completed ? "[x]" : "[ ]";
+          context += `  ${status} ${stepNum}${subNum}. ${sub.text} (id: ${sub.id})\n`;
+        });
+      }
+    } else if (currentStep) {
+      // Simple format: focusMode=true with separate currentStep
+      const stepIndex = currentList?.findIndex(s => s.id === currentStep.id) ?? -1;
+      const stepNum = stepIndex + 1;
+      const totalSteps = currentList?.length ?? 0;
+      context += `Progress: Step ${stepNum} of ${totalSteps}\n\n`;
+      context += `Current Step (id: ${currentStep.id}): ${currentStep.text}\n`;
+      context += `Status: ${currentStep.completed ? 'Completed' : 'In progress'}\n`;
+
+      // Include substeps if available
+      const step = currentList?.find(s => s.id === currentStep.id);
+      if (step?.substeps && step.substeps.length > 0) {
+        context += `Substeps:\n`;
+        step.substeps.forEach((sub, subIndex) => {
+          const subNum = String.fromCharCode(97 + subIndex); // 'a', 'b', 'c'...
+          const status = sub.completed ? "[x]" : "[ ]";
+          context += `  ${status} ${stepNum}${subNum}. ${sub.text} (id: ${sub.id})\n`;
+        });
+      }
     }
 
     if (taskNotes) {
@@ -151,18 +463,29 @@ function buildContextMessage(
   // Normal task list context
   if (currentList && currentList.length > 0) {
     context += `Current task: "${taskTitle || "Untitled"}"\n`;
+    if (taskDescription) {
+      context += `Description: ${taskDescription}\n`;
+    }
+    if (taskNotes) {
+      context += `Notes: ${taskNotes}\n`;
+    }
     context += `Current list (${currentList.length} items):\n`;
-    currentList.forEach((step) => {
+    currentList.forEach((step, stepIndex) => {
+      const stepNum = stepIndex + 1;
       const status = step.completed ? "[x]" : "[ ]";
-      context += `${status} ${step.id}. ${step.text}\n`;
-      step.substeps.forEach((sub) => {
+      context += `${status} ${stepNum}. ${step.text} (id: ${step.id})\n`;
+      step.substeps.forEach((sub, subIndex) => {
+        const subNum = String.fromCharCode(97 + subIndex); // 'a', 'b', 'c'...
         const subStatus = sub.completed ? "[x]" : "[ ]";
-        context += `    ${subStatus} ${sub.id}. ${sub.text}\n`;
+        context += `    ${subStatus} ${stepNum}${subNum}. ${sub.text} (id: ${sub.id})\n`;
       });
     });
     context += "\n";
   } else {
     context += `Current task: "${taskTitle || "Untitled"}"\n`;
+    if (taskDescription) {
+      context += `Description: ${taskDescription}\n`;
+    }
     context += "Current list: EMPTY (no steps added yet)\n\n";
   }
 

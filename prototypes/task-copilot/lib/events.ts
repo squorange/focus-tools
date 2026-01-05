@@ -4,6 +4,8 @@ import {
   EventContext,
   generateId,
   Task,
+  FocusQueueItem,
+  SessionOutcome,
 } from './types';
 import { getTimeOfDay, isMobileDevice, getTodayISO } from './utils';
 import { saveEvents, loadEvents } from './storage';
@@ -26,13 +28,14 @@ export function getEvents(): Event[] {
 }
 
 /**
- * Log an event
+ * Log an event (Model E: includes queueItemId)
  */
 export function logEvent(
   type: EventType,
   options: {
     taskId?: string | null;
     stepId?: string | null;
+    queueItemId?: string | null;
     data?: Record<string, unknown>;
     tasks?: Task[];
     focusSessionsToday?: number;
@@ -46,6 +49,7 @@ export function logEvent(
     type,
     taskId: options.taskId ?? null,
     stepId: options.stepId ?? null,
+    queueItemId: options.queueItemId ?? null,
     data: options.data ?? {},
     context: getCurrentContext(options.tasks, options.focusSessionsToday),
   };
@@ -86,16 +90,10 @@ export function getCurrentContext(
 }
 
 // ============================================
-// Convenience Event Loggers
+// Task Lifecycle Events
 // ============================================
 
-/**
- * Log task created event
- */
-export function logTaskCreated(
-  task: Task,
-  tasks: Task[]
-): Event {
+export function logTaskCreated(task: Task, tasks: Task[]): Event {
   return logEvent('task_created', {
     taskId: task.id,
     data: {
@@ -106,9 +104,6 @@ export function logTaskCreated(
   });
 }
 
-/**
- * Log task updated event
- */
 export function logTaskUpdated(
   taskId: string,
   changes: Record<string, unknown>,
@@ -121,13 +116,7 @@ export function logTaskUpdated(
   });
 }
 
-/**
- * Log task completed event
- */
-export function logTaskCompleted(
-  task: Task,
-  tasks: Task[]
-): Event {
+export function logTaskCompleted(task: Task, tasks: Task[]): Event {
   return logEvent('task_completed', {
     taskId: task.id,
     data: {
@@ -137,34 +126,31 @@ export function logTaskCompleted(
       totalTimeSpent: task.totalTimeSpent,
       daysFromTarget: task.daysFromTarget,
       daysFromDeadline: task.daysFromDeadline,
+      completionType: task.completionType,
     },
     tasks,
   });
 }
 
-/**
- * Log task archived event
- */
-export function logTaskArchived(taskId: string, tasks: Task[]): Event {
+export function logTaskReopened(taskId: string, tasks: Task[]): Event {
+  return logEvent('task_reopened', {
+    taskId,
+    tasks,
+  });
+}
+
+export function logTaskArchived(
+  taskId: string,
+  reason: Task['archivedReason'],
+  tasks: Task[]
+): Event {
   return logEvent('task_archived', {
     taskId,
+    data: { reason },
     tasks,
   });
 }
 
-/**
- * Log task deleted event
- */
-export function logTaskDeleted(taskId: string, tasks: Task[]): Event {
-  return logEvent('task_deleted', {
-    taskId,
-    tasks,
-  });
-}
-
-/**
- * Log task restored event
- */
 export function logTaskRestored(taskId: string, tasks: Task[]): Event {
   return logEvent('task_restored', {
     taskId,
@@ -172,9 +158,17 @@ export function logTaskRestored(taskId: string, tasks: Task[]): Event {
   });
 }
 
-/**
- * Log step created event
- */
+export function logTaskDeleted(taskId: string, tasks: Task[]): Event {
+  return logEvent('task_deleted', {
+    taskId,
+    tasks,
+  });
+}
+
+// ============================================
+// Step Events
+// ============================================
+
 export function logStepCreated(
   taskId: string,
   stepId: string,
@@ -193,24 +187,20 @@ export function logStepCreated(
   });
 }
 
-/**
- * Log step completed event
- */
 export function logStepCompleted(
   taskId: string,
   stepId: string,
-  tasks: Task[]
+  tasks: Task[],
+  queueItemId?: string | null
 ): Event {
   return logEvent('step_completed', {
     taskId,
     stepId,
+    queueItemId,
     tasks,
   });
 }
 
-/**
- * Log step uncompleted event
- */
 export function logStepUncompleted(
   taskId: string,
   stepId: string,
@@ -223,9 +213,6 @@ export function logStepUncompleted(
   });
 }
 
-/**
- * Log substep completed event
- */
 export function logSubstepCompleted(
   taskId: string,
   stepId: string,
@@ -240,69 +227,169 @@ export function logSubstepCompleted(
   });
 }
 
-/**
- * Log focus started event
- */
+// ============================================
+// Focus Queue Events (Model E: new)
+// ============================================
+
+export function logQueueItemAdded(
+  item: FocusQueueItem,
+  task: Task,
+  tasks: Task[]
+): Event {
+  return logEvent('queue_item_added', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      taskTitle: task.title,
+      horizon: item.horizon,
+      selectionType: item.selectionType,
+      selectedStepIds: item.selectedStepIds,
+      reason: item.reason,
+    },
+    tasks,
+  });
+}
+
+export function logQueueItemRemoved(
+  item: FocusQueueItem,
+  tasks: Task[]
+): Event {
+  return logEvent('queue_item_removed', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      horizon: item.horizon,
+    },
+    tasks,
+  });
+}
+
+export function logQueueItemCompleted(
+  item: FocusQueueItem,
+  tasks: Task[]
+): Event {
+  return logEvent('queue_item_completed', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      horizon: item.horizon,
+      selectionType: item.selectionType,
+    },
+    tasks,
+  });
+}
+
+export function logQueueHorizonChanged(
+  item: FocusQueueItem,
+  oldHorizon: FocusQueueItem['horizon'],
+  newHorizon: FocusQueueItem['horizon'],
+  tasks: Task[]
+): Event {
+  return logEvent('queue_horizon_changed', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      oldHorizon,
+      newHorizon,
+    },
+    tasks,
+  });
+}
+
+export function logQueueSelectionChanged(
+  item: FocusQueueItem,
+  oldSelection: { type: string; stepIds: string[] },
+  newSelection: { type: string; stepIds: string[] },
+  tasks: Task[]
+): Event {
+  return logEvent('queue_selection_changed', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      oldSelection,
+      newSelection,
+    },
+    tasks,
+  });
+}
+
+export function logQueueItemRolledOver(
+  item: FocusQueueItem,
+  tasks: Task[]
+): Event {
+  return logEvent('queue_item_rolled_over', {
+    taskId: item.taskId,
+    queueItemId: item.id,
+    data: {
+      rolloverCount: item.rolloverCount,
+    },
+    tasks,
+  });
+}
+
+// ============================================
+// Focus Session Events
+// ============================================
+
 export function logFocusStarted(
   taskId: string,
   stepId: string | null,
   sessionId: string,
   tasks: Task[],
-  focusSessionsToday: number
+  focusSessionsToday: number,
+  queueItemId?: string | null
 ): Event {
   return logEvent('focus_started', {
     taskId,
     stepId,
+    queueItemId,
     data: { sessionId },
     tasks,
     focusSessionsToday,
   });
 }
 
-/**
- * Log focus paused event
- */
 export function logFocusPaused(
   taskId: string,
   sessionId: string,
   elapsedMinutes: number,
-  tasks: Task[]
+  tasks: Task[],
+  queueItemId?: string | null
 ): Event {
   return logEvent('focus_paused', {
     taskId,
+    queueItemId,
     data: { sessionId, elapsedMinutes },
     tasks,
   });
 }
 
-/**
- * Log focus resumed event
- */
 export function logFocusResumed(
   taskId: string,
   sessionId: string,
-  tasks: Task[]
+  tasks: Task[],
+  queueItemId?: string | null
 ): Event {
   return logEvent('focus_resumed', {
     taskId,
+    queueItemId,
     data: { sessionId },
     tasks,
   });
 }
 
-/**
- * Log focus ended event
- */
 export function logFocusEnded(
   taskId: string,
   sessionId: string,
   totalMinutes: number,
   stepsCompleted: number,
-  outcome: 'completed_task' | 'made_progress' | 'no_progress' | 'abandoned',
-  tasks: Task[]
+  outcome: SessionOutcome,
+  tasks: Task[],
+  queueItemId?: string | null
 ): Event {
   return logEvent('focus_ended', {
     taskId,
+    queueItemId,
     data: {
       sessionId,
       totalMinutes,
@@ -313,9 +400,10 @@ export function logFocusEnded(
   });
 }
 
-/**
- * Log stuck reported event
- */
+// ============================================
+// Stuck Events
+// ============================================
+
 export function logStuckReported(
   taskId: string,
   stepId: string,
@@ -328,9 +416,6 @@ export function logStuckReported(
   });
 }
 
-/**
- * Log stuck resolved event
- */
 export function logStuckResolved(
   taskId: string,
   stepId: string,
@@ -351,9 +436,10 @@ export function logStuckResolved(
   });
 }
 
-/**
- * Log AI breakdown requested event
- */
+// ============================================
+// AI Events
+// ============================================
+
 export function logAIBreakdownRequested(taskId: string, tasks: Task[]): Event {
   return logEvent('ai_breakdown_requested', {
     taskId,
@@ -361,9 +447,6 @@ export function logAIBreakdownRequested(taskId: string, tasks: Task[]): Event {
   });
 }
 
-/**
- * Log AI breakdown accepted event
- */
 export function logAIBreakdownAccepted(
   taskId: string,
   stepsGenerated: number,
@@ -376,9 +459,6 @@ export function logAIBreakdownAccepted(
   });
 }
 
-/**
- * Log AI breakdown rejected event
- */
 export function logAIBreakdownRejected(taskId: string, tasks: Task[]): Event {
   return logEvent('ai_breakdown_rejected', {
     taskId,
@@ -386,9 +466,6 @@ export function logAIBreakdownRejected(taskId: string, tasks: Task[]): Event {
   });
 }
 
-/**
- * Log AI help requested event
- */
 export function logAIHelpRequested(
   taskId: string | null,
   stepId: string | null,
@@ -403,9 +480,112 @@ export function logAIHelpRequested(
   });
 }
 
-/**
- * Log priority changed event
- */
+// ============================================
+// Deferral & Waiting Events (Model E: new)
+// ============================================
+
+export function logTaskDeferred(
+  taskId: string,
+  deferredUntil: string | null,
+  deferredCount: number,
+  tasks: Task[]
+): Event {
+  return logEvent('task_deferred', {
+    taskId,
+    data: { deferredUntil, deferredCount },
+    tasks,
+  });
+}
+
+export function logTaskResurfaced(taskId: string, tasks: Task[]): Event {
+  return logEvent('task_resurfaced', {
+    taskId,
+    tasks,
+  });
+}
+
+export function logWaitingOnSet(
+  taskId: string,
+  who: string,
+  followUpDate: string | null,
+  tasks: Task[]
+): Event {
+  return logEvent('waiting_on_set', {
+    taskId,
+    data: { who, followUpDate },
+    tasks,
+  });
+}
+
+export function logWaitingOnCleared(taskId: string, tasks: Task[]): Event {
+  return logEvent('waiting_on_cleared', {
+    taskId,
+    tasks,
+  });
+}
+
+// ============================================
+// Nudge Events (Model E: new)
+// ============================================
+
+export function logNudgeShown(
+  nudgeId: string,
+  nudgeType: string,
+  targetId: string,
+  tasks: Task[]
+): Event {
+  return logEvent('nudge_shown', {
+    taskId: targetId,
+    data: { nudgeId, nudgeType },
+    tasks,
+  });
+}
+
+export function logNudgeDismissed(
+  nudgeId: string,
+  nudgeType: string,
+  targetId: string,
+  tasks: Task[]
+): Event {
+  return logEvent('nudge_dismissed', {
+    taskId: targetId,
+    data: { nudgeId, nudgeType },
+    tasks,
+  });
+}
+
+export function logNudgeSnoozed(
+  nudgeId: string,
+  nudgeType: string,
+  targetId: string,
+  snoozeUntil: number,
+  tasks: Task[]
+): Event {
+  return logEvent('nudge_snoozed', {
+    taskId: targetId,
+    data: { nudgeId, nudgeType, snoozeUntil },
+    tasks,
+  });
+}
+
+export function logNudgeActioned(
+  nudgeId: string,
+  nudgeType: string,
+  targetId: string,
+  action: string,
+  tasks: Task[]
+): Event {
+  return logEvent('nudge_actioned', {
+    taskId: targetId,
+    data: { nudgeId, nudgeType, action },
+    tasks,
+  });
+}
+
+// ============================================
+// Other Events
+// ============================================
+
 export function logPriorityChanged(
   taskId: string,
   oldPriority: string | null,
@@ -419,9 +599,6 @@ export function logPriorityChanged(
   });
 }
 
-/**
- * Log date changed event
- */
 export function logDateChanged(
   taskId: string,
   dateType: 'targetDate' | 'deadlineDate',
@@ -436,17 +613,32 @@ export function logDateChanged(
   });
 }
 
-/**
- * Log task deferred event
- */
-export function logTaskDeferred(
+export function logEstimateSet(
   taskId: string,
-  deferredTo: string | null,
+  stepId: string | null,
+  minutes: number,
+  source: 'user' | 'ai',
   tasks: Task[]
 ): Event {
-  return logEvent('task_deferred', {
+  return logEvent('estimate_set', {
     taskId,
-    data: { deferredTo },
+    stepId,
+    data: { minutes, source },
+    tasks,
+  });
+}
+
+export function logEstimateUpdated(
+  taskId: string,
+  stepId: string | null,
+  oldMinutes: number | null,
+  newMinutes: number,
+  tasks: Task[]
+): Event {
+  return logEvent('estimate_updated', {
+    taskId,
+    stepId,
+    data: { oldMinutes, newMinutes },
     tasks,
   });
 }
@@ -455,23 +647,18 @@ export function logTaskDeferred(
 // Query Events
 // ============================================
 
-/**
- * Get events for a specific task
- */
 export function getEventsForTask(taskId: string): Event[] {
   return getEvents().filter((e) => e.taskId === taskId);
 }
 
-/**
- * Get events of a specific type
- */
+export function getEventsForQueueItem(queueItemId: string): Event[] {
+  return getEvents().filter((e) => e.queueItemId === queueItemId);
+}
+
 export function getEventsByType(type: EventType): Event[] {
   return getEvents().filter((e) => e.type === type);
 }
 
-/**
- * Get events from today
- */
 export function getEventsToday(): Event[] {
   const today = getTodayISO();
   return getEvents().filter((e) => {
@@ -480,9 +667,6 @@ export function getEventsToday(): Event[] {
   });
 }
 
-/**
- * Count focus sessions today
- */
 export function countFocusSessionsToday(): number {
   return getEventsToday().filter((e) => e.type === 'focus_started').length;
 }
@@ -491,9 +675,6 @@ export function countFocusSessionsToday(): number {
 // Clear Events
 // ============================================
 
-/**
- * Clear all events (for testing)
- */
 export function clearEvents(): void {
   eventsCache = [];
   saveEvents([]);

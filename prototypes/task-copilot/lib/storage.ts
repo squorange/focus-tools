@@ -6,6 +6,10 @@ import {
   Step,
   Substep,
   Message,
+  FocusQueue,
+  FocusQueueItem,
+  Nudge,
+  SnoozedNudge,
 } from './types';
 
 // ============================================
@@ -16,6 +20,7 @@ const STORAGE_KEYS = {
   state: 'focus-tools-state',
   events: 'focus-tools-events',
   sessions: 'focus-tools-sessions',
+  nudges: 'focus-tools-nudges',
 } as const;
 
 // ============================================
@@ -76,6 +81,22 @@ export function loadSessions(): AppState['focusSessions'] {
   }
 }
 
+/**
+ * Load nudges separately
+ */
+export function loadNudges(): { nudges: Nudge[]; snoozedNudges: SnoozedNudge[] } {
+  if (typeof window === 'undefined') return { nudges: [], snoozedNudges: [] };
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.nudges);
+    if (!stored) return { nudges: [], snoozedNudges: [] };
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Failed to load nudges:', error);
+    return { nudges: [], snoozedNudges: [] };
+  }
+}
+
 // ============================================
 // Save State
 // ============================================
@@ -92,6 +113,8 @@ export function saveState(state: AppState): void {
       ...state,
       events: [], // Events stored separately
       focusSessions: [], // Sessions stored separately
+      nudges: [], // Nudges stored separately
+      snoozedNudges: [], // Snoozed nudges stored separately
     };
     localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(stateToSave));
   } catch (error) {
@@ -133,6 +156,19 @@ export function saveSessions(sessions: AppState['focusSessions']): void {
   }
 }
 
+/**
+ * Save nudges separately
+ */
+export function saveNudges(nudges: Nudge[], snoozedNudges: SnoozedNudge[]): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.nudges, JSON.stringify({ nudges, snoozedNudges }));
+  } catch (error) {
+    console.error('Failed to save nudges:', error);
+  }
+}
+
 // ============================================
 // Migration
 // ============================================
@@ -141,7 +177,7 @@ export function saveSessions(sessions: AppState['focusSessions']): void {
  * Migrate state from older schema versions
  */
 export function migrateState(stored: Record<string, unknown>): AppState {
-  let state = stored as Partial<AppState>;
+  let state = stored as Partial<AppState> & Record<string, unknown>;
   const version = (state.schemaVersion as number) || 0;
 
   // Version 0 → 1: Legacy single-task format to multi-task
@@ -149,17 +185,24 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateLegacyState(stored);
   }
 
-  // Future migrations here:
-  // if (version < 2) { state = migrateToV2(state); }
+  // Version 1 → 2: Model E migration (active→pool, DailyPlan→FocusQueue)
+  if (version < 2) {
+    state = migrateToV2(state);
+  }
+
+  // Version 2 → 3: Focus Queue redesign (horizon → todayLineIndex)
+  if (version < 3) {
+    state = migrateToV3(state);
+  }
 
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
 
 /**
- * Migrate from legacy single-task format
+ * Migrate from legacy single-task format (v0 → v1)
  */
-function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> {
+function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
   const initial = createInitialAppState();
 
   // Check if this is the old format (has taskTitle, steps at root level)
@@ -176,11 +219,18 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         title: legacyTitle || 'Untitled Task',
         shortLabel: null,
         description: legacyNotes || null,
+        notes: null,
         steps: migrateSteps(legacySteps || []),
-        status: 'active',
+        status: 'pool', // Model E: use pool instead of active
+        completionType: 'step_based',
         completedAt: null,
         archivedAt: null,
+        archivedReason: null,
         deletedAt: null,
+        waitingOn: null,
+        deferredUntil: null,
+        deferredAt: null,
+        deferredCount: 0,
         priority: null,
         tags: [],
         projectId: null,
@@ -200,8 +250,6 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         recurrence: null,
         estimationAccuracy: null,
         firstFocusedAt: null,
-        timesDeferred: 0,
-        lastDeferredAt: null,
         timesStuck: 0,
         stuckResolutions: [],
         aiAssisted: legacySteps && legacySteps.length > 0,
@@ -218,7 +266,6 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         createdAt: now,
         updatedAt: now,
         version: 1,
-        // Migrate old messages to task-level storage
         messages: (stored.messages as Message[]) || [],
         focusModeMessages: [],
       };
@@ -227,11 +274,173 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         ...initial,
         tasks: [migratedTask],
         activeTaskId: migratedTask.id,
-      };
+        schemaVersion: 1,
+      } as Partial<AppState> & Record<string, unknown>;
     }
   }
 
-  return initial;
+  return { ...initial, schemaVersion: 1 } as Partial<AppState> & Record<string, unknown>;
+}
+
+/**
+ * Migrate from v1 to v2 (Model E: active→pool, DailyPlan→FocusQueue)
+ */
+function migrateToV2(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Migrate tasks: active → pool, add new fields
+  const tasks = ((state.tasks as Task[]) || []).map((task) => {
+    const migratedTask: Task = {
+      ...task,
+      // Model E: active → pool
+      status: task.status === ('active' as Task['status']) ? 'pool' : task.status,
+      // Add new fields with defaults
+      completionType: task.completionType ?? (task.steps.length > 0 ? 'step_based' : 'manual'),
+      archivedReason: task.archivedReason ?? null,
+      waitingOn: task.waitingOn ?? null,
+      deferredUntil: task.deferredUntil ?? null,
+      deferredAt: task.deferredAt ?? null,
+      deferredCount: task.deferredCount ?? ((task as unknown as { timesDeferred?: number }).timesDeferred ?? 0),
+      messages: task.messages ?? [],
+      focusModeMessages: task.focusModeMessages ?? [],
+    };
+    return migratedTask;
+  });
+
+  // Migrate steps to add new fields
+  const migratedTasks = tasks.map((task) => ({
+    ...task,
+    steps: task.steps.map((step) => ({
+      ...step,
+      effort: step.effort ?? null,
+      estimateSource: step.estimateSource ?? null,
+      firstFocusedAt: step.firstFocusedAt ?? null,
+      estimationAccuracy: step.estimationAccuracy ?? null,
+      context: step.context ?? null,
+    })),
+  }));
+
+  // Convert DailyPlan to FocusQueue
+  let focusQueue: FocusQueue = {
+    items: [],
+    todayLineIndex: 0,
+    lastReviewedAt: Date.now(),
+  };
+
+  // Try to migrate from old dailyPlans format
+  const dailyPlans = state.dailyPlans as Array<{
+    id: string;
+    date: string;
+    focusItems: Array<{
+      id: string;
+      type: 'task' | 'step';
+      taskId: string;
+      stepId: string | null;
+      order: number;
+      reason: string | null;
+      addedBy: 'user' | 'ai_suggested';
+      completed: boolean;
+      completedAt: number | null;
+    }>;
+  }> | undefined;
+
+  const todayPlanId = state.todayPlanId as string | undefined;
+
+  if (dailyPlans && todayPlanId) {
+    const todayPlan = dailyPlans.find((p) => p.id === todayPlanId);
+    if (todayPlan) {
+      focusQueue.items = todayPlan.focusItems.map((item, index): FocusQueueItem => ({
+        id: item.id,
+        taskId: item.taskId,
+        selectionType: item.type === 'task' ? 'entire_task' : 'specific_steps',
+        selectedStepIds: item.stepId ? [item.stepId] : [],
+        horizon: 'today',
+        scheduledDate: null,
+        order: item.order ?? index,
+        addedBy: item.addedBy,
+        addedAt: Date.now(),
+        reason: item.reason as FocusQueueItem['reason'],
+        completed: item.completed,
+        completedAt: item.completedAt,
+        lastInteractedAt: Date.now(),
+        horizonEnteredAt: Date.now(),
+        rolloverCount: 0,
+      }));
+    }
+  }
+
+  // Update currentView: dashboard → queue
+  let currentView = state.currentView as string;
+  if (currentView === 'dashboard') {
+    currentView = 'queue';
+  }
+
+  // Update focusMode: stepId → currentStepId
+  const oldFocusMode = state.focusMode as unknown as Record<string, unknown> | undefined;
+  const focusMode = oldFocusMode ? {
+    active: (oldFocusMode.active as boolean) ?? false,
+    queueItemId: null as string | null,
+    taskId: (oldFocusMode.taskId as string | null) ?? null,
+    currentStepId: (oldFocusMode.stepId as string | null) ?? (oldFocusMode.currentStepId as string | null) ?? null,
+    paused: (oldFocusMode.paused as boolean) ?? false,
+    startTime: (oldFocusMode.startTime as number | null) ?? null,
+    pausedTime: (oldFocusMode.pausedTime as number) ?? 0,
+    pauseStartTime: (oldFocusMode.pauseStartTime as number | null) ?? null,
+  } : undefined;
+
+  return {
+    ...state,
+    schemaVersion: 2,
+    tasks: migratedTasks,
+    focusQueue,
+    currentView: currentView as AppState['currentView'],
+    focusMode,
+    nudges: [],
+    snoozedNudges: [],
+    // Remove old fields
+    dailyPlans: undefined,
+    todayPlanId: undefined,
+  };
+}
+
+/**
+ * Migrate from v2 to v3 (Focus Queue redesign: horizon → todayLineIndex)
+ */
+function migrateToV3(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const focusQueue = state.focusQueue as FocusQueue | undefined;
+
+  if (!focusQueue || !focusQueue.items) {
+    return {
+      ...state,
+      schemaVersion: 3,
+      focusQueue: {
+        items: [],
+        todayLineIndex: 0,
+        lastReviewedAt: Date.now(),
+      },
+    };
+  }
+
+  // Separate items by horizon
+  const todayItems = focusQueue.items.filter((i) => (i as FocusQueueItem).horizon === 'today' && !i.completed);
+  const weekItems = focusQueue.items.filter((i) => (i as FocusQueueItem).horizon === 'this_week' && !i.completed);
+  const upcomingItems = focusQueue.items.filter((i) => (i as FocusQueueItem).horizon === 'upcoming' && !i.completed);
+  const completedItems = focusQueue.items.filter((i) => i.completed);
+
+  // Combine: today first, then week, then upcoming, then completed at the end
+  const reorderedItems = [...todayItems, ...weekItems, ...upcomingItems, ...completedItems]
+    .map((item, index) => ({
+      ...item,
+      order: index,
+    }));
+
+  return {
+    ...state,
+    schemaVersion: 3,
+    focusQueue: {
+      items: reorderedItems,
+      todayLineIndex: todayItems.length, // Items 0..(todayLineIndex-1) are "for today"
+      lastReviewedAt: focusQueue.lastReviewedAt || Date.now(),
+    },
+  };
 }
 
 /**
@@ -247,13 +456,18 @@ function migrateSteps(legacySteps: unknown[]): Step[] {
       substeps: migrateSubsteps((step.substeps as unknown[]) || []),
       completed: (step.completed as boolean) || false,
       completedAt: null,
-      skipped: step.skipped as boolean | undefined,
+      effort: null,
       estimatedMinutes: null,
+      estimateSource: null,
       timeSpent: 0,
+      firstFocusedAt: null,
+      estimationAccuracy: null,
+      complexity: null,
+      context: null,
       timesStuck: 0,
+      skipped: false,
       source: 'ai_generated' as const,
       wasEdited: false,
-      complexity: null,
     };
   });
 }
@@ -270,44 +484,94 @@ function migrateSubsteps(legacySubsteps: unknown[]): Substep[] {
       shortLabel: null,
       completed: (substep.completed as boolean) || false,
       completedAt: null,
-      skipped: substep.skipped as boolean | undefined,
+      skipped: false,
       source: 'ai_generated' as const,
     };
   });
 }
 
 /**
- * Ensure state has all required fields
+ * Ensure state has all required fields (Model E)
  */
-function ensureCompleteState(partial: Partial<AppState>): AppState {
+function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown>): AppState {
   const initial = createInitialAppState();
 
-  // Ensure each task has the new message fields (migration for existing tasks)
+  // Ensure each task has all required fields
   const migratedTasks = (partial.tasks ?? initial.tasks).map((task) => ({
     ...task,
+    // Notes field
+    notes: task.notes ?? null,
+    // Model E fields
+    completionType: task.completionType ?? 'step_based',
+    archivedReason: task.archivedReason ?? null,
+    waitingOn: task.waitingOn ?? null,
+    deferredUntil: task.deferredUntil ?? null,
+    deferredAt: task.deferredAt ?? null,
+    deferredCount: task.deferredCount ?? 0,
+    // Per-task messages
     messages: task.messages ?? [],
     focusModeMessages: task.focusModeMessages ?? [],
+    // Ensure steps have Model E fields
+    steps: task.steps.map((step) => ({
+      ...step,
+      effort: step.effort ?? null,
+      estimateSource: step.estimateSource ?? null,
+      firstFocusedAt: step.firstFocusedAt ?? null,
+      estimationAccuracy: step.estimationAccuracy ?? null,
+      context: step.context ?? null,
+    })),
   }));
+
+  // Ensure focusQueue exists with todayLineIndex
+  const partialQueue = partial.focusQueue ?? initial.focusQueue;
+  const focusQueue: FocusQueue = {
+    items: partialQueue.items ?? [],
+    todayLineIndex: partialQueue.todayLineIndex ?? 0,
+    lastReviewedAt: partialQueue.lastReviewedAt ?? Date.now(),
+  };
+
+  // Ensure focusMode has queueItemId and currentStepId
+  const focusMode = partial.focusMode ?? initial.focusMode;
+
+  // Ensure filters have Model E fields
+  const filters = {
+    ...initial.filters,
+    ...partial.filters,
+    showWaitingOn: partial.filters?.showWaitingOn ?? true,
+    showDeferred: partial.filters?.showDeferred ?? false,
+  };
 
   return {
     schemaVersion: SCHEMA_VERSION,
     currentUser: partial.currentUser ?? initial.currentUser,
     tasks: migratedTasks,
     projects: partial.projects ?? initial.projects,
-    dailyPlans: partial.dailyPlans ?? initial.dailyPlans,
-    todayPlanId: partial.todayPlanId ?? initial.todayPlanId,
+    focusQueue,
     events: partial.events ?? initial.events,
     focusSessions: partial.focusSessions ?? initial.focusSessions,
+    nudges: partial.nudges ?? initial.nudges,
+    snoozedNudges: partial.snoozedNudges ?? initial.snoozedNudges,
     analytics: partial.analytics ?? initial.analytics,
-    currentView: partial.currentView ?? initial.currentView,
+    currentView: (partial.currentView as AppState['currentView']) ?? initial.currentView,
     activeTaskId: partial.activeTaskId ?? initial.activeTaskId,
-    focusMode: partial.focusMode ?? initial.focusMode,
+    focusMode: {
+      active: focusMode.active ?? false,
+      queueItemId: focusMode.queueItemId ?? null,
+      taskId: focusMode.taskId ?? null,
+      currentStepId: focusMode.currentStepId ?? null,
+      paused: focusMode.paused ?? false,
+      startTime: focusMode.startTime ?? null,
+      pausedTime: focusMode.pausedTime ?? 0,
+      pauseStartTime: focusMode.pauseStartTime ?? null,
+    },
     currentSessionId: partial.currentSessionId ?? initial.currentSessionId,
     aiDrawer: partial.aiDrawer ?? initial.aiDrawer,
     suggestions: partial.suggestions ?? initial.suggestions,
     edits: partial.edits ?? initial.edits,
+    deletions: partial.deletions ?? initial.deletions,
     suggestedTitle: partial.suggestedTitle ?? initial.suggestedTitle,
-    filters: partial.filters ?? initial.filters,
+    pendingAction: null,  // Always reset to null on load
+    filters,
     sortBy: partial.sortBy ?? initial.sortBy,
     sortOrder: partial.sortOrder ?? initial.sortOrder,
     completedTodayExpanded: partial.completedTodayExpanded ?? initial.completedTodayExpanded,
@@ -328,6 +592,7 @@ export function clearStorage(): void {
   localStorage.removeItem(STORAGE_KEYS.state);
   localStorage.removeItem(STORAGE_KEYS.events);
   localStorage.removeItem(STORAGE_KEYS.sessions);
+  localStorage.removeItem(STORAGE_KEYS.nudges);
 }
 
 // ============================================
@@ -341,6 +606,7 @@ export function exportData(): string {
   const state = loadState();
   const events = loadEvents();
   const sessions = loadSessions();
+  const { nudges, snoozedNudges } = loadNudges();
 
   return JSON.stringify(
     {
@@ -349,6 +615,8 @@ export function exportData(): string {
       state,
       events,
       sessions,
+      nudges,
+      snoozedNudges,
     },
     null,
     2
@@ -375,6 +643,10 @@ export function importData(jsonString: string): { success: boolean; error?: stri
 
     if (data.sessions) {
       saveSessions(data.sessions);
+    }
+
+    if (data.nudges || data.snoozedNudges) {
+      saveNudges(data.nudges || [], data.snoozedNudges || []);
     }
 
     return { success: true };

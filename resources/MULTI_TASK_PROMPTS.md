@@ -141,164 +141,74 @@ Create utility files for storage and event logging.
 ## Prompt 3: Create Navigation Shell
 
 ```
-Create the navigation structure with view tabs.
+Create the 2-tab navigation structure with search.
 
-1. Create components/navigation/NavTabs.tsx:
-   - Three tabs: Inbox, Pool, Queue
-   - Props: currentView, onNavigate, inboxCount, poolCount, queueCount
-   - Badge shows count on each tab
-   - Highlight active tab
-   - Fixed at top or bottom (mobile-friendly)
+1. Create components/layout/Header.tsx:
+   - Container for top bar
+   - Left: TabCluster (Focus | Tasks)
+   - Center: SearchBar (desktop) or empty (mobile)
+   - Right: Search icon (mobile) + AI toggle icon
+   - Props: currentView, onNavigate, inboxCount, onSearchOpen, onAIToggle
 
-2. Create components/shared/ViewContainer.tsx:
-   - Wrapper for view content
-   - Consistent padding/margins
-   - Scroll container
+2. Create components/layout/TabCluster.tsx:
+   - Button group: [Focus] [Tasks [N]]
+   - Props: activeTab, onTabChange, inboxCount
+   - Badge on Tasks shows inbox count when > 0
+   - Styled as connected button cluster
 
-3. Update app/page.tsx:
-   - Add currentView state: 'inbox' | 'pool' | 'queue' | 'taskDetail' | 'focusMode'
-   - Render NavTabs (hide in taskDetail and focusMode)
-   - Route to correct view component based on currentView
-   - Calculate counts for each tab
+3. Create components/layout/SearchBar.tsx:
+   - Expanded search input (desktop only)
+   - Placeholder: "Search tasks..."
+   - On focus/click: navigate to Search view
+   - Hidden on mobile (use icon instead)
 
-4. Create placeholder view components:
-   - components/inbox/InboxView.tsx
-   - components/pool/PoolView.tsx
-   - components/queue/QueueView.tsx
-   - Each just renders title for now
+4. Create components/ai/AIDrawer.tsx:
+   - Side panel for desktop (right side, resizable)
+   - Props: isOpen, onClose, context, messages
+   - Persists across view changes
 
-5. Set default view to 'queue' (Focus Queue is home)
+5. Create components/ai/AIFloatingBar.tsx:
+   - Mobile: floating bar above content
+   - Collapsed: shows "💬 AI Assistant [▲]"
+   - Expanded: slides up to show chat
+   - Like Apple Music mini player pattern
+
+6. Update app/page.tsx:
+   - Add currentView state: 'focus' | 'tasks' | 'inbox' | 'search' | 'taskDetail' | 'focusMode'
+   - Render Header (hide in focusMode)
+   - Route to correct view based on currentView
+   - Calculate inbox count for badge
+   - Manage AI drawer state
+
+7. Set default view to 'focus' (Focus is home)
 ```
 
 ---
 
-## Prompt 4: Create Inbox View
+## Prompt 4: Create Focus View (Home)
 
 ```
-Create the Inbox view for quick capture and triage.
+Create the Focus view - the app's home screen.
 
-1. Create components/inbox/InboxView.tsx:
-   - QuickCapture at top
-   - List of inbox items
-   - Empty state if no items
-
-2. Create components/shared/QuickCapture.tsx:
-   - Single line input: "Add a task..."
-   - On Enter: create task with status='inbox'
-   - Clears after submission
-   - Autofocus on mount
-
-3. Create components/inbox/InboxItem.tsx:
-   Props: task, onQuickSend, onTriage, onDefer, onDelete
-   
-   Collapsed state:
-   - Task title
-   - Age indicator: "2 days ago"
-   - Action buttons: [Quick → Pool] [Triage ▾] [Defer ▾] [Delete]
-   
-   Expanded state (triage mode):
-   - Editable title
-   - "What does done look like?" text area
-   - Steps section with [+ Add] and [✨ AI Suggest]
-   - Action buttons: [Send to Pool] [Add to Queue ▾] [Defer ▾] [Park]
-   
-   Behavior:
-   - Click row to expand/collapse
-   - Quick → Pool: move to pool immediately
-   - Triage: expand inline
-   - Defer: dropdown with options (1 week, 1 month, 3 months, pick date)
-   - Delete: soft delete with undo toast
-
-4. Create components/inbox/DeferDropdown.tsx:
-   - Options: 1 week, 1 month, 3 months, Pick date, Indefinitely
-   - Sets deferredUntil and deferredAt on task
-   - Moves task to 'pool' status (hidden until date)
-
-5. Wire up handlers in page.tsx:
-   - quickSendToPool(taskId): set status='pool'
-   - deferTask(taskId, untilDate)
-   - deleteTask(taskId): soft delete
-   - Add inbox tasks to display
-```
-
----
-
-## Prompt 5: Create Pool View
-
-```
-Create the Pool view for browsing available tasks.
-
-1. Create components/pool/PoolView.tsx:
-   - Search bar at top
-   - Sort dropdown (Focus Score, Created, Deadline, Alphabetical)
-   - Resurfaced section (if any)
-   - Ready tasks section
-   - Waiting On badge in header if any
-
-2. Create components/pool/PoolSearch.tsx:
-   - Search input with icon
-   - Filters task list by title, description, step text
-   - Debounced input
-
-3. Create components/pool/ResurfacedSection.tsx:
-   - Collapsible section header: "Resurfaced (N)"
-   - Shows tasks where deferredUntil <= today
-   - Each item shows: title, "Deferred X ago"
-   - Actions: [Add to Queue ▾] [Keep in Pool] [Park again]
-
-4. Create components/pool/TaskRow.tsx:
-   Props: task, onSelect, onAddToQueue
-   
-   Display:
-   - Priority indicator (colored dot)
-   - Title
-   - Progress: "3/5 steps" or "~45 min"
-   - Due date with warning if approaching
-   - Waiting On badge if set: "⏸ Waiting on: Sarah"
-   - [→] navigate button
-   - [Add ▾] add to queue dropdown
-   
-   Behavior:
-   - Click row → navigate to TaskDetail
-   - [Add ▾] → dropdown with horizon options
-
-5. Create components/pool/AddToQueueDropdown.tsx:
-   - Options: Today, This Week, Upcoming
-   - Creates FocusQueueItem with entire_task selection
-   - Shows toast confirmation
-
-6. Wire up:
-   - getPoolTasks() to filter tasks
-   - Sort by focusScore by default
-   - Search filtering
-   - Navigation to TaskDetail
-```
-
----
-
-## Prompt 6: Create Focus Queue View (Home)
-
-```
-Create the Focus Queue view - this is the app's home screen.
-
-1. Create components/queue/QueueView.tsx:
-   - Today section (prominent, "asteroid belt")
+1. Create components/focus/FocusView.tsx:
+   - Header: "Focus" title, item count, total time estimate
+   - Today section (prominent)
    - This Week section
    - Upcoming section
-   - Total time estimate in header
    - Empty state with smart actions
 
-2. Create components/queue/HorizonSection.tsx:
+2. Create components/focus/HorizonSection.tsx:
    Props: horizon, items, tasks, onFocus, onRemove, onMove
    
    Display:
    - Header: "TODAY" / "THIS WEEK" / "UPCOMING"
-   - Time estimate: "~95 min"
+   - Time estimate badge: "~95 min"
    - List of QueueItems
-   - Collapsible for non-today sections
+   - Today is emphasized (box/highlight)
+   - Others collapsible
 
-3. Create components/queue/QueueItem.tsx:
-   Props: item, task, onFocus, onRemove, onMove
+3. Create components/focus/QueueItem.tsx:
+   Props: item, task, onFocus, onRemove, onNavigate
    
    Display:
    - Task title
@@ -306,31 +216,182 @@ Create the Focus Queue view - this is the app's home screen.
    - Progress: "(2 of 5 done)" 
    - Time estimate: "~45 min"
    - Waiting On badge if applicable
-   - [→ Focus] button
+   - [Focus] button
    
    Behavior:
    - Click row → navigate to TaskDetail
-   - [→ Focus] → enter focus mode
-   - Drag to reorder (optional for MVP)
-   - Swipe to remove (optional)
+   - [Focus] → enter focus mode
 
-4. Create components/queue/QueueEmptyState.tsx:
-   - Smart contextual actions based on state:
-     - Pool has items: [Add from Pool (N ready)]
-     - Pool empty, Inbox has items: [Go to Inbox (N items)]
-     - Everything empty: [Capture your first task]
+4. Create components/focus/FocusEmptyState.tsx:
+   - Smart contextual actions:
+     - Tasks available: [Add from Tasks (N ready)]
+     - No tasks: [Capture your first task]
 
 5. Wire up:
    - getTodayItems(), getThisWeekItems(), getUpcomingItems()
    - Calculate total estimates per horizon
    - Focus mode entry
-   - Remove from queue handler
-   - Move between horizons handler
+   - Navigation to TaskDetail
 ```
 
 ---
 
-## Prompt 7: Create Task Detail View
+## Prompt 5: Create Tasks View (Combined Inbox + Pool)
+
+```
+Create the Tasks view combining Inbox and Pool.
+
+1. Create components/tasks/TasksView.tsx:
+   - Header: "Tasks" title, counts ("1 to triage · 12 ready")
+   - QuickCapture at top (always visible)
+   - Sort dropdown for Ready section
+   - Sections: Needs Triage, Ready, Waiting (if any), Resurfaced (if any)
+
+2. Create components/tasks/TriageSection.tsx:
+   Props: tasks, onQuickSend, onTriage, onViewAll
+   
+   Display:
+   - Header: "NEEDS TRIAGE (N)"
+   - Top 5 inbox items
+   - [View all N items →] link if more than 5
+   - Each item shows: title, age, [→ Pool] [Triage] buttons
+   
+   Behavior:
+   - [→ Pool] quick sends to pool
+   - [Triage] expands inline or navigates to detail
+   - [View all] navigates to full Inbox view
+
+3. Create components/tasks/ReadySection.tsx:
+   Props: tasks, sortBy, onSortChange, onNavigate, onAddToFocus
+   
+   Display:
+   - Header: "READY (N)"
+   - Sorted task list
+   - Each row: priority dot, title, progress, In Focus badge, [+ Add] or [→]
+
+4. Create components/tasks/WaitingSection.tsx:
+   - Only shows if tasks with waitingOn exist
+   - Header: "WAITING (N)"
+   - Shows waiting badge per task
+
+5. Create components/tasks/ResurfacedSection.tsx:
+   - Only shows if deferred tasks have resurfaced
+   - Header: "RESURFACED (N)"
+   - Shows: title, "Deferred X ago", [+ Add] [Keep] [Park again]
+
+6. Create components/shared/QuickCapture.tsx:
+   - Input: "+ What's on your mind?"
+   - On Enter: create task with status='inbox'
+   - Clears after submission
+
+7. Wire up:
+   - getPoolTasks(), getResurfacedTasks(), getWaitingOnTasks()
+   - Sort by focusScore by default
+   - Navigation to TaskDetail
+   - Add to Focus dropdown
+```
+
+---
+
+## Prompt 6: Create Inbox View (Drill-in)
+
+```
+Create the full Inbox view (drill-in from Tasks).
+
+1. Create components/inbox/InboxView.tsx:
+   - Header: "← Tasks" back button, "Inbox" title
+   - Item count: "8 items to triage"
+   - QuickCapture at top
+   - Full list of all inbox items
+   - Bulk actions dropdown
+   - [✨ AI: Help me triage] button at bottom
+
+2. Create components/tasks/InboxItem.tsx:
+   Props: task, onQuickSend, onTriage, onDefer, onDelete
+   
+   Collapsed state:
+   - ▶ chevron, title, age ("10m ago")
+   - [→ Pool] [Triage] [×] buttons
+   
+   Expanded state (inline triage):
+   - Editable title
+   - Description/notes field
+   - Steps section with [+ Add] and [✨ AI Suggest]
+   - Priority, effort dropdowns
+   - [Send to Pool] [Add to Focus ▾] [Defer ▾] [Park]
+   
+   Behavior:
+   - Click chevron or row to expand/collapse
+   - [→ Pool] quick sends without expanding
+   - [Triage] expands for detailed triage
+
+3. Create components/tasks/DeferDropdown.tsx:
+   - Options: 1 week, 1 month, 3 months, Pick date
+   - Sets deferredUntil and moves to pool (hidden)
+
+4. Create components/tasks/BulkActions.tsx:
+   - Dropdown: [Select all] [Send all to Pool] [Delete old]
+   - For power users with large inbox
+
+5. Wire up handlers:
+   - quickSendToPool(taskId)
+   - deferTask(taskId, untilDate)
+   - deleteTask(taskId)
+   - Back navigation to Tasks view
+```
+
+---
+
+## Prompt 7: Create Search View
+
+```
+Create the full Search view.
+
+1. Create components/search/SearchView.tsx:
+   - Header: "← Back" button, "Search" title
+   - Search input with clear button
+   - Before search: Quick Access cards + Recent Searches
+   - With search: Results list
+   - Works alongside AI pane
+
+2. Create components/search/QuickAccess.tsx:
+   - Grid of shortcut cards:
+     - ⭐ High Priority (count)
+     - 📁 Projects (count)
+     - ✓ Completed (count)
+     - 📦 Archived (count)
+     - ⏸ Waiting (count)
+     - 🕐 Deferred (count)
+   - Click card → filter results in place
+
+3. Create components/search/SearchResults.tsx:
+   Props: query, results
+   
+   Display:
+   - "N results" header
+   - Each result shows:
+     - Task title
+     - Status badge (Inbox, Pool, Completed, Archived)
+     - Progress if applicable
+     - "In Focus" badge if in queue
+     - [→] navigate button
+
+4. Create lib/search.ts:
+   - searchTasks(tasks, query): Task[]
+   - Searches: title, description, step text, tags
+   - Returns sorted by relevance
+
+5. Wire up:
+   - Search input with debounce
+   - Quick Access filtering
+   - Recent searches (localStorage)
+   - Navigation to TaskDetail from results
+   - AI can help interpret vague queries
+```
+
+---
+
+## Prompt 8: Create Task Detail View
 
 ```
 Create the Task Detail view for viewing/editing a single task.
@@ -339,11 +400,12 @@ Create the Task Detail view for viewing/editing a single task.
    Props: taskId, onBack, onFocus
    
    Layout:
-   - Header: back button, task title (editable), [✓ Mark Complete] button
-   - Steps section
+   - Header: "← Back" button, title on right
+   - Task title (editable, large)
+   - [✓ Mark Complete] button
+   - Steps section with time estimates
    - Metadata section
    - Actions section
-   - AI drawer at bottom
 
 2. Create components/task-detail/StepList.tsx:
    - List of steps with checkboxes
@@ -352,8 +414,9 @@ Create the Task Detail view for viewing/editing a single task.
      - Step text (editable on click)
      - Time estimate: "~15 min"
      - Substeps (if any)
-     - [→ Focus] button on hover/tap
-   - [+ Add Step] button at bottom
+     - [Focus] button on hover/tap
+   - Total time: "~45 min total" / "~40 min left"
+   - [+ Add Step] button
    - [✨ Break Down with AI] button
 
 3. Create components/task-detail/StepItem.tsx:
@@ -363,45 +426,41 @@ Create the Task Detail view for viewing/editing a single task.
    - Checkbox (completed state)
    - Text (click to edit)
    - Estimate badge: "~15 min" (click to edit)
-   - Substeps list
-   - [→ Focus] button
+   - Substeps list (indented)
+   - [Focus] button
    
    Behavior:
    - Check → completeStep(taskId, stepId)
    - Click text → inline edit mode
-   - Click estimate → edit estimate modal/inline
+   - Click estimate → edit estimate
 
 4. Create components/task-detail/TaskMetadata.tsx:
-   - Priority dropdown
+   - Priority dropdown (High/Medium/Low/None)
    - Target date picker
-   - Deadline date picker
-   - Effort dropdown
-   - Project dropdown (optional for MVP)
-   - Waiting On input: "Waiting on: [____]"
+   - Deadline date picker  
+   - Effort dropdown (Quick/Medium/Deep)
+   - Project dropdown (optional)
+   - Waiting On: "⏸ Waiting on: [___]"
 
 5. Create components/task-detail/TaskActions.tsx:
-   - [Add to Queue ▾] with horizon dropdown
-   - [Archive] / [Restore if archived]
+   - [Add to Focus ▾] with horizon dropdown
+   - [Archive]
    - [Delete]
 
-6. Wire up:
-   - updateTask for all field changes
-   - completeStep, uncompleteStep
-   - addStep, updateStep, deleteStep
-   - Navigation back to previous view
-   - Focus mode entry (entire task or specific step)
+6. Wire up all handlers and navigation
 ```
 
 ---
 
-## Prompt 8: Implement Step Selection for Queue
+## Prompt 9: Implement Step Selection for Focus
 
 ```
-Add the ability to add specific steps (not just entire tasks) to the Focus Queue.
+Add the ability to add specific steps to Focus.
 
-1. Update AddToQueueDropdown.tsx:
-   - Add "Select steps..." option
-   - Opens step selection modal/panel
+1. Update AddToFocusDropdown (in TaskDetail and TaskRow):
+   - Options: Today, This Week, Upcoming
+   - Sub-option: "Select specific steps..."
+   - Opens StepSelector when choosing specific steps
 
 2. Create components/shared/StepSelector.tsx:
    Props: task, selectedStepIds, onConfirm, onCancel
@@ -409,124 +468,117 @@ Add the ability to add specific steps (not just entire tasks) to the Focus Queue
    Display:
    - Task title at top
    - List of all steps with checkboxes
-   - Each shows: checkbox, step text, estimate
-   - "N steps selected" summary
-   - Time estimate for selected steps
-   - [Cancel] [Add to Queue ▾]
+   - Each: checkbox, step text, estimate
+   - "N steps selected · ~X min"
+   - [Cancel] [Add to Focus ▾]
    
    Behavior:
    - Toggle individual steps
-   - "Select all" / "Clear all"
-   - Confirm adds with selectionType='specific_steps'
+   - "Select all" / "Clear all" links
+   - Confirm creates queue item with specific_steps
 
-3. Update QueueItem.tsx:
-   - Show selection type: "All steps" vs "Steps 1, 3, 5"
+3. Update QueueItem display:
+   - Show: "All steps" vs "Steps 1, 3, 5"
    - Progress based on selected steps only
-   - [Edit selection] button to modify
+   - [Edit selection] option
 
-4. Create components/queue/EditSelectionModal.tsx:
-   - Reuses StepSelector
-   - Updates existing queue item's selectedStepIds
-
-5. Update queue completion logic:
+4. Update completion logic:
    - isQueueItemComplete checks only selected steps
-   - When selected steps done, mark queue item complete
-   - Task may remain incomplete if not all steps selected
+   - When selected done → queue item complete
+   - Task may remain incomplete
 
-6. Wire up:
-   - addToQueue(taskId, horizon, selectionType, selectedStepIds)
+5. Wire up:
+   - addToFocus(taskId, horizon, selectionType, selectedStepIds)
    - updateQueueItemSelection(itemId, selectedStepIds)
 ```
 
 ---
 
-## Prompt 9: Connect Focus Mode to Queue
+## Prompt 10: Connect Focus Mode to Queue
 
 ```
-Update Focus Mode to work with Focus Queue items.
+Update Focus Mode to work with Focus queue items.
 
 1. Update enterFocusMode:
-   - Accept queueItemId parameter (or create temporary item)
-   - Find queue item and associated task
-   - Determine which steps are in scope (entire or selected)
+   - Accept queueItemId parameter
+   - Find queue item and task
+   - Determine in-scope steps (entire or selected)
    - Find first incomplete in-scope step
    - Create FocusSession with queueItemId, selectionType, targetedStepIds
 
 2. Update FocusMode component:
    - Get queue item from focusQueue.items
    - Get task from tasks array
-   - Filter steps to show only in-scope steps
-   - Progress bar reflects in-scope steps only
+   - Filter to show only in-scope steps
+   - Progress bar reflects in-scope only
+   - Show step estimate: "~15 min"
 
-3. Update step completion in focus mode:
+3. Update step completion:
    - Complete step as before
-   - Check if all in-scope steps are done
-   - If yes: show "Focus goal complete!" celebration
-   - Offer: [Continue with more steps] [Exit to Queue]
+   - Check if all in-scope steps done
+   - If yes: "Focus goal complete!" celebration
+   - Offer: [Continue with more steps] [Back to Focus]
 
 4. Update FocusSession tracking:
    - Link to queueItemId
-   - Track which steps were targeted
-   - Add adjustedDuration and adjustmentReason fields
-   - New outcome: 'completed_goal' (selected steps done, task may have more)
+   - Track targetedStepIds
+   - Add adjustedDuration for manual time correction
+   - Outcome: 'completed_goal' when selected steps done
 
 5. Update exit behavior:
    - Log session with full details
    - Mark queue item complete if goal met
-   - Return to queue view (not task detail)
+   - Return to Focus view
 
-6. Add time tracking adjustment:
-   - In session history, allow editing tracked time
-   - "Adjust time" button → modal with recorded vs actual
+6. Time tracking adjustment:
+   - Allow editing tracked time after session
    - Save adjustmentReason for learning
 ```
 
 ---
 
-## Prompt 10: Add Waiting On and Deferral
+## Prompt 11: Add Waiting On and Deferral
 
 ```
-Implement Waiting On (non-blocking) and Deferral mechanics.
+Implement Waiting On and Deferral mechanics.
 
-1. Waiting On UI in TaskDetail:
-   - Field: "Waiting on: [input]"
-   - When set: shows badge, sets waitingOn object
+1. Waiting On in TaskDetail:
+   - Field: "⏸ Waiting on: [input]"
+   - When set: shows badge, records waitingOn object
    - Optional follow-up date picker
    - [Mark received] clears waitingOn
 
-2. Waiting On in Pool:
-   - Badge in header: "3 items waiting"
-   - Click badge → filter to waiting items
-   - TaskRow shows "⏸ Waiting on: Sarah"
+2. Waiting On in Tasks view:
+   - Waiting section shows if any tasks waiting
+   - TaskRow shows "⏸ Waiting on: Sarah" badge
+   - Can filter to waiting tasks
 
 3. Waiting On in Focus Mode:
-   - If task has waitingOn, show info banner
-   - "This task is waiting on Sarah"
+   - Info banner: "This task is waiting on Sarah"
    - Can still proceed with steps
-   - AI drawer can note: "Some steps may depend on this"
+   - Non-blocking
 
-4. Deferral from Pool:
-   - [Defer ▾] dropdown on TaskRow
+4. Deferral from Tasks:
+   - DeferDropdown on InboxItem and TaskRow
    - Options: 1 week, 1 month, 3 months, Pick date
-   - Task hidden from Pool until date
+   - Task hidden from Ready section until date
    - Increment deferredCount
 
 5. Resurfacing:
    - getResurfacedTasks checks deferredUntil <= today
-   - Shows in Pool's "Resurfaced" section
-   - Actions: Add to Queue, Keep in Pool, Park again
+   - Shows in "RESURFACED" section
+   - Actions: [+ Add to Focus] [Keep in Pool] [Defer again]
    - Log 'task_resurfaced' event
 
 6. Wire up handlers:
    - setWaitingOn(taskId, who, followUpDate)
    - clearWaitingOn(taskId)
    - deferTask(taskId, untilDate)
-   - On resurface, clear deferredUntil after user action
 ```
 
 ---
 
-## Prompt 11: Add Nudges System
+## Prompt 12: Add Nudges System
 
 ```
 Implement the ambient nudge system.
@@ -535,110 +587,96 @@ Implement the ambient nudge system.
    - generateNudges(state: AppState): Nudge[]
    - Checks for:
      - Inbox 10+ items → 'inbox_full'
-     - Today item untouched 3 days → 'today_untouched'
+     - Today item untouched 3 days → 'today_untouched'  
      - Queue item 2+ weeks → 'queue_item_stale'
      - Deadline in 3 days → 'deadline_approaching'
-     - Pool item 3+ weeks no activity → 'pool_item_stale'
+     - Pool item 3+ weeks → 'pool_item_stale'
      - Waiting On follow-up due → 'waiting_followup_due'
    - Returns array of new nudges
 
-2. Create components/shared/NudgeBadge.tsx:
-   - Shows count of pending nudges
-   - Click opens nudge drawer/list
-   - Position: header or floating
+2. Create nudge UI components:
+   - Badge in header showing nudge count
+   - Nudge list/drawer when clicked
+   - Each nudge: message, task title, actions
 
-3. Create components/shared/NudgeDrawer.tsx:
-   - Lists pending nudges (max 3 shown)
-   - Each nudge shows:
-     - Message
-     - Related task title
-     - Actions: dismiss, snooze, action
-   - Snooze options: 1 day, 3 days, 1 week
+3. Nudge actions:
+   - Dismiss (hide this nudge)
+   - Snooze (1 day, 3 days, 1 week)
+   - Action (navigate to relevant view/task)
 
-4. Create components/shared/NudgeInline.tsx:
-   - For showing nudges inline in relevant views
-   - E.g., stale item nudge in Pool view
-   - Subtle, dismissible
-
-5. Wire up:
-   - Generate nudges on app load and state changes
-   - dismissNudge(nudgeId)
-   - snoozeNudge(nudgeId, untilDate)
-   - actionNudge(nudgeId) → navigate to relevant view/task
-   - Log nudge events
+4. Wire up:
+   - Generate nudges on app load
+   - dismissNudge, snoozeNudge, actionNudge handlers
+   - Log nudge events for learning
 ```
 
 ---
 
-## Prompt 12: Polish and PWA
+## Prompt 13: Polish and PWA
 
 ```
 Add polish and PWA support.
 
 1. Toast system:
-   - Create components/shared/Toast.tsx
-   - Show on delete (with undo), archive, queue add
+   - components/shared/Toast.tsx
+   - Show on: delete (with undo), archive, add to focus
    - Auto-dismiss after 5 seconds
+   - Action button for undo
 
 2. Keyboard shortcuts:
-   - 'n' → focus QuickCapture
+   - 'n' → focus QuickCapture (in Tasks view)
    - Escape → back/exit
-   - '1/2/3' → switch views (optional)
+   - '/' → focus search
 
 3. Empty states:
-   - Calm, helpful messaging (not peppy)
-   - Contextual actions
+   - Calm, helpful messaging
+   - Contextual actions (not generic)
 
-4. Loading and error states:
+4. Loading states:
    - AI loading indicator
-   - Error toasts
-   - Graceful degradation
+   - Skeleton loaders for views
 
 5. PWA manifest (public/manifest.json):
-   - name, short_name, icons, theme_color
-   - display: standalone
+   {
+     "name": "Focus Tools",
+     "short_name": "Focus",
+     "start_url": "/",
+     "display": "standalone",
+     "theme_color": "#..."
+   }
 
-6. Service worker (public/sw.js):
+6. Service worker:
    - Cache app shell
-   - Network-first for API
    - Offline fallback
 
-7. Update layout.tsx:
-   - Manifest link
-   - Theme-color meta
-   - Register service worker
-
-8. Mobile optimizations:
+7. Mobile optimizations:
    - Touch targets 44px+
    - Safe areas (notch, home indicator)
-   - No horizontal scroll
-   - Drawer works on mobile
+   - Floating AI bar positioning
 ```
 
 ---
 
 ## Verification Prompts
 
-After each major section, verify:
-
 ```
-Test inbox flow: Create task via QuickCapture → appears in Inbox. Quick send to Pool → appears in Pool. Triage with steps → can add to queue.
+Test navigation: Focus tab shows queue. Tasks tab shows combined inbox + pool. Search icon opens search view. AI toggle opens drawer/floating bar.
 ```
 
 ```
-Test pool: Tasks sorted by focus score. Search filters correctly. Waiting On badge shows. Deferred tasks hidden until date.
+Test tasks view: Quick capture adds to inbox. Triage section shows top 5. "View all" opens full inbox. Ready section sorted by focus score.
 ```
 
 ```
-Test queue: Today/This Week/Upcoming sections show correctly. Time estimates sum. Focus button enters focus mode. Can remove/move items.
+Test focus view: Today/Week/Upcoming sections. Time estimates correct. Focus button enters focus mode. Empty state shows smart actions.
 ```
 
 ```
-Test step selection: Add task with 5 steps. Add to queue with only steps 2-4 selected. Focus mode shows only those 3 steps. Complete them → queue item done, task still has incomplete steps.
+Test search: Quick access cards filter correctly. Search finds across all statuses. Results show status badges. Can navigate to any result.
 ```
 
 ```
-Test focus mode: Enter from queue item. Complete steps → celebration. Exit → returns to queue. Session logged with queueItemId.
+Test step selection: Add task with 5 steps. Add to Focus with only steps 2-4. Focus mode shows only those. Complete them → queue item done.
 ```
 
 ---
@@ -649,26 +687,27 @@ Test focus mode: Enter from queue item. Complete steps → celebration. Exit →
 |-------|--------|------------|-------|
 | 1 | Data Model | 1-2 | Types foundation |
 | 2 | Storage & Utils | 1-2 | Persistence, helpers |
-| 3 | Navigation Shell | 1 | View routing |
-| 4 | Inbox View | 2-3 | Capture, triage |
-| 5 | Pool View | 2-3 | Browse, search, sort |
-| 6 | Queue View | 2-3 | Home, horizons |
-| 7 | Task Detail | 2-3 | View/edit task |
-| 8 | Step Selection | 1-2 | Partial task focus |
-| 9 | Focus Mode | 2-3 | Queue integration |
-| 10 | Waiting/Defer | 1-2 | Blocking states |
-| 11 | Nudges | 2-3 | Ambient prompts |
-| 12 | Polish + PWA | 2-3 | Ship-ready |
+| 3 | Navigation Shell | 1-2 | Header, tabs, AI drawer |
+| 4 | Focus View | 2-3 | Home screen |
+| 5 | Tasks View | 2-3 | Combined inbox + pool |
+| 6 | Inbox View | 1-2 | Drill-in for full list |
+| 7 | Search View | 1-2 | Quick access + search |
+| 8 | Task Detail | 2-3 | View/edit task |
+| 9 | Step Selection | 1-2 | Partial task focus |
+| 10 | Focus Mode | 2-3 | Queue integration |
+| 11 | Waiting/Defer | 1-2 | Blocking states |
+| 12 | Nudges | 1-2 | Ambient prompts |
+| 13 | Polish + PWA | 2-3 | Ship-ready |
 
-**Total: ~18-28 hours**
+**Total: ~18-30 hours**
 
 ---
 
 ## Notes
 
-- Prompts 1-9 are core Model E functionality
-- Prompts 10-12 are enhancement and polish
+- Prompts 1-10 are core functionality
+- Prompts 11-13 are enhancement and polish
 - Can combine prompts if going faster
-- Each prompt should result in testable, working code
+- Each prompt should result in testable code
 - Commit after each successful prompt
 - Test on actual phone before shipping

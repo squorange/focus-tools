@@ -1,0 +1,305 @@
+"use client";
+
+import { useState } from "react";
+import { Task, FocusQueueItem, Project } from "@/lib/types";
+import MetadataPill from "@/components/shared/MetadataPill";
+
+interface QueueItemProps {
+  item: FocusQueueItem;
+  task: Task;
+  projects: Project[];
+  isFirst?: boolean;
+  isLast?: boolean;
+  onOpenTask: (id: string) => void;
+  onStartFocus: (queueItemId: string) => void;
+  onRemoveFromQueue: (queueItemId: string) => void;
+  onMoveUp?: (queueItemId: string) => void;
+  onMoveDown?: (queueItemId: string) => void;
+}
+
+// Calculate progress
+function getProgress(
+  task: Task,
+  item: FocusQueueItem
+): { completed: number; total: number; label: string } {
+  if (item.selectionType === "entire_task") {
+    if (task.steps.length === 0) {
+      return { completed: 0, total: 0, label: "No steps" };
+    }
+    const completed = task.steps.filter((s) => s.completed).length;
+    return {
+      completed,
+      total: task.steps.length,
+      label: `${completed}/${task.steps.length} steps`,
+    };
+  } else {
+    const selectedSteps = task.steps.filter((s) =>
+      item.selectedStepIds.includes(s.id)
+    );
+    const completed = selectedSteps.filter((s) => s.completed).length;
+    const stepNumbers = item.selectedStepIds.map((id) => {
+      const idx = task.steps.findIndex((s) => s.id === id);
+      return idx + 1;
+    });
+    const rangeLabel =
+      stepNumbers.length === 1
+        ? `Step ${stepNumbers[0]}`
+        : `Steps ${Math.min(...stepNumbers)}-${Math.max(...stepNumbers)}`;
+
+    return {
+      completed,
+      total: selectedSteps.length,
+      label: `${rangeLabel} (${completed}/${selectedSteps.length})`,
+    };
+  }
+}
+
+// Get time estimate for queue item
+function getEstimate(task: Task, item: FocusQueueItem): string | null {
+  const steps =
+    item.selectionType === "entire_task"
+      ? task.steps
+      : task.steps.filter((s) => item.selectedStepIds.includes(s.id));
+
+  const incompleteSteps = steps.filter((s) => !s.completed);
+  const totalMinutes = incompleteSteps.reduce(
+    (sum, s) => sum + (s.estimatedMinutes || 0),
+    0
+  );
+
+  if (totalMinutes === 0) return null;
+  if (totalMinutes < 60) return `~${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return mins > 0 ? `~${hours}h ${mins}m` : `~${hours}h`;
+}
+
+// Check if date is overdue
+function isOverdue(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toISOString().split("T")[0];
+  return dateStr < today;
+}
+
+// Format date for display
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function QueueItem({
+  item,
+  task,
+  projects,
+  isFirst = false,
+  isLast = false,
+  onOpenTask,
+  onStartFocus,
+  onRemoveFromQueue,
+  onMoveUp,
+  onMoveDown,
+}: QueueItemProps) {
+  const [showMenu, setShowMenu] = useState(false);
+  const progress = getProgress(task, item);
+  const estimate = getEstimate(task, item);
+  const isComplete = progress.total > 0 && progress.completed === progress.total;
+  const hasWaiting = !!task.waitingOn;
+  const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
+
+  return (
+    <div
+      className={`
+        group relative flex items-center gap-3 px-4 py-3
+        bg-white dark:bg-zinc-800
+        border rounded-lg
+        transition-all
+        ${
+          isComplete
+            ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
+            : "border-zinc-200 dark:border-zinc-700 hover:border-violet-300 dark:hover:border-violet-700"
+        }
+      `}
+    >
+      {/* Drag handle (visible on hover) */}
+      <div className="flex-shrink-0 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="9" cy="7" r="1.5" />
+          <circle cx="15" cy="7" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" />
+          <circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="17" r="1.5" />
+          <circle cx="15" cy="17" r="1.5" />
+        </svg>
+      </div>
+
+      {/* Checkbox */}
+      <button
+        onClick={() => onOpenTask(task.id)}
+        className={`
+          flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
+          transition-colors
+          ${
+            isComplete
+              ? "bg-green-500 border-green-500 text-white"
+              : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+          }
+        `}
+      >
+        {isComplete && (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+        )}
+      </button>
+
+      {/* Content */}
+      <button
+        onClick={() => onOpenTask(task.id)}
+        className="flex-1 text-left min-w-0"
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-zinc-900 dark:text-zinc-100 truncate ${
+              isComplete ? "line-through opacity-60" : ""
+            }`}
+          >
+            {task.title || "Untitled"}
+          </span>
+          {hasWaiting && (
+            <span
+              className="flex-shrink-0 text-amber-500"
+              title={`Waiting on: ${task.waitingOn?.who}`}
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          {/* Progress pill */}
+          {progress.total > 0 && (
+            <MetadataPill>{progress.label}</MetadataPill>
+          )}
+          {/* Time estimate pill */}
+          {estimate && <MetadataPill>{estimate}</MetadataPill>}
+          {/* Due date pill */}
+          {task.deadlineDate && (
+            <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+              Due {formatDate(task.deadlineDate)}
+            </MetadataPill>
+          )}
+          {/* Priority pill */}
+          {task.priority === "high" && (
+            <MetadataPill variant="priority-high">High</MetadataPill>
+          )}
+          {task.priority === "medium" && (
+            <MetadataPill variant="priority-medium">Medium</MetadataPill>
+          )}
+          {/* Project pill */}
+          {project && (
+            <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+              {project.name}
+            </MetadataPill>
+          )}
+        </div>
+      </button>
+
+      {/* Progress bar (small) */}
+      {progress.total > 0 && !isComplete && (
+        <div className="flex-shrink-0 w-16 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-violet-500 rounded-full transition-all"
+            style={{
+              width: `${(progress.completed / progress.total) * 100}%`,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Actions */}
+      {!isComplete && (
+        <button
+          onClick={() => onStartFocus(item.id)}
+          className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
+        >
+          Focus
+        </button>
+      )}
+
+      {/* Actions menu */}
+      <div className="relative">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          title="More actions"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+          </svg>
+        </button>
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+            {/* Move Up */}
+            {onMoveUp && (
+              <button
+                onClick={() => {
+                  onMoveUp(item.id);
+                  setShowMenu(false);
+                }}
+                disabled={isFirst}
+                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+                Move Up
+              </button>
+            )}
+            {/* Move Down */}
+            {onMoveDown && (
+              <button
+                onClick={() => {
+                  onMoveDown(item.id);
+                  setShowMenu(false);
+                }}
+                disabled={isLast}
+                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                Move Down
+              </button>
+            )}
+            {/* Divider */}
+            {(onMoveUp || onMoveDown) && (
+              <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+            )}
+            {/* Remove */}
+            <button
+              onClick={() => {
+                onRemoveFromQueue(item.id);
+                setShowMenu(false);
+              }}
+              className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Remove
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -261,6 +261,13 @@ interface Task {
   complexity: 'simple' | 'moderate' | 'complex' | null;
   healthStatus: 'healthy' | 'at_risk' | 'critical' | null;
   
+  // Notes
+  notes: string | null;                   // Task-level notes
+
+  // AI Message History (per task)
+  messages: Message[];                    // Planning mode conversation
+  focusModeMessages: Message[];           // Focus mode conversation (separate context)
+
   // Metadata
   createdAt: number;
   updatedAt: number;
@@ -734,6 +741,37 @@ interface AIDrawerState {
   context: 'inbox' | 'pool' | 'queue' | 'task' | 'focus';
 }
 
+// AI Staging State (for function calling responses)
+interface AIStagingState {
+  suggestions: SuggestedStep[];           // New steps/substeps to add
+  edits: EditSuggestion[];                // Changes to existing steps
+  suggestedTitle: string | null;          // Title improvement
+  pendingAction: 'replace' | 'suggest' | null;  // Tracks AI action type
+}
+
+interface SuggestedStep {
+  id: string;
+  text: string;
+  substeps: { id: string; text: string }[];
+  estimatedMinutes?: number;
+}
+
+interface EditSuggestion {
+  targetId: string;
+  targetType: 'step' | 'substep';
+  parentId?: string;                      // For substeps
+  originalText: string;
+  newText: string;
+}
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  stepId?: string;                        // For focus mode message grouping
+}
+
 interface FilterState {
   status: ('inbox' | 'pool' | 'complete' | 'archived')[];
   priority: ('high' | 'medium' | 'low' | null)[];
@@ -797,6 +835,67 @@ interface StuckResolution {
   timeToResolve: number;
 }
 ```
+
+---
+
+## AI Function Calling Architecture
+
+The AI integration uses Claude's native function calling (tool_use) for reliable structured output.
+
+### Why Function Calling?
+
+| Aspect | JSON in Text | Function Calling |
+|--------|--------------|------------------|
+| Reliability | ~85% (prompt-dependent) | ~99%+ (native) |
+| Validation | Manual parsing, error-prone | SDK handles it |
+| Extensibility | Edit prompts | Add tool definitions |
+
+### Tool Definitions
+
+**Planning Mode (Task Structuring):**
+
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `replace_task_steps` | Complete rewrite | `steps[]`, `taskTitle?`, `message` |
+| `suggest_additions` | Add to existing | `suggestions[]`, `suggestedTitle?`, `message` |
+| `edit_steps` | Modify specific | `edits[]`, `message` |
+| `edit_title` | Rename task | `newTitle`, `message` |
+| `conversational_response` | Pure chat | `message` |
+
+**Focus Mode (Body Double):**
+
+| Tool | Purpose | Returns |
+|------|---------|---------|
+| `break_down_step` | Generate substeps | `substeps[]`, `parentStepId`, `message` |
+| `suggest_first_action` | Tiny first action | `firstAction`, `message` |
+| `explain_step` | Clarify meaning | `explanation`, `tips[]?`, `message` |
+| `encourage` | Encouragement | `message` |
+
+### Response Processing
+
+```typescript
+interface StructureResponse {
+  action: 'replace' | 'suggest' | 'edit' | 'none';
+  taskTitle?: string;           // From replace_task_steps
+  suggestedTitle?: string;      // From suggest_additions, edit_title
+  steps?: Step[];               // From replace_task_steps
+  suggestions?: SuggestedStep[];// From suggest_additions
+  edits?: EditSuggestion[];     // From edit_steps
+  message: string;              // Always present
+}
+```
+
+### State Flow
+
+1. AI returns tool call → API route processes → returns `StructureResponse`
+2. Client receives response → populates staging state (`suggestions`, `edits`, `suggestedTitle`)
+3. `pendingAction` set to `'replace'` or `'suggest'` based on action type
+4. User accepts/rejects in staging UI
+5. On accept: apply changes, clear staging state
+
+**Key Insight:** `pendingAction` determines "Accept All" behavior:
+- `'replace'` → Replace all steps with suggestions
+- `'suggest'` → Append suggestions to existing steps
 
 ---
 
@@ -886,5 +985,6 @@ function migrateState(stored: any): AppState {
 
 | Date | Changes |
 |------|---------|
+| 2025-01-03 | Added AI function calling architecture section; AI staging state types; Task.notes and message history fields; Message.stepId for grouping |
 | 2025-01 | **v2:** Model E — Pool replaces Active; Focus Queue replaces DailyPlan; added waitingOn, deferral, nudges |
 | 2024-12 | v1: Initial data model with DailyPlan, intelligence fields |

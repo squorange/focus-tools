@@ -1,0 +1,505 @@
+"use client";
+
+import React, { useState } from "react";
+import { Task, FocusQueue, Project } from "@/lib/types";
+import QuickCapture from "@/components/inbox/QuickCapture";
+import TriageRow from "@/components/shared/TriageRow";
+import MetadataPill from "@/components/shared/MetadataPill";
+
+interface TasksViewProps {
+  inboxTasks: Task[];
+  poolTasks: Task[];
+  queue: FocusQueue;
+  projects: Project[];
+  onCreateTask: (title: string) => void;
+  onOpenTask: (taskId: string) => void;
+  onSendToPool: (taskId: string) => void;
+  onAddToQueue: (taskId: string, forToday?: boolean) => void;
+  onDefer: (taskId: string, until: string) => void;
+  onPark: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
+  onGoToInbox: () => void;
+  onOpenAIDrawer: () => void;
+  onOpenProjectModal: (project?: Project) => void;
+}
+
+export default function TasksView({
+  inboxTasks,
+  poolTasks,
+  queue,
+  projects,
+  onCreateTask,
+  onOpenTask,
+  onSendToPool,
+  onAddToQueue,
+  onDefer,
+  onPark,
+  onDelete,
+  onGoToInbox,
+  onOpenAIDrawer,
+  onOpenProjectModal,
+}: TasksViewProps) {
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [triageCollapsed, setTriageCollapsed] = useState(false);
+
+  // Check if task is already in queue
+  const queueTaskIds = new Set(queue.items.map((i) => i.taskId));
+  const isInQueue = (taskId: string) => queueTaskIds.has(taskId);
+
+  // Apply project filter
+  const filterByProject = (tasks: Task[]) => {
+    if (!selectedProjectId) return tasks;
+    return tasks.filter((t) => t.projectId === selectedProjectId);
+  };
+
+  // Filter tasks - exclude tasks already in focus queue from Ready section
+  const waitingTasks = filterByProject(poolTasks.filter((t) => t.waitingOn !== null));
+  const resurfacedTasks = filterByProject(poolTasks.filter(
+    (t) => t.deferredUntil && new Date(t.deferredUntil) <= new Date()
+  ));
+  const readyTasks = filterByProject(poolTasks.filter(
+    (t) => !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) > new Date()) && !queueTaskIds.has(t.id)
+  ));
+
+  // Filter inbox tasks by selected project and show top 5 for triage section
+  const filteredInboxTasks = filterByProject(inboxTasks);
+  const sortedInboxTasks = [...filteredInboxTasks].sort((a, b) => b.createdAt - a.createdAt);
+  const triageItems = sortedInboxTasks.slice(0, 5);
+  const remainingInboxCount = filteredInboxTasks.length - triageItems.length;
+
+  // Get active projects that have at least one task
+  const activeProjects = projects.filter(p => p.status === 'active');
+
+  // Helper to get project for a task
+  const getProject = (task: Task) => {
+    if (!task.projectId) return null;
+    return projects.find(p => p.id === task.projectId) ?? null;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Quick Capture */}
+      <QuickCapture onCapture={onCreateTask} placeholder="Add a task..." />
+
+      {/* Project Filter Chips */}
+      {activeProjects.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">Filter:</span>
+          <button
+            onClick={() => setSelectedProjectId(null)}
+            className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+              selectedProjectId === null
+                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+            }`}
+          >
+            All
+          </button>
+          {activeProjects.map((project) => (
+            <button
+              key={project.id}
+              onClick={() => setSelectedProjectId(selectedProjectId === project.id ? null : project.id)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1.5 ${
+                selectedProjectId === project.id
+                  ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+              }`}
+            >
+              {project.color && (
+                <span
+                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: project.color }}
+                />
+              )}
+              {project.name}
+            </button>
+          ))}
+          <button
+            onClick={() => onOpenProjectModal()}
+            className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 flex items-center gap-1"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add project
+          </button>
+        </div>
+      )}
+
+      {/* Empty state for projects */}
+      {activeProjects.length === 0 && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onOpenProjectModal()}
+            className="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 border border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 dark:hover:border-zinc-500 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create your first project
+          </button>
+        </div>
+      )}
+
+      {/* Needs Triage Section (Collapsible) */}
+      {filteredInboxTasks.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            {/* Static title - no longer clickable */}
+            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              Needs Triage ({filteredInboxTasks.length})
+            </h2>
+            {/* Right: Show All + Collapse toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onGoToInbox}
+                className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => setTriageCollapsed(!triageCollapsed)}
+                className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                aria-label={triageCollapsed ? "Expand triage section" : "Collapse triage section"}
+              >
+                <svg
+                  className={`w-4 h-4 text-zinc-400 transition-transform ${triageCollapsed ? '' : 'rotate-180'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          {/* Collapsible content */}
+          {!triageCollapsed && (
+            <>
+              <div className="space-y-2">
+                {triageItems.map((task) => (
+                  <TriageRow
+                    key={task.id}
+                    task={task}
+                    onOpenTask={onOpenTask}
+                    onSendToPool={onSendToPool}
+                    onAddToQueue={onAddToQueue}
+                    onDefer={onDefer}
+                    onPark={onPark}
+                    onDelete={onDelete}
+                    variant="compact"
+                  />
+                ))}
+              </div>
+              {remainingInboxCount > 0 && (
+                <div className="text-center mt-3">
+                  <button
+                    onClick={onGoToInbox}
+                    className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                  >
+                    +{remainingInboxCount} More
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* Resurfaced Section */}
+      {resurfacedTasks.length > 0 && (
+        <section>
+          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+            Resurfaced ({resurfacedTasks.length})
+          </h2>
+          <div className="space-y-2">
+            {resurfacedTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                isInQueue={isInQueue(task.id)}
+                project={getProject(task)}
+                onOpen={() => onOpenTask(task.id)}
+                onAddToQueue={() => onAddToQueue(task.id)}
+                onDefer={onDefer}
+                onPark={onPark}
+                onDelete={onDelete}
+                badge="Deferred"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Ready Section */}
+      <section>
+        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          Ready ({readyTasks.length})
+        </h2>
+        {readyTasks.length > 0 ? (
+          <div className="space-y-2">
+            {readyTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                isInQueue={isInQueue(task.id)}
+                project={getProject(task)}
+                onOpen={() => onOpenTask(task.id)}
+                onAddToQueue={() => onAddToQueue(task.id)}
+                onDefer={onDefer}
+                onPark={onPark}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+            <p>No tasks ready in pool.</p>
+            {inboxTasks.length > 0 && (
+              <p className="text-sm mt-1">
+                Triage some inbox items to get started.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Waiting Section */}
+      {waitingTasks.length > 0 && (
+        <section>
+          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+            Waiting On ({waitingTasks.length})
+          </h2>
+          <div className="space-y-2">
+            {waitingTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                isInQueue={isInQueue(task.id)}
+                project={getProject(task)}
+                onOpen={() => onOpenTask(task.id)}
+                onAddToQueue={() => onAddToQueue(task.id)}
+                onDefer={onDefer}
+                onPark={onPark}
+                onDelete={onDelete}
+                badge={`Waiting: ${task.waitingOn?.who}`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+// Check if date is overdue
+function isOverdue(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toISOString().split("T")[0];
+  return dateStr < today;
+}
+
+// Format date for display
+function formatDateShort(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// Task Row Component
+interface TaskRowProps {
+  task: Task;
+  isInQueue: boolean;
+  project?: Project | null;
+  onOpen: () => void;
+  onAddToQueue: () => void;
+  onDefer?: (taskId: string, until: string) => void;
+  onPark?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
+  badge?: string;
+}
+
+function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPark, onDelete, badge }: TaskRowProps) {
+  const [showMenu, setShowMenu] = React.useState(false);
+  const completedSteps = task.steps.filter((s) => s.completed).length;
+  const totalSteps = task.steps.length;
+
+  // Calculate defer dates
+  const getDeferDate = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+  };
+
+  return (
+    <div className="group bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <button onClick={onOpen} className="flex-1 text-left min-w-0">
+          <span className="text-zinc-900 dark:text-zinc-100 font-medium truncate block">
+            {task.title}
+          </span>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {/* Progress pill */}
+            {totalSteps > 0 && (
+              <MetadataPill>
+                {completedSteps}/{totalSteps} steps
+              </MetadataPill>
+            )}
+            {/* Due date pill */}
+            {task.deadlineDate && (
+              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+                Due {formatDateShort(task.deadlineDate)}
+              </MetadataPill>
+            )}
+            {/* Priority pill */}
+            {task.priority === "high" && (
+              <MetadataPill variant="priority-high">High</MetadataPill>
+            )}
+            {task.priority === "medium" && (
+              <MetadataPill variant="priority-medium">Medium</MetadataPill>
+            )}
+            {/* Project pill */}
+            {project && (
+              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+                {project.name}
+              </MetadataPill>
+            )}
+            {/* Badge (for waiting, deferred, etc) */}
+            {badge && <MetadataPill>{badge}</MetadataPill>}
+          </div>
+        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isInQueue ? (
+            <span className="text-xs text-green-600 dark:text-green-400">
+              In Focus
+            </span>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToQueue();
+              }}
+              className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900"
+            >
+              Add to Focus
+            </button>
+          )}
+
+          {/* Actions menu */}
+          {(onDelete || onDefer || onPark) && (
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
+                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                title="More actions"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              {showMenu && (
+                <div
+                  className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {onDefer && (
+                    <>
+                      <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(1));
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Tomorrow
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(7));
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Next week
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(30));
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Next month
+                      </button>
+                      <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                    </>
+                  )}
+                  {onPark && (
+                    <button
+                      onClick={() => {
+                        onPark(task.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Archive
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => {
+                        onDelete(task.id);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={onOpen}
+            className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          >
+            <svg
+              className="w-4 h-4 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper function
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  return new Date(timestamp).toLocaleDateString();
+}

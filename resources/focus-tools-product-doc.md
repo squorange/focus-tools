@@ -177,6 +177,68 @@ The workflow model uses a pool-and-queue approach optimized for ADHD:
 | **Completed** | Accomplishments | "I did this" | Finished tasks |
 | **Parking Lot** | Guilt-free storage | "Not now, maybe later" | Archived/deferred tasks |
 
+### Navigation Model
+
+**2-Tab + Search** — streamlined navigation for both desktop and mobile.
+
+```
+DESKTOP
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ┌──────────────────┐  🔍 Search tasks...                             [💬]  │
+│ │ Focus │ Tasks [1]│                                                        │
+│ └──────────────────┘                                                        │
+├─────────────────────────────────────────────────┬───────────────────────────┤
+│                                                 │                           │
+│  Main Content Area                              │  AI Assistant             │
+│                                                 │  (Side Panel)             │
+│                                                 │                           │
+└─────────────────────────────────────────────────┴───────────────────────────┘
+
+MOBILE
+┌─────────────────────────────────────────┐
+│ ┌───────────────────┐            [🔍]  │
+│ │ Focus │ Tasks [1] │                   │
+│ └───────────────────┘                   │
+├─────────────────────────────────────────┤
+│                                         │
+│  Main Content Area                      │
+│  (Full Screen)                          │
+│                                         │
+├─────────────────────────────────────────┤
+│  ┌─────────────────────────────────┐   │  ← Floating AI bar
+│  │ 💬 AI Assistant            [▲]  │   │    (expands on tap)
+│  └─────────────────────────────────┘   │
+└─────────────────────────────────────────┘
+```
+
+**Tab Structure:**
+
+| Tab | View | Contains | Maps to Workflow |
+|-----|------|----------|------------------|
+| **Focus** | FocusView (home) | Today/Week/Upcoming queue | Focus Queue |
+| **Tasks** | TasksView | Inbox section + Pool section | Inbox + Pool |
+| **🔍** | SearchView | Quick access + cross-status search | All layers |
+| **📁** | ProjectsView (drill-in) | Project management | Organization |
+
+**Design Rationale:**
+- **2 tabs vs 3:** Reduces cognitive overhead; groups admin activities (Inbox + Pool) together
+- **Focus is home:** Emphasizes action orientation; what am I doing now?
+- **Search as full view:** Supports AI pane side-by-side; finds anything
+- **AI: side panel (desktop) / floating bar (mobile):** Always accessible without modal interruption; floating bar pattern matches Apple Music mini player
+
+**Tasks View Sections:**
+- **Project filter chips** — Filter by project (tap to toggle)
+- **Needs Triage (N)** — Top 5 inbox items + "View all" drill-in
+- **Ready (N)** — Pool tasks sorted by focus score
+- **Waiting (N)** — Tasks with `waitingOn` set (if any)
+- **Resurfaced (N)** — Deferred tasks that hit their date (if any)
+- **Projects link** — Drill-in to dedicated ProjectsView
+
+**Search View Features:**
+- Quick Access cards: High Priority, Projects, Completed, Archived, Waiting, Deferred
+- Cross-status search: finds tasks regardless of layer
+- Recent searches for repeat access
+
 ### Inbox
 
 **Role:** Capture buffer — frictionless entry point
@@ -326,6 +388,44 @@ The workflow model uses a pool-and-queue approach optimized for ADHD:
 | Parking Lot | Pool | User restores |
 | Completed | Pool | User reopens |
 
+### Navigation Model
+
+**2-Tab + Search** — streamlined navigation optimized for admin vs. execution mindsets.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ┌───────────────────┐  🔍 Search...                      [💬]  │
+│ │ Focus │ Tasks [N] │                                          │
+│ └───────────────────┘                                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| Tab/View | Purpose | Contents |
+|----------|---------|----------|
+| **Focus** (default) | Execution mindset | Focus Queue (Today, This Week, Upcoming) |
+| **Tasks** | Admin mindset | Inbox section + Pool section (combined) |
+| **Search** (icon) | Find anything | Cross-status search + Quick Access filters |
+
+**Rationale:**
+- 2 tabs maps to 2 domains (Execution = Focus, Admin = Tasks)
+- Combined Inbox + Pool in Tasks view groups admin activities
+- Search as separate view enables AI assistance alongside results
+- Focus as default emphasizes action over planning
+
+**Tasks View Structure:**
+```
+Tasks
+├── Needs Triage (top 5 inbox items)
+│   └── [View all N items →] → Inbox (drill-in)
+├── Ready (pool tasks, sorted)
+├── Waiting (if any have waitingOn)
+└── Resurfaced (if any deferred items due)
+```
+
+**Platform Considerations:**
+- Desktop: Search bar expanded in header, AI in side panel
+- Mobile: Search icon in header, AI as floating bar (like Apple Music controls)
+
 ---
 
 ## 7. UI Concept: Orbital Zen
@@ -438,34 +538,72 @@ Repeat until done
 
 ---
 
-## 11. POC Scope (Task Co-Pilot Spike)
+## 11. POC Implementation (Task Co-Pilot)
 
 ### Purpose
-Learn Claude API patterns with minimal complexity before integrating into main tool.
+Working prototype of Model E workflow with AI integration. Originally a spike for Claude API patterns, now a fully functional implementation.
 
 ### Location
 ```
 focus-tools/
 └── prototypes/
-    └── task-copilot/     ← Independent spike
-        ├── package.json
-        ├── app/
-        │   └── page.tsx
-        └── README.md
+    └── task-copilot/
 ```
 
-### MVP Features
-1. Text input for rough intent
-2. Claude API call → returns structured steps
-3. Display steps as checklist
-4. On check → Claude responds with acknowledgment + next prompt
-5. Minimal UI (ugly is fine—focus on AI interaction patterns)
+### Implementation Status: Complete
 
-### Learning Goals
-- Claude API integration patterns
-- Prompt design for task structuring
-- Conversational check-in UX
-- State management for multi-step flows
+The POC implements the full Model E workflow with extensive AI integration:
+
+**Core Workflow:**
+- 2-tab navigation (Focus | Tasks) with search
+- Inbox → Pool → Focus Queue → Completed flow
+- All state transitions functional
+- localStorage persistence with schema versioning
+
+**AI Integration (Function Calling):**
+| Context | Tools Available |
+|---------|----------------|
+| Planning Mode | `replace_task_steps`, `suggest_additions`, `edit_steps`, `edit_title`, `conversational_response` |
+| Focus Mode | `break_down_step`, `suggest_first_action`, `explain_step`, `encourage` |
+
+**AI Staging Workflow:**
+- Suggestions appear in collapsible staging panel
+- Accept/reject individual items or bulk
+- Title suggestions with before/after display
+- Edit suggestions with side-by-side comparison
+
+**Focus Mode Features:**
+- Timer with pause/resume (survives page refresh)
+- Current step display with inline editing
+- Progress bar with step count
+- Substep management (full CRUD with reordering)
+- I'm Stuck menu with 4 resolution paths:
+  1. "Break down this step" - AI substeps
+  2. "What's my first tiny action?" - AI first step
+  3. "Explain this step" - AI clarification
+  4. "Talk it through with AI" - Free conversation
+- Completion celebration screen
+- Notes module (collapsible)
+- Separate AI message history per step with collapsible grouping
+
+**Beyond MVP:**
+- Dark mode support throughout
+- Responsive AI drawer (desktop side panel, mobile bottom sheet)
+- Health status and focus score computation
+- Queue item step selection (entire task vs specific steps)
+- Comprehensive utility library (date, task, step, sorting, filtering)
+- Toast notifications with undo (delete, archive, project delete)
+- Projects management (dedicated view, create/edit modal, color picker)
+- MetadataPill component for compact metadata display
+- Drag-and-drop queue reordering with move up/down menu
+- PWA support (installable, offline-capable, service worker caching)
+
+### Learnings Captured
+- Claude function calling (tool_use) provides ~99% reliability vs ~85% with JSON-in-text
+- Separate AI contexts needed for planning vs execution (different mental models)
+- Staging workflow essential for user control over AI suggestions
+- Timer state restoration important for interrupted sessions
+- Message grouping by step reduces cognitive load in focus mode
 
 ---
 
@@ -505,5 +643,8 @@ Plant, Water, Tend, Prune, Harvest, Compost, Resurface
 
 | Date | Changes |
 |------|---------|
+| 2025-01-04 | Added PWA support to POC status |
+| 2025-01-04 | Added Projects view, Toast with undo, MetadataPill to POC status; updated navigation with Projects |
+| 2025-01-03 | Updated Section 11 with complete POC implementation status; AI function calling; staging workflow; focus mode features |
 | 2025-01 | Updated Section 6 with Model E workflow (Pool + Focus Queue); refined terminology |
-| 2025-12-22 | Initial comprehensive document created from conversation synthesis |
+| 2024-12-22 | Initial comprehensive document created from conversation synthesis |

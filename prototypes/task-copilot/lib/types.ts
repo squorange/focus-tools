@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 3;
 
 // ============================================
 // Task Structure Types
@@ -11,39 +11,54 @@ export const SCHEMA_VERSION = 1;
 export interface Substep {
   id: string;
   text: string;
-  shortLabel: string | null;
+  shortLabel: string | null;        // ~12 chars max
   completed: boolean;
   completedAt: number | null;
-  skipped?: boolean;
+  skipped: boolean;
   source: 'manual' | 'ai_generated' | 'ai_suggested';
 }
 
 export interface Step {
   id: string;
   text: string;
-  shortLabel: string | null;
+  shortLabel: string | null;        // ~15 chars max
   substeps: Substep[];
+
+  // Completion
   completed: boolean;
   completedAt: number | null;
-  skipped?: boolean;
+
+  // Effort & estimation
+  effort: 'quick' | 'medium' | 'deep' | null;
+  estimatedMinutes: number | null;
+  estimateSource: 'user' | 'ai' | null;
 
   // Time tracking
-  estimatedMinutes: number | null;
-  timeSpent: number;
+  timeSpent: number;                // Actual minutes from sessions
+  firstFocusedAt: number | null;    // When first worked on
+
+  // Computed analytics
+  estimationAccuracy: number | null; // estimate / actual (set on completion)
+  complexity: 'simple' | 'moderate' | 'complex' | null;
+
+  // Context (optional override from task)
+  context: string | null;           // GTD context: "phone", "computer", etc.
 
   // Intelligence
   timesStuck: number;
+  skipped: boolean;
   source: 'manual' | 'ai_generated' | 'ai_suggested';
   wasEdited: boolean;
-
-  // Computed visualization (for Orbital UI)
-  complexity: 'simple' | 'moderate' | 'complex' | null;
 }
 
-export type TaskStatus = 'inbox' | 'active' | 'complete' | 'archived';
+// Model E: Task status - Pool instead of Active
+export type TaskStatus = 'inbox' | 'pool' | 'complete' | 'archived';
 export type Priority = 'high' | 'medium' | 'low';
 export type Effort = 'quick' | 'medium' | 'deep';
 export type HealthStatus = 'healthy' | 'at_risk' | 'critical';
+export type CompletionType = 'step_based' | 'manual';
+export type ArchivedReason = 'completed_naturally' | 'abandoned' | 'parked' | 'duplicate';
+
 export type TaskSource =
   | 'manual'
   | 'ai_breakdown'
@@ -53,18 +68,37 @@ export type TaskSource =
   | 'calendar'
   | 'voice';
 
+// Model E: Waiting On is a non-blocking flag
+export interface WaitingOn {
+  who: string;
+  since: number;
+  followUpDate: string | null;      // ISO date for follow-up reminder
+  notes: string | null;
+}
+
 export interface Task {
   id: string;
   title: string;
   shortLabel: string | null;
   description: string | null;
+  notes: string | null;  // Task-level notes
   steps: Step[];
 
-  // Status & Lifecycle
+  // Status & Lifecycle (Model E)
   status: TaskStatus;
+  completionType: CompletionType;
   completedAt: number | null;
   archivedAt: number | null;
+  archivedReason: ArchivedReason | null;
   deletedAt: number | null;
+
+  // Waiting On (Model E: non-blocking flag)
+  waitingOn: WaitingOn | null;
+
+  // Deferral (Model E: property, not status)
+  deferredUntil: string | null;     // ISO date to resurface
+  deferredAt: number | null;        // When it was deferred
+  deferredCount: number;            // Times deferred (for pattern detection)
 
   // Organization
   priority: Priority | null;
@@ -73,8 +107,8 @@ export interface Task {
   context: string | null;
 
   // Dates
-  targetDate: string | null;      // ISO date (YYYY-MM-DD)
-  deadlineDate: string | null;    // ISO date (YYYY-MM-DD)
+  targetDate: string | null;        // ISO date (YYYY-MM-DD)
+  deadlineDate: string | null;      // ISO date (YYYY-MM-DD)
 
   // Effort & Time
   effort: Effort | null;
@@ -100,8 +134,6 @@ export interface Task {
   // Intelligence Fields
   estimationAccuracy: number | null;
   firstFocusedAt: number | null;
-  timesDeferred: number;
-  lastDeferredAt: number | null;
   timesStuck: number;
   stuckResolutions: StuckResolution[];
   aiAssisted: boolean;
@@ -127,9 +159,9 @@ export interface Task {
   updatedAt: number;
   version: number;
 
-  // Per-task AI conversations
-  messages: Message[];           // Task detail AI chat history
-  focusModeMessages: Message[];  // Focus mode AI chat history
+  // Per-task AI conversations (from POC)
+  messages: Message[];              // Task detail AI chat history
+  focusModeMessages: Message[];     // Focus mode AI chat history
 }
 
 export interface Attachment {
@@ -147,7 +179,7 @@ export interface Attachment {
 }
 
 export interface ExternalLink {
-  system: 'calendar' | 'email' | 'github' | 'notion' | 'other';
+  system: 'calendar' | 'email' | 'github' | 'jira' | 'notion' | 'other';
   externalId: string;
   url: string | null;
   syncedAt: number | null;
@@ -196,7 +228,7 @@ export interface User {
 }
 
 // ============================================
-// Daily Planning Model (Asteroid Belt)
+// Focus Queue Model (Model E: replaces DailyPlan)
 // ============================================
 
 export type FocusReason =
@@ -209,44 +241,92 @@ export type FocusReason =
   | 'build_momentum'
   | 'energy_match';
 
-export interface FocusItem {
+export type Horizon = 'today' | 'this_week' | 'upcoming';
+export type SelectionType = 'entire_task' | 'specific_steps';
+
+export interface FocusQueueItem {
   id: string;
-  type: 'task' | 'step';
   taskId: string;
-  stepId: string | null;
-  order: number;
 
-  // Planning metadata
-  estimatedMinutes: number | null;
-  reason: FocusReason | null;
+  // Step selection
+  selectionType: SelectionType;
+  selectedStepIds: string[];        // Empty if entire_task
+
+  // Time commitment
+  horizon: Horizon;
+  scheduledDate: string | null;     // Specific date within week
+  order: number;                    // Position in queue
+
+  // Source
   addedBy: 'user' | 'ai_suggested';
+  addedAt: number;
+  reason: FocusReason | null;
 
-  // Outcome tracking
+  // Completion
   completed: boolean;
   completedAt: number | null;
-  actualMinutes: number | null;
+
+  // Staleness tracking
+  lastInteractedAt: number;
+  horizonEnteredAt: number;
+  rolloverCount: number;            // Times rolled over in this_week
 }
 
-export interface DailyPlan {
-  id: string;
-  date: string;                       // ISO date (YYYY-MM-DD)
-  focusItems: FocusItem[];
-  totalEstimatedMinutes: number;
-  notes: string | null;
-  createdAt: number;
-  updatedAt: number;
+export interface FocusQueue {
+  items: FocusQueueItem[];
+  todayLineIndex: number;          // Items 0..todayLineIndex-1 are "for today"
+  lastReviewedAt: number;
 }
 
 // ============================================
-// Event Log Model
+// Nudge Model (Model E: new)
+// ============================================
+
+export type NudgeType =
+  | 'inbox_full'
+  | 'today_untouched'
+  | 'queue_item_stale'
+  | 'deadline_approaching'
+  | 'pool_item_stale'
+  | 'waiting_followup_due'
+  | 'deferred_resurfaced';
+
+export type NudgeStatus = 'pending' | 'dismissed' | 'snoozed' | 'actioned';
+export type NudgeUrgency = 'low' | 'medium' | 'high';
+
+export interface Nudge {
+  id: string;
+  type: NudgeType;
+  targetId: string;                 // Task ID this nudge is about
+  message: string;
+  urgency: NudgeUrgency;
+  createdAt: number;
+  expiresAt: number | null;
+
+  // User response
+  status: NudgeStatus;
+  respondedAt: number | null;
+}
+
+export interface SnoozedNudge {
+  id: string;
+  nudgeType: NudgeType;
+  targetId: string;
+  snoozedAt: number;
+  snoozeUntil: number;
+  snoozeCount: number;              // For AI learning
+}
+
+// ============================================
+// Event Log Model (Model E: updated)
 // ============================================
 
 export type EventType =
   // Task lifecycle
   | 'task_created'
   | 'task_updated'
-  | 'task_started'
   | 'task_completed'
+  | 'task_reopened'
   | 'task_archived'
   | 'task_restored'
   | 'task_deleted'
@@ -256,6 +336,14 @@ export type EventType =
   | 'step_completed'
   | 'step_uncompleted'
   | 'substep_completed'
+
+  // Focus queue (Model E: new)
+  | 'queue_item_added'
+  | 'queue_item_removed'
+  | 'queue_item_completed'
+  | 'queue_horizon_changed'
+  | 'queue_selection_changed'
+  | 'queue_item_rolled_over'
 
   // Focus sessions
   | 'focus_started'
@@ -277,14 +365,25 @@ export type EventType =
   | 'ai_suggestion_dismissed'
   | 'ai_help_requested'
 
+  // Deferral & waiting (Model E: new)
+  | 'task_deferred'
+  | 'task_resurfaced'
+  | 'waiting_on_set'
+  | 'waiting_on_cleared'
+
+  // Nudges (Model E: new)
+  | 'nudge_shown'
+  | 'nudge_dismissed'
+  | 'nudge_snoozed'
+  | 'nudge_actioned'
+
   // Estimation
   | 'estimate_set'
   | 'estimate_updated'
 
-  // Planning
+  // Other
   | 'priority_changed'
-  | 'date_changed'
-  | 'task_deferred';
+  | 'date_changed';
 
 export interface EventContext {
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
@@ -302,12 +401,13 @@ export interface Event {
   type: EventType;
   taskId: string | null;
   stepId: string | null;
+  queueItemId: string | null;       // Model E: for Focus Queue events
   data: Record<string, unknown>;
   context: EventContext;
 }
 
 // ============================================
-// Focus Session Model
+// Focus Session Model (Model E: updated)
 // ============================================
 
 export interface StuckEvent {
@@ -318,19 +418,33 @@ export interface StuckEvent {
   resultedInCompletion: boolean;
 }
 
+export type SessionOutcome = 'completed_task' | 'completed_goal' | 'made_progress' | 'no_progress' | 'abandoned';
+
 export interface FocusSession {
   id: string;
+
+  // What was focused (Model E: links to queue item)
+  queueItemId: string | null;
   taskId: string;
+  selectionType: SelectionType;
+  targetedStepIds: string[];        // What was in scope
+
+  // Timing
   startTime: number;
   endTime: number | null;
   totalDuration: number;
   pauseDuration: number;
-  stepsAtStart: number;
+  adjustedDuration: number | null;  // User override if corrected
+  adjustmentReason: string | null;  // Why adjusted
+
+  // Outcomes
   stepsCompleted: string[];
   substepsCompleted: string[];
   stuckEvents: StuckEvent[];
+
+  // Context & rating
   context: EventContext;
-  outcome: 'completed_task' | 'made_progress' | 'no_progress' | 'abandoned' | null;
+  outcome: SessionOutcome | null;
   userRating: number | null;
 }
 
@@ -388,7 +502,7 @@ export interface Message {
 // API Types
 // ============================================
 
-export type AIAction = "replace" | "suggest" | "edit" | "none";
+export type AIAction = "replace" | "suggest" | "edit" | "delete" | "none";
 
 export interface StructureRequest {
   userMessage: string;
@@ -402,6 +516,16 @@ export interface SuggestedStep {
   text: string;
   substeps: { id: string; text: string }[];
   parentStepId?: string;  // If set, add as substep to this step instead of as new step
+  insertAfterStepId?: string;  // Insert after this step ID; '0' for beginning; omit to append
+  estimatedMinutes?: number;  // AI-suggested time estimate
+}
+
+export interface DeletionSuggestion {
+  targetId: string;           // Display ID like "1", "2", "1a", "1b"
+  targetType: 'step' | 'substep';
+  parentId?: string;          // For substeps, the parent step display ID (e.g., "1")
+  originalText: string;       // The text of what's being deleted (for display)
+  reason: string;
 }
 
 export interface EditSuggestion {
@@ -419,17 +543,19 @@ export interface StructureResponse {
   steps: Step[] | null;           // For "replace" action
   suggestions: SuggestedStep[] | null;  // For "suggest" action
   edits: EditSuggestion[] | null;       // For "edit" action
+  deletions: DeletionSuggestion[] | null;  // For "delete" action
   message: string;
 }
 
 // ============================================
-// Focus Mode Types
+// Focus Mode Types (Model E: updated)
 // ============================================
 
 export interface FocusModeState {
   active: boolean;
+  queueItemId: string | null;       // Model E: links to queue item
   taskId: string | null;
-  stepId: string | null;
+  currentStepId: string | null;
   paused: boolean;
   startTime: number | null;
   pausedTime: number;
@@ -437,7 +563,7 @@ export interface FocusModeState {
 }
 
 // ============================================
-// Filter & Sort Types
+// Filter & Sort Types (Model E: updated)
 // ============================================
 
 export interface FilterState {
@@ -446,35 +572,46 @@ export interface FilterState {
   tags: string[];
   projectId: string | null;
   context: string | null;
-  hasDueDate: boolean | null;
-  isOverdue: boolean | null;
   search: string;
+  showWaitingOn: boolean;           // Model E: filter for waiting on
+  showDeferred: boolean;            // Model E: filter for deferred
 }
 
 export type SortOption =
+  | 'focusScore'                    // Model E: default for pool
   | 'priority'
   | 'targetDate'
   | 'deadlineDate'
   | 'createdAt'
-  | 'updatedAt'
-  | 'manual';
+  | 'updatedAt';
 
 // ============================================
-// AI Drawer Types
+// AI Drawer Types (Model E: updated)
 // ============================================
+
+export type AIDrawerContext = 'focus' | 'tasks' | 'inbox' | 'search' | 'task' | 'focusMode';
 
 export interface AIDrawerState {
   isOpen: boolean;
   messages: Message[];
   isLoading: boolean;
-  context: 'general' | 'task' | 'focus';
+  context: AIDrawerContext;
 }
 
 // ============================================
-// App State Types
+// App State Types (Model E: updated)
 // ============================================
 
-export type ViewType = 'dashboard' | 'taskDetail' | 'focusMode';
+// Navigation: 2-tab + Search model
+// Focus (home) | Tasks (combined Inbox + Pool) | Search | TaskDetail | Inbox (drill-in) | FocusMode | Projects
+export type ViewType =
+  | 'focus'      // Default home - Focus Queue with horizons
+  | 'tasks'      // Combined Inbox + Pool view
+  | 'inbox'      // Drill-in from Tasks "View all" inbox items
+  | 'search'     // Search + Quick Access view
+  | 'projects'   // Projects management view
+  | 'taskDetail'
+  | 'focusMode';
 
 export interface AppState {
   schemaVersion: number;
@@ -484,16 +621,17 @@ export interface AppState {
   tasks: Task[];
   projects: Project[];
 
-  // Daily planning
-  dailyPlans: DailyPlan[];
-  todayPlanId: string | null;
+  // Focus Queue (Model E: replaces DailyPlan)
+  focusQueue: FocusQueue;
 
   // Intelligence data
   events: Event[];
   focusSessions: FocusSession[];
+  nudges: Nudge[];
+  snoozedNudges: SnoozedNudge[];
   analytics: UserAnalytics | null;
 
-  // Navigation
+  // Navigation (Model E: updated view types)
   currentView: ViewType;
   activeTaskId: string | null;
 
@@ -505,7 +643,9 @@ export interface AppState {
   aiDrawer: AIDrawerState;
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
+  deletions: DeletionSuggestion[];
   suggestedTitle: string | null;
+  pendingAction: 'replace' | 'suggest' | null;  // Track what type of suggestion this is
 
   // Filters & sort
   filters: FilterState;
@@ -518,19 +658,8 @@ export interface AppState {
 }
 
 // ============================================
-// Legacy TaskBreakdown (for migration)
+// Utility Functions
 // ============================================
-
-export interface TaskBreakdown {
-  taskTitle: string;
-  steps: Step[];
-}
-
-// ============================================
-// Utility Types
-// ============================================
-
-export type EditSource = "user" | "ai";
 
 // For generating unique IDs
 export function generateId(): string {
@@ -538,36 +667,58 @@ export function generateId(): string {
 }
 
 // Create a new empty step
-export function createEmptyStep(id?: string): Step {
+export function createStep(text: string = '', options?: Partial<Step>): Step {
   return {
-    id: id || generateId(),
-    text: "",
+    id: generateId(),
+    text,
     shortLabel: null,
     substeps: [],
     completed: false,
     completedAt: null,
+    effort: null,
     estimatedMinutes: null,
+    estimateSource: null,
     timeSpent: 0,
+    firstFocusedAt: null,
+    estimationAccuracy: null,
+    complexity: null,
+    context: null,
     timesStuck: 0,
+    skipped: false,
     source: 'manual',
     wasEdited: false,
-    complexity: null,
+    ...options,
   };
 }
 
 // Create a new substep
-export function createEmptySubstep(parentId: string, index: number): Substep {
+export function createSubstep(parentId: string, index: number, text: string = ''): Substep {
   return {
     id: `${parentId}${String.fromCharCode(97 + index)}`, // e.g., "1a", "1b"
-    text: "",
+    text,
     shortLabel: null,
     completed: false,
     completedAt: null,
+    skipped: false,
     source: 'manual',
   };
 }
 
-// Create a new task with all required fields
+// Create a new project
+export function createProject(name: string, color?: string): Project {
+  const now = Date.now();
+  return {
+    id: generateId(),
+    name,
+    description: null,
+    color: color ?? null,
+    status: 'active',
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+// Create a new task with all required fields (Model E)
 export function createTask(title: string, options?: Partial<Task>): Task {
   const now = Date.now();
   return {
@@ -575,12 +726,22 @@ export function createTask(title: string, options?: Partial<Task>): Task {
     title,
     shortLabel: null,
     description: null,
+    notes: null,
     steps: [],
 
+    // Model E: status defaults to inbox
     status: 'inbox',
+    completionType: 'step_based',
     completedAt: null,
     archivedAt: null,
+    archivedReason: null,
     deletedAt: null,
+
+    // Model E: waiting on and deferral
+    waitingOn: null,
+    deferredUntil: null,
+    deferredAt: null,
+    deferredCount: 0,
 
     priority: null,
     tags: [],
@@ -606,8 +767,6 @@ export function createTask(title: string, options?: Partial<Task>): Task {
 
     estimationAccuracy: null,
     firstFocusedAt: null,
-    timesDeferred: 0,
-    lastDeferredAt: null,
     timesStuck: 0,
     stuckResolutions: [],
     aiAssisted: false,
@@ -636,7 +795,34 @@ export function createTask(title: string, options?: Partial<Task>): Task {
   };
 }
 
-// Create default initial app state
+// Create a new focus queue item (Model E)
+export function createFocusQueueItem(
+  taskId: string,
+  horizon: Horizon = 'today',
+  options?: Partial<FocusQueueItem>
+): FocusQueueItem {
+  const now = Date.now();
+  return {
+    id: generateId(),
+    taskId,
+    selectionType: 'entire_task',
+    selectedStepIds: [],
+    horizon,
+    scheduledDate: null,
+    order: 0,
+    addedBy: 'user',
+    addedAt: now,
+    reason: 'user_selected',
+    completed: false,
+    completedAt: null,
+    lastInteractedAt: now,
+    horizonEnteredAt: now,
+    rolloverCount: 0,
+    ...options,
+  };
+}
+
+// Create default initial app state (Model E)
 export function createInitialAppState(): AppState {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -645,20 +831,28 @@ export function createInitialAppState(): AppState {
     tasks: [],
     projects: [],
 
-    dailyPlans: [],
-    todayPlanId: null,
+    // Model E: Focus Queue instead of DailyPlan
+    focusQueue: {
+      items: [],
+      todayLineIndex: 0,            // Initially all items would be "for today"
+      lastReviewedAt: Date.now(),
+    },
 
     events: [],
     focusSessions: [],
+    nudges: [],
+    snoozedNudges: [],
     analytics: null,
 
-    currentView: 'dashboard',
+    // Model E: default view is focus (home)
+    currentView: 'focus',
     activeTaskId: null,
 
     focusMode: {
       active: false,
+      queueItemId: null,
       taskId: null,
-      stepId: null,
+      currentStepId: null,
       paused: false,
       startTime: null,
       pausedTime: 0,
@@ -670,26 +864,45 @@ export function createInitialAppState(): AppState {
       isOpen: false,
       messages: [],
       isLoading: false,
-      context: 'general',
+      context: 'focus',
     },
     suggestions: [],
     edits: [],
+    deletions: [],
     suggestedTitle: null,
+    pendingAction: null,
 
     filters: {
-      status: ['inbox', 'active'],
+      status: ['inbox', 'pool'],
       priority: [],
       tags: [],
       projectId: null,
       context: null,
-      hasDueDate: null,
-      isOverdue: null,
       search: '',
+      showWaitingOn: true,
+      showDeferred: false,
     },
-    sortBy: 'createdAt',
+    sortBy: 'focusScore',
     sortOrder: 'desc',
 
     completedTodayExpanded: true,
     error: null,
   };
 }
+
+// ============================================
+// Legacy Compatibility (for migration)
+// ============================================
+
+// Old step creation (alias for compatibility)
+export const createEmptyStep = (id?: string) => createStep('', id ? { id } : undefined);
+
+// Old substep creation (alias for compatibility)
+export const createEmptySubstep = createSubstep;
+
+export interface TaskBreakdown {
+  taskTitle: string;
+  steps: Step[];
+}
+
+export type EditSource = "user" | "ai";

@@ -49,11 +49,46 @@ export function formatTime(timestamp: number): string {
 /**
  * Format duration in minutes to human readable string
  */
-export function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number | null): string {
+  if (!minutes) return '';
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
+
+/**
+ * Convert total minutes to hours and minutes
+ */
+export function minutesToHoursAndMinutes(totalMinutes: number): { hours: number; minutes: number } {
+  return {
+    hours: Math.floor(totalMinutes / 60),
+    minutes: totalMinutes % 60,
+  };
+}
+
+/**
+ * Convert hours and minutes to total minutes
+ */
+export function hoursAndMinutesToMinutes(hours: number, minutes: number): number {
+  return hours * 60 + minutes;
+}
+
+/**
+ * Rounded increments for duration dropdowns
+ */
+export const MINUTE_INCREMENTS = [0, 1, 2, 5, 10, 15, 20, 30, 45];
+export const HOUR_INCREMENTS = [0, 1, 2, 3, 4];
+
+/**
+ * Round minutes to nearest increment
+ */
+export function roundToNearestIncrement(minutes: number): number {
+  const increments = [1, 2, 5, 10, 15, 20, 30, 45, 60, 75, 90, 120, 150, 180, 240];
+  for (const inc of increments) {
+    if (minutes <= inc) return inc;
+  }
+  return Math.ceil(minutes / 30) * 30; // Round to nearest 30 min for larger values
 }
 
 /**
@@ -143,6 +178,31 @@ export function wasCompletedToday(task: Task): boolean {
   return isSameDay(completedDate, new Date());
 }
 
+/**
+ * Check if a task is deferred and should be hidden (Model E)
+ */
+export function isDeferred(task: Task): boolean {
+  if (!task.deferredUntil) return false;
+  const today = getTodayISO();
+  return task.deferredUntil > today;
+}
+
+/**
+ * Check if a deferred task has resurfaced (Model E)
+ */
+export function hasResurfaced(task: Task): boolean {
+  if (!task.deferredUntil) return false;
+  const today = getTodayISO();
+  return task.deferredUntil <= today;
+}
+
+/**
+ * Check if a task has a waiting on flag (Model E)
+ */
+export function isWaitingOn(task: Task): boolean {
+  return task.waitingOn !== null;
+}
+
 // ============================================
 // Step Utilities
 // ============================================
@@ -151,7 +211,7 @@ export function wasCompletedToday(task: Task): boolean {
  * Get next incomplete step
  */
 export function getNextIncompleteStep(steps: Step[]): Step | undefined {
-  return steps.find((s) => !s.completed && !s.skipped);
+  return steps.find((s) => !s.completed);
 }
 
 /**
@@ -165,8 +225,24 @@ export function getStepProgress(step: Step): number {
   return Math.round((completed / step.substeps.length) * 100);
 }
 
+/**
+ * Get total estimated minutes for steps
+ */
+export function getTotalEstimatedMinutes(steps: Step[]): number {
+  return steps.reduce((sum, s) => sum + (s.estimatedMinutes || 0), 0);
+}
+
+/**
+ * Get remaining estimated minutes for incomplete steps
+ */
+export function getRemainingEstimatedMinutes(steps: Step[]): number {
+  return steps
+    .filter((s) => !s.completed)
+    .reduce((sum, s) => sum + (s.estimatedMinutes || 0), 0);
+}
+
 // ============================================
-// Computation Utilities
+// Computation Utilities (Model E)
 // ============================================
 
 /**
@@ -193,6 +269,7 @@ export function computeStepComplexity(step: Step): 'simple' | 'moderate' | 'comp
 
 /**
  * Compute focus score for task (0-100, higher = more urgent)
+ * Used for default sorting in Pool view
  */
 export function computeFocusScore(task: Task): number {
   let score = 0;
@@ -205,6 +282,7 @@ export function computeFocusScore(task: Task): number {
     else if (daysUntil <= 1) score += 35; // Due today/tomorrow
     else if (daysUntil <= 3) score += 25; // Due this week
     else if (daysUntil <= 7) score += 15;
+    else if (daysUntil <= 14) score += 5;
   }
 
   // Priority (0-25 points)
@@ -213,7 +291,9 @@ export function computeFocusScore(task: Task): number {
   else if (task.priority === 'low') score += 5;
 
   // Quick win bonus (0-10 points)
-  if (task.effort === 'quick') score += 10;
+  if (task.effort === 'quick' || (task.estimatedMinutes && task.estimatedMinutes <= 15)) {
+    score += 10;
+  }
 
   // Staleness (0-15 points)
   const daysSinceUpdate = Math.floor(
@@ -221,16 +301,23 @@ export function computeFocusScore(task: Task): number {
   );
   if (daysSinceUpdate > 14) score += 15;
   else if (daysSinceUpdate > 7) score += 10;
+  else if (daysSinceUpdate > 3) score += 5;
+
+  // Waiting on penalty (reduce urgency)
+  if (task.waitingOn) {
+    score = Math.max(0, score - 10);
+  }
 
   return Math.min(100, score);
 }
 
 /**
- * Compute health status for task
+ * Compute health status for task (Model E: uses deferredCount)
  */
 export function computeHealthStatus(task: Task): 'healthy' | 'at_risk' | 'critical' {
   const today = getTodayISO();
 
+  // Critical: Overdue or deadline today
   if (task.deadlineDate) {
     const daysUntil = daysBetween(today, task.deadlineDate);
     if (daysUntil < 0) return 'critical'; // Overdue
@@ -238,8 +325,10 @@ export function computeHealthStatus(task: Task): 'healthy' | 'at_risk' | 'critic
     if (daysUntil <= 2) return 'at_risk'; // Due soon
   }
 
-  if (task.timesDeferred >= 3) return 'at_risk';
+  // At risk: Deferred multiple times (Model E: uses deferredCount)
+  if (task.deferredCount >= 3) return 'at_risk';
 
+  // At risk: Stale (not touched in 2+ weeks)
   const daysSinceUpdate = Math.floor(
     (Date.now() - task.updatedAt) / (1000 * 60 * 60 * 24)
   );
@@ -287,8 +376,22 @@ export function sortByFocusScore(tasks: Task[]): Task[] {
   });
 }
 
+/**
+ * Sort tasks by created date (newest first)
+ */
+export function sortByCreatedAt(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/**
+ * Sort tasks by updated date (most recent first)
+ */
+export function sortByUpdatedAt(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
 // ============================================
-// Filter Utilities
+// Filter Utilities (Model E)
 // ============================================
 
 /**
@@ -313,10 +416,36 @@ export function filterInbox(tasks: Task[]): Task[] {
 }
 
 /**
- * Filter active tasks
+ * Filter pool tasks (Model E: replaces filterActive)
  */
+export function filterPool(tasks: Task[]): Task[] {
+  return tasks.filter((t) => t.status === 'pool' && !t.deletedAt);
+}
+
+/**
+ * Filter pool tasks excluding deferred (Model E)
+ */
+export function filterPoolExcludingDeferred(tasks: Task[]): Task[] {
+  return filterPool(tasks).filter((t) => !isDeferred(t));
+}
+
+/**
+ * Filter pool tasks with waiting on (Model E)
+ */
+export function filterWaitingOn(tasks: Task[]): Task[] {
+  return filterPool(tasks).filter((t) => isWaitingOn(t));
+}
+
+/**
+ * Filter resurfaced tasks (Model E)
+ */
+export function filterResurfaced(tasks: Task[]): Task[] {
+  return filterPool(tasks).filter((t) => hasResurfaced(t));
+}
+
+// Legacy alias
 export function filterActive(tasks: Task[]): Task[] {
-  return tasks.filter((t) => t.status === 'active' && !t.deletedAt);
+  return filterPool(tasks);
 }
 
 // ============================================
@@ -337,4 +466,11 @@ export function isMobileDevice(): boolean {
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 1) + '…';
+}
+
+/**
+ * Pluralize a word based on count
+ */
+export function pluralize(count: number, singular: string, plural?: string): string {
+  return count === 1 ? singular : (plural ?? `${singular}s`);
 }

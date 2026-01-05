@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { SuggestedStep, EditSuggestion } from "@/lib/types";
+import { SuggestedStep, EditSuggestion, DeletionSuggestion } from "@/lib/types";
+import { formatDuration } from "@/lib/utils";
 
 interface StagingAreaProps {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
+  deletions: DeletionSuggestion[];
   suggestedTitle?: string | null;
   currentTitle?: string;
   onAcceptOne: (suggestion: SuggestedStep) => void;
   onAcceptEdit: (edit: EditSuggestion) => void;
   onRejectEdit: (edit: EditSuggestion) => void;
+  onAcceptDeletion: (deletion: DeletionSuggestion) => void;
+  onRejectDeletion: (deletion: DeletionSuggestion) => void;
   onAcceptTitle?: () => void;
   onRejectTitle?: () => void;
   onAcceptAll: () => void;
@@ -21,11 +25,14 @@ interface StagingAreaProps {
 export default function StagingArea({
   suggestions,
   edits,
+  deletions,
   suggestedTitle,
   currentTitle,
   onAcceptOne,
   onAcceptEdit,
   onRejectEdit,
+  onAcceptDeletion,
+  onRejectDeletion,
   onAcceptTitle,
   onRejectTitle,
   onAcceptAll,
@@ -35,9 +42,10 @@ export default function StagingArea({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const safeEdits = edits || [];
   const safeSuggestions = suggestions || [];
+  const safeDeletions = deletions || [];
   // More robust check - ensure suggestedTitle is truthy and different from current
   const hasTitleSuggestion = Boolean(suggestedTitle) && suggestedTitle !== (currentTitle || '');
-  const totalItems = safeSuggestions.length + safeEdits.length + (hasTitleSuggestion ? 1 : 0);
+  const totalItems = safeSuggestions.length + safeEdits.length + safeDeletions.length + (hasTitleSuggestion ? 1 : 0);
 
   if (totalItems === 0) {
     return null;
@@ -173,6 +181,61 @@ export default function StagingArea({
             </ul>
           )}
 
+          {/* Deletion suggestions */}
+          {safeDeletions.length > 0 && (
+            <ul className="space-y-2 mb-2">
+              {safeDeletions.map((deletion) => (
+                <li
+                  key={`delete-${deletion.targetId}`}
+                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
+                             border border-red-200 dark:border-red-700"
+                >
+                  {/* Delete badge */}
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
+                    DELETE
+                  </span>
+
+                  {/* Step/substep indicator */}
+                  <span className="w-8 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                    {deletion.targetId}.
+                  </span>
+
+                  {/* Content: show the text being deleted + reason */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-neutral-700 dark:text-neutral-200 line-through">
+                      {deletion.originalText || `Remove ${deletion.targetType}`}
+                    </p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 italic">
+                      {deletion.reason}
+                    </p>
+                  </div>
+
+                  {/* Accept/Reject buttons */}
+                  <div className="flex-shrink-0 flex gap-1">
+                    <button
+                      onClick={() => onAcceptDeletion(deletion)}
+                      className="px-2 py-1 text-sm font-medium
+                                 text-red-600 dark:text-red-400
+                                 hover:bg-red-50 dark:hover:bg-red-900/20
+                                 rounded transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => onRejectDeletion(deletion)}
+                      className="px-2 py-1 text-sm font-medium
+                                 text-neutral-500 dark:text-neutral-400
+                                 hover:bg-neutral-100 dark:hover:bg-neutral-700
+                                 rounded transition-colors"
+                    >
+                      Keep
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {/* New item suggestions */}
           {safeSuggestions.length > 0 && (
             <ul className="space-y-2 mb-4">
@@ -197,6 +260,16 @@ export default function StagingArea({
                     <span className="text-neutral-700 dark:text-neutral-200">
                       {suggestion.text}
                     </span>
+
+                    {/* Estimate badge */}
+                    {suggestion.estimatedMinutes && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span>~{formatDuration(suggestion.estimatedMinutes)}</span>
+                        <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
+                          AI
+                        </span>
+                      </span>
+                    )}
 
                     {/* Substeps preview - safely check for substeps */}
                     {suggestion.substeps && suggestion.substeps.length > 0 && (
