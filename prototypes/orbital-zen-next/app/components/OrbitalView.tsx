@@ -8,7 +8,6 @@ import SolarSystemView from './SolarSystemView';
 import SubtaskMoons from './SubtaskMoons';
 import TimerBadge from './TimerBadge';
 import OrbitalRing from './OrbitalRing';
-import FocusModeView from './focus-mode/FocusModeView';
 import { saveTask, getTask } from '../lib/offline-store';
 import {
   getActiveFocusSession,
@@ -83,9 +82,6 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
 
   // Focus session state
   const [focusSession, setFocusSession] = useState<FocusSession | null>(null);
-
-  // Focus mode state
-  const [focusModeActive, setFocusModeActive] = useState(false);
 
   // Completing subtasks state (for smooth completion animation)
   const [completingSubtaskIds, setCompletingSubtaskIds] = useState<Set<string>>(new Set());
@@ -380,52 +376,6 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
     setFocusSession(null);
   };
 
-  // Focus mode handlers
-  const handleEnterFocusMode = () => {
-    // TODO: Phase 3 - add entry animation
-    // For now, just toggle immediately
-    setFocusModeActive(true);
-  };
-
-  const handleExitFocusMode = () => {
-    // TODO: Phase 3 - add exit animation
-    // Session continues running, just changing view
-    setFocusModeActive(false);
-  };
-
-  const handleCompleteTaskFromFocusMode = async () => {
-    // TODO: Implement task completion logic
-    // This should mark task/subtask as complete and end session
-    if (!zoomedTask) return;
-
-    // For now, just exit focus mode
-    handleExitFocusMode();
-  };
-
-  const handleUpdateTaskFromFocusMode = async (updates: Partial<Task>) => {
-    if (!zoomedTask) return;
-
-    const updatedTask = { ...zoomedTask, ...updates };
-    await saveTask(updatedTask);
-    setZoomedTask(updatedTask);
-  };
-
-  // Conditional render: show focus mode OR orbital view (not both)
-  if (focusModeActive && zoomedTask && focusSession) {
-    return (
-      <FocusModeView
-        task={zoomedTask}
-        subtask={selectedSubtask || undefined}
-        focusSession={focusSession}
-        onExitFocusMode={handleExitFocusMode}
-        onPauseSession={handlePauseFocus}
-        onStopSession={handleStopFocus}
-        onCompleteTask={handleCompleteTaskFromFocusMode}
-        onUpdateTask={handleUpdateTaskFromFocusMode}
-      />
-    );
-  }
-
   return (
     <div
       ref={containerRef}
@@ -675,7 +625,6 @@ export default function OrbitalView({ tasks }: OrbitalViewProps) {
               focusSession={focusSession || undefined}
               onClose={handleZoomOut}
               onStartFocus={handleStartFocus}
-              onEnterFocusMode={handleEnterFocusMode}
               onPauseFocus={handlePauseFocus}
               onResumeFocus={handleResumeFocus}
               onStopFocus={handleStopFocus}

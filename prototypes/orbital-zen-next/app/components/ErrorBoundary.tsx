@@ -76,7 +76,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 text-2xl">❌</div>
                 <div className="flex-1">
-                  <h2 className="text-lg font-bold text-red-900 mb-2">Something went wrong</h2>
+                  <h2 className="text-lg font-bold text-red-900 mb-2">
+                    Something went wrong
+                  </h2>
                   <p className="text-sm text-red-700 mb-4">
                     {this.state.error?.message ||
                       'An unexpected error occurred. Please try reloading the page.'}

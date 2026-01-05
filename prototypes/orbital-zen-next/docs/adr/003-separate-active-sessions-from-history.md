@@ -62,10 +62,10 @@ interface FocusSession {
   taskId: string;
   subtaskId?: string;
   startTime: Date;
-  isActive: boolean; // For pause/resume
+  isActive: boolean;  // For pause/resume
   lastResumedAt?: Date;
   totalPauseTime: number;
-  pauseHistory: Array<{ pausedAt: Date; resumedAt?: Date }>;
+  pauseHistory: Array<{pausedAt: Date; resumedAt?: Date}>;
   // ... UI state fields
 }
 ```
@@ -82,12 +82,12 @@ interface FocusSession {
 ```typescript
 interface TimeEntry {
   id: string;
-  sessionId: string; // Links back to FocusSession.id
+  sessionId: string;  // Links back to FocusSession.id
   taskId: string;
   subtaskId?: string;
   startTime: Date;
   endTime: Date;
-  duration: number; // Calculated active time
+  duration: number;  // Calculated active time
   wasCompleted: boolean;
   endReason: 'stopped' | 'completed' | 'interrupted';
   sessionNotes?: string;
@@ -128,10 +128,10 @@ interface TimeEntry {
 
 ```typescript
 // Check if user is currently focusing:
-const active = await getActiveFocusSession(); // Fast: 0-1 records
+const active = await getActiveFocusSession();  // Fast: 0-1 records
 
 // Get time stats:
-const entries = await getTaskTimeEntries(taskId); // Filtered by index
+const entries = await getTaskTimeEntries(taskId);  // Filtered by index
 const total = entries.reduce((sum, e) => sum + e.duration, 0);
 ```
 

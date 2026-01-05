@@ -92,7 +92,7 @@ Use IndexedDB for Phase 1 local storage.
 Created `app/lib/offline-store.ts` with wrapper functions:
 
 - `getDB()` - Initializes database with proper schema
-- `saveTask()`, `getTask()`, `getAllTasks()` - Task operations
+- `saveTask()`, `getTask()`, `getAllTasks()`  - Task operations
 - `createActivityLog()`, `getActivityLogs()` - Activity tracking
 - Indexes on: `taskId`, `date`, `subtaskId`
 

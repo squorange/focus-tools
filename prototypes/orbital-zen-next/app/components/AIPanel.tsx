@@ -27,7 +27,6 @@ interface AIPanelProps {
   focusSession?: FocusSession;
   onClose: () => void;
   onStartFocus?: () => void;
-  onEnterFocusMode?: () => void;
   onPauseFocus?: () => void;
   onResumeFocus?: () => void;
   onStopFocus?: () => void;
@@ -44,7 +43,6 @@ export default function AIPanel({
   focusSession,
   onClose,
   onStartFocus,
-  onEnterFocusMode,
   onPauseFocus,
   onResumeFocus,
   onStopFocus,
@@ -931,17 +929,6 @@ export default function AIPanel({
                   {timer.formattedTime}
                 </div>
                 {!focusSession.isActive && <span className="text-xs text-gray-500">Paused</span>}
-
-                {/* Enter Focus Mode button */}
-                {onEnterFocusMode && (
-                  <button
-                    onClick={onEnterFocusMode}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
-                    title="Enter immersive focus mode"
-                  >
-                    🎯 Focus Mode
-                  </button>
-                )}
               </div>
             )}
           </div>
