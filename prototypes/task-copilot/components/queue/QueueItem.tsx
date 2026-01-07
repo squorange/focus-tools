@@ -5,12 +5,75 @@ import { Task, FocusQueueItem, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
 
+// Progress ring showing step completion as a circular indicator
+function ProgressRing({
+  completed,
+  total,
+  isComplete,
+}: {
+  completed: number;
+  total: number;
+  isComplete: boolean;
+}) {
+  const size = 20;
+  const strokeWidth = 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? completed / total : 0;
+  const offset = circumference - progress * circumference;
+
+  if (isComplete) {
+    return (
+      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      {/* Background circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        className="text-zinc-200 dark:text-zinc-700"
+      />
+      {/* Progress arc */}
+      {progress > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="text-violet-500"
+        />
+      )}
+    </svg>
+  );
+}
+
 interface QueueItemProps {
   item: FocusQueueItem;
   task: Task;
   projects: Project[];
   isFirst?: boolean;
   isLast?: boolean;
+  isToday?: boolean;
   onOpenTask: (id: string) => void;
   onStartFocus: (queueItemId: string) => void;
   onRemoveFromQueue: (queueItemId: string) => void;
@@ -88,6 +151,7 @@ export default function QueueItem({
   projects,
   isFirst = false,
   isLast = false,
+  isToday = true,
   onOpenTask,
   onStartFocus,
   onRemoveFromQueue,
@@ -97,61 +161,58 @@ export default function QueueItem({
   const [showMenu, setShowMenu] = useState(false);
   const progress = getProgress(task, item);
   const estimate = getEstimate(task, item);
-  const isComplete = progress.total > 0 && progress.completed === progress.total;
+  // Complete if: task is done, queue item is done, OR all steps are complete
+  const isComplete = task.status === 'complete' || item.completed ||
+    (progress.total > 0 && progress.completed === progress.total);
   const hasWaiting = !!task.waitingOn;
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
+
+  // Check if we have any metadata to display
+  const hasMetadata = progress.total > 0 || estimate || task.targetDate ||
+    task.deadlineDate || task.priority === "high" || task.priority === "medium" || project;
 
   return (
     <div
       className={`
         group relative px-2 sm:px-3 py-3
-        bg-white dark:bg-zinc-800
         border rounded-lg
-        transition-all
+        transition-all duration-300 select-none
         ${
           isComplete
-            ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
-            : "border-zinc-200 dark:border-zinc-700 hover:border-violet-300 dark:hover:border-violet-700"
+            ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
+            : isToday
+              ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
+              : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-600"
         }
       `}
     >
       {/* Desktop layout */}
       <div className="hidden sm:flex sm:items-center sm:gap-2">
-        {/* Drag handle (visible on hover) */}
-        <div className="flex-shrink-0 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="9" cy="7" r="1.5" />
-            <circle cx="15" cy="7" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" />
-            <circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="17" r="1.5" />
-            <circle cx="15" cy="17" r="1.5" />
-          </svg>
-        </div>
-
-        {/* Checkbox */}
-        <button
-          onClick={() => onOpenTask(task.id)}
-          className={`
-            flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center
-            transition-colors
-            ${
-              isComplete
-                ? "bg-green-500 border-green-500 text-white"
-                : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
-            }
-          `}
-        >
-          {isComplete && (
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
+        {/* Status indicator OR drag handle on hover */}
+        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+          {/* Ring shown by default, hidden on group-hover */}
+          <button
+            onClick={() => onOpenTask(task.id)}
+            className="group-hover:hidden"
+          >
+            <ProgressRing
+              completed={progress.completed}
+              total={progress.total}
+              isComplete={isComplete}
+            />
+          </button>
+          {/* Drag handle shown on hover only */}
+          <div className="hidden group-hover:block text-zinc-400 cursor-grab active:cursor-grabbing">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="7" r="1.5" />
+              <circle cx="15" cy="7" r="1.5" />
+              <circle cx="9" cy="12" r="1.5" />
+              <circle cx="15" cy="12" r="1.5" />
+              <circle cx="9" cy="17" r="1.5" />
+              <circle cx="15" cy="17" r="1.5" />
             </svg>
-          )}
-        </button>
+          </div>
+        </div>
 
         {/* Content */}
         <button
@@ -181,46 +242,28 @@ export default function QueueItem({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
-            {estimate && <MetadataPill>{estimate}</MetadataPill>}
-            {task.targetDate && (
-              <MetadataPill>Target {formatDate(task.targetDate)}</MetadataPill>
-            )}
-            {task.deadlineDate && (
-              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
-                Due {formatDate(task.deadlineDate)}
-              </MetadataPill>
-            )}
-            {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
-            {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
-            {project && (
-              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
-                {project.name}
-              </MetadataPill>
-            )}
-          </div>
+          {hasMetadata && (
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
+              {estimate && <MetadataPill>{estimate}</MetadataPill>}
+              {task.targetDate && (
+                <MetadataPill>Target {formatDate(task.targetDate)}</MetadataPill>
+              )}
+              {task.deadlineDate && (
+                <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+                  Due {formatDate(task.deadlineDate)}
+                </MetadataPill>
+              )}
+              {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
+              {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
+              {project && (
+                <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+                  {project.name}
+                </MetadataPill>
+              )}
+            </div>
+          )}
         </button>
-
-        {/* Progress bar (small) */}
-        {progress.total > 0 && !isComplete && (
-          <div className="flex-shrink-0 w-16 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-violet-500 rounded-full transition-all"
-              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
-            />
-          </div>
-        )}
-
-        {/* Focus button */}
-        {!isComplete && (
-          <button
-            onClick={() => onStartFocus(item.id)}
-            className="flex-shrink-0 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
-          >
-            Focus
-          </button>
-        )}
 
         {/* Menu button - Desktop */}
         <div className="relative">
@@ -236,7 +279,22 @@ export default function QueueItem({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px]">
+              <div className={`absolute right-0 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px] ${
+                isFirst ? "top-full mt-1" : "bottom-full mb-1"
+              }`}>
+                {!isComplete && (
+                  <button
+                    onClick={() => { onStartFocus(item.id); setShowMenu(false); }}
+                    className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Start Focus
+                  </button>
+                )}
+                {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
                 {onMoveUp && (
                   <button
                     onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
@@ -264,12 +322,12 @@ export default function QueueItem({
                 {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
                 <button
                   onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
-                  Remove
+                  Tasks
                 </button>
               </div>
             </>
@@ -279,29 +337,17 @@ export default function QueueItem({
 
       {/* Mobile layout */}
       <div className="sm:hidden">
-        {/* Row 1: Checkbox + Title + Actions */}
+        {/* Row 1: Progress ring + Title + Actions */}
         <div className="flex items-start gap-2">
           <button
             onClick={() => onOpenTask(task.id)}
-            className={`
-              flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center
-              transition-colors
-              ${
-                isComplete
-                  ? "bg-green-500 border-green-500 text-white"
-                  : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
-              }
-            `}
+            className="flex-shrink-0 w-5 h-5 mt-0.5"
           >
-            {isComplete && (
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            )}
+            <ProgressRing
+              completed={progress.completed}
+              total={progress.total}
+              isComplete={isComplete}
+            />
           </button>
 
           <button
@@ -329,14 +375,6 @@ export default function QueueItem({
                 </svg>
               </span>
             )}
-            {!isComplete && (
-              <button
-                onClick={() => onStartFocus(item.id)}
-                className="px-2.5 py-1 text-xs font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
-              >
-                Focus
-              </button>
-            )}
             {/* Menu button - Mobile */}
             <div className="relative">
               <button
@@ -350,7 +388,22 @@ export default function QueueItem({
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px]">
+                  <div className={`absolute right-0 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px] ${
+                    isFirst ? "top-full mt-1" : "bottom-full mb-1"
+                  }`}>
+                    {!isComplete && (
+                      <button
+                        onClick={() => { onStartFocus(item.id); setShowMenu(false); }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Start Focus
+                      </button>
+                    )}
+                    {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
                     {onMoveUp && (
                       <button
                         onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
@@ -378,12 +431,12 @@ export default function QueueItem({
                     {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
                     <button
                       onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
-                      Remove
+                      Tasks
                     </button>
                   </div>
                 </>
@@ -392,36 +445,30 @@ export default function QueueItem({
           </div>
         </div>
 
-        {/* Row 2: Metadata pills + progress bar */}
-        <div className="flex items-center gap-2 mt-2 ml-6">
-          <div className="flex items-center gap-1.5 flex-wrap flex-1">
-            {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
-            {estimate && <MetadataPill>{estimate}</MetadataPill>}
-            {task.targetDate && (
-              <MetadataPill>{formatDate(task.targetDate)}</MetadataPill>
-            )}
-            {task.deadlineDate && (
-              <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
-                {formatDate(task.deadlineDate)}
-              </MetadataPill>
-            )}
-            {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
-            {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
-            {project && (
-              <MetadataPill variant="project" color={project.color || "#9ca3af"}>
-                {project.name}
-              </MetadataPill>
-            )}
-          </div>
-          {progress.total > 0 && !isComplete && (
-            <div className="flex-shrink-0 w-12 h-1 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-violet-500 rounded-full"
-                style={{ width: `${(progress.completed / progress.total) * 100}%` }}
-              />
+        {/* Row 2: Metadata pills (only if content exists) */}
+        {hasMetadata && (
+          <div className="flex items-center gap-2 mt-2 ml-6">
+            <div className="flex items-center gap-1.5 flex-wrap flex-1">
+              {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
+              {estimate && <MetadataPill>{estimate}</MetadataPill>}
+              {task.targetDate && (
+                <MetadataPill>{formatDate(task.targetDate)}</MetadataPill>
+              )}
+              {task.deadlineDate && (
+                <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
+                  {formatDate(task.deadlineDate)}
+                </MetadataPill>
+              )}
+              {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
+              {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
+              {project && (
+                <MetadataPill variant="project" color={project.color || "#9ca3af"}>
+                  {project.name}
+                </MetadataPill>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
-# Task Co-Pilot: Claude Code Context
+# Task Co-Pilot: Claude Code Context (v3)
+
+> **Note:** This is a snapshot of the canonical context document. The primary source is `prototypes/task-copilot/CLAUDE.md`.
 
 ## Project Overview
 
@@ -7,6 +9,7 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 **Location:** `~/Projects/focus-tools/prototypes/task-copilot`
 **Stack:** Next.js 14, React 18, Tailwind CSS, Anthropic Claude API
 **Status:** Model E Complete — Multi-task workflow fully functional
+**Live URL:** https://task-copilot.vercel.app
 
 **Last Updated:** January 2026
 
@@ -829,7 +832,7 @@ task-copilot/
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker
 │   └── icons/                # App icons (SVG)
-└── CLAUDE.md                 # This file
+└── CLAUDE.md                 # Primary context document (this file is a copy in resources/)
 ```
 
 ---

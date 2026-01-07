@@ -1,4 +1,4 @@
-import { Task, Step } from './types';
+import { Task, Step, FocusQueueItem } from './types';
 
 // ============================================
 // Date Utilities
@@ -134,6 +134,13 @@ export function isOverdue(task: Task): boolean {
   if (!task.deadlineDate) return false;
   if (task.status === 'complete' || task.status === 'archived') return false;
   return daysBetween(task.deadlineDate, getTodayISO()) > 0;
+}
+
+/**
+ * Check if a date string (ISO format) is in the past
+ */
+export function isDateOverdue(dateStr: string): boolean {
+  return daysBetween(dateStr, getTodayISO()) > 0;
 }
 
 /**
@@ -473,4 +480,128 @@ export function truncate(text: string, maxLength: number): string {
  */
 export function pluralize(count: number, singular: string, plural?: string): string {
   return count === 1 ? singular : (plural ?? `${singular}s`);
+}
+
+// ============================================
+// Status Label Utilities
+// ============================================
+
+export type DisplayStatus =
+  | 'completed'
+  | 'archived'
+  | 'today'
+  | 'focus'
+  | 'waiting'
+  | 'deferred'
+  | 'ready'
+  | 'inbox';
+
+export interface DisplayStatusInfo {
+  label: string;
+  color: string; // hex color for the pill
+  bgClass: string; // tailwind bg class
+  textClass: string; // tailwind text class
+}
+
+/**
+ * Get display status for a task
+ * Priority order (highest to lowest):
+ * 1. Completed - task is done
+ * 2. Archived - task is parked/abandoned
+ * 3. Today - in focus queue, above the line
+ * 4. Focus - in focus queue, below the line
+ * 5. Waiting - has waitingOn set
+ * 6. Deferred - has deferredUntil in future
+ * 7. Ready - in pool, available
+ * 8. Inbox - needs triage
+ */
+export function getDisplayStatus(
+  task: Task,
+  queueItem?: FocusQueueItem,
+  todayLineIndex?: number
+): DisplayStatus {
+  // 1. Completed
+  if (task.status === 'complete') return 'completed';
+
+  // 2. Archived
+  if (task.status === 'archived') return 'archived';
+
+  // 3 & 4. Queue status (Today / Focus)
+  if (queueItem && todayLineIndex !== undefined) {
+    const isAboveLine = queueItem.order < todayLineIndex;
+    return isAboveLine ? 'today' : 'focus';
+  }
+
+  // 5. Waiting
+  if (task.waitingOn) return 'waiting';
+
+  // 6. Deferred
+  if (task.deferredUntil) {
+    const today = getTodayISO();
+    if (task.deferredUntil > today) return 'deferred';
+  }
+
+  // 7. Ready (pool)
+  if (task.status === 'pool') return 'ready';
+
+  // 8. Inbox (default)
+  return 'inbox';
+}
+
+/**
+ * Get display info (label, colors) for a status
+ */
+export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
+  const statusMap: Record<DisplayStatus, DisplayStatusInfo> = {
+    completed: {
+      label: 'Completed',
+      color: '#16a34a', // green-600
+      bgClass: 'bg-green-100 dark:bg-green-900/30',
+      textClass: 'text-green-700 dark:text-green-300',
+    },
+    archived: {
+      label: 'Archived',
+      color: '#71717a', // zinc-500
+      bgClass: 'bg-zinc-100 dark:bg-zinc-800',
+      textClass: 'text-zinc-600 dark:text-zinc-400',
+    },
+    today: {
+      label: 'Today',
+      color: '#f59e0b', // amber-500
+      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
+      textClass: 'text-amber-700 dark:text-amber-300',
+    },
+    focus: {
+      label: 'Focus',
+      color: '#8b5cf6', // violet-500
+      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
+      textClass: 'text-violet-700 dark:text-violet-300',
+    },
+    waiting: {
+      label: 'Waiting',
+      color: '#f97316', // orange-500
+      bgClass: 'bg-orange-100 dark:bg-orange-900/30',
+      textClass: 'text-orange-700 dark:text-orange-300',
+    },
+    deferred: {
+      label: 'Deferred',
+      color: '#6366f1', // indigo-500
+      bgClass: 'bg-indigo-100 dark:bg-indigo-900/30',
+      textClass: 'text-indigo-700 dark:text-indigo-300',
+    },
+    ready: {
+      label: 'Ready',
+      color: '#2563eb', // blue-600
+      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
+      textClass: 'text-blue-700 dark:text-blue-300',
+    },
+    inbox: {
+      label: 'Inbox',
+      color: '#d97706', // amber-600
+      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
+      textClass: 'text-amber-700 dark:text-amber-300',
+    },
+  };
+
+  return statusMap[status];
 }

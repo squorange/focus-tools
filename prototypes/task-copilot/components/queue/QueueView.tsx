@@ -1,9 +1,36 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
+import React, { useMemo, useState, useRef, useCallback } from "react";
 import { Task, FocusQueue, FocusQueueItem, Project } from "@/lib/types";
+import {
+  reorderVisualElements,
+  deriveStateFromVisual,
+  VisualElement,
+} from "@/lib/queue-reorder";
+import { countCompletionsToday } from "@/lib/completions";
 import QueueItem from "./QueueItem";
 import QuickCapture from "@/components/inbox/QuickCapture";
+import CompletedDrawer from "./CompletedDrawer";
+
+// Unified slot model: line occupies a slot just like items
+// Visual slots: [top-zone, item0, item1, ..., LINE, itemN, ..., bottom-zone]
+type VirtualSlot =
+  | { type: 'top-zone' }
+  | { type: 'slot'; visualIndex: number }
+  | { type: 'bottom-zone' };
+
+// Placeholder shown at drop target position
+function DropPlaceholder({ variant = 'item' }: { variant?: 'item' | 'line' }) {
+  return (
+    <div
+      className={`h-14 rounded-lg border-2 border-dashed transition-all ${
+        variant === 'line'
+          ? 'border-violet-400 dark:border-violet-600 bg-violet-50/50 dark:bg-violet-900/10'
+          : 'border-violet-400 dark:border-violet-600 bg-violet-50/50 dark:bg-violet-900/10'
+      }`}
+    />
+  );
+}
 
 interface QueueViewProps {
   queue: FocusQueue;
@@ -14,10 +41,10 @@ interface QueueViewProps {
   onCreateTask: (title: string) => void;
   onStartFocus: (queueItemId: string) => void;
   onRemoveFromQueue: (queueItemId: string) => void;
-  onMoveItem: (queueItemId: string, newIndex: number) => void;
+  // Unified reorder callback - visual-first approach
+  onReorderQueue: (items: FocusQueueItem[], todayLineIndex: number) => void;
   onMoveItemUp: (queueItemId: string) => void;
   onMoveItemDown: (queueItemId: string) => void;
-  onMoveTodayLine: (newIndex: number) => void;
   onGoToInbox: () => void;
 }
 
@@ -57,15 +84,15 @@ export default function QueueView({
   onCreateTask,
   onStartFocus,
   onRemoveFromQueue,
-  onMoveItem,
+  onReorderQueue,
   onMoveItemUp,
   onMoveItemDown,
-  onMoveTodayLine,
   onGoToInbox,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
+  const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
 
   // Touch drag state
   const [isTouchDragging, setIsTouchDragging] = useState(false);
@@ -73,9 +100,19 @@ export default function QueueView({
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const lineRef = useRef<HTMLDivElement>(null);
 
-  // Filter out completed items for display (but keep them in data)
+  // Hold-to-drag state (prevents accidental drags while scrolling)
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pendingDragItem = useRef<string | null>(null);
+  const pendingDragLine = useRef<boolean>(false);
+  const HOLD_DURATION = 300; // ms before drag activates
+  const MOVE_THRESHOLD = 10; // px movement cancels hold
+
+  // Filter out completed items for display (completed items are now removed from queue immediately)
   const activeItems = useMemo(
-    () => queue.items.filter((i) => !i.completed).sort((a, b) => a.order - b.order),
+    () => queue.items
+      .filter((i) => !i.completed)
+      .sort((a, b) => a.order - b.order),
     [queue.items]
   );
 
@@ -83,13 +120,53 @@ export default function QueueView({
   const laterItems = activeItems.slice(queue.todayLineIndex);
   const todayEstimate = getTotalEstimate(todayItems, tasks);
 
-  // Completed today
-  const completedToday = queue.items.filter((item) => {
-    if (!item.completed || !item.completedAt) return false;
-    const today = new Date().toISOString().split("T")[0];
-    const completedDate = new Date(item.completedAt).toISOString().split("T")[0];
-    return completedDate === today;
-  });
+  // Build unified visual elements array (items + line in visual order)
+  const visualElements = useMemo((): VisualElement[] => {
+    const elements: VisualElement[] = [];
+
+    // Today items (indices 0 to todayLineIndex-1)
+    todayItems.forEach((item, i) => {
+      elements.push({ kind: 'item', item, originalIndex: i });
+    });
+
+    // The line occupies a slot
+    elements.push({ kind: 'line' });
+
+    // Later items (indices todayLineIndex onwards in original array)
+    laterItems.forEach((item, i) => {
+      elements.push({ kind: 'item', item, originalIndex: queue.todayLineIndex + i });
+    });
+
+    return elements;
+  }, [todayItems, laterItems, queue.todayLineIndex]);
+
+  // Helper to perform visual reorder and call the unified callback
+  const performVisualReorder = useCallback((fromIndex: number, toIndex: number) => {
+    const newElements = reorderVisualElements(visualElements, fromIndex, toIndex);
+    const { items, todayLineIndex } = deriveStateFromVisual(newElements);
+    onReorderQueue(items, todayLineIndex);
+  }, [visualElements, onReorderQueue]);
+
+  // Handlers for line arrow buttons (move line up/down by one position)
+  const handleMoveLineUp = useCallback(() => {
+    const lineIndex = visualElements.findIndex(el => el.kind === 'line');
+    if (lineIndex > 0) {
+      performVisualReorder(lineIndex, lineIndex - 1);
+    }
+  }, [visualElements, performVisualReorder]);
+
+  const handleMoveLineDown = useCallback(() => {
+    const lineIndex = visualElements.findIndex(el => el.kind === 'line');
+    if (lineIndex !== -1 && lineIndex < visualElements.length - 1) {
+      performVisualReorder(lineIndex, lineIndex + 2); // +2 because we're moving forward
+    }
+  }, [visualElements, performVisualReorder]);
+
+  // Count all completions today (tasks + steps, across all tasks)
+  const completionCount = useMemo(
+    () => countCompletionsToday(tasks),
+    [tasks]
+  );
 
   // Drag handlers for items
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
@@ -98,19 +175,60 @@ export default function QueueView({
     e.dataTransfer.setData("text/plain", itemId);
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  // Unified drag over handler using visual index
+  const handleDragOver = (e: React.DragEvent, visualIndex: number) => {
     e.preventDefault();
-    if (draggedItem || isDraggingLine) {
-      setDragOverIndex(index);
-    }
+    setDragOverSlot({ type: 'slot', visualIndex });
   };
 
+  const handleDragOverZone = (e: React.DragEvent, zone: 'top-zone' | 'bottom-zone') => {
+    e.preventDefault();
+    setDragOverSlot({ type: zone });
+  };
+
+  // Handle drop for both items and line - visual-first approach
   const handleDragEnd = () => {
-    if (draggedItem && dragOverIndex !== null) {
-      onMoveItem(draggedItem, dragOverIndex);
+    if (!dragOverSlot) {
+      setDraggedItem(null);
+      setDragOverSlot(null);
+      setIsDraggingLine(false);
+      return;
     }
+
+    // Find the visual index of what's being dragged
+    let fromIndex = -1;
+    if (draggedItem) {
+      fromIndex = visualElements.findIndex(
+        el => el.kind === 'item' && el.item.id === draggedItem
+      );
+    } else if (isDraggingLine) {
+      fromIndex = visualElements.findIndex(el => el.kind === 'line');
+    }
+
+    if (fromIndex === -1) {
+      setDraggedItem(null);
+      setDragOverSlot(null);
+      setIsDraggingLine(false);
+      return;
+    }
+
+    // Calculate target visual index
+    let toIndex: number;
+    if (dragOverSlot.type === 'top-zone') {
+      toIndex = 0;
+    } else if (dragOverSlot.type === 'bottom-zone') {
+      toIndex = visualElements.length;
+    } else {
+      toIndex = dragOverSlot.visualIndex;
+    }
+
+    // Perform the visual reorder if positions differ
+    if (fromIndex !== toIndex) {
+      performVisualReorder(fromIndex, toIndex);
+    }
+
     setDraggedItem(null);
-    setDragOverIndex(null);
+    setDragOverSlot(null);
     setIsDraggingLine(false);
   };
 
@@ -121,76 +239,134 @@ export default function QueueView({
     e.dataTransfer.setData("text/plain", "today-line");
   };
 
-  const handleLineDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (isDraggingLine && dragOverIndex !== null) {
-      onMoveTodayLine(dragOverIndex);
-    }
-    setIsDraggingLine(false);
-    setDragOverIndex(null);
-  };
+  // Calculate which virtual slot a touch position corresponds to
+  const calculateTouchOverSlot = useCallback((touchY: number): VirtualSlot => {
+    // Iterate through visual elements and find where touch falls
+    for (let i = 0; i < visualElements.length; i++) {
+      const el = visualElements[i];
+      const ref = el.kind === 'line'
+        ? lineRef.current
+        : itemRefs.current.get(el.item.id);
 
-  // Touch handlers for mobile drag
-  const calculateTouchOverIndex = useCallback((touchY: number): number => {
-    // Only include actual items, not the today line
-    // The onMoveItem handler in page.tsx handles crossing the today line correctly
-    const positions: { index: number; top: number; bottom: number }[] = [];
+      if (!ref) continue;
 
-    activeItems.forEach((item, index) => {
-      const el = itemRefs.current.get(item.id);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        positions.push({ index, top: rect.top, bottom: rect.bottom });
-      }
-    });
+      const rect = ref.getBoundingClientRect();
+      const midpoint = (rect.top + rect.bottom) / 2;
 
-    // Sort by visual position
-    positions.sort((a, b) => a.top - b.top);
-
-    // Find which index the touch is over
-    for (let i = 0; i < positions.length; i++) {
-      const midpoint = (positions[i].top + positions[i].bottom) / 2;
+      // If touch is above midpoint, drop at this slot
       if (touchY < midpoint) {
-        return positions[i].index;
+        return { type: 'slot', visualIndex: i };
       }
     }
 
-    // If below all items, return last index
-    return activeItems.length;
-  }, [activeItems]);
+    // If below all elements, return bottom zone
+    return { type: 'bottom-zone' };
+  }, [visualElements]);
 
   const handleTouchStart = (e: React.TouchEvent, itemId: string) => {
     const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
     touchStartY.current = touch.clientY;
-    setDraggedItem(itemId);
-    setIsTouchDragging(true);
+    pendingDragItem.current = itemId;
+    pendingDragLine.current = false;
+
+    // Clear any existing timer
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+    }
+
+    // Start hold timer - only activate drag after hold duration
+    holdTimerRef.current = setTimeout(() => {
+      setDraggedItem(itemId);
+      setIsTouchDragging(true);
+      holdTimerRef.current = null;
+    }, HOLD_DURATION);
   };
 
   const handleLineTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
     touchStartY.current = touch.clientY;
-    setIsDraggingLine(true);
-    setIsTouchDragging(true);
+    pendingDragItem.current = null;
+    pendingDragLine.current = true;
+
+    // Clear any existing timer
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+    }
+
+    // Start hold timer - only activate drag after hold duration
+    holdTimerRef.current = setTimeout(() => {
+      setIsDraggingLine(true);
+      setIsTouchDragging(true);
+      holdTimerRef.current = null;
+    }, HOLD_DURATION);
   };
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isTouchDragging) return;
-    e.preventDefault(); // Prevent scrolling while dragging
-
     const touch = e.touches[0];
-    const overIndex = calculateTouchOverIndex(touch.clientY);
-    setDragOverIndex(overIndex);
-  }, [isTouchDragging, calculateTouchOverIndex]);
+
+    // If still in hold phase, check if user moved too much (scrolling)
+    if (holdTimerRef.current) {
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+      if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+        // User is scrolling, cancel the hold
+        clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
+        pendingDragItem.current = null;
+        pendingDragLine.current = false;
+        return; // Allow normal scrolling
+      }
+    }
+
+    if (!isTouchDragging) return;
+    e.preventDefault(); // Only prevent scroll when actually dragging
+
+    const overSlot = calculateTouchOverSlot(touch.clientY);
+    setDragOverSlot(overSlot);
+  }, [isTouchDragging, calculateTouchOverSlot]);
 
   const handleTouchEnd = () => {
-    if (draggedItem && dragOverIndex !== null) {
-      onMoveItem(draggedItem, dragOverIndex);
-    } else if (isDraggingLine && dragOverIndex !== null) {
-      onMoveTodayLine(dragOverIndex);
+    // Clear hold timer if still pending
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    pendingDragItem.current = null;
+    pendingDragLine.current = false;
+
+    if (dragOverSlot) {
+      // Find the visual index of what's being dragged
+      let fromIndex = -1;
+      if (draggedItem) {
+        fromIndex = visualElements.findIndex(
+          el => el.kind === 'item' && el.item.id === draggedItem
+        );
+      } else if (isDraggingLine) {
+        fromIndex = visualElements.findIndex(el => el.kind === 'line');
+      }
+
+      if (fromIndex !== -1) {
+        // Calculate target visual index
+        let toIndex: number;
+        if (dragOverSlot.type === 'top-zone') {
+          toIndex = 0;
+        } else if (dragOverSlot.type === 'bottom-zone') {
+          toIndex = visualElements.length;
+        } else {
+          toIndex = dragOverSlot.visualIndex;
+        }
+
+        // Perform the visual reorder if positions differ
+        if (fromIndex !== toIndex) {
+          performVisualReorder(fromIndex, toIndex);
+        }
+      }
     }
 
     setDraggedItem(null);
-    setDragOverIndex(null);
+    setDragOverSlot(null);
     setIsDraggingLine(false);
     setIsTouchDragging(false);
   };
@@ -227,10 +403,13 @@ export default function QueueView({
             </span>
           )}
         </div>
-        {completedToday.length > 0 && (
-          <span className="text-sm text-green-600 dark:text-green-400">
-            {completedToday.length} done today
-          </span>
+        {totalItems > 0 && (
+          <button
+            onClick={() => setCompletedDrawerOpen(true)}
+            className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+          >
+            {completionCount > 0 ? `${completionCount} completed` : "Completed"}
+          </button>
         )}
       </div>
 
@@ -261,165 +440,150 @@ export default function QueueView({
                 ? "Triage your inbox items first, or capture a new task above"
                 : "Capture a new task above to begin"}
             </p>
-            {inboxCount > 0 && (
+            <div className="flex gap-3">
+              {inboxCount > 0 && (
+                <button
+                  onClick={onGoToInbox}
+                  className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                >
+                  Go to Inbox ({inboxCount})
+                </button>
+              )}
               <button
-                onClick={onGoToInbox}
-                className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                onClick={() => setCompletedDrawerOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
               >
-                Go to Inbox ({inboxCount})
+                Show completed
               </button>
-            )}
+            </div>
           </div>
         ) : (
           <div className="space-y-2" onDragEnd={handleDragEnd}>
-            {/* Items above the line (for today) */}
-            {todayItems.map((item, index) => {
-              const task = tasks.find((t) => t.id === item.taskId);
-              if (!task) return null;
-
-              // When dragging line: items at/after dragOverIndex slide down to preview
-              const shouldSlideDownLine = isDraggingLine && dragOverIndex !== null && index >= dragOverIndex;
-
-              // When dragging an item: items at/after dragOverIndex slide down
-              const isBeingDragged = draggedItem === item.id;
-              const shouldSlideDownItem = draggedItem && !isDraggingLine && dragOverIndex !== null && index >= dragOverIndex && !isBeingDragged;
-
-              return (
-                <div
-                  key={item.id}
-                  ref={setItemRef(item.id)}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, item.id)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onTouchStart={(e) => handleTouchStart(e, item.id)}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                  className={`transition-transform duration-150 ease-out touch-none ${
-                    isBeingDragged ? "opacity-50" : ""
-                  } ${shouldSlideDownLine || shouldSlideDownItem ? "translate-y-14" : ""}`}
-                >
-                  <QueueItem
-                    item={item}
-                    task={task}
-                    projects={projects}
-                    isFirst={index === 0}
-                    isLast={index === activeItems.length - 1}
-                    onOpenTask={onOpenTask}
-                    onStartFocus={onStartFocus}
-                    onRemoveFromQueue={onRemoveFromQueue}
-                    onMoveUp={onMoveItemUp}
-                    onMoveDown={onMoveItemDown}
-                  />
-                </div>
-              );
-            })}
-
-            {/* The Today Line (draggable divider with tap arrows) */}
-            <div ref={lineRef} className="group relative my-6">
-              {/* Up arrow - tap to move line up */}
-              <button
-                onClick={() => onMoveTodayLine(queue.todayLineIndex - 1)}
-                disabled={queue.todayLineIndex === 0}
-                className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Move line up"
-              >
-                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              </button>
-
-              {/* Draggable line */}
+            {/* Top drop zone - for dragging to very top */}
+            {(draggedItem || isDraggingLine) && (
               <div
-                draggable
-                onDragStart={handleLineDragStart}
-                onDragEnd={handleLineDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOverIndex(queue.todayLineIndex);
-                }}
-                onTouchStart={handleLineTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                className={`
-                  relative py-2 cursor-grab active:cursor-grabbing touch-none
-                  ${isDraggingLine ? "opacity-50" : ""}
-                  ${dragOverIndex === queue.todayLineIndex && !isDraggingLine && draggedItem
-                    ? "border-t-2 border-violet-500"
-                    : ""
-                  }
-                `}
-              >
-                {/* Line with drag handle */}
-                <div className="flex items-center gap-3">
-                  {/* Drag handle */}
-                  <div className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="9" cy="7" r="1.5" />
-                      <circle cx="15" cy="7" r="1.5" />
-                      <circle cx="9" cy="12" r="1.5" />
-                      <circle cx="15" cy="12" r="1.5" />
-                      <circle cx="9" cy="17" r="1.5" />
-                      <circle cx="15" cy="17" r="1.5" />
-                    </svg>
-                  </div>
-                  {/* Full-width line */}
-                  <div className="flex-1 h-px bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 dark:from-amber-600 dark:via-amber-500 dark:to-amber-600" />
-                </div>
-                {/* Label - absolutely centered over the line with opaque background */}
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-white dark:bg-zinc-900 border border-amber-300 dark:border-amber-700 rounded">
-                  Today
-                </span>
+                onDragOver={(e) => handleDragOverZone(e, 'top-zone')}
+                className="h-4 -mt-2 -mb-2"
+              />
+            )}
+
+            {/* Placeholder at very top */}
+            {(draggedItem || isDraggingLine) && dragOverSlot?.type === 'top-zone' && (
+              <div className="mb-2">
+                <DropPlaceholder variant={isDraggingLine ? 'line' : 'item'} />
               </div>
+            )}
 
-              {/* Down arrow - tap to move line down */}
-              <button
-                onClick={() => onMoveTodayLine(queue.todayLineIndex + 1)}
-                disabled={queue.todayLineIndex > activeItems.length}
-                className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Move line down"
-              >
-                <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
+            {/* Unified loop through all visual elements */}
+            {visualElements.map((el, visualIndex) => {
+              const isDropTarget = dragOverSlot?.type === 'slot' &&
+                                   dragOverSlot.visualIndex === visualIndex;
 
-            {/* Items below the line (not committed for today) */}
-            {laterItems.length > 0 && (
-              <div className="pt-1 space-y-2">
-                {laterItems.map((item, idx) => {
-                  const task = tasks.find((t) => t.id === item.taskId);
-                  if (!task) return null;
+              if (el.kind === 'line') {
+                // Render the Today Line
+                const showPlaceholder = isDropTarget && !isDraggingLine;
 
-                  const actualIndex = queue.todayLineIndex + idx;
+                return (
+                  <React.Fragment key="today-line">
+                    {showPlaceholder && (
+                      <div className="mb-2"><DropPlaceholder /></div>
+                    )}
+                    <div ref={lineRef} className="group relative my-6">
+                      {/* Up arrow - tap to move line up */}
+                      <button
+                        onClick={handleMoveLineUp}
+                        disabled={visualIndex === 0}
+                        className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move line up"
+                      >
+                        <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
 
-                  // When dragging line down: items that will become "today" slide up to preview
-                  const shouldSlideUpLine = isDraggingLine && dragOverIndex !== null && actualIndex < dragOverIndex;
+                      {/* Draggable line */}
+                      <div
+                        draggable
+                        onDragStart={handleLineDragStart}
+                        onDragOver={(e) => handleDragOver(e, visualIndex)}
+                        onTouchStart={handleLineTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        className={`
+                          relative py-2 cursor-grab active:cursor-grabbing select-none touch-none
+                          ${isDraggingLine ? "opacity-50" : ""}
+                        `}
+                      >
+                        {/* Line with drag handle */}
+                        <div className="flex items-center gap-3">
+                          {/* Drag handle */}
+                          <div className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="9" cy="7" r="1.5" />
+                              <circle cx="15" cy="7" r="1.5" />
+                              <circle cx="9" cy="12" r="1.5" />
+                              <circle cx="15" cy="12" r="1.5" />
+                              <circle cx="9" cy="17" r="1.5" />
+                              <circle cx="15" cy="17" r="1.5" />
+                            </svg>
+                          </div>
+                          {/* Full-width line */}
+                          <div className="flex-1 h-px bg-gradient-to-r from-violet-400 via-violet-500 to-violet-400 dark:from-violet-600 dark:via-violet-500 dark:to-violet-600" />
+                        </div>
+                        {/* Label - absolutely centered over the line with opaque background */}
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400 bg-white dark:bg-zinc-900 border border-violet-300 dark:border-violet-700 rounded select-none">
+                          Today
+                        </span>
+                      </div>
 
-                  // When dragging an item: items at/after dragOverIndex slide down
-                  const isBeingDragged = draggedItem === item.id;
-                  const shouldSlideDownItem = draggedItem && !isDraggingLine && dragOverIndex !== null && actualIndex >= dragOverIndex && !isBeingDragged;
+                      {/* Down arrow - tap to move line down */}
+                      <button
+                        onClick={handleMoveLineDown}
+                        disabled={visualIndex >= visualElements.length - 1}
+                        className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        aria-label="Move line down"
+                      >
+                        <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </React.Fragment>
+                );
+              } else {
+                // Render item
+                const task = tasks.find((t) => t.id === el.item.taskId);
+                if (!task) return null;
 
-                  return (
+                const isBeingDragged = draggedItem === el.item.id;
+                const showPlaceholder = isDropTarget && !isBeingDragged;
+
+                return (
+                  <React.Fragment key={el.item.id}>
+                    {showPlaceholder && (
+                      <div className="mb-2">
+                        <DropPlaceholder variant={isDraggingLine ? 'line' : 'item'} />
+                      </div>
+                    )}
                     <div
-                      key={item.id}
-                      ref={setItemRef(item.id)}
+                      ref={setItemRef(el.item.id)}
                       draggable
-                      onDragStart={(e) => handleDragStart(e, item.id)}
-                      onDragOver={(e) => handleDragOver(e, actualIndex)}
-                      onTouchStart={(e) => handleTouchStart(e, item.id)}
+                      onDragStart={(e) => handleDragStart(e, el.item.id)}
+                      onDragOver={(e) => handleDragOver(e, visualIndex)}
+                      onTouchStart={(e) => handleTouchStart(e, el.item.id)}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
-                      className={`transition-transform duration-150 ease-out touch-none ${
-                        isBeingDragged ? "opacity-50" : ""
-                      } ${shouldSlideUpLine ? "-translate-y-14" : ""} ${shouldSlideDownItem ? "translate-y-14" : ""}`}
+                      className={`select-none ${
+                        isTouchDragging ? "touch-none" : "touch-auto"
+                      } ${isBeingDragged ? "opacity-50" : ""}`}
                     >
                       <QueueItem
-                        item={item}
+                        item={el.item}
                         task={task}
                         projects={projects}
-                        isFirst={actualIndex === 0}
-                        isLast={actualIndex === activeItems.length - 1}
+                        isFirst={el.originalIndex === 0}
+                        isLast={el.originalIndex === activeItems.length - 1}
+                        isToday={el.originalIndex < queue.todayLineIndex}
                         onOpenTask={onOpenTask}
                         onStartFocus={onStartFocus}
                         onRemoveFromQueue={onRemoveFromQueue}
@@ -427,27 +591,34 @@ export default function QueueView({
                         onMoveDown={onMoveItemDown}
                       />
                     </div>
-                  );
-                })}
-                {/* Drop zone spacer below last item for dragging line to bottom */}
-                <div
-                  onDragOver={(e) => handleDragOver(e, activeItems.length)}
-                  className="h-8"
-                />
+                  </React.Fragment>
+                );
+              }
+            })}
+
+            {/* Placeholder at bottom */}
+            {(draggedItem || isDraggingLine) && dragOverSlot?.type === 'bottom-zone' && (
+              <div className="mt-2">
+                <DropPlaceholder variant={isDraggingLine ? 'line' : 'item'} />
               </div>
             )}
 
-            {/* Drop zone when no items below the line */}
-            {laterItems.length === 0 && todayItems.length > 0 && (
-              <div
-                onDragOver={(e) => handleDragOver(e, activeItems.length)}
-                className="h-8"
-              />
-            )}
+            {/* Drop zone spacer at bottom */}
+            <div
+              onDragOver={(e) => handleDragOverZone(e, 'bottom-zone')}
+              className="h-8"
+            />
           </div>
         )}
       </div>
 
+      {/* Completed Drawer */}
+      <CompletedDrawer
+        isOpen={completedDrawerOpen}
+        onClose={() => setCompletedDrawerOpen(false)}
+        tasks={tasks}
+        onNavigateToTask={onOpenTask}
+      />
     </div>
   );
 }

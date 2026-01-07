@@ -28,13 +28,13 @@ export default function TabCluster({
     (currentView === "taskDetail" && (previousView === "tasks" || previousView === "inbox"));
 
   return (
-    <div className="inline-flex items-center bg-zinc-100 dark:bg-zinc-700 rounded-lg p-px gap-px">
+    <div className="inline-flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-px gap-px">
       {/* Focus Tab */}
       <button
         onClick={() => onViewChange("focus")}
         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
           isFocusActive
-            ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 shadow-sm"
+            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
             : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
         }`}
       >
@@ -46,7 +46,7 @@ export default function TabCluster({
         onClick={() => onViewChange("tasks")}
         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
           isTasksActive
-            ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 shadow-sm"
+            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
             : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
         }`}
       >

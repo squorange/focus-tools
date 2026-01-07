@@ -34,10 +34,10 @@ export default function TaskRow({
     <div
       className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
         ${isCompleted
-          ? "bg-neutral-50 dark:bg-neutral-800/50"
-          : "bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700/50"
+          ? "bg-zinc-100/50 dark:bg-zinc-900/50"
+          : "bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-600"
         }
-        border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700
+        border border-zinc-200 dark:border-zinc-700
       `}
       onClick={onClick}
     >
@@ -55,8 +55,8 @@ export default function TaskRow({
           <span
             className={`text-sm truncate ${
               isCompleted
-                ? "text-neutral-500 dark:text-neutral-400 line-through"
-                : "text-neutral-800 dark:text-neutral-100"
+                ? "text-zinc-500 dark:text-zinc-400 line-through"
+                : "text-zinc-900 dark:text-zinc-100"
             }`}
           >
             {task.title}

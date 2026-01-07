@@ -28,9 +28,9 @@ export default function Header({
   onSearchFocus,
 }: HeaderProps) {
   return (
-    <header className="flex-shrink-0 h-14 bg-white dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 px-4 lg:px-6">
+    <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-[#0c0c0c] border-b border-zinc-200 dark:border-transparent px-4 lg:px-6">
       {/* Fixed-width left/right containers ensure center stays centered even when right icons disappear */}
-      <div className="h-full flex items-center gap-4">
+      <div className="h-14 flex items-center gap-4">
         {/* Left: Tab Cluster (fixed min-width for symmetry) */}
         <div className="w-auto lg:w-44 flex-shrink-0">
           <TabCluster

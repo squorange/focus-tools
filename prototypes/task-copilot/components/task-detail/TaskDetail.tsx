@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, createStep } from "@/lib/types";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo } from "@/lib/utils";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
+import MetadataPill from "@/components/shared/MetadataPill";
 
 interface TaskDetailProps {
   task: Task;
@@ -55,15 +56,6 @@ function getQueueItem(task: Task, queue: FocusQueue) {
   return queue.items.find((i) => i.taskId === task.id && !i.completed);
 }
 
-// Format date for display
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export default function TaskDetail({
   task,
@@ -112,6 +104,34 @@ export default function TaskDetail({
   const [titleInput, setTitleInput] = useState(task.title);
   const [newStepText, setNewStepText] = useState("");
   const [showDeferMenu, setShowDeferMenu] = useState(false);
+  const [completedStepsExpanded, setCompletedStepsExpanded] = useState(false);
+  // Auto-expand details for inbox tasks (triage mode), collapse for ready/queued tasks
+  const [detailsExpanded, setDetailsExpanded] = useState(task.status === 'inbox');
+
+  // Swipe-back gesture handling
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const EDGE_THRESHOLD = 20; // px from left edge
+  const SWIPE_MIN_DISTANCE = 50; // minimum horizontal swipe distance
+  const SWIPE_RATIO = 2; // horizontal must be 2x vertical movement
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    if (touch.clientX <= EDGE_THRESHOLD) {
+      swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!swipeStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - swipeStartRef.current.x;
+    const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
+
+    if (deltaX > SWIPE_MIN_DISTANCE && deltaX > deltaY * SWIPE_RATIO) {
+      onBack();
+    }
+    swipeStartRef.current = null;
+  };
 
   // Calculate defer dates
   const getDeferDate = (days: number) => {
@@ -128,6 +148,42 @@ export default function TaskDetail({
   const isTaskComplete = task.status === 'complete';
   const canMarkComplete = !isTaskComplete;
   const canMarkIncomplete = isTaskComplete;
+
+  // Split steps into completed and incomplete for collapsible view
+  const completedSteps = task.steps.filter((s) => s.completed);
+  const incompleteSteps = task.steps.filter((s) => !s.completed);
+  const hasCompletedSteps = completedSteps.length > 0;
+  const hasIncompleteSteps = incompleteSteps.length > 0;
+  const allStepsComplete = task.steps.length > 0 && incompleteSteps.length === 0;
+
+  // Build details summary for collapsed view
+  const getDetailsSummary = () => {
+    const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'due' | 'overdue' | 'project'; color?: string }[] = [];
+    // Use utility function to get proper display status (Today/Focus instead of Ready for queued items)
+    const displayStatus = getDisplayStatus(task, queueItem, queue.todayLineIndex);
+    const statusInfo = getStatusInfo(displayStatus);
+    pills.push({ label: statusInfo.label, variant: 'project', color: statusInfo.color });
+    if (task.priority === 'high') {
+      pills.push({ label: 'High', variant: 'priority-high' });
+    } else if (task.priority === 'medium') {
+      pills.push({ label: 'Medium', variant: 'priority-medium' });
+    }
+    if (task.deadlineDate) {
+      const overdue = isDateOverdue(task.deadlineDate);
+      pills.push({ label: `Due ${formatDate(task.deadlineDate)}`, variant: overdue ? 'overdue' : 'due' });
+    } else if (task.targetDate) {
+      pills.push({ label: `Target ${formatDate(task.targetDate)}`, variant: 'default' });
+    }
+    const project = projects.find(p => p.id === task.projectId);
+    if (project) {
+      pills.push({ label: project.name, variant: 'project', color: project.color || undefined });
+    }
+    if (task.waitingOn?.who) {
+      pills.push({ label: `Waiting: ${task.waitingOn.who}`, variant: 'priority-medium' });
+    }
+    return pills;
+  };
+  const detailsSummary = getDetailsSummary();
 
   const handleMarkTaskComplete = () => {
     const now = Date.now();
@@ -185,7 +241,11 @@ export default function TaskDetail({
   };
 
   return (
-    <div className="flex flex-col">
+    <div
+      className="flex flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Header */}
       <div className="mb-6">
         {/* Row 1: Back + Title + Status + Desktop buttons */}
@@ -398,28 +458,77 @@ export default function TaskDetail({
             </div>
           ) : (
             <div className="space-y-2">
-              {task.steps.map((step, index) => (
-                <StepItem
-                  key={step.id}
-                  step={step}
-                  index={index}
-                  totalSteps={task.steps.length}
-                  taskId={task.id}
-                  onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                  onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
-                  onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
-                  onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                  onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
-                  onDelete={() => onDeleteStep(task.id, step.id)}
-                  onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                  onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                  onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
-                  onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
-                  onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                  onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                  onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
-                />
-              ))}
+              {/* Collapsible completed steps section */}
+              {hasCompletedSteps && hasIncompleteSteps && (
+                <button
+                  onClick={() => setCompletedStepsExpanded(!completedStepsExpanded)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                >
+                  <span className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {completedSteps.length} completed step{completedSteps.length !== 1 ? 's' : ''}
+                  </span>
+                  <svg className={`w-4 h-4 text-green-600 dark:text-green-400 transition-transform ${completedStepsExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Show completed steps when expanded OR when all steps are complete */}
+              {(completedStepsExpanded || allStepsComplete) && completedSteps.map((step) => {
+                const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                return (
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    index={originalIndex}
+                    totalSteps={task.steps.length}
+                    taskId={task.id}
+                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                    onDelete={() => onDeleteStep(task.id, step.id)}
+                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
+                  />
+                );
+              })}
+
+              {/* Incomplete steps - always visible */}
+              {incompleteSteps.map((step) => {
+                const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                return (
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    index={originalIndex}
+                    totalSteps={task.steps.length}
+                    taskId={task.id}
+                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                    onDelete={() => onDeleteStep(task.id, step.id)}
+                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
+                  />
+                );
+              })}
             </div>
           )}
 
@@ -443,153 +552,188 @@ export default function TaskDetail({
           </form>
         </div>
 
-        {/* Metadata section - 2 column grid */}
+        {/* Metadata section - Collapsible */}
         <div className="pb-4">
-          <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-3">
-            Details
-          </h2>
+          {/* Collapsible Header */}
+          <button
+            onClick={() => setDetailsExpanded(!detailsExpanded)}
+            className="w-full flex items-center justify-between mb-3 group"
+          >
+            <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
+              Details
+            </h2>
+            <svg
+              className={`w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-transform ${detailsExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
-            {/* Status */}
-            <div>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
-              <span
-                className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                  task.status === 'inbox'
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                    : task.status === 'pool'
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                    : task.status === 'complete'
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
-                }`}
-              >
-                {task.status === 'inbox' ? 'Inbox' : task.status === 'pool' ? 'Ready' : task.status === 'complete' ? 'Done' : 'Archived'}
-              </span>
+          {/* Collapsed Summary */}
+          {!detailsExpanded && (
+            <div
+              onClick={() => setDetailsExpanded(true)}
+              className="flex flex-wrap gap-1.5 items-center cursor-pointer px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+            >
+              {detailsSummary.length > 0 ? (
+                detailsSummary.map((pill, idx) => (
+                  <MetadataPill key={idx} variant={pill.variant} color={pill.color}>
+                    {pill.label}
+                  </MetadataPill>
+                ))
+              ) : (
+                <span className="text-sm text-zinc-400 dark:text-zinc-500">No details set</span>
+              )}
             </div>
+          )}
 
-            {/* Priority */}
-            <div>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
-              <div className="flex gap-1.5">
-                {(["high", "medium", "low"] as const).map((priority) => (
-                  <button
-                    key={priority}
-                    onClick={() => onUpdateTask(task.id, { priority })}
-                    className={`
-                      px-2 py-0.5 text-xs rounded-full capitalize transition-colors
-                      ${
-                        task.priority === priority
-                          ? priority === "high"
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            : priority === "medium"
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                          : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
-                      }
-                    `}
-                  >
-                    {priority}
-                  </button>
-                ))}
+          {/* Expanded Details */}
+          {detailsExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+              {/* Status */}
+              <div>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
+                <div className="h-8 flex items-center">
+                  {(() => {
+                    const displayStatus = getDisplayStatus(task, queueItem, queue.todayLineIndex);
+                    const statusInfo = getStatusInfo(displayStatus);
+                    return (
+                      <span
+                        className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusInfo.bgClass} ${statusInfo.textClass}`}
+                      >
+                        {statusInfo.label}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
 
-            {/* Project - full width */}
-            <div className="col-span-2">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</span>
-              <div className="flex items-center gap-2">
-                <select
-                  value={task.projectId || ""}
-                  onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
-                  className="flex-1 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                >
-                  <option value="">No project</option>
-                  {projects.filter(p => p.status === 'active').map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
+              {/* Priority */}
+              <div>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
+                <div className="h-8 flex items-center gap-1.5">
+                  {(["high", "medium", "low"] as const).map((priority) => (
+                    <button
+                      key={priority}
+                      onClick={() => onUpdateTask(task.id, { priority })}
+                      className={`
+                        px-2 py-0.5 text-xs rounded-full capitalize transition-colors
+                        ${
+                          task.priority === priority
+                            ? priority === "high"
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                              : priority === "medium"
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                        }
+                      `}
+                    >
+                      {priority}
+                    </button>
                   ))}
-                </select>
-                <button
-                  onClick={() => onOpenProjectModal()}
-                  className="p-1.5 text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
-                  title="Create project"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
+                </div>
               </div>
-            </div>
 
-            {/* Date Fields - Side by side */}
-            <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
-              {/* Target Date */}
-              <div className="min-w-0 relative">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
-                <input
-                  type="date"
-                  value={task.targetDate || ""}
-                  onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
-                  className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-                {task.targetDate && (
+              {/* Project - full width */}
+              <div className="col-span-2">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={task.projectId || ""}
+                    onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
+                    className="flex-1 h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    <option value="">No project</option>
+                    {projects.filter(p => p.status === 'active').map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
                   <button
-                    type="button"
-                    onClick={() => onUpdateTask(task.id, { targetDate: null })}
-                    className="absolute right-2 bottom-1.5 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                    title="Clear date"
+                    onClick={() => onOpenProjectModal()}
+                    className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                    title="Create project"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
-                )}
+                </div>
               </div>
 
-              {/* Deadline */}
-              <div className="min-w-0 relative">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+              {/* Date Fields - Side by side */}
+              <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
+                {/* Target Date */}
+                <div className="min-w-0 relative">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
+                  <input
+                    type="date"
+                    value={task.targetDate || ""}
+                    onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
+                    className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  {task.targetDate && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateTask(task.id, { targetDate: null })}
+                      className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      title="Clear date"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Deadline */}
+                <div className="min-w-0 relative">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+                  <input
+                    type="date"
+                    value={task.deadlineDate || ""}
+                    onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
+                    className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                  {task.deadlineDate && (
+                    <button
+                      type="button"
+                      onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
+                      className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      title="Clear date"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Waiting On - full width */}
+              <div className="col-span-2">
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
                 <input
-                  type="date"
-                  value={task.deadlineDate || ""}
-                  onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
-                  className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  type="text"
+                  value={task.waitingOn?.who || ""}
+                  onChange={(e) =>
+                    onUpdateTask(task.id, {
+                      waitingOn: e.target.value
+                        ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
+                        : null,
+                    })
+                  }
+                  placeholder="Nobody"
+                  className="w-full h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
-                {task.deadlineDate && (
-                  <button
-                    type="button"
-                    onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
-                    className="absolute right-2 bottom-1.5 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                    title="Clear date"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
               </div>
             </div>
-
-            {/* Waiting On - full width */}
-            <div className="col-span-2">
-              <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
-              <input
-                type="text"
-                value={task.waitingOn?.who || ""}
-                onChange={(e) =>
-                  onUpdateTask(task.id, {
-                    waitingOn: e.target.value
-                      ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
-                      : null,
-                  })
-                }
-                placeholder="Nobody"
-                className="w-full px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Notes section */}

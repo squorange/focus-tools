@@ -376,11 +376,11 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
   );
 
   return (
-    <div className="group bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
+    <div className="group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
       {/* Desktop layout */}
       <div className="hidden sm:flex sm:items-start sm:justify-between sm:gap-3">
         <button onClick={onOpen} className="flex-1 text-left min-w-0">
-          <span className="text-zinc-900 dark:text-zinc-100 font-medium truncate block">
+          <span className="text-zinc-900 dark:text-zinc-100 truncate block">
             {task.title}
           </span>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -395,7 +395,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
               onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
               className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900"
             >
-              Add to Focus
+              → Focus
             </button>
           )}
           {(onDelete || onDefer || onPark) && (
@@ -412,11 +412,6 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
               {showMenu && <MenuDropdown />}
             </div>
           )}
-          <button onClick={onOpen} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
-            <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -425,7 +420,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
         {/* Row 1: Title + Actions */}
         <div className="flex items-start gap-2">
           <button onClick={onOpen} className="flex-1 min-w-0 text-left">
-            <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+            <span className="text-zinc-900 dark:text-zinc-100">
               {task.title}
             </span>
           </button>
@@ -437,7 +432,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
                 onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
                 className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
               >
-                Add
+                → Focus
               </button>
             )}
             {(onDelete || onDefer || onPark) && (
@@ -453,11 +448,6 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
                 {showMenu && <MenuDropdown />}
               </div>
             )}
-            <button onClick={onOpen} className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
-              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
         </div>
         {/* Row 2: Metadata pills */}

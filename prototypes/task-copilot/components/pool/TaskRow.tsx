@@ -51,6 +51,8 @@ export default function TaskRow({
   const isInQueue = !!queueItem;
   const isWaiting = !!task.waitingOn;
   const isDeadlineOverdue = task.deadlineDate && task.deadlineDate < new Date().toISOString().split('T')[0];
+  const isComplete = task.status === 'complete' ||
+    (progress.total > 0 && progress.completed === progress.total);
 
   // Calculate defer dates
   const getDeferDate = (days: number) => {
@@ -112,12 +114,14 @@ export default function TaskRow({
     <div
       className={`
         group px-3 sm:px-4 py-3
-        bg-white dark:bg-zinc-800
+        bg-zinc-50 dark:bg-zinc-800/80
         border rounded-lg
-        hover:border-violet-300 dark:hover:border-violet-700
+        hover:border-zinc-300 dark:hover:border-zinc-600
         transition-colors cursor-pointer
         ${
-          isInQueue
+          isComplete
+            ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
+            : isInQueue
             ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10"
             : "border-zinc-200 dark:border-zinc-700"
         }
@@ -141,7 +145,11 @@ export default function TaskRow({
         )}
 
         {/* Title */}
-        <span className="flex-1 text-zinc-900 dark:text-zinc-100 truncate">
+        <span className={`flex-1 truncate ${
+          isComplete
+            ? "text-zinc-500 dark:text-zinc-400 line-through"
+            : "text-zinc-900 dark:text-zinc-100"
+        }`}>
           {task.title || "Untitled"}
         </span>
 
@@ -171,12 +179,16 @@ export default function TaskRow({
           <span className="flex-shrink-0 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
             In Focus
           </span>
+        ) : isComplete ? (
+          <span className="flex-shrink-0 text-xs text-green-600 dark:text-green-400">
+            Done
+          </span>
         ) : (
           <button
             onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
             className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-none rounded px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
           >
-            Add to Focus
+            → Focus
           </button>
         )}
 
@@ -195,18 +207,17 @@ export default function TaskRow({
             {showMenu && <MenuDropdown />}
           </div>
         )}
-
-        {/* Chevron */}
-        <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
       </div>
 
       {/* Mobile layout */}
       <div className="sm:hidden">
         {/* Row 1: Title + Actions */}
         <div className="flex items-start gap-2">
-          <span className="flex-1 min-w-0 text-zinc-900 dark:text-zinc-100">
+          <span className={`flex-1 min-w-0 ${
+            isComplete
+              ? "text-zinc-500 dark:text-zinc-400 line-through"
+              : "text-zinc-900 dark:text-zinc-100"
+          }`}>
             {task.title || "Untitled"}
           </span>
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -214,12 +225,16 @@ export default function TaskRow({
               <span className="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
                 In Focus
               </span>
+            ) : isComplete ? (
+              <span className="text-xs text-green-600 dark:text-green-400">
+                Done
+              </span>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
                 className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded px-2 py-1"
               >
-                Add
+                → Focus
               </button>
             )}
             {(onDelete || onDefer || onPark) && (
@@ -235,9 +250,6 @@ export default function TaskRow({
                 {showMenu && <MenuDropdown />}
               </div>
             )}
-            <svg className="w-4 h-4 text-zinc-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
           </div>
         </div>
 

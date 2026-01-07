@@ -202,11 +202,11 @@ export default function SearchView({
                 <button
                   key={task.id}
                   onClick={() => onOpenTask(task.id)}
-                  className="w-full text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <StatusBadge status={task.status} />
-                    <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+                    <span className="text-zinc-900 dark:text-zinc-100">
                       {task.title}
                     </span>
                   </div>
@@ -243,11 +243,11 @@ export default function SearchView({
                 <button
                   key={task.id}
                   onClick={() => onOpenTask(task.id)}
-                  className="w-full text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <StatusBadge status={task.status} />
-                    <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+                    <span className="text-zinc-900 dark:text-zinc-100">
                       {task.title}
                     </span>
                   </div>

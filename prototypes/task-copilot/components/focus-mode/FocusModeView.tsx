@@ -150,6 +150,16 @@ export default function FocusModeView({
   const hasNoSteps = stepsInScope.length === 0;
   const isTaskComplete = task.status === 'complete';
 
+  // Auto-dismiss celebration after 2 seconds
+  useEffect(() => {
+    if (isComplete) {
+      const timer = setTimeout(() => {
+        onExit();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isComplete, onExit]);
+
   const handleMarkDone = () => {
     if (currentStep) {
       onStepComplete(task.id, currentStep.id, true);

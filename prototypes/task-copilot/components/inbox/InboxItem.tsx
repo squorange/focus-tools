@@ -92,7 +92,7 @@ export default function InboxItem({
   if (!isExpanded) {
     // Collapsed view
     return (
-      <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+      <div className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg">
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Expand toggle */}
           <button
@@ -305,7 +305,7 @@ export default function InboxItem({
             onClick={handleQuickToPool}
             className="px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded transition-colors"
           >
-            Move to Ready
+            → Ready
           </button>
 
           {/* Add to Focus button */}
@@ -313,7 +313,7 @@ export default function InboxItem({
             onClick={() => onAddToQueue(task.id)}
             className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
           >
-            Add to Focus
+            → Focus
           </button>
 
           {/* Defer dropdown */}

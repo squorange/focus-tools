@@ -2,7 +2,7 @@
 
 Quick reference for Claude Code sessions. Full prompts in `MULTI_TASK_PROMPTS.md`.
 
-**Last Updated:** January 2025
+**Last Updated:** January 2026
 
 ---
 
@@ -72,10 +72,10 @@ Mobile: Search icon, AI drawer slides in
 - [x] Header.tsx with tab cluster, search, AI toggle
 - [x] TabCluster.tsx: [Focus │ Tasks] buttons
 - [x] SearchBar.tsx (desktop expanded)
-- [x] AIDrawer.tsx (desktop side panel)
+- [x] AIDrawer.tsx (desktop side panel + mobile bottom sheet)
 - [x] currentView routing fully wired
 - [x] Default view is 'focus'
-- [ ] AIFloatingBar.tsx (mobile) — not implemented
+- [x] Mobile AI floating bar + 50vh bottom sheet (in AIDrawer.tsx)
 
 ---
 
@@ -114,7 +114,7 @@ Mobile: Search icon, AI drawer slides in
 - [x] SearchView.tsx with search input
 - [x] Results list with status badges
 - [x] Navigation to task detail
-- [ ] QuickAccess cards — not implemented
+- [x] QuickAccess cards — 6 cards: High Priority, Waiting, Deferred, Completed, Archived, Projects
 - [ ] Recent searches — not implemented
 
 ---
@@ -180,7 +180,7 @@ Mobile: Search icon, AI drawer slides in
 - [x] manifest.json — app metadata, icons, theme colors
 - [x] Service worker (sw.js) — network-first caching, offline fallback
 - [x] usePWA hook — service worker registration
-- [ ] Keyboard shortcuts — not implemented
+- [x] Keyboard shortcuts — `n`, `f`, `t`, `/`, `Escape`, `a`
 - [ ] Mobile touch targets — needs verification
 
 ---
@@ -256,6 +256,7 @@ Migrated from JSON-in-text parsing to Claude's native function calling (tool_use
 - **previousView tracking** - Back button returns to correct view
 - **View migration** - Old names (queue, pool) auto-convert
 - **Focus mode restoration** - Restored on page reload
+- **Completion navigation override** - When task is completed, `previousView` set to `'focus'` so back always returns to Focus Queue
 
 ### Priority & Date Fields
 - **Priority picker** - High (red) / Medium (amber) / Low (blue)
@@ -298,10 +299,15 @@ Migrated from JSON-in-text parsing to Claude's native function calling (tool_use
 - Auto-collapse when moving to next step
 - Shows message count per step
 
-### Completion Celebration
-- Celebration screen when all steps complete in focus mode
-- Option to exit or mark task complete
-- Visual feedback for accomplishment
+### Task Completion Flow
+Focus mode completion triggers automatic navigation:
+1. All steps complete → Task auto-marked complete
+2. Success celebration screen displays (2 seconds)
+3. Auto-navigates to Task Detail view
+4. Success toast shows: `"{task title}" completed!`
+5. Back button returns to Focus Queue
+
+**Navigation guarantee:** Pressing "back" after completing a task always returns to Focus Queue, regardless of origin view. This provides consistent access to the "Completed" drawer.
 
 ### Health Status & Focus Score
 - **focusScore** (0-100) - Computed urgency considering deadline, priority, staleness, waiting
@@ -330,6 +336,12 @@ Migrated from JSON-in-text parsing to Claude's native function calling (tool_use
   - Delete task → Undo restores task
   - Archive/Park → Undo restores previous status
   - Delete project → Undo restores project and re-assigns tasks
+- Queue/workflow action toasts (all with undo):
+  - Add to Focus Queue → "Added to Focus"
+  - Remove from Queue → "Removed from Focus"
+  - Send to Pool → "Moved to Ready"
+  - Defer task → "Deferred until {date}"
+- Task completion success toast (no undo)
 - `showToast()` and `dismissToast()` handlers
 
 ### Projects Management
@@ -347,6 +359,112 @@ Migrated from JSON-in-text parsing to Claude's native function calling (tool_use
 - Installable on mobile (iOS/Android) and desktop
 - Offline fallback to cached content
 - SVG icons for crisp display at any size
+
+### iOS PWA Dark Mode Theming ✅ NEW
+Unified dark header/status bar for seamless iOS PWA appearance:
+
+**Color System (Dark Mode):**
+| Element | Color | Hex |
+|---------|-------|-----|
+| Body/Status bar background | Near-black | `#0c0c0c` |
+| Header | Near-black | `#0c0c0c` |
+| TabCluster container | Dark gray | `zinc-800` |
+| TabCluster active button | Medium gray | `zinc-700` |
+| SearchBar | Dark gray | `zinc-800` |
+| Header border | Transparent | - |
+
+**iOS Safe Area Handling:**
+- Header uses `pt-[env(safe-area-inset-top)]` to extend behind status bar
+- `viewportFit: "cover"` enables safe area insets
+- Body background matches header for seamless appearance
+
+### Visual-First Drag/Drop (Queue Reorder) ✅ NEW
+Focus Queue uses a visual-first approach for drag/drop reordering:
+
+```typescript
+// lib/queue-reorder.ts
+type VisualElement =
+  | { kind: "item"; item: FocusQueueItem; originalIndex: number }
+  | { kind: "line" };  // Today/Later separator
+
+// Core functions:
+buildVisualElements(items, todayLineIndex) → VisualElement[]
+reorderVisualElements(elements, fromIndex, toIndex) → VisualElement[]
+deriveStateFromVisual(elements) → { items, todayLineIndex }
+```
+
+**Benefits:**
+- Treats visual layout as source of truth
+- No special-case logic for line vs item moves
+- Comprehensive test coverage (`npx tsx lib/queue-reorder.test.ts`)
+
+### Today/Upcoming Visual Distinction ✅ NEW
+- **Today items:** Violet tint `bg-violet-50 dark:bg-violet-900/20`
+- **Today separator line:** Violet themed
+- **Upcoming items:** Darker background `bg-zinc-50 dark:bg-zinc-800/80`
+
+### Queue Item Progress Indicator ✅ NEW
+- Dynamic ring chart shows step completion progress
+- Replaces static circle indicator
+- Completed: Solid green circle with checkmark
+- Desktop: Ring swaps for drag handle on hover
+
+### Completed Task Styling ✅ NEW
+- Gray monochrome: `border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50`
+- 60% opacity to fade into background
+- Green checkmark circle retained as completion indicator
+
+### Consistent Task Row Styling ✅ NEW
+All task rows across the app use unified styling:
+- Background: `bg-zinc-50 dark:bg-zinc-800/80`
+- Border: `border-zinc-200 dark:border-zinc-700`
+- Hover: `hover:border-zinc-300 dark:hover:border-zinc-600`
+- Title text: `text-zinc-900 dark:text-zinc-100` (no font-medium for consistency)
+- Applied to: Pool TaskRow, InboxItem, SearchView results, ProjectsView tasks, Dashboard TaskRow
+
+### QueueView Empty State ✅ NEW
+- "Completed" button hidden from header when queue is empty
+- "Show completed" button appears in empty state actions
+- Provides access to Completed drawer even with empty queue
+
+### Keyboard Shortcuts ✅
+Global shortcuts implemented in page.tsx:
+
+| Key | Action |
+|-----|--------|
+| `n` | Focus quick capture input |
+| `f` | Go to Focus tab |
+| `t` | Go to Tasks tab |
+| `/` | Open search, focus input |
+| `Escape` | Close AI drawer / go back / close modals |
+| `a` | Toggle AI drawer |
+
+- Shortcuts disabled when typing in inputs (except Escape)
+- Respects `metaKey`/`ctrlKey` for `f` and `t` to avoid browser conflicts
+
+### Mobile AI Floating Bar ✅
+Apple Music-style floating bar pattern (AIDrawer.tsx):
+
+- **Collapsed state:** Fixed floating bar at bottom with "Ask AI for help..." prompt
+- **Expanded state:** 50vh bottom sheet with full chat interface
+- Smooth slide-up/down transitions
+- Same functionality as desktop (messages, input, loading states)
+
+### QuickAccess Cards (Search View) ✅
+6 filter cards in SearchView.tsx when no search query:
+
+| Card | Filter | Color |
+|------|--------|-------|
+| High Priority | `priority === 'high'` | Red |
+| Waiting | `waitingOn !== null` | Yellow |
+| Deferred | `deferredUntil !== null` | Blue |
+| Completed | `status === 'complete'` | Green |
+| Archived | `status === 'archived'` | Zinc |
+| Projects | Navigate to ProjectsView | Purple |
+
+- Each shows count badge
+- Tap to filter, tap again to clear
+- Projects card navigates to dedicated view
 
 ---
 
@@ -410,6 +528,8 @@ task-copilot/
 │   ├── events.ts             # Event logging
 │   ├── utils.ts              # Utility functions
 │   ├── queue.ts              # Queue helpers
+│   ├── queue-reorder.ts      # Visual-first drag/drop reorder functions
+│   ├── queue-reorder.test.ts # Tests for queue-reorder
 │   ├── pool.ts               # Pool filters
 │   ├── prompts.ts            # AI system prompts (simplified)
 │   ├── ai-tools.ts           # AI tool definitions for function calling
@@ -466,12 +586,11 @@ npm run build
 
 | Feature | Status | Priority |
 |---------|--------|----------|
-| Keyboard shortcuts | Not started | Medium |
-| AIFloatingBar (mobile) | Not started | Medium |
 | StepSelector (partial focus) | Not started | Low |
 | Nudges system | Types only | Low |
 | Bulk inbox actions | Not started | Low |
-| QuickAccess cards (search) | Not started | Low |
+| Recent searches | Not started | Low |
+| Full deferral UI (date picker modal) | Minimal | Low |
 
 ---
 
@@ -479,6 +598,8 @@ npm run build
 
 | Date | Changes |
 |------|---------|
+| 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements, navigation state management updates |
+| 2025-01-06 | Documented keyboard shortcuts, mobile AI floating bar, QuickAccess cards as implemented; added iOS PWA dark mode theming, visual-first drag/drop, Today/Upcoming distinction, progress ring, completed task styling; updated file structure |
 | 2025-01-04 | Added PWA support (manifest.json, service worker, usePWA hook, SVG icons) |
 | 2025-01-04 | Added Projects view, Toast with undo, MetadataPill; updated file structure; UI refinements (always-visible kebabs, title alignment) |
 | 2025-01-03 | Added POC features: dark mode, responsive drawer, timer restoration, message grouping, celebration, health/score, step selection, utilities; AI function calling architecture; updated file structure |

@@ -140,7 +140,7 @@ export default function TriageRow({
           className="flex-1 text-left min-w-0"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-zinc-900 dark:text-zinc-100 font-medium line-clamp-1">
+            <span className="text-zinc-900 dark:text-zinc-100 line-clamp-1">
               {task.title}
             </span>
             {/* Priority pill (only high) */}
@@ -171,7 +171,7 @@ export default function TriageRow({
             }}
             className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
           >
-            Ready
+            → Ready
           </button>
 
           {/* Add to Focus button */}
@@ -182,7 +182,7 @@ export default function TriageRow({
             }}
             className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
           >
-            Add to Focus
+            → Focus
           </button>
 
           {/* Overflow menu */}
@@ -201,16 +201,6 @@ export default function TriageRow({
             </button>
             {showMenu && <MenuDropdown />}
           </div>
-
-          {/* Chevron to open */}
-          <button
-            onClick={() => onOpenTask(task.id)}
-            className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-          >
-            <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -222,7 +212,7 @@ export default function TriageRow({
             onClick={() => onOpenTask(task.id)}
             className="flex-1 text-left min-w-0"
           >
-            <span className="text-zinc-900 dark:text-zinc-100 font-medium">
+            <span className="text-zinc-900 dark:text-zinc-100">
               {task.title}
             </span>
           </button>
@@ -243,15 +233,6 @@ export default function TriageRow({
               </button>
               {showMenu && <MenuDropdown />}
             </div>
-            {/* Chevron */}
-            <button
-              onClick={() => onOpenTask(task.id)}
-              className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-            >
-              <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -283,7 +264,7 @@ export default function TriageRow({
             }}
             className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
           >
-            Ready
+            → Ready
           </button>
           <button
             onClick={(e) => {
@@ -292,7 +273,7 @@ export default function TriageRow({
             }}
             className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
           >
-            Add to Focus
+            → Focus
           </button>
         </div>
       </div>

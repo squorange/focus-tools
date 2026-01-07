@@ -1,7 +1,7 @@
 # Focus Tools — Product Document (WIP)
 
-> **Status:** Work in Progress  
-> **Last Updated:** January 2025  
+> **Status:** Work in Progress
+> **Last Updated:** January 2026
 > **Purpose:** Living document capturing vision, framework, and design decisions for iterative refinement
 
 ---
@@ -592,11 +592,24 @@ The POC implements the full Model E workflow with extensive AI integration:
 - Health status and focus score computation
 - Queue item step selection (entire task vs specific steps)
 - Comprehensive utility library (date, task, step, sorting, filtering)
-- Toast notifications with undo (delete, archive, project delete)
+- Toast notifications with undo:
+  - Delete/archive/project delete (original)
+  - Queue actions: add to focus, remove from focus, send to pool, defer (all with undo)
+  - Task completion success toast
 - Projects management (dedicated view, create/edit modal, color picker)
 - MetadataPill component for compact metadata display
-- Drag-and-drop queue reordering with move up/down menu
+- Drag-and-drop queue reordering with visual-first approach
 - PWA support (installable, offline-capable, service worker caching)
+- iOS PWA dark mode theming (seamless header/status bar)
+- Today/Upcoming visual distinction (violet tint for Today items)
+- Progress ring indicator on queue items (step completion visualization)
+- Completed task muted styling (gray monochrome with 60% opacity)
+- Consistent task row styling across all views (unified backgrounds, borders, fonts)
+- Keyboard shortcuts (`n`, `f`, `t`, `/`, `Escape`, `a`)
+- Mobile AI floating bar (Apple Music-style) + 50vh bottom sheet
+- QuickAccess cards in Search view (6 filter cards with counts)
+- Task completion flow: focus mode success (2s) → task details → back returns to Focus Queue
+- QueueView empty state "Show completed" button (Completed button hidden when queue empty)
 
 ### Learnings Captured
 - Claude function calling (tool_use) provides ~99% reliability vs ~85% with JSON-in-text
@@ -643,6 +656,8 @@ Plant, Water, Tend, Prune, Harvest, Compost, Resurface
 
 | Date | Changes |
 |------|---------|
+| 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements |
+| 2025-01-06 | Documented keyboard shortcuts, mobile AI floating bar, QuickAccess cards; added iOS PWA dark mode theming, Today/Upcoming visual distinction, progress ring indicator, completed task styling, visual-first drag/drop |
 | 2025-01-04 | Added PWA support to POC status |
 | 2025-01-04 | Added Projects view, Toast with undo, MetadataPill to POC status; updated navigation with Projects |
 | 2025-01-03 | Updated Section 11 with complete POC implementation status; AI function calling; staging workflow; focus mode features |

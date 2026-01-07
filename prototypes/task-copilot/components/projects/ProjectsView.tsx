@@ -163,7 +163,7 @@ export default function ProjectsView({
             return (
               <div
                 key={project.id}
-                className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden"
+                className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden"
               >
                 {/* Project header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50">
@@ -185,7 +185,7 @@ export default function ProjectsView({
                         style={{ backgroundColor: project.color }}
                       />
                     )}
-                    <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    <span className="text-zinc-900 dark:text-zinc-100">
                       {project.name}
                     </span>
                     <div className="flex items-center gap-1.5">

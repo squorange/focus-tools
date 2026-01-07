@@ -500,6 +500,24 @@ function isQueueItemComplete(item: FocusQueueItem, task: Task): boolean {
 | Today | 15 items | "That's a full day. Consider moving some to This Week." |
 | Total queue | 30 items | "Queue is getting large. Review and prune?" |
 
+### Visual-First Queue Reordering
+
+Queue drag/drop uses a visual-first approach implemented in `lib/queue-reorder.ts`:
+
+```typescript
+// Runtime type for visual transformations (not stored)
+type VisualElement =
+  | { kind: "item"; item: FocusQueueItem; originalIndex: number }
+  | { kind: "line" };  // Today/Later separator
+
+// Core operations:
+buildVisualElements(items, todayLineIndex) → VisualElement[]
+reorderVisualElements(elements, fromIndex, toIndex) → VisualElement[]
+deriveStateFromVisual(elements) → { items, todayLineIndex }
+```
+
+**Approach:** Build flat visual array → reorder as simple splice → derive new state. This treats visual layout as source of truth, eliminating special-case logic for line vs item moves.
+
 ---
 
 ## Project Model
@@ -985,6 +1003,7 @@ function migrateState(stored: any): AppState {
 
 | Date | Changes |
 |------|---------|
+| 2025-01-06 | Added visual-first queue reordering section (lib/queue-reorder.ts) |
 | 2025-01-03 | Added AI function calling architecture section; AI staging state types; Task.notes and message history fields; Message.stepId for grouping |
 | 2025-01 | **v2:** Model E — Pool replaces Active; Focus Queue replaces DailyPlan; added waitingOn, deferral, nudges |
 | 2024-12 | v1: Initial data model with DailyPlan, intelligence fields |

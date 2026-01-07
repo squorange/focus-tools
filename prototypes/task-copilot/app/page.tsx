@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   AppState,
   Task,
@@ -8,6 +8,7 @@ import {
   Message,
   ViewType,
   FocusModeState,
+  FocusQueueItem,
   SuggestedStep,
   EditSuggestion,
   DeletionSuggestion,
@@ -256,6 +257,54 @@ export default function Home() {
   }, [state.aiDrawer.isOpen, state.currentView, previousView, projectModalOpen]);
 
   // ============================================
+  // Edge Swipe Navigation
+  // ============================================
+
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const EDGE_THRESHOLD = 20; // px from screen edge to trigger swipe
+  const SWIPE_MIN_DISTANCE = 50; // minimum horizontal distance for swipe
+  const SWIPE_RATIO = 2; // horizontal must be > 2x vertical
+
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    // Only track swipes that start near screen edges
+    const touch = e.touches[0];
+    const isLeftEdge = touch.clientX < EDGE_THRESHOLD;
+    const isRightEdge = touch.clientX > window.innerWidth - EDGE_THRESHOLD;
+
+    if (isLeftEdge || isRightEdge) {
+      swipeStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now(),
+      };
+    }
+  }, []);
+
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    if (!swipeStartRef.current) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - swipeStartRef.current.x;
+    const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
+
+    // Check if this is a valid horizontal swipe
+    if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
+      // Only navigate between Focus and Tasks (the two main tabs)
+      if (state.currentView === 'focus' || state.currentView === 'tasks') {
+        if (deltaX > 0 && state.currentView === 'tasks') {
+          // Swipe right → go to Focus
+          setState((prev) => ({ ...prev, currentView: 'focus' }));
+        } else if (deltaX < 0 && state.currentView === 'focus') {
+          // Swipe left → go to Tasks
+          setState((prev) => ({ ...prev, currentView: 'tasks' }));
+        }
+      }
+    }
+
+    swipeStartRef.current = null;
+  }, [state.currentView]);
+
+  // ============================================
   // Navigation
   // ============================================
 
@@ -354,14 +403,79 @@ export default function Home() {
   }, []);
 
   const handleUpdateTask = useCallback((taskId: string, updates: Partial<Task>) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === taskId
-          ? { ...t, ...updates, updatedAt: Date.now() }
-          : t
-      ),
-    }));
+    let completedTask: Task | undefined;
+    let showCompletionToast: boolean = false;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      const isBeingCompleted = updates.status === 'complete' && task?.status !== 'complete';
+      const now = Date.now();
+
+      // Track if we should show completion toast (only on task detail view)
+      if (isBeingCompleted && task && prev.currentView === 'taskDetail') {
+        completedTask = task;
+        showCompletionToast = true;
+      }
+
+      // If task is being completed, remove from queue and adjust todayLineIndex
+      if (isBeingCompleted && task) {
+        // Find position of item being removed (in active items order)
+        const activeItems = prev.focusQueue.items
+          .filter((i) => !i.completed)
+          .sort((a, b) => a.order - b.order);
+        const itemIndex = activeItems.findIndex((i) => i.taskId === taskId);
+
+        // Adjust line if item was above it
+        const newTodayLineIndex = itemIndex !== -1 && itemIndex < prev.focusQueue.todayLineIndex
+          ? Math.max(0, prev.focusQueue.todayLineIndex - 1)
+          : prev.focusQueue.todayLineIndex;
+
+        // Remove the item and reindex
+        const newItems = prev.focusQueue.items
+          .filter((i) => i.taskId !== taskId)
+          .map((item, idx) => ({ ...item, order: idx }));
+
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, ...updates, updatedAt: now }
+              : t
+          ),
+          focusQueue: {
+            ...prev.focusQueue,
+            items: newItems,
+            todayLineIndex: newTodayLineIndex,
+          },
+          // Exit focus mode if active
+          focusMode: prev.currentView === 'focusMode'
+            ? { ...prev.focusMode, active: false, currentStepId: null }
+            : prev.focusMode,
+        };
+      }
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, ...updates, updatedAt: now }
+            : t
+        ),
+      };
+    });
+
+    // Show success toast for task completion (only on task detail view)
+    if (showCompletionToast && completedTask) {
+      // Set previousView so back button returns to Focus Queue
+      setPreviousView('focus');
+
+      const taskTitle = completedTask.title || 'Task';
+      const toastId = generateId();
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 25)}${taskTitle.length > 25 ? '...' : ''}" completed!`,
+        type: 'success',
+      }]);
+    }
   }, []);
 
   const handleDeleteTask = useCallback((taskId: string) => {
@@ -407,26 +521,103 @@ export default function Home() {
 
   // Send task to pool (triage complete)
   const handleSendToPool = useCallback((taskId: string) => {
-    handleUpdateTask(taskId, { status: 'pool' });
-  }, [handleUpdateTask]);
+    let sentTask: Task | undefined;
+    setState((prev) => {
+      sentTask = prev.tasks.find((t) => t.id === taskId);
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'pool' as const, updatedAt: Date.now() }
+            : t
+        ),
+      };
+    });
+
+    // Show toast with undo action
+    if (sentTask) {
+      const taskTitle = sentTask.title || 'Task';
+      const toastId = generateId();
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Ready`,
+        type: 'info',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            setState((prev) => ({
+              ...prev,
+              tasks: prev.tasks.map((t) =>
+                t.id === taskId
+                  ? { ...t, status: 'inbox' as const, updatedAt: Date.now() }
+                  : t
+              ),
+            }));
+          },
+        },
+      }]);
+    }
+  }, []);
 
   // Defer task until a future date
   const handleDefer = useCallback((taskId: string, until: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              status: 'pool' as const,
-              deferredUntil: until,
-              deferredAt: Date.now(),
-              deferredCount: t.deferredCount + 1,
-              updatedAt: Date.now(),
-            }
-          : t
-      ),
-    }));
+    let deferredTask: Task | undefined;
+    let previousDeferredUntil: string | null = null;
+    let previousDeferredAt: number | null = null;
+    let previousDeferredCount: number = 0;
+    setState((prev) => {
+      deferredTask = prev.tasks.find((t) => t.id === taskId);
+      if (deferredTask) {
+        previousDeferredUntil = deferredTask.deferredUntil;
+        previousDeferredAt = deferredTask.deferredAt;
+        previousDeferredCount = deferredTask.deferredCount;
+      }
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                status: 'pool' as const,
+                deferredUntil: until,
+                deferredAt: Date.now(),
+                deferredCount: t.deferredCount + 1,
+                updatedAt: Date.now(),
+              }
+            : t
+        ),
+      };
+    });
+
+    // Show toast with undo action
+    if (deferredTask) {
+      const taskTitle = deferredTask.title || 'Task';
+      const toastId = generateId();
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" deferred until ${until}`,
+        type: 'info',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            setState((prev) => ({
+              ...prev,
+              tasks: prev.tasks.map((t) =>
+                t.id === taskId
+                  ? {
+                      ...t,
+                      deferredUntil: previousDeferredUntil,
+                      deferredAt: previousDeferredAt,
+                      deferredCount: previousDeferredCount,
+                      updatedAt: Date.now(),
+                    }
+                  : t
+              ),
+            }));
+          },
+        },
+      }]);
+    }
   }, []);
 
   // Park task (archive for later)
@@ -622,9 +813,12 @@ export default function Home() {
   // If forToday=true, insert at position todayLineIndex (moves line down)
   // If forToday=false, insert just after the line
   const handleAddToQueue = useCallback((taskId: string, forToday: boolean = false) => {
+    let addedTask: Task | undefined;
+    let addedItemId: string | undefined;
     setState((prev) => {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task) return prev;
+      addedTask = task;
 
       // Check if already in queue
       if (prev.focusQueue.items.some((i) => i.taskId === taskId)) {
@@ -639,6 +833,7 @@ export default function Home() {
       );
 
       const newItem = createFocusQueueItem(taskId, 'today'); // horizon kept for type compat
+      addedItemId = newItem.id;
 
       // Determine insertion position and new todayLineIndex
       const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
@@ -678,16 +873,57 @@ export default function Home() {
         focusQueue: updatedQueue,
       };
     });
+
+    // Show toast with undo action
+    if (addedTask && addedItemId) {
+      const taskTitle = addedTask.title || 'Task';
+      const toastId = generateId();
+      const itemId = addedItemId;
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" added to Focus`,
+        type: 'info',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            // Remove from queue
+            setState((prev) => {
+              const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+              const itemIndex = activeItems.findIndex((i) => i.id === itemId);
+              const newTodayLineIndex = itemIndex !== -1 && itemIndex < prev.focusQueue.todayLineIndex
+                ? prev.focusQueue.todayLineIndex - 1
+                : prev.focusQueue.todayLineIndex;
+              return {
+                ...prev,
+                focusQueue: {
+                  ...prev.focusQueue,
+                  items: prev.focusQueue.items.filter((i) => i.id !== itemId).map((item, idx) => ({ ...item, order: idx })),
+                  todayLineIndex: Math.max(0, newTodayLineIndex),
+                },
+              };
+            });
+          },
+        },
+      }]);
+    }
   }, []);
 
   // Remove item from queue (adjusts todayLineIndex if item was above line)
   const handleRemoveFromQueue = useCallback((queueItemId: string) => {
+    let removedItem: FocusQueueItem | undefined;
+    let removedTask: Task | undefined;
+    let wasAboveLine: boolean = false;
     setState((prev) => {
       const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
       const itemIndex = activeItems.findIndex((i) => i.id === queueItemId);
+      removedItem = activeItems.find((i) => i.id === queueItemId);
+      if (removedItem) {
+        removedTask = prev.tasks.find((t) => t.id === removedItem!.taskId);
+      }
+      wasAboveLine = itemIndex !== -1 && itemIndex < prev.focusQueue.todayLineIndex;
 
       // If item is above the line, decrement todayLineIndex
-      const newTodayLineIndex = itemIndex !== -1 && itemIndex < prev.focusQueue.todayLineIndex
+      const newTodayLineIndex = wasAboveLine
         ? prev.focusQueue.todayLineIndex - 1
         : prev.focusQueue.todayLineIndex;
 
@@ -704,6 +940,43 @@ export default function Home() {
         },
       };
     });
+
+    // Show toast with undo action
+    if (removedItem && removedTask) {
+      const taskTitle = removedTask.title || 'Task';
+      const toastId = generateId();
+      const item = { ...removedItem };
+      const addedAboveLine = wasAboveLine;
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Tasks`,
+        type: 'info',
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            // Add back to queue at same position
+            setState((prev) => {
+              const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+              const completedItems = prev.focusQueue.items.filter((i) => i.completed);
+              let newItems = [...activeItems, item, ...completedItems];
+              let newTodayLineIndex = prev.focusQueue.todayLineIndex;
+              if (addedAboveLine) {
+                newTodayLineIndex = prev.focusQueue.todayLineIndex + 1;
+              }
+              newItems = newItems.map((i, idx) => ({ ...i, order: idx }));
+              return {
+                ...prev,
+                focusQueue: {
+                  ...prev.focusQueue,
+                  items: newItems,
+                  todayLineIndex: newTodayLineIndex,
+                },
+              };
+            });
+          },
+        },
+      }]);
+    }
   }, []);
 
   // Move queue item to a new position
@@ -728,18 +1001,8 @@ export default function Home() {
         ...withoutItem.slice(newIndex),
       ].map((i, idx) => ({ ...i, order: idx }));
 
-      // Adjust todayLineIndex based on movement
-      let newTodayLineIndex = prev.focusQueue.todayLineIndex;
-      const wasAboveLine = currentIndex < prev.focusQueue.todayLineIndex;
-      const nowAboveLine = newIndex < prev.focusQueue.todayLineIndex;
-
-      if (wasAboveLine && !nowAboveLine) {
-        // Moved from above to below the line
-        newTodayLineIndex = Math.max(0, prev.focusQueue.todayLineIndex - 1);
-      } else if (!wasAboveLine && nowAboveLine) {
-        // Moved from below to above the line
-        newTodayLineIndex = prev.focusQueue.todayLineIndex + 1;
-      }
+      // Line adjustment is handled entirely by QueueView which has full visual context
+      const newTodayLineIndex = prev.focusQueue.todayLineIndex;
 
       return {
         ...prev,
@@ -830,7 +1093,7 @@ export default function Home() {
     });
   }, []);
 
-  // Move the today line to a new position
+  // Move the today line to a new position (kept for backwards compat with up/down buttons)
   const handleMoveTodayLine = useCallback((newIndex: number) => {
     setState((prev) => {
       const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
@@ -842,6 +1105,31 @@ export default function Home() {
         focusQueue: {
           ...prev.focusQueue,
           todayLineIndex: clampedIndex,
+        },
+      };
+    });
+  }, []);
+
+  // Unified reorder handler for visual-first drag/drop
+  const handleReorderQueue = useCallback((
+    newItems: FocusQueueItem[],
+    newTodayLineIndex: number
+  ) => {
+    setState((prev) => {
+      const completedItems = prev.focusQueue.items.filter(i => i.completed);
+
+      // Re-assign orders to the reordered active items
+      const reorderedActive = newItems.map((item, idx) => ({
+        ...item,
+        order: idx,
+      }));
+
+      return {
+        ...prev,
+        focusQueue: {
+          ...prev.focusQueue,
+          items: [...reorderedActive, ...completedItems],
+          todayLineIndex: newTodayLineIndex,
         },
       };
     });
@@ -941,20 +1229,43 @@ export default function Home() {
   }, []);
 
   const handleExitFocus = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentView: previousView,
-      focusMode: {
-        active: false,
-        queueItemId: null,
-        taskId: null,
-        currentStepId: null,
-        paused: false,
-        startTime: null,
-        pausedTime: 0,
-        pauseStartTime: null,
-      },
-    }));
+    let shouldSetPreviousViewToFocus = false;
+
+    setState((prev) => {
+      const focusedTask = prev.tasks.find((t) => t.id === prev.focusMode.taskId);
+      const wasJustCompleted = focusedTask?.status === 'complete';
+
+      // If task was just completed, navigate to task details to show success toast
+      // Otherwise, go back to previous view
+      const nextView = wasJustCompleted ? 'taskDetail' as ViewType : previousView;
+      const nextActiveTaskId = wasJustCompleted ? focusedTask.id : prev.activeTaskId;
+
+      // Flag to set previousView so back button returns to Focus Queue
+      if (wasJustCompleted) {
+        shouldSetPreviousViewToFocus = true;
+      }
+
+      return {
+        ...prev,
+        currentView: nextView,
+        activeTaskId: nextActiveTaskId,
+        focusMode: {
+          active: false,
+          queueItemId: null,
+          taskId: null,
+          currentStepId: null,
+          paused: false,
+          startTime: null,
+          pausedTime: 0,
+          pauseStartTime: null,
+        },
+      };
+    });
+
+    // Set previousView to 'focus' so back button returns to Focus Queue
+    if (shouldSetPreviousViewToFocus) {
+      setPreviousView('focus');
+    }
   }, [previousView]);
 
   // ============================================
@@ -996,13 +1307,36 @@ export default function Home() {
       if (updatedTask && updatedTask.steps.length > 0 && updatedTask.steps.every((s) => s.completed)) {
         // Mark task as complete and exit focus mode if active
         const shouldExitFocus = prev.currentView === 'focusMode';
+        const now = Date.now();
+
+        // Find position of item being removed (in active items order)
+        const activeItems = prev.focusQueue.items
+          .filter((i) => !i.completed)
+          .sort((a, b) => a.order - b.order);
+        const itemIndex = activeItems.findIndex((i) => i.taskId === taskId);
+
+        // Adjust line if item was above it
+        const newTodayLineIndex = itemIndex !== -1 && itemIndex < prev.focusQueue.todayLineIndex
+          ? Math.max(0, prev.focusQueue.todayLineIndex - 1)
+          : prev.focusQueue.todayLineIndex;
+
+        // Remove the item from queue and reindex
+        const newQueueItems = prev.focusQueue.items
+          .filter((i) => i.taskId !== taskId)
+          .map((item, idx) => ({ ...item, order: idx }));
+
         return {
           ...prev,
           tasks: updatedTasks.map((t) =>
             t.id === taskId
-              ? { ...t, status: 'complete' as const, completedAt: Date.now() }
+              ? { ...t, status: 'complete' as const, completedAt: now }
               : t
           ),
+          focusQueue: {
+            ...prev.focusQueue,
+            items: newQueueItems,
+            todayLineIndex: newTodayLineIndex,
+          },
           focusMode: shouldExitFocus
             ? { ...prev.focusMode, active: false, currentStepId: null }
             : { ...prev.focusMode, currentStepId: nextStepId },
@@ -1783,7 +2117,11 @@ export default function Home() {
         />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className="flex-1 overflow-y-auto"
+          onTouchStart={handleSwipeStart}
+          onTouchEnd={handleSwipeEnd}
+        >
           {/* Mobile: pb-48 clears floating AI bar + gives room for dropdowns; when AI open pb-[52vh] for bottom sheet */}
           <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-6 pb-[52vh]' : 'pb-48 lg:pb-6'}`}>
             {/* View Router */}
@@ -1797,10 +2135,9 @@ export default function Home() {
                 onCreateTask={handleCreateTaskForFocus}
                 onStartFocus={handleStartFocus}
                 onRemoveFromQueue={handleRemoveFromQueue}
-                onMoveItem={handleMoveQueueItem}
+                onReorderQueue={handleReorderQueue}
                 onMoveItemUp={handleMoveQueueItemUp}
                 onMoveItemDown={handleMoveQueueItemDown}
-                onMoveTodayLine={handleMoveTodayLine}
                 onGoToInbox={handleGoToInbox}
               />
             )}
