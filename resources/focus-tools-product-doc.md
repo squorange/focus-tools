@@ -539,7 +539,7 @@ The AI visual system distinguishes between contexts where AI actions appear alon
 | Surface | Role | Content Type | Design Character |
 |---------|------|--------------|------------------|
 | **MiniBar** | Status bar + notification | One-line status, icons | Minimal (48px), always visible |
-| **Palette** | Conversational layer (ephemeral) | Text responses, input | Expandable, auto-collapses |
+| **Palette** | Conversational layer (ephemeral) | Text responses, input | Auto-expands on response, auto-collapses after 5s |
 | **Drawer** | Extended chat (escape hatch) | Full history, multi-turn | Side panel or bottom sheet |
 | **StagingArea** | Decision workspace | Steps, edits, accept/reject | Inline, pulse animation |
 
@@ -592,6 +592,25 @@ hover:bg-zinc-200 dark:hover:bg-zinc-700
 | Primary dismiss (Got it, Go to suggestions) | Yes | No | Yes |
 | Ask AI | Yes | Yes | No |
 | Retry | Yes | Yes | No |
+
+##### Auto-Expand/Collapse Behavior
+
+**Auto-Expand on Response:**
+- When AI response arrives, Palette automatically expands from MiniBar
+- Applies regardless of how query was submitted (quick action, input, contextual prompt)
+- Drawer mode is preserved (doesn't force to expanded)
+
+**Auto-Collapse Timer:**
+- 5 second timer starts when response is displayed
+- Cancelled if user interacts (clicks buttons, types)
+- User interaction sets `paletteManuallyOpened = true` → disables auto-collapse
+
+**Flow:**
+```
+Query submitted → MiniBar shows "Thinking..." → Response arrives
+    → Auto-expand to Palette → Show response → 5s timer
+    → Auto-collapse (unless user interacted)
+```
 
 #### Quick Actions by Context
 
