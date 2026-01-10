@@ -824,6 +824,8 @@ task-copilot/
 │   ├── pool.ts               # Pool filters
 │   ├── prompts.ts            # AI system prompts (simplified)
 │   ├── ai-tools.ts           # AI tool definitions for function calling
+│   ├── ai-actions.ts         # Central registry for AI action labels/icons/queries
+│   ├── ai-constants.ts       # Animation, layout, quick actions config
 │   └── usePWA.ts             # PWA service worker registration hook
 ├── public/
 │   ├── manifest.json         # PWA manifest
@@ -981,6 +983,33 @@ pendingAction: 'replace' | 'suggest' | null;  // Track action type for staging
 | `lib/ai-tools.ts` | Tool definitions + TypeScript types |
 | `lib/prompts.ts` | System prompts with tool guidance |
 | `app/api/structure/route.ts` | API endpoint, tool processing |
+
+### AI Actions Registry
+
+All AI action definitions (labels, icons, queries) are centralized in `lib/ai-actions.ts`. This prevents terminology drift across different UI surfaces.
+
+**Consumers:**
+- `lib/ai-constants.ts` - Quick action buttons in Palette
+- `hooks/useContextualPrompts.ts` - Auto-prompts in MiniBar
+- `components/StuckMenu.tsx` - Stuck resolution options
+
+**Current Actions:**
+
+| Context | Action ID | Label | Icon | Query |
+|---------|-----------|-------|------|-------|
+| focusMode | `breakdown` | Break down | 📋 | Break this into smaller steps |
+| focusMode | `helpMeStart` | Help me start | 👉 | What's my first tiny action? |
+| focusMode | `clarify` | What does this mean? | ❓ | Can you explain what this step means? |
+| taskDetail | `breakdown` | Break down | 📋 | Break this task into steps |
+| taskDetail | `estimate` | Estimate | ⏱ | How long will this take? |
+| queue | `whatNext` | What next? | 🎯 | What should I work on next? |
+| queue | `reorder` | Reorder | ↕️ | Help me prioritize my queue |
+| inbox | `triage` | Help triage | 📥 | Help me triage these items |
+| inbox | `priority` | Priority? | ⚡ | What priority should this be? |
+
+**Adding new actions:**
+1. Add to `AI_ACTIONS` in `lib/ai-actions.ts`
+2. Reference via `AI_ACTIONS.context.actionId` in consuming code
 
 ---
 

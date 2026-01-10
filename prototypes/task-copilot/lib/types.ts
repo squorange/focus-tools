@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 // ============================================
 // Task Structure Types
@@ -162,6 +162,9 @@ export interface Task {
   // Per-task AI conversations (from POC)
   messages: Message[];              // Task detail AI chat history
   focusModeMessages: Message[];     // Focus mode AI chat history
+
+  // Per-task staging for AI suggestions
+  staging: StagingState | null;
 }
 
 export interface Attachment {
@@ -536,6 +539,15 @@ export interface EditSuggestion {
   newText: string;            // Proposed change
 }
 
+// Per-task or global staging state for AI suggestions
+export interface StagingState {
+  suggestions: SuggestedStep[];
+  edits: EditSuggestion[];
+  deletions: DeletionSuggestion[];
+  suggestedTitle: string | null;
+  pendingAction: 'replace' | 'suggest' | 'edit' | 'delete' | null;
+}
+
 export interface StructureResponse {
   action: AIAction;
   taskTitle: string | null;
@@ -641,11 +653,7 @@ export interface AppState {
 
   // AI
   aiDrawer: AIDrawerState;
-  suggestions: SuggestedStep[];
-  edits: EditSuggestion[];
-  deletions: DeletionSuggestion[];
-  suggestedTitle: string | null;
-  pendingAction: 'replace' | 'suggest' | null;  // Track what type of suggestion this is
+  globalStaging: StagingState | null;  // Staging for top-level screens (Queue, Tasks, Inbox)
 
   // Filters & sort
   filters: FilterState;
@@ -790,6 +798,7 @@ export function createTask(title: string, options?: Partial<Task>): Task {
 
     messages: [],
     focusModeMessages: [],
+    staging: null,
 
     ...options,
   };
@@ -866,11 +875,7 @@ export function createInitialAppState(): AppState {
       isLoading: false,
       context: 'focus',
     },
-    suggestions: [],
-    edits: [],
-    deletions: [],
-    suggestedTitle: null,
-    pendingAction: null,
+    globalStaging: null,
 
     filters: {
       status: ['inbox', 'pool'],

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AI_ACTIONS } from "@/lib/ai-actions";
 
 export type StuckOption = "breakdown" | "start" | "clarify";
 
@@ -10,10 +11,12 @@ interface StuckMenuProps {
   onSelectOption: (option: StuckOption) => void;
 }
 
+// StuckMenu options derived from AI_ACTIONS registry
+// Uses "Break it down" (more natural for "What's blocking you?" context)
 const MENU_OPTIONS: { option: StuckOption; icon: string; label: string }[] = [
-  { option: "breakdown", icon: "📋", label: "Break it down" },
-  { option: "start", icon: "▶️", label: "Help me start" },
-  { option: "clarify", icon: "❓", label: "What does this mean?" },
+  { option: "breakdown", icon: AI_ACTIONS.focusMode.breakdown.icon, label: "Break it down" },
+  { option: "start", icon: AI_ACTIONS.focusMode.helpMeStart.icon, label: AI_ACTIONS.focusMode.helpMeStart.label },
+  { option: "clarify", icon: AI_ACTIONS.focusMode.clarify.icon, label: AI_ACTIONS.focusMode.clarify.label },
 ];
 
 export default function StuckMenu({

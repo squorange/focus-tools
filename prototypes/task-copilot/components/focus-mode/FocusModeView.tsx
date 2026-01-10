@@ -212,8 +212,8 @@ export default function FocusModeView({
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center max-w-xl mx-auto w-full px-4">
+      {/* Main Content - pb-28 clears AI minibar, pb-[52vh] would clear expanded palette */}
+      <div className="flex-1 flex flex-col items-center justify-center max-w-xl mx-auto w-full px-4 pb-28">
         {/* Task Title - tap to edit, multi-line support */}
         {editingTitle ? (
           <textarea

@@ -15,6 +15,8 @@ interface TaskDetailProps {
   edits: EditSuggestion[];
   deletions: DeletionSuggestion[];
   suggestedTitle: string | null;
+  stagingIsNewArrival?: boolean;
+  onStagingAnimationComplete?: () => void;
   onBack: () => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onStepComplete: (taskId: string, stepId: string, completed: boolean) => void;
@@ -65,6 +67,8 @@ export default function TaskDetail({
   edits,
   deletions,
   suggestedTitle,
+  stagingIsNewArrival = false,
+  onStagingAnimationComplete,
   onBack,
   onUpdateTask,
   onStepComplete,
@@ -411,7 +415,7 @@ export default function TaskDetail({
 
       {/* Staging Area for AI suggestions */}
       {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
-        <div className="mb-6">
+        <div id="staging-area" className="mb-6 scroll-mt-4">
           <StagingArea
             suggestions={suggestions}
             edits={edits}
@@ -427,6 +431,8 @@ export default function TaskDetail({
             onRejectDeletion={onRejectDeletion}
             onAcceptTitle={onAcceptTitle}
             onRejectTitle={onRejectTitle}
+            isNewArrival={stagingIsNewArrival}
+            onAnimationComplete={onStagingAnimationComplete}
           />
         </div>
       )}

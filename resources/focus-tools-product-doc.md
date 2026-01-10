@@ -492,8 +492,132 @@ Repeat until done
 > AI: "What's blocking you? We could: (a) break this into smaller steps, (b) skip to something easier, (c) talk through what's unclear."
 
 **Recall:**
-> User: "What was that thing about my car?"  
+> User: "What was that thing about my car?"
 > AI: "You have 'Schedule oil change'—last touched 2 weeks ago. Want to work on it now?"
+
+### 8.1 AI Visual Design System
+
+#### Core Principle: Icons at the Boundary, Emojis Inside
+
+The AI visual system distinguishes between contexts where AI actions appear alongside non-AI UI elements versus contexts that are purely AI-native.
+
+| Context Type | Visual Treatment | Rationale |
+|--------------|------------------|-----------|
+| **Mixed UI** (AI alongside non-AI) | Sparkle ICON | Blends with other icons, professional |
+| **AI-native UI** (Palette, AI popover) | Descriptive EMOJI | Adds personality, differentiates actions |
+
+#### Emoji Vocabulary
+
+| Action | Emoji | Copy | Used In |
+|--------|-------|------|---------|
+| Break down | 📋 | "Break down" | Palette, AI popover, Stuck menu |
+| What next? | 🎯 | "What next?" | Palette (queue context) |
+| Help me start | 👉 | "Help me start" | Palette, Stuck menu (focus mode) |
+| Explain | ❓ | "What does this mean?" | Stuck menu |
+| Ask / Talk | 💬 | "Ask" / "Talk through" | Palette, AI popover |
+
+> **Note:** All AI action labels, icons, and queries are centralized in `lib/ai-actions.ts`. See CLAUDE.md for the full registry.
+
+#### Emoji Usage Boundaries
+
+| Element | Emoji? | Example |
+|---------|--------|---------|
+| AI action labels (in AI contexts) | ✅ Yes | 🔨 Break down |
+| AI quick action chips | ✅ Yes | [🔨 Break down] |
+| Status text | ❌ No | "5 suggestions ready" |
+| Toast notifications | ❌ No | "Task completed" |
+| Confirmation messages | ⚠️ Checkmark only | "✓ Added 5 steps" |
+
+#### Icon Specification
+
+- **Icon:** Lucide `Sparkles` (can swap for custom later)
+- **Usage:** Mixed contexts, icon buttons, row actions
+- **Color:** Violet-500 (light), Violet-400 (dark)
+
+#### Four-Surface Architecture
+
+| Surface | Role | Content Type | Design Character |
+|---------|------|--------------|------------------|
+| **MiniBar** | Status bar + notification | One-line status, icons | Minimal (48px), always visible |
+| **Palette** | Conversational layer (ephemeral) | Text responses, input | Expandable, auto-collapses |
+| **Drawer** | Extended chat (escape hatch) | Full history, multi-turn | Side panel or bottom sheet |
+| **StagingArea** | Decision workspace | Steps, edits, accept/reject | Inline, pulse animation |
+
+**Core Principles:**
+1. Palette is for dialogue (questions, answers, text responses)
+2. StagingArea is for decisions (accept/reject structured changes)
+3. They don't overlap — Palette never shows suggestion lists
+4. Drawer is escape hatch — accessed via icon in input field
+
+#### Palette States & Buttons
+
+##### Design Rationale
+
+| Principle | Description |
+|-----------|-------------|
+| **Single Button Row** | Reduce cognitive load, consistent interaction patterns |
+| **Primary = Forward Motion** | Main action advances user to their goal |
+| **Secondary = Conversation** | Continue dialogue without advancing |
+| **Input Hidden During Response** | Clear state boundaries between response mode and input mode |
+
+##### Button Behavior Matrix
+
+| Response Type | Primary Button | Primary Style | Secondary Button | Secondary Style |
+|---------------|----------------|---------------|------------------|-----------------|
+| Suggestions | Go to suggestions ↑ | Violet filled | Ask AI | Zinc filled |
+| Text | Got it | Zinc filled | Ask AI | Violet filled |
+| Explanation | Got it | Zinc filled | Ask AI | Violet filled |
+| Error | Retry | Violet filled | Ask AI | Zinc filled |
+
+##### Button Styling
+
+**Primary Action (violet filled):**
+```css
+bg-violet-100 dark:bg-violet-900/30
+text-violet-700 dark:text-violet-300
+hover:bg-violet-200 dark:hover:bg-violet-800/40
+```
+
+**Secondary Action (zinc filled):**
+```css
+bg-zinc-100 dark:bg-zinc-800
+text-zinc-700 dark:text-zinc-300
+hover:bg-zinc-200 dark:hover:bg-zinc-700
+```
+
+##### Button Interaction Patterns
+
+| Button | Cancel Auto-Collapse | Signal Manual Interaction | Collapse Palette |
+|--------|---------------------|--------------------------|------------------|
+| Primary dismiss (Got it, Go to suggestions) | Yes | No | Yes |
+| Ask AI | Yes | Yes | No |
+| Retry | Yes | Yes | No |
+
+#### Quick Actions by Context
+
+| View Context | Quick Actions |
+|--------------|---------------|
+| **Queue (focus tab)** | 🔨 Break down, 💡 What next?, 💬 Ask |
+| **Task Detail** | 🔨 Break down, 💡 What next?, 📖 Explain |
+| **Focus Mode** | 🔨 Break down, 👣 First action, 💬 Ask |
+| **Inbox/Pool** | 🔨 Break down, 💡 What next?, 💬 Ask |
+
+**Quick Action Chip Styling:**
+- Violet filled background (`bg-violet-100 dark:bg-violet-900/30`)
+- Violet text (`text-violet-700 dark:text-violet-300`)
+- Rounded-full, font-medium
+- Emoji + text format
+
+#### Component Application Matrix
+
+| Component | AI Visual Treatment |
+|-----------|---------------------|
+| **MiniBar** | Sparkle icon (when structured ready), violet text |
+| **Palette quick actions** | Emoji + text chips, violet fill |
+| **AI popover (from row)** | Emoji + text menu items, anchored to button |
+| **Stuck menu (focus mode)** | Emoji + text menu items |
+| **TaskDetail AI button** | Sparkle icon + "Break down", violet outline |
+| **Step/Task row AI button** | Sparkle icon only, violet |
 
 ---
 

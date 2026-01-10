@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AppState,
   Task,
@@ -12,6 +13,7 @@ import {
   SuggestedStep,
   EditSuggestion,
   DeletionSuggestion,
+  StagingState,
   StructureResponse,
   Project,
   createTask,
@@ -53,6 +55,12 @@ import ProjectsView from "@/components/projects/ProjectsView";
 import ProjectModal from "@/components/shared/ProjectModal";
 import ToastContainer, { Toast } from "@/components/shared/Toast";
 import { usePWA } from "@/lib/usePWA";
+import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/ai-assistant";
+import { useAIAssistant } from "@/hooks/useAIAssistant";
+import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
+import { AIAssistantContext, AIResponse, SuggestionsContent, CollapsedContent } from "@/lib/ai-types";
+import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
+import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 
 // ============================================
 // Initial States
@@ -81,12 +89,321 @@ export default function Home() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [stagingIsNewArrival, setStagingIsNewArrival] = useState(false);
+  const [paletteManuallyOpened, setPaletteManuallyOpened] = useState(false);
+  // Track relationship between staging and palette content
+  const [stagingPopulatedAt, setStagingPopulatedAt] = useState<number>(0);
+  const [lastQuerySubmittedAt, setLastQuerySubmittedAt] = useState<number>(0);
+  const stagingAreaRef = useRef<HTMLDivElement>(null);
 
   // Register PWA service worker
   usePWA();
 
   // Get active task for current operations
   const activeTask = state.tasks.find((t) => t.id === state.activeTaskId);
+
+  // ============================================
+  // Staging Helpers (context-aware)
+  // ============================================
+
+  // Get staging based on context - per-task if activeTaskId, global otherwise
+  const getActiveStaging = useCallback((): StagingState | null => {
+    if (state.activeTaskId) {
+      const task = state.tasks.find(t => t.id === state.activeTaskId);
+      return task?.staging || null;
+    }
+    return state.globalStaging;
+  }, [state.activeTaskId, state.tasks, state.globalStaging]);
+
+  // Update staging based on context - updates task.staging or globalStaging
+  const updateActiveStaging = useCallback((
+    updater: (staging: StagingState | null) => StagingState | null
+  ) => {
+    setState(prev => {
+      if (prev.activeTaskId) {
+        return {
+          ...prev,
+          tasks: prev.tasks.map(t =>
+            t.id === prev.activeTaskId
+              ? { ...t, staging: updater(t.staging), updatedAt: Date.now() }
+              : t
+          ),
+        };
+      }
+      return { ...prev, globalStaging: updater(prev.globalStaging) };
+    });
+  }, []);
+
+  // Clear all staging (used by dismiss)
+  const clearActiveStaging = useCallback(() => {
+    updateActiveStaging(() => null);
+  }, [updateActiveStaging]);
+
+  // Helper to map current view to AI context
+  const getAIContext = (): AIAssistantContext => {
+    switch (state.currentView) {
+      case 'focus': return 'queue';
+      case 'focusMode': return 'focusMode';
+      case 'taskDetail': return 'taskDetail';
+      case 'inbox': return 'inbox';
+      case 'tasks': return 'inbox';
+      default: return 'global';
+    }
+  };
+
+  // AI Assistant API handler - calls /api/structure
+  const handleAIMinibarSubmit = useCallback(async (
+    query: string,
+    context: AIAssistantContext
+  ): Promise<AIResponse> => {
+    // Track when query was submitted for staging/palette relationship
+    setLastQuerySubmittedAt(Date.now());
+
+    const taskId = state.activeTaskId;
+    const currentTask = taskId ? state.tasks.find((t) => t.id === taskId) : null;
+
+    // Determine if in focus mode
+    const inFocusMode = state.currentView === 'focusMode';
+    const currentStepId = inFocusMode ? state.focusMode.currentStepId : undefined;
+    const currentStep = inFocusMode && currentStepId && currentTask
+      ? currentTask.steps.find(s => s.id === currentStepId)
+      : null;
+
+    try {
+      const response = await fetch("/api/structure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMessage: query,
+          currentList: currentTask?.steps || [],
+          taskTitle: currentTask?.title || "Untitled Task",
+          taskDescription: currentTask?.description,
+          taskNotes: currentTask?.notes,
+          conversationHistory: inFocusMode
+            ? (currentTask?.focusModeMessages || [])
+            : (currentTask?.messages || []),
+          focusMode: inFocusMode,
+          currentStep: currentStep ? {
+            id: currentStep.id,
+            text: currentStep.text,
+            completed: currentStep.completed,
+          } : null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("API request failed");
+      }
+
+      const data: StructureResponse = await response.json();
+
+      // Determine response category (text → Palette, structured → StagingArea)
+      // The API returns `action` which maps to tool categories
+      const actionName = data.action || 'none';
+      const responseCategory = categorizeResponse(actionName);
+
+      // Store pending suggestions/edits/deletions in state for when user accepts
+      const pendingAction = getPendingActionType(data);
+
+      // Handle replace/suggest actions (steps or suggestions)
+      if (pendingAction && (pendingAction === 'replace' || pendingAction === 'suggest') && (data.suggestions || data.steps)) {
+        const suggestions = data.action === 'replace' && data.steps
+          ? data.steps.map((step: Step) => ({
+              id: step.id,
+              text: step.text,
+              substeps: step.substeps.map((sub) => ({ id: sub.id, text: sub.text })),
+              estimatedMinutes: step.estimatedMinutes || undefined,
+            }))
+          : data.suggestions || [];
+
+        updateActiveStaging(() => ({
+          suggestions,
+          edits: [],
+          deletions: [],
+          suggestedTitle: data.suggestedTitle || data.taskTitle || null,
+          pendingAction,
+        }));
+
+        // Trigger StagingArea pulse animation for structured responses
+        if (responseCategory === 'structured') {
+          setStagingIsNewArrival(true);
+          setStagingPopulatedAt(Date.now());  // Track when staging was populated
+
+          // Update MiniBar to show suggestions-ready state
+          const itemCount = suggestions.length;
+          const statusMessage = buildSuggestionsReadyMessage(actionName, itemCount);
+          aiAssistant.setCollapsedContent({
+            type: 'suggestionsReady',
+            text: statusMessage,
+            icon: '💡',
+          });
+        }
+      }
+
+      // Handle edit action
+      if (pendingAction === 'edit' && data.edits && data.edits.length > 0) {
+        const editsToApply = data.edits; // Capture for TypeScript narrowing
+        updateActiveStaging(() => ({
+          suggestions: [],
+          edits: editsToApply,
+          deletions: [],
+          suggestedTitle: null,
+          pendingAction,
+        }));
+
+        // Trigger StagingArea pulse animation
+        if (responseCategory === 'structured') {
+          setStagingIsNewArrival(true);
+          setStagingPopulatedAt(Date.now());  // Track when staging was populated
+
+          // Update MiniBar to show edits-ready state
+          const itemCount = editsToApply.length;
+          aiAssistant.setCollapsedContent({
+            type: 'suggestionsReady',
+            text: `${itemCount} edit${itemCount !== 1 ? 's' : ''} ready`,
+            icon: '💡',
+          });
+        }
+      }
+
+      // Handle delete action
+      if (pendingAction === 'delete' && data.deletions && data.deletions.length > 0) {
+        const deletionsToApply = data.deletions; // Capture for TypeScript narrowing
+        updateActiveStaging(() => ({
+          suggestions: [],
+          edits: [],
+          deletions: deletionsToApply,
+          suggestedTitle: null,
+          pendingAction,
+        }));
+
+        // Trigger StagingArea pulse animation
+        if (responseCategory === 'structured') {
+          setStagingIsNewArrival(true);
+          setStagingPopulatedAt(Date.now());  // Track when staging was populated
+
+          // Update MiniBar to show deletions-ready state
+          const itemCount = deletionsToApply.length;
+          aiAssistant.setCollapsedContent({
+            type: 'suggestionsReady',
+            text: `${itemCount} deletion${itemCount !== 1 ? 's' : ''} ready`,
+            icon: '💡',
+          });
+        }
+      }
+
+      // Convert to AIResponse for minibar display
+      return structureToAIResponse(data);
+    } catch (error) {
+      return {
+        type: 'error',
+        content: { text: error instanceof Error ? error.message : 'Something went wrong' },
+        actions: [{ id: 'retry', label: 'Retry', variant: 'primary', onClick: () => {} }],
+      };
+    }
+  }, [state.activeTaskId, state.tasks, state.currentView, state.focusMode.currentStepId, updateActiveStaging]);
+
+  // Handle accepting suggestions from minibar
+  const handleAIMinibarAccept = useCallback((response: AIResponse) => {
+    if (response.type === 'suggestions') {
+      // Trigger accept all on existing staging workflow
+      const content = response.content as SuggestionsContent;
+      if (content.suggestions && content.suggestions.length > 0) {
+        // The suggestions are stored in task.staging by handleAIMinibarSubmit
+        // Just trigger the existing handleAcceptAll flow
+        handleAcceptAll();
+      }
+    }
+  }, []);
+
+  // AI Assistant hook (MiniBar/Palette/Drawer)
+  const aiAssistant = useAIAssistant({
+    initialContext: getAIContext(),
+    onSubmit: handleAIMinibarSubmit,
+    onAcceptSuggestions: handleAIMinibarAccept,
+  });
+
+  // ============================================
+  // Contextual Prompts
+  // ============================================
+
+  // Build prompt context from current state
+  const promptContext: PromptContext = {
+    // Task Detail context
+    taskStepCount: activeTask?.steps.length ?? 0,
+    // Focus Mode context - check if current step is incomplete
+    currentStepCompleted: state.focusMode.currentStepId
+      ? activeTask?.steps.find(s => s.id === state.focusMode.currentStepId)?.completed ?? false
+      : false,
+    // Queue context
+    queueItemCount: state.focusQueue.items.filter(i => !i.completed).length,
+    topQueueItemId: state.focusQueue.items
+      .filter(i => !i.completed)
+      .sort((a, b) => a.order - b.order)[0]?.id,
+    topQueueItemTitle: state.focusQueue.items
+      .filter(i => !i.completed)
+      .sort((a, b) => a.order - b.order)
+      .map(item => state.tasks.find(t => t.id === item.taskId)?.title)[0],
+  };
+
+  // Track prompt-triggered submissions (to auto-expand on response)
+  const promptTriggeredSubmitRef = useRef(false);
+
+  // Handlers for contextual prompts
+  const promptHandlers: PromptHandlers = {
+    submitQuery: (query: string) => {
+      // Submit directly WITHOUT expanding - show loading in MiniBar
+      // Will auto-expand when response arrives
+      promptTriggeredSubmitRef.current = true;
+      aiAssistant.directSubmit(query);
+    },
+    navigateToFocusMode: (queueItemId: string) => {
+      // Navigate to focus mode for the given queue item
+      handleStartFocus(queueItemId);
+    },
+  };
+
+  // Contextual prompts hook - only enabled when minibar is truly idle
+  const contextualPrompts = useContextualPrompts({
+    context: getAIContext(),
+    promptContext,
+    handlers: promptHandlers,
+    enabled:
+      aiAssistant.state.mode === 'collapsed' &&
+      !aiAssistant.state.isLoading &&
+      aiAssistant.state.collapsedContent.type === 'idle',
+  });
+
+  // Update MiniBar collapsed content when contextual prompt becomes active
+  useEffect(() => {
+    if (contextualPrompts.showPrompt && contextualPrompts.prompt) {
+      aiAssistant.setCollapsedContent({
+        type: 'prompt',
+        text: contextualPrompts.prompt.text,
+        prompt: contextualPrompts.prompt,
+      });
+    }
+  }, [contextualPrompts.showPrompt, contextualPrompts.prompt, aiAssistant.setCollapsedContent]);
+
+  // Auto-expand Palette when response arrives after prompt-triggered submission
+  useEffect(() => {
+    if (
+      promptTriggeredSubmitRef.current &&
+      !aiAssistant.state.isLoading &&
+      aiAssistant.state.response &&
+      aiAssistant.state.mode === 'collapsed'
+    ) {
+      promptTriggeredSubmitRef.current = false;
+      aiAssistant.expand();
+    }
+  }, [aiAssistant.state.isLoading, aiAssistant.state.response, aiAssistant.state.mode, aiAssistant.expand]);
+
+  // Reset prompt when user interacts with AI (expand or submit)
+  useEffect(() => {
+    if (aiAssistant.state.mode !== 'collapsed') {
+      contextualPrompts.resetPrompt();
+    }
+  }, [aiAssistant.state.mode, contextualPrompts.resetPrompt]);
 
   // ============================================
   // State Persistence
@@ -143,6 +460,13 @@ export default function Home() {
       saveState(state);
     }
   }, [state, hasHydrated]);
+
+  // Sync AI Assistant context when view changes
+  // Refinement 7: Reset appearance on context change (but preserve drawer history)
+  useEffect(() => {
+    aiAssistant.setContext(getAIContext());
+    aiAssistant.reset();  // Collapse MiniBar, clear response, clear query
+  }, [state.currentView, aiAssistant.setContext, aiAssistant.reset]);
 
   // ============================================
   // Keyboard Shortcuts
@@ -212,20 +536,25 @@ export default function Home() {
           break;
 
         case 'Escape':
-          // Close AI drawer if open
-          if (state.aiDrawer.isOpen) {
-            setState((prev) => ({
-              ...prev,
-              aiDrawer: { ...prev.aiDrawer, isOpen: false },
-            }));
-          } else if (state.currentView === 'taskDetail' || state.currentView === 'focusMode') {
-            // Go back to previous view
+          // Priority 1: Close AI drawer if open
+          if (aiAssistant.state.mode === 'drawer') {
+            aiAssistant.closeDrawer();
+          }
+          // Priority 2: Collapse Palette to MiniBar if expanded
+          else if (aiAssistant.state.mode === 'expanded') {
+            setPaletteManuallyOpened(false);
+            aiAssistant.collapse();
+          }
+          // Priority 3: Go back from task detail or focus mode
+          else if (state.currentView === 'taskDetail' || state.currentView === 'focusMode') {
             setState((prev) => ({
               ...prev,
               currentView: previousView,
               activeTaskId: null,
             }));
-          } else if (projectModalOpen) {
+          }
+          // Priority 4: Close project modal
+          else if (projectModalOpen) {
             setProjectModalOpen(false);
             setEditingProject(null);
           }
@@ -254,7 +583,7 @@ export default function Home() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [state.aiDrawer.isOpen, state.currentView, previousView, projectModalOpen]);
+  }, [state.aiDrawer.isOpen, state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.closeDrawer, aiAssistant.collapse]);
 
   // ============================================
   // Edge Swipe Navigation
@@ -1772,6 +2101,16 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === state.activeTaskId);
       if (!task) return prev;
 
+      const staging = task.staging;
+      const remainingSuggestions = staging?.suggestions.filter((s) => s.id !== suggestion.id) || [];
+      const updatedStaging = staging
+        ? {
+            ...staging,
+            suggestions: remainingSuggestions,
+            pendingAction: remainingSuggestions.length === 0 ? null : staging.pendingAction,
+          }
+        : null;
+
       // Check if this should be added as a substep to an existing step
       if (suggestion.parentStepId) {
         return {
@@ -1796,12 +2135,10 @@ export default function Home() {
                     }
                   : s
               ),
+              staging: updatedStaging,
               updatedAt: Date.now(),
             };
           }),
-          suggestions: prev.suggestions.filter((s) => s.id !== suggestion.id),
-          // Clear pendingAction when last suggestion is accepted
-          pendingAction: prev.suggestions.length <= 1 ? null : prev.pendingAction,
         };
       }
 
@@ -1851,73 +2188,73 @@ export default function Home() {
         ...prev,
         tasks: prev.tasks.map((t) =>
           t.id === state.activeTaskId
-            ? { ...t, steps: newSteps, updatedAt: Date.now() }
+            ? { ...t, steps: newSteps, staging: updatedStaging, updatedAt: Date.now() }
             : t
         ),
-        suggestions: prev.suggestions.filter((s) => s.id !== suggestion.id),
-        // Clear pendingAction when last suggestion is accepted
-        pendingAction: prev.suggestions.length <= 1 ? null : prev.pendingAction,
       };
     });
   }, [state.activeTaskId]);
 
   const handleRejectSuggestion = useCallback((suggestionId: string) => {
-    setState((prev) => ({
-      ...prev,
-      suggestions: prev.suggestions.filter((s) => s.id !== suggestionId),
-      // Clear pendingAction when last suggestion is rejected
-      pendingAction: prev.suggestions.length <= 1 ? null : prev.pendingAction,
-    }));
-  }, []);
+    updateActiveStaging((staging) => {
+      if (!staging) return null;
+      const remainingSuggestions = staging.suggestions.filter((s) => s.id !== suggestionId);
+      return {
+        ...staging,
+        suggestions: remainingSuggestions,
+        pendingAction: remainingSuggestions.length === 0 ? null : staging.pendingAction,
+      };
+    });
+  }, [updateActiveStaging]);
 
   const handleAcceptEdit = useCallback((edit: EditSuggestion) => {
     if (!state.activeTaskId) return;
 
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== state.activeTaskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find(t => t.id === state.activeTaskId);
+      if (!task) return prev;
 
-        if (edit.targetType === 'step') {
-          return {
-            ...t,
-            steps: t.steps.map((s) =>
-              s.id === edit.targetId
-                ? { ...s, text: edit.newText, wasEdited: true }
-                : s
-            ),
-            updatedAt: Date.now(),
-          };
-        } else {
-          // Substep edit
-          return {
-            ...t,
-            steps: t.steps.map((s) =>
-              s.id === edit.parentId
-                ? {
-                    ...s,
-                    substeps: s.substeps.map((sub) =>
-                      sub.id === edit.targetId
-                        ? { ...sub, text: edit.newText }
-                        : sub
-                    ),
-                  }
-                : s
-            ),
-            updatedAt: Date.now(),
-          };
-        }
-      }),
-      edits: prev.edits.filter((e) => e.targetId !== edit.targetId),
-    }));
+      const updatedSteps = edit.targetType === 'step'
+        ? task.steps.map((s) =>
+            s.id === edit.targetId
+              ? { ...s, text: edit.newText, wasEdited: true }
+              : s
+          )
+        : task.steps.map((s) =>
+            s.id === edit.parentId
+              ? {
+                  ...s,
+                  substeps: s.substeps.map((sub) =>
+                    sub.id === edit.targetId
+                      ? { ...sub, text: edit.newText }
+                      : sub
+                  ),
+                }
+              : s
+          );
+
+      const updatedStaging = task.staging
+        ? { ...task.staging, edits: task.staging.edits.filter((e) => e.targetId !== edit.targetId) }
+        : null;
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === state.activeTaskId
+            ? { ...t, steps: updatedSteps, staging: updatedStaging, updatedAt: Date.now() }
+            : t
+        ),
+      };
+    });
   }, [state.activeTaskId]);
 
   const handleRejectEdit = useCallback((edit: EditSuggestion) => {
-    setState((prev) => ({
-      ...prev,
-      edits: prev.edits.filter((e) => e.targetId !== edit.targetId),
-    }));
-  }, []);
+    updateActiveStaging((staging) =>
+      staging
+        ? { ...staging, edits: staging.edits.filter((e) => e.targetId !== edit.targetId) }
+        : null
+    );
+  }, [updateActiveStaging]);
 
   const handleAcceptDeletion = useCallback((deletion: DeletionSuggestion) => {
     if (!state.activeTaskId) return;
@@ -1962,55 +2299,79 @@ export default function Home() {
         }
       }
 
+      const updatedStaging = task.staging
+        ? { ...task.staging, deletions: task.staging.deletions.filter((d) => d.targetId !== deletion.targetId) }
+        : null;
+
       return {
         ...prev,
         tasks: prev.tasks.map((t) =>
           t.id === state.activeTaskId
-            ? { ...t, steps: newSteps, updatedAt: Date.now() }
+            ? { ...t, steps: newSteps, staging: updatedStaging, updatedAt: Date.now() }
             : t
         ),
-        deletions: prev.deletions.filter((d) => d.targetId !== deletion.targetId),
       };
     });
   }, [state.activeTaskId]);
 
   const handleRejectDeletion = useCallback((deletion: DeletionSuggestion) => {
-    setState((prev) => ({
-      ...prev,
-      deletions: prev.deletions.filter((d) => d.targetId !== deletion.targetId),
-    }));
-  }, []);
+    updateActiveStaging((staging) =>
+      staging
+        ? { ...staging, deletions: staging.deletions.filter((d) => d.targetId !== deletion.targetId) }
+        : null
+    );
+  }, [updateActiveStaging]);
 
   const handleAcceptTitle = useCallback(() => {
-    if (!state.activeTaskId || !state.suggestedTitle) return;
+    if (!state.activeTaskId) return;
 
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === state.activeTaskId
-          ? { ...t, title: state.suggestedTitle!, updatedAt: Date.now() }
-          : t
-      ),
-      suggestedTitle: null,
-    }));
-  }, [state.activeTaskId, state.suggestedTitle]);
+    const staging = getActiveStaging();
+    if (!staging?.suggestedTitle) return;
+
+    const suggestedTitle = staging.suggestedTitle;
+
+    setState((prev) => {
+      const task = prev.tasks.find(t => t.id === state.activeTaskId);
+      if (!task) return prev;
+
+      const updatedStaging = task.staging
+        ? { ...task.staging, suggestedTitle: null }
+        : null;
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === state.activeTaskId
+            ? { ...t, title: suggestedTitle, staging: updatedStaging, updatedAt: Date.now() }
+            : t
+        ),
+      };
+    });
+  }, [state.activeTaskId, getActiveStaging]);
 
   const handleRejectTitle = useCallback(() => {
-    setState((prev) => ({ ...prev, suggestedTitle: null }));
-  }, []);
+    updateActiveStaging((staging) =>
+      staging
+        ? { ...staging, suggestedTitle: null }
+        : null
+    );
+  }, [updateActiveStaging]);
 
   const handleAcceptAll = useCallback(() => {
     if (!state.activeTaskId) return;
 
+    const staging = getActiveStaging();
+    if (!staging) return;
+
     // Accept title if suggested
-    if (state.suggestedTitle) {
+    if (staging.suggestedTitle) {
       handleAcceptTitle();
     }
 
     // Handle based on action type
-    if (state.pendingAction === 'replace') {
+    if (staging.pendingAction === 'replace') {
       // Replace all steps with the suggestions
-      const newSteps: Step[] = state.suggestions.map((suggestion) =>
+      const newSteps: Step[] = staging.suggestions.map((suggestion) =>
         createStep(suggestion.text, {
           id: suggestion.id,
           source: 'ai_generated',
@@ -2035,43 +2396,57 @@ export default function Home() {
             ? {
                 ...t,
                 steps: newSteps,
+                staging: null,
                 completionType: 'step_based',
                 aiAssisted: true,
                 updatedAt: Date.now(),
               }
             : t
         ),
-        suggestions: [],
-        pendingAction: null,
       }));
     } else {
       // Normal suggest flow - add steps one by one
-      state.suggestions.forEach((suggestion) => {
+      staging.suggestions.forEach((suggestion) => {
         handleAcceptSuggestion(suggestion);
       });
     }
 
     // Accept all edits
-    state.edits.forEach((edit) => {
+    staging.edits.forEach((edit) => {
       handleAcceptEdit(edit);
     });
 
     // Accept all deletions
-    state.deletions.forEach((deletion) => {
+    staging.deletions.forEach((deletion) => {
       handleAcceptDeletion(deletion);
     });
-  }, [state.activeTaskId, state.suggestedTitle, state.suggestions, state.edits, state.deletions, state.pendingAction, handleAcceptTitle, handleAcceptSuggestion, handleAcceptEdit, handleAcceptDeletion]);
+
+    // Clear staging after accepting all
+    clearActiveStaging();
+
+    // Only clear palette and collapse if content is still related to staging
+    // (user hasn't submitted a new query since staging was populated)
+    const hasNewQuerySinceStaging = lastQuerySubmittedAt > stagingPopulatedAt;
+    if (!hasNewQuerySinceStaging) {
+      aiAssistant.dismissResponse();
+      aiAssistant.collapse();
+      setPaletteManuallyOpened(false);
+    }
+  }, [state.activeTaskId, getActiveStaging, handleAcceptTitle, handleAcceptSuggestion, handleAcceptEdit, handleAcceptDeletion, clearActiveStaging, aiAssistant, lastQuerySubmittedAt, stagingPopulatedAt]);
 
   const handleDismiss = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      suggestions: [],
-      edits: [],
-      deletions: [],
-      suggestedTitle: null,
-      pendingAction: null,
-    }));
-  }, []);
+    // Clear staging for current context (task or global)
+    clearActiveStaging();
+
+    // Only clear palette and collapse if content is still related to staging
+    // (user hasn't submitted a new query since staging was populated)
+    const hasNewQuerySinceStaging = lastQuerySubmittedAt > stagingPopulatedAt;
+    if (!hasNewQuerySinceStaging) {
+      aiAssistant.dismissResponse();
+      aiAssistant.collapse();
+      setPaletteManuallyOpened(false);
+    }
+  }, [clearActiveStaging, aiAssistant, lastQuerySubmittedAt, stagingPopulatedAt]);
 
   // ============================================
   // Computed Values
@@ -2122,8 +2497,8 @@ export default function Home() {
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
-          {/* Mobile: pb-48 clears floating AI bar + gives room for dropdowns; when AI open pb-[52vh] for bottom sheet */}
-          <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-6 pb-[52vh]' : 'pb-48 lg:pb-6'}`}>
+          {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet */}
+          <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
@@ -2202,10 +2577,12 @@ export default function Home() {
                 task={activeTask}
                 queue={state.focusQueue}
                 projects={state.projects}
-                suggestions={state.suggestions}
-                edits={state.edits}
-                deletions={state.deletions}
-                suggestedTitle={state.suggestedTitle}
+                suggestions={activeTask.staging?.suggestions || []}
+                edits={activeTask.staging?.edits || []}
+                deletions={activeTask.staging?.deletions || []}
+                suggestedTitle={activeTask.staging?.suggestedTitle || null}
+                stagingIsNewArrival={stagingIsNewArrival}
+                onStagingAnimationComplete={() => setStagingIsNewArrival(false)}
                 onBack={handleBackToList}
                 onUpdateTask={handleUpdateTask}
                 onStepComplete={handleStepComplete}
@@ -2264,10 +2641,10 @@ export default function Home() {
                 onResume={handleResumeFocus}
                 onExit={handleExitFocus}
                 onOpenAIDrawer={handleToggleAIDrawer}
-                suggestions={state.suggestions}
-                edits={state.edits}
-                deletions={state.deletions}
-                suggestedTitle={state.suggestedTitle}
+                suggestions={activeTask.staging?.suggestions || []}
+                edits={activeTask.staging?.edits || []}
+                deletions={activeTask.staging?.deletions || []}
+                suggestedTitle={activeTask.staging?.suggestedTitle || null}
                 onAcceptOne={handleAcceptSuggestion}
                 onAcceptAll={handleAcceptAll}
                 onDismiss={handleDismiss}
@@ -2317,6 +2694,65 @@ export default function Home() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
+      {/* Only show when not in drawer mode (drawer handled separately) */}
+      {aiAssistant.state.mode !== 'drawer' && (
+        <div className="fixed bottom-6 left-6 right-6 sm:bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 sm:w-auto">
+          <AIAssistantOverlay
+            mode={aiAssistant.state.mode === 'collapsed' ? 'collapsed' : 'expanded'}
+            collapsedContent={aiAssistant.state.collapsedContent}
+            onExpand={() => {
+              setPaletteManuallyOpened(true);
+              aiAssistant.expand();
+            }}
+            onScrollToSuggestions={() => {
+              const el = document.getElementById('staging-area');
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            query={aiAssistant.state.query}
+            onQueryChange={aiAssistant.setQuery}
+            onSubmit={aiAssistant.submitQuery}
+            onDirectSubmit={aiAssistant.directSubmit}
+            isLoading={aiAssistant.state.isLoading}
+            response={aiAssistant.state.response}
+            quickActions={aiAssistant.quickActions}
+            onCollapse={() => {
+              setPaletteManuallyOpened(false);
+              aiAssistant.collapse();
+            }}
+            onDismiss={aiAssistant.dismissResponse}
+            disableAutoCollapse={paletteManuallyOpened}
+            onManualInteraction={() => setPaletteManuallyOpened(true)}
+          />
+        </div>
+      )}
+
+      {/* AI Assistant Drawer (full chat) */}
+      <AnimatePresence>
+        {aiAssistant.state.mode === 'drawer' && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={aiAssistant.closeDrawer}
+              className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
+            />
+            <AIAssistantDrawer
+              messages={aiAssistant.state.messages}
+              query={aiAssistant.state.query}
+              onQueryChange={aiAssistant.setQuery}
+              onSubmit={aiAssistant.submitQuery}
+              isLoading={aiAssistant.state.isLoading}
+              onClose={aiAssistant.closeDrawer}
+            />
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -89,3 +89,127 @@ input[type="date"] {
 .animate-slide-up {
   animation: slide-up 0.2s ease-out;
 }
+
+/* Hide scrollbars utility (used in AI minibar transitions) */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* StagingArea pulse-glow animation for new arrivals */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 10px 15px -3px rgb(167 139 250 / 0.3), 0 4px 6px -4px rgb(167 139 250 / 0.2);
+  }
+  50% {
+    box-shadow: 0 10px 25px -3px rgb(167 139 250 / 0.5), 0 4px 10px -4px rgb(167 139 250 / 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 0.5s ease-in-out 3;
+}
+
+/* AI Loading: Pulse Sparkle animation - "swelling wave that breaks" */
+@keyframes pulse-sparkle {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  /* Slow build phase - gradual swell */
+  25% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  /* Accelerating toward peak */
+  40% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  /* PEAK - wave crest, bold and large */
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  /* BREAK - quick snap back */
+  58% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  /* Rest/recovery before next cycle */
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-sparkle {
+  animation: pulse-sparkle 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* AI Loading: Shimmer text animation */
+@keyframes shimmer {
+  0% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.shimmer-text {
+  /* Use explicit properties instead of shorthand for cross-browser animation support */
+  background-image: linear-gradient(
+    90deg,
+    #52525b 25%,
+    #ddd6fe 50%,
+    #52525b 75%
+  );
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 2s ease-out infinite;
+  -webkit-animation: shimmer 2s ease-out infinite;
+}
+
+/* Dark mode shimmer - use media query to match app's dark mode strategy */
+@media (prefers-color-scheme: dark) {
+  .shimmer-text {
+    background-image: linear-gradient(
+      90deg,
+      #a1a1aa 25%,
+      #ede9fe 50%,
+      #a1a1aa 75%
+    );
+    background-size: 300% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Reduced motion: disable loading animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-sparkle {
+    animation: none;
+  }
+  .shimmer-text {
+    animation: none;
+    -webkit-animation: none;
+    background-image: none;
+    color: #71717a;
+    opacity: 0.7;
+  }
+}
+
+/* Reduced motion + dark mode combination */
+@media (prefers-reduced-motion: reduce) and (prefers-color-scheme: dark) {
+  .shimmer-text {
+    color: #a1a1aa;
+  }
+}

@@ -10,6 +10,7 @@ import {
   FocusQueueItem,
   Nudge,
   SnoozedNudge,
+  StagingState,
 } from './types';
 
 // ============================================
@@ -195,6 +196,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV3(state);
   }
 
+  // Version 3 → 4: Per-task staging (staging on Task, globalStaging on AppState)
+  if (version < 4) {
+    state = migrateToV4(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -268,6 +274,7 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         version: 1,
         messages: (stored.messages as Message[]) || [],
         focusModeMessages: [],
+        staging: null,
       };
 
       return {
@@ -444,6 +451,31 @@ function migrateToV3(state: Partial<AppState> & Record<string, unknown>): Partia
 }
 
 /**
+ * Migrate from v3 to v4 (Per-task staging: move staging to Task, add globalStaging)
+ */
+function migrateToV4(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Add staging: null to all tasks
+  const tasks = ((state.tasks as Task[]) || []).map((task) => ({
+    ...task,
+    staging: task.staging ?? null,
+  }));
+
+  return {
+    ...state,
+    schemaVersion: 4,
+    tasks,
+    // Replace old staging fields with globalStaging: null
+    globalStaging: null,
+    // Remove old fields (they'll be undefined/ignored)
+    suggestions: undefined,
+    edits: undefined,
+    deletions: undefined,
+    suggestedTitle: undefined,
+    pendingAction: undefined,
+  };
+}
+
+/**
  * Migrate legacy step format to new format
  */
 function migrateSteps(legacySteps: unknown[]): Step[] {
@@ -511,6 +543,8 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     // Per-task messages
     messages: task.messages ?? [],
     focusModeMessages: task.focusModeMessages ?? [],
+    // Per-task staging
+    staging: task.staging ?? null,
     // Ensure steps have Model E fields
     steps: task.steps.map((step) => ({
       ...step,
@@ -566,11 +600,7 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     },
     currentSessionId: partial.currentSessionId ?? initial.currentSessionId,
     aiDrawer: partial.aiDrawer ?? initial.aiDrawer,
-    suggestions: partial.suggestions ?? initial.suggestions,
-    edits: partial.edits ?? initial.edits,
-    deletions: partial.deletions ?? initial.deletions,
-    suggestedTitle: partial.suggestedTitle ?? initial.suggestedTitle,
-    pendingAction: null,  // Always reset to null on load
+    globalStaging: partial.globalStaging ?? initial.globalStaging,
     filters,
     sortBy: partial.sortBy ?? initial.sortBy,
     sortOrder: partial.sortOrder ?? initial.sortOrder,

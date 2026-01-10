@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SuggestedStep, EditSuggestion, DeletionSuggestion } from "@/lib/types";
 import { formatDuration } from "@/lib/utils";
 
@@ -20,6 +20,8 @@ interface StagingAreaProps {
   onAcceptAll: () => void;
   onDismiss: () => void;
   defaultExpanded?: boolean;
+  isNewArrival?: boolean;
+  onAnimationComplete?: () => void;
 }
 
 export default function StagingArea({
@@ -38,8 +40,26 @@ export default function StagingArea({
   onAcceptAll,
   onDismiss,
   defaultExpanded = true,
+  isNewArrival = false,
+  onAnimationComplete,
 }: StagingAreaProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isPulsing, setIsPulsing] = useState(false);
+
+  // Trigger pulse animation when new items arrive
+  useEffect(() => {
+    if (isNewArrival) {
+      setIsPulsing(true);
+      // Auto-expand when new items arrive
+      setIsExpanded(true);
+      // Stop pulsing after 3 cycles (~1.5s)
+      const timer = setTimeout(() => {
+        setIsPulsing(false);
+        onAnimationComplete?.();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isNewArrival, onAnimationComplete]);
   const safeEdits = edits || [];
   const safeSuggestions = suggestions || [];
   const safeDeletions = deletions || [];
@@ -52,7 +72,14 @@ export default function StagingArea({
   }
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg overflow-hidden">
+    <div
+      className={`
+        bg-amber-50 dark:bg-amber-900/20 border rounded-lg overflow-hidden transition-all
+        ${isPulsing
+          ? 'border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 animate-pulse-glow'
+          : 'border-amber-200 dark:border-amber-800'}
+      `}
+    >
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
