@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Task } from "@/lib/types";
 
 type FilterType = "high_priority" | "waiting" | "deferred" | "completed" | "archived" | null;
@@ -11,6 +11,9 @@ interface SearchViewProps {
   tasks: Task[];
   onOpenTask: (taskId: string) => void;
   onNavigateToProjects: () => void;
+  onExportData: () => void;
+  onImportData: (jsonString: string) => { success: boolean; error?: string };
+  showToast: (toast: { message: string; type: "info" | "success" | "warning" | "error" }) => void;
 }
 
 export default function SearchView({
@@ -19,8 +22,46 @@ export default function SearchView({
   tasks,
   onOpenTask,
   onNavigateToProjects,
+  onExportData,
+  onImportData,
+  showToast,
 }: SearchViewProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    onExportData();
+    showToast({ message: "Data exported successfully", type: "success" });
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const result = onImportData(content);
+      if (result.success) {
+        showToast({ message: "Data imported successfully. Refreshing...", type: "success" });
+        // Reload to apply imported data
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showToast({ message: `Import failed: ${result.error}`, type: "error" });
+      }
+    };
+    reader.onerror = () => {
+      showToast({ message: "Failed to read file", type: "error" });
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  };
 
   // Search results - filter tasks by query
   const searchResults = useMemo(() => {
@@ -173,6 +214,43 @@ export default function SearchView({
               color="purple"
               onClick={onNavigateToProjects}
             />
+          </div>
+
+          {/* Data Management */}
+          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
+            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+              Data
+            </h3>
+            <div className="flex gap-3">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export JSON
+              </button>
+              <button
+                onClick={handleImportClick}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import JSON
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
+              Export your tasks for backup or import from a previous export.
+            </p>
           </div>
         </section>
       )}

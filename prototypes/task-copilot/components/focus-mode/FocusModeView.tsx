@@ -52,7 +52,7 @@ function formatTime(seconds: number): string {
 // Get steps in scope for this queue item
 function getStepsInScope(task: Task, queueItem: FocusQueueItem | null): Step[] {
   if (!queueItem) return task.steps;
-  if (queueItem.selectionType === "entire_task") return task.steps;
+  if (queueItem.selectionType === "all_today" || queueItem.selectionType === "all_upcoming") return task.steps;
   return task.steps.filter((s) => queueItem.selectedStepIds.includes(s.id));
 }
 

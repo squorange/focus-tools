@@ -11,6 +11,7 @@ import { countCompletionsToday } from "@/lib/completions";
 import QueueItem from "./QueueItem";
 import QuickCapture from "@/components/inbox/QuickCapture";
 import CompletedDrawer from "./CompletedDrawer";
+import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 
 // Unified slot model: line occupies a slot just like items
 // Visual slots: [top-zone, item0, item1, ..., LINE, itemN, ..., bottom-zone]
@@ -41,11 +42,13 @@ interface QueueViewProps {
   onCreateTask: (title: string) => void;
   onStartFocus: (queueItemId: string) => void;
   onRemoveFromQueue: (queueItemId: string) => void;
+  onUpdateStepSelection: (queueItemId: string, selectionType: 'all_today' | 'all_upcoming' | 'specific_steps', selectedStepIds: string[]) => void;
   // Unified reorder callback - visual-first approach
   onReorderQueue: (items: FocusQueueItem[], todayLineIndex: number) => void;
   onMoveItemUp: (queueItemId: string) => void;
   onMoveItemDown: (queueItemId: string) => void;
   onGoToInbox: () => void;
+  // Note: "What should I do?" is now handled via minibar contextual prompt
 }
 
 // Get total estimated time for items
@@ -57,7 +60,7 @@ function getTotalEstimate(items: FocusQueueItem[], tasks: Task[]): string | null
     if (!task) continue;
 
     const steps =
-      item.selectionType === "entire_task"
+      item.selectionType === "all_today" || item.selectionType === "all_upcoming"
         ? task.steps
         : task.steps.filter((s) => item.selectedStepIds.includes(s.id));
 
@@ -84,6 +87,7 @@ export default function QueueView({
   onCreateTask,
   onStartFocus,
   onRemoveFromQueue,
+  onUpdateStepSelection,
   onReorderQueue,
   onMoveItemUp,
   onMoveItemDown,
@@ -93,6 +97,8 @@ export default function QueueView({
   const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
   const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
+  // Focus selection modal state
+  const [editingQueueItemId, setEditingQueueItemId] = useState<string | null>(null);
 
   // Touch drag state
   const [isTouchDragging, setIsTouchDragging] = useState(false);
@@ -403,14 +409,17 @@ export default function QueueView({
             </span>
           )}
         </div>
-        {totalItems > 0 && (
-          <button
-            onClick={() => setCompletedDrawerOpen(true)}
-            className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
-          >
-            {completionCount > 0 ? `${completionCount} completed` : "Completed"}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* "What next?" is now handled via minibar contextual prompt */}
+          {totalItems > 0 && (
+            <button
+              onClick={() => setCompletedDrawerOpen(true)}
+              className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+            >
+              {completionCount > 0 ? `${completionCount} completed` : "Completed"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Queue Content */}
@@ -587,6 +596,7 @@ export default function QueueView({
                         onOpenTask={onOpenTask}
                         onStartFocus={onStartFocus}
                         onRemoveFromQueue={onRemoveFromQueue}
+                        onEditFocus={(queueItemId) => setEditingQueueItemId(queueItemId)}
                         onMoveUp={onMoveItemUp}
                         onMoveDown={onMoveItemDown}
                       />
@@ -619,6 +629,32 @@ export default function QueueView({
         tasks={tasks}
         onNavigateToTask={onOpenTask}
       />
+
+      {/* Focus Selection Modal for editing step selection */}
+      {editingQueueItemId && (() => {
+        const queueItem = queue.items.find(i => i.id === editingQueueItemId);
+        const task = queueItem ? tasks.find(t => t.id === queueItem.taskId) : null;
+        if (!queueItem || !task) return null;
+
+        return (
+          <FocusSelectionModal
+            isOpen={true}
+            task={task}
+            initialSelectionType={queueItem.selectionType}
+            initialSelectedStepIds={
+              queueItem.selectionType === 'specific_steps'
+                ? queueItem.selectedStepIds
+                : []
+            }
+            onClose={() => setEditingQueueItemId(null)}
+            onConfirm={(selectionType, selectedStepIds) => {
+              onUpdateStepSelection(editingQueueItemId, selectionType, selectedStepIds);
+              setEditingQueueItemId(null);
+            }}
+            mode="edit"
+          />
+        );
+      })()}
     </div>
   );
 }

@@ -13,6 +13,17 @@ interface AIDrawerProps {
   // For focus mode collapsible sections
   currentStepId?: string | null;
   steps?: Step[];
+  // Recommendation feature
+  recommendation?: {
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+    reasonType: string;
+  } | null;
+  recommendationLoading?: boolean;
+  onStartRecommendedFocus?: () => void;
+  onSkipRecommendation?: () => void;
+  onDismissRecommendation?: () => void;
 }
 
 // Group messages by stepId
@@ -46,6 +57,11 @@ export default function AIDrawer({
   variant = "planning",
   currentStepId,
   steps = [],
+  recommendation,
+  recommendationLoading,
+  onStartRecommendedFocus,
+  onSkipRecommendation,
+  onDismissRecommendation,
 }: AIDrawerProps) {
   const config = VARIANT_CONFIG[variant];
   const [input, setInput] = useState("");
@@ -194,7 +210,30 @@ export default function AIDrawer({
           <div className="flex flex-col min-h-full">
             <div className="flex-1" />
             <div className="space-y-3">
-              {messages.length === 0 ? (
+              {/* Recommendation card - shows at top when available */}
+              {recommendation && onStartRecommendedFocus && onSkipRecommendation && onDismissRecommendation && (
+                <RecommendationCard
+                  recommendation={recommendation}
+                  isLoading={recommendationLoading}
+                  onStartFocus={onStartRecommendedFocus}
+                  onSkip={onSkipRecommendation}
+                  onDismiss={onDismissRecommendation}
+                />
+              )}
+
+              {/* Recommendation loading state */}
+              {recommendationLoading && !recommendation && (
+                <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin w-5 h-5 border-2 border-violet-600 border-t-transparent rounded-full" />
+                    <span className="text-sm text-violet-700 dark:text-violet-300">
+                      Finding the best task for you...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {messages.length === 0 && !recommendation && !recommendationLoading ? (
                 <div className="py-8 text-center">
                   <p className="text-zinc-500 dark:text-zinc-400 mb-1">
                     {config.emptyTitle}
@@ -416,7 +455,30 @@ export default function AIDrawer({
         {/* Mobile messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
           <div className="space-y-3">
-            {messages.length === 0 ? (
+            {/* Recommendation card - shows at top when available */}
+            {recommendation && onStartRecommendedFocus && onSkipRecommendation && onDismissRecommendation && (
+              <RecommendationCard
+                recommendation={recommendation}
+                isLoading={recommendationLoading}
+                onStartFocus={onStartRecommendedFocus}
+                onSkip={onSkipRecommendation}
+                onDismiss={onDismissRecommendation}
+              />
+            )}
+
+            {/* Recommendation loading state */}
+            {recommendationLoading && !recommendation && (
+              <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin w-5 h-5 border-2 border-violet-600 border-t-transparent rounded-full" />
+                  <span className="text-sm text-violet-700 dark:text-violet-300">
+                    Finding the best task for you...
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {messages.length === 0 && !recommendation && !recommendationLoading ? (
               <div className="py-8 text-center">
                 <p className="text-zinc-500 dark:text-zinc-400 mb-1">
                   {config.emptyTitle}
@@ -530,6 +592,91 @@ function ChatMessage({ message }: { message: Message }) {
           }`}
       >
         <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
+      </div>
+    </div>
+  );
+}
+
+// Recommendation card component (for "What should I do?" feature)
+interface RecommendationCardProps {
+  recommendation: {
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+    reasonType: string;
+  };
+  isLoading?: boolean;
+  onStartFocus: () => void;
+  onSkip: () => void;
+  onDismiss: () => void;
+}
+
+function RecommendationCard({
+  recommendation,
+  isLoading,
+  onStartFocus,
+  onSkip,
+  onDismiss,
+}: RecommendationCardProps) {
+  // Map reasonType to an icon/emoji
+  const getReasonIcon = (reasonType: string) => {
+    switch (reasonType) {
+      case 'deadline': return '📅';
+      case 'momentum': return '🚀';
+      case 'quick_win': return '⚡';
+      case 'priority': return '⭐';
+      case 'oldest': return '📦';
+      default: return '✨';
+    }
+  };
+
+  return (
+    <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4 mb-4">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{getReasonIcon(recommendation.reasonType)}</span>
+          <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+            I'd suggest...
+          </span>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          aria-label="Dismiss recommendation"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Task title */}
+      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
+        "{recommendation.taskTitle}"
+      </h3>
+
+      {/* Reason */}
+      <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+        {recommendation.reason}
+      </p>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={onStartFocus}
+          disabled={isLoading}
+          className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          Start Focus
+        </button>
+        <button
+          onClick={onSkip}
+          disabled={isLoading}
+          className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium rounded-lg transition-colors"
+        >
+          Not this one
+        </button>
       </div>
     </div>
   );

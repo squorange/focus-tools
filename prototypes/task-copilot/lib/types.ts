@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 // ============================================
 // Task Structure Types
@@ -245,7 +245,7 @@ export type FocusReason =
   | 'energy_match';
 
 export type Horizon = 'today' | 'this_week' | 'upcoming';
-export type SelectionType = 'entire_task' | 'specific_steps';
+export type SelectionType = 'all_today' | 'all_upcoming' | 'specific_steps';
 
 export interface FocusQueueItem {
   id: string;
@@ -253,7 +253,7 @@ export interface FocusQueueItem {
 
   // Step selection
   selectionType: SelectionType;
-  selectedStepIds: string[];        // Empty if entire_task
+  selectedStepIds: string[];        // Empty if all_today or all_upcoming
 
   // Time commitment
   horizon: Horizon;
@@ -505,7 +505,7 @@ export interface Message {
 // API Types
 // ============================================
 
-export type AIAction = "replace" | "suggest" | "edit" | "delete" | "none";
+export type AIAction = "replace" | "suggest" | "edit" | "delete" | "recommend" | "none";
 
 export interface StructureRequest {
   userMessage: string;
@@ -814,7 +814,7 @@ export function createFocusQueueItem(
   return {
     id: generateId(),
     taskId,
-    selectionType: 'entire_task',
+    selectionType: 'all_today',
     selectedStepIds: [],
     horizon,
     scheduledDate: null,

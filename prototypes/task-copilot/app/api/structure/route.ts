@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, FOCUS_MODE_PROMPT } from "@/lib/prompts";
-import { StructureRequest, StructureResponse, Substep, Step } from "@/lib/types";
+import { SYSTEM_PROMPT, FOCUS_MODE_PROMPT, QUEUE_MODE_PROMPT } from "@/lib/prompts";
+import { StructureRequest, StructureResponse, Substep, Step, Task, FocusQueueItem } from "@/lib/types";
 import {
   structuringTools,
   focusModeTools,
+  queueModeTools,
   ReplaceStepsInput,
   SuggestAdditionsInput,
   EditStepsInput,
@@ -15,9 +16,10 @@ import {
   SuggestFirstActionInput,
   ExplainStepInput,
   EncourageInput,
+  RecommendTaskInput,
 } from "@/lib/ai-tools";
 
-// Extended request body for focus mode
+// Extended request body for focus mode and queue mode
 interface ExtendedStructureRequest extends StructureRequest {
   taskDescription?: string | null;
   taskNotes?: string;
@@ -35,6 +37,37 @@ interface ExtendedStructureRequest extends StructureRequest {
     text: string;
     completed: boolean;
   } | null;
+  // Queue mode (task recommendation)
+  queueMode?: boolean;
+  queueContext?: {
+    todayItems: Array<{
+      taskId: string;
+      taskTitle: string;
+      priority: string | null;
+      deadlineDate: string | null;
+      completedSteps: number;
+      totalSteps: number;
+      effort: string | null;
+      addedAt: number;
+    }>;
+    upcomingItems: Array<{
+      taskId: string;
+      taskTitle: string;
+      priority: string | null;
+      deadlineDate: string | null;
+    }>;
+    excludeTaskIds?: string[];
+  };
+}
+
+// Extended response for recommendations
+export interface RecommendationResponse extends StructureResponse {
+  recommendation?: {
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+    reasonType: string;
+  };
 }
 
 const anthropic = new Anthropic({
@@ -83,17 +116,30 @@ function cleanStepText<T extends { text: string; estimatedMinutes?: number | nul
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext } = body;
 
     // Determine which prompt and tools to use
     const isFocusMode = Boolean(focusMode);
-    const systemPrompt = isFocusMode ? FOCUS_MODE_PROMPT : SYSTEM_PROMPT;
-    const tools = isFocusMode ? focusModeTools : structuringTools;
+    const isQueueMode = Boolean(queueMode);
+
+    let systemPrompt = SYSTEM_PROMPT;
+    let tools = structuringTools;
+
+    if (isQueueMode) {
+      systemPrompt = QUEUE_MODE_PROMPT;
+      tools = queueModeTools;
+    } else if (isFocusMode) {
+      systemPrompt = FOCUS_MODE_PROMPT;
+      tools = focusModeTools;
+    }
 
     // Build context message with current state
-    const contextMessage = buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep);
+    const contextMessage = isQueueMode
+      ? buildQueueContextMessage(userMessage, queueContext)
+      : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep);
     console.log("[AI Debug] Context message:", contextMessage);
     console.log("[AI Debug] Focus mode:", isFocusMode);
+    console.log("[AI Debug] Queue mode:", isQueueMode);
     console.log("[AI Debug] Current list length:", currentList?.length || 0);
 
     // Build messages array for Claude
@@ -382,6 +428,26 @@ function processToolResult(
       };
     }
 
+    // Queue mode tools
+    case "recommend_task": {
+      const data = input as RecommendTaskInput;
+      return {
+        action: "recommend",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        message: data.reason,
+        recommendation: {
+          taskId: data.taskId,
+          taskTitle: data.taskTitle,
+          reason: data.reason,
+          reasonType: data.reasonType,
+        },
+      } as RecommendationResponse;
+    }
+
     default:
       return {
         action: "none",
@@ -489,6 +555,90 @@ function buildContextMessage(
     context += "Current list: EMPTY (no steps added yet)\n\n";
   }
 
+  context += `User message: ${userMessage}`;
+
+  return context;
+}
+
+// Build context message for queue mode (task recommendation)
+function buildQueueContextMessage(
+  userMessage: string,
+  queueContext?: ExtendedStructureRequest["queueContext"]
+): string {
+  let context = `=== FOCUS QUEUE CONTEXT ===\n`;
+  const today = new Date().toISOString().split("T")[0];
+  context += `Today's date: ${today}\n\n`;
+
+  if (!queueContext) {
+    context += `No queue data available.\n`;
+    context += `\n=========================\n\n`;
+    context += `User message: ${userMessage}`;
+    return context;
+  }
+
+  const { todayItems, upcomingItems, excludeTaskIds } = queueContext;
+
+  // TODAY items
+  if (todayItems.length > 0) {
+    context += `TODAY (${todayItems.length} items):\n`;
+    todayItems.forEach((item, index) => {
+      // Skip excluded tasks
+      if (excludeTaskIds?.includes(item.taskId)) {
+        return;
+      }
+
+      const progressText = item.totalSteps > 0
+        ? `${item.completedSteps}/${item.totalSteps} steps done`
+        : "no steps";
+
+      context += `  ${index + 1}. "${item.taskTitle}" (id: ${item.taskId})\n`;
+      context += `     Progress: ${progressText}\n`;
+
+      if (item.priority) {
+        context += `     Priority: ${item.priority}\n`;
+      }
+      if (item.deadlineDate) {
+        const isToday = item.deadlineDate === today;
+        const deadline = isToday ? "TODAY" : item.deadlineDate;
+        context += `     Deadline: ${deadline}\n`;
+      }
+      if (item.effort) {
+        context += `     Effort: ${item.effort}\n`;
+      }
+
+      // Calculate days in queue
+      const daysInQueue = Math.floor((Date.now() - item.addedAt) / (1000 * 60 * 60 * 24));
+      if (daysInQueue > 0) {
+        context += `     In queue: ${daysInQueue} day${daysInQueue > 1 ? "s" : ""}\n`;
+      }
+    });
+    context += "\n";
+  } else {
+    context += `TODAY: No items\n\n`;
+  }
+
+  // UPCOMING items (brief summary)
+  if (upcomingItems.length > 0) {
+    context += `UPCOMING (${upcomingItems.length} items):\n`;
+    upcomingItems.forEach((item, index) => {
+      if (excludeTaskIds?.includes(item.taskId)) {
+        return;
+      }
+      context += `  ${index + 1}. "${item.taskTitle}"`;
+      if (item.deadlineDate) {
+        context += ` (deadline: ${item.deadlineDate})`;
+      }
+      context += "\n";
+    });
+    context += "\n";
+  }
+
+  // Note excluded tasks
+  if (excludeTaskIds && excludeTaskIds.length > 0) {
+    context += `(${excludeTaskIds.length} task${excludeTaskIds.length > 1 ? "s" : ""} excluded from consideration)\n\n`;
+  }
+
+  context += `=========================\n\n`;
   context += `User message: ${userMessage}`;
 
   return context;

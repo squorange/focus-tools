@@ -23,7 +23,7 @@ import {
   createFocusQueueItem,
   generateId,
 } from "@/lib/types";
-import { loadState, saveState } from "@/lib/storage";
+import { loadState, saveState, exportData, importData } from "@/lib/storage";
 import {
   logTaskCreated,
   logTaskCompleted,
@@ -42,7 +42,8 @@ import {
 import { filterInbox, filterPool } from "@/lib/utils";
 import { getTodayItems } from "@/lib/queue";
 import Header from "@/components/layout/Header";
-import AIDrawer from "@/components/AIDrawer";
+// Old AIDrawer removed - functionality moved to minibar/palette
+// import AIDrawer from "@/components/AIDrawer";
 import StagingArea from "@/components/StagingArea";
 import InboxView from "@/components/inbox/InboxView";
 import PoolView from "@/components/pool/PoolView";
@@ -58,7 +59,7 @@ import { usePWA } from "@/lib/usePWA";
 import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/ai-assistant";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
-import { AIAssistantContext, AIResponse, SuggestionsContent, CollapsedContent } from "@/lib/ai-types";
+import { AIAssistantContext, AIResponse, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 
@@ -95,6 +96,9 @@ export default function Home() {
   const [stagingPopulatedAt, setStagingPopulatedAt] = useState<number>(0);
   const [lastQuerySubmittedAt, setLastQuerySubmittedAt] = useState<number>(0);
   const stagingAreaRef = useRef<HTMLDivElement>(null);
+  // Recommendation state (for "What should I do?" feature)
+  // Note: Recommendation response is now stored in aiAssistant.state.response
+  const [excludedTaskIds, setExcludedTaskIds] = useState<string[]>([]);
 
   // Register PWA service worker
   usePWA();
@@ -148,6 +152,72 @@ export default function Home() {
       case 'inbox': return 'inbox';
       case 'tasks': return 'inbox';
       default: return 'global';
+    }
+  };
+
+  // Helper to get contextual idle content for MiniBar
+  const getIdleContent = (): CollapsedContent => {
+    const context = getAIContext();
+    switch (context) {
+      case 'queue': {
+        const todayItems = state.focusQueue.items.filter(
+          item => item.horizon === 'today' && !item.completed
+        );
+        const count = todayItems.length;
+        if (count > 0) {
+          return {
+            type: 'status',
+            text: `${count} task${count !== 1 ? 's' : ''} for today`,
+          };
+        }
+        return { type: 'idle', text: 'Ask AI...' };
+      }
+      case 'taskDetail': {
+        const task = activeTask;
+        if (task) {
+          const stepCount = task.steps.length;
+          const completedSteps = task.steps.filter(s => s.completed).length;
+          const estimate = task.estimatedMinutes;
+          if (stepCount > 0) {
+            const parts = [`${completedSteps}/${stepCount} steps`];
+            if (estimate) parts.push(`~${estimate} min`);
+            return {
+              type: 'status',
+              text: parts.join(' • '),
+            };
+          }
+        }
+        return { type: 'idle', text: 'Ask AI...' };
+      }
+      case 'focusMode': {
+        const task = activeTask;
+        if (task && state.focusMode.currentStepId) {
+          const currentIndex = task.steps.findIndex(
+            s => s.id === state.focusMode.currentStepId
+          );
+          const totalSteps = task.steps.length;
+          if (currentIndex >= 0) {
+            return {
+              type: 'status',
+              text: `Step ${currentIndex + 1} of ${totalSteps}`,
+            };
+          }
+        }
+        return { type: 'idle', text: 'Ask AI...' };
+      }
+      case 'inbox': {
+        const inboxItems = state.tasks.filter(t => t.status === 'inbox' && !t.deletedAt);
+        const count = inboxItems.length;
+        if (count > 0) {
+          return {
+            type: 'status',
+            text: `${count} item${count !== 1 ? 's' : ''} to triage`,
+          };
+        }
+        return { type: 'idle', text: 'Ask AI...' };
+      }
+      default:
+        return { type: 'idle', text: 'Ask AI...' };
     }
   };
 
@@ -319,6 +389,7 @@ export default function Home() {
   // AI Assistant hook (MiniBar/Palette/Drawer)
   const aiAssistant = useAIAssistant({
     initialContext: getAIContext(),
+    defaultIdleContent: getIdleContent(),
     onSubmit: handleAIMinibarSubmit,
     onAcceptSuggestions: handleAIMinibarAccept,
   });
@@ -360,6 +431,11 @@ export default function Home() {
     navigateToFocusMode: (queueItemId: string) => {
       // Navigate to focus mode for the given queue item
       handleStartFocus(queueItemId);
+    },
+    requestRecommendation: () => {
+      // Trigger recommendation request and auto-expand palette
+      promptTriggeredSubmitRef.current = true;
+      handleRequestRecommendation();
     },
   };
 
@@ -692,8 +768,11 @@ export default function Home() {
     });
   }, [state.currentView]);
 
-  // Create task and add to today's focus queue (for Focus view QuickCapture)
+  // Create task, add to focus queue, and open TaskDetail (for Focus view intentional capture)
   const handleCreateTaskForFocus = useCallback((title: string) => {
+    // Save current view for back navigation
+    setPreviousView('focus');
+
     const newTask = createTask(title);
     // Update to pool status immediately since we're adding to queue
     newTask.status = 'pool';
@@ -727,6 +806,9 @@ export default function Home() {
           items: reorderedItems,
           todayLineIndex: newTodayLineIndex,
         },
+        // Navigate to TaskDetail for intentional enrichment
+        activeTaskId: newTask.id,
+        currentView: 'taskDetail',
       };
     });
   }, []);
@@ -809,8 +891,21 @@ export default function Home() {
 
   const handleDeleteTask = useCallback((taskId: string) => {
     let deletedTask: Task | undefined;
+    let removedQueueItemId: string | undefined;
     setState((prev) => {
       deletedTask = prev.tasks.find((t) => t.id === taskId);
+
+      // Find and remove queue item for this task
+      const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+      const queueItem = activeItems.find((i) => i.taskId === taskId);
+      const queueItemIndex = queueItem ? activeItems.indexOf(queueItem) : -1;
+      removedQueueItemId = queueItem?.id;
+
+      // Adjust todayLineIndex if removing item above the line
+      const newTodayLineIndex = queueItemIndex !== -1 && queueItemIndex < prev.focusQueue.todayLineIndex
+        ? prev.focusQueue.todayLineIndex - 1
+        : prev.focusQueue.todayLineIndex;
+
       return {
         ...prev,
         tasks: prev.tasks.map((t) =>
@@ -818,6 +913,11 @@ export default function Home() {
             ? { ...t, deletedAt: Date.now() }
             : t
         ),
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.filter((i) => i.taskId !== taskId).map((item, idx) => ({ ...item, order: idx })),
+          todayLineIndex: Math.max(0, newTodayLineIndex),
+        },
         activeTaskId: prev.activeTaskId === taskId ? null : prev.activeTaskId,
         currentView: prev.activeTaskId === taskId ? 'focus' : prev.currentView,
       };
@@ -841,6 +941,7 @@ export default function Home() {
                   ? { ...t, deletedAt: null }
                   : t
               ),
+              // Note: Queue item is not restored on undo (would need more complex state tracking)
             }));
           },
         },
@@ -956,6 +1057,17 @@ export default function Home() {
     setState((prev) => {
       parkedTask = prev.tasks.find((t) => t.id === taskId);
       previousStatus = parkedTask?.status;
+
+      // Find and remove queue item for this task
+      const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+      const queueItem = activeItems.find((i) => i.taskId === taskId);
+      const queueItemIndex = queueItem ? activeItems.indexOf(queueItem) : -1;
+
+      // Adjust todayLineIndex if removing item above the line
+      const newTodayLineIndex = queueItemIndex !== -1 && queueItemIndex < prev.focusQueue.todayLineIndex
+        ? prev.focusQueue.todayLineIndex - 1
+        : prev.focusQueue.todayLineIndex;
+
       return {
         ...prev,
         tasks: prev.tasks.map((t) =>
@@ -969,6 +1081,11 @@ export default function Home() {
               }
             : t
         ),
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.filter((i) => i.taskId !== taskId).map((item, idx) => ({ ...item, order: idx })),
+          todayLineIndex: Math.max(0, newTodayLineIndex),
+        },
         activeTaskId: prev.activeTaskId === taskId ? null : prev.activeTaskId,
         currentView: prev.activeTaskId === taskId ? 'focus' : prev.currentView,
       };
@@ -998,6 +1115,7 @@ export default function Home() {
                     }
                   : t
               ),
+              // Note: Queue item is not restored on undo (would need more complex state tracking)
             }));
           },
         },
@@ -1138,10 +1256,31 @@ export default function Home() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  // Quick dump task to inbox (no navigation) - for Tasks view quick capture
+  const handleCreateTaskQuick = useCallback((title: string) => {
+    const newTask = createTask(title);
+    setState((prev) => {
+      const newTasks = [...prev.tasks, newTask];
+      logTaskCreated(newTask, newTasks);
+      return {
+        ...prev,
+        tasks: newTasks,
+        // NO navigation - stay in current view
+      };
+    });
+    showToast({ message: 'Task added to Inbox', type: 'info' });
+  }, [showToast]);
+
   // Add task to queue (new: position-based, not horizon-based)
   // If forToday=true, insert at position todayLineIndex (moves line down)
   // If forToday=false, insert just after the line
-  const handleAddToQueue = useCallback((taskId: string, forToday: boolean = false) => {
+  // selectionType + selectedStepIds: determines Today/Upcoming step selection
+  const handleAddToQueue = useCallback((
+    taskId: string,
+    forToday: boolean = false,
+    selectionType: 'all_today' | 'all_upcoming' | 'specific_steps' = 'all_today',
+    selectedStepIds: string[] = []
+  ) => {
     let addedTask: Task | undefined;
     let addedItemId: string | undefined;
     setState((prev) => {
@@ -1150,7 +1289,7 @@ export default function Home() {
       addedTask = task;
 
       // Check if already in queue
-      if (prev.focusQueue.items.some((i) => i.taskId === taskId)) {
+      if (prev.focusQueue.items.some((i) => i.taskId === taskId && !i.completed)) {
         return prev;
       }
 
@@ -1161,7 +1300,7 @@ export default function Home() {
           : t
       );
 
-      const newItem = createFocusQueueItem(taskId, 'today'); // horizon kept for type compat
+      const newItem = createFocusQueueItem(taskId, 'today', { selectionType, selectedStepIds }); // horizon kept for type compat
       addedItemId = newItem.id;
 
       // Determine insertion position and new todayLineIndex
@@ -1235,6 +1374,32 @@ export default function Home() {
         },
       }]);
     }
+  }, []);
+
+  // Update step selection for an existing queue item
+  const handleUpdateStepSelection = useCallback((
+    queueItemId: string,
+    selectionType: 'all_today' | 'all_upcoming' | 'specific_steps',
+    selectedStepIds: string[]
+  ) => {
+    setState((prev) => {
+      return {
+        ...prev,
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.map((item) =>
+            item.id === queueItemId
+              ? {
+                  ...item,
+                  selectionType,
+                  selectedStepIds,
+                  lastInteractedAt: Date.now(),
+                }
+              : item
+          ),
+        },
+      };
+    });
   }, []);
 
   // Remove item from queue (adjusts todayLineIndex if item was above line)
@@ -1475,7 +1640,7 @@ export default function Home() {
 
       // Find first incomplete step in scope
       const stepsInScope =
-        queueItem.selectionType === 'entire_task'
+        queueItem.selectionType === 'all_today' || queueItem.selectionType === 'all_upcoming'
           ? task.steps
           : task.steps.filter((s) => queueItem.selectedStepIds.includes(s.id));
       const firstIncomplete = stepsInScope.find((s) => !s.completed);
@@ -1519,6 +1684,24 @@ export default function Home() {
     setPreviousView(state.currentView);
     setState((prev) => ({ ...prev, currentView: 'projects' as const }));
   }, [state.currentView]);
+
+  // Data export/import
+  const handleExportData = useCallback(() => {
+    const jsonString = exportData();
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `focus-tools-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleImportData = useCallback((jsonString: string) => {
+    return importData(jsonString);
+  }, []);
 
   // Focus mode controls
   const handlePauseFocus = useCallback(() => {
@@ -2091,6 +2274,138 @@ export default function Home() {
   }, [state.focusMode.currentStepId, activeTask, handleSendMessage]);
 
   // ============================================
+  // Recommendation Handlers (What should I do?)
+  // ============================================
+
+  const handleRequestRecommendation = useCallback(async () => {
+    // Get today items from the focus queue
+    const todayLineIndex = state.focusQueue.todayLineIndex;
+    const activeItems = state.focusQueue.items
+      .filter(i => !i.completed)
+      .sort((a, b) => a.order - b.order);
+
+    const todayItemsData = activeItems.slice(0, todayLineIndex);
+    const upcomingItemsData = activeItems.slice(todayLineIndex);
+
+    // Build queue context for AI
+    const todayItems = todayItemsData.map(item => {
+      const task = state.tasks.find(t => t.id === item.taskId);
+      const completedSteps = task?.steps.filter(s => s.completed).length || 0;
+      const totalSteps = task?.steps.length || 0;
+      return {
+        taskId: item.taskId,
+        taskTitle: task?.title || "Untitled",
+        priority: task?.priority || null,
+        deadlineDate: task?.deadlineDate || null,
+        completedSteps,
+        totalSteps,
+        effort: task?.effort || null,
+        addedAt: item.addedAt,
+        focusScore: task ? computeFocusScore(task) : 0,
+      };
+    });
+
+    const upcomingItems = upcomingItemsData.map(item => {
+      const task = state.tasks.find(t => t.id === item.taskId);
+      return {
+        taskId: item.taskId,
+        taskTitle: task?.title || "Untitled",
+        priority: task?.priority || null,
+        deadlineDate: task?.deadlineDate || null,
+        focusScore: task ? computeFocusScore(task) : 0,
+      };
+    });
+
+    // Don't proceed if no items to recommend
+    if (todayItems.length === 0 && upcomingItems.length === 0) {
+      showToast({
+        type: 'info',
+        message: 'Add some tasks to your queue first!',
+      });
+      return;
+    }
+
+    // Start loading in minibar/palette
+    aiAssistant.startLoading();
+
+    try {
+      const response = await fetch("/api/structure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMessage: "What should I work on next from my Focus Queue?",
+          currentList: [],
+          taskTitle: null,
+          conversationHistory: [],
+          queueMode: true,
+          queueContext: {
+            todayItems,
+            upcomingItems,
+            excludeTaskIds: excludedTaskIds,
+          },
+        }),
+      });
+
+      if (!response.ok) throw new Error("API request failed");
+
+      const data = await response.json();
+
+      if (data.recommendation) {
+        // Build AIResponse with recommendation type
+        const aiResponse: AIResponse = {
+          type: 'recommendation',
+          content: {
+            taskId: data.recommendation.taskId,
+            taskTitle: data.recommendation.taskTitle,
+            reason: data.recommendation.reason,
+            reasonType: data.recommendation.reasonType,
+          } as RecommendationContent,
+        };
+        aiAssistant.receiveResponse(aiResponse);
+      } else {
+        // No recommendation available - show as text response
+        aiAssistant.receiveResponse({
+          type: 'text',
+          content: { text: data.message || "I couldn't find a task to recommend. Try adding more tasks to your queue!" },
+        });
+      }
+    } catch (error) {
+      console.error("Recommendation request failed:", error);
+      aiAssistant.setError('Failed to get recommendation. Try again?');
+    }
+  }, [state.focusQueue, state.tasks, excludedTaskIds, aiAssistant]);
+
+  const handleSkipRecommendation = useCallback((taskId: string) => {
+    // Add current recommendation to excluded list and re-query
+    setExcludedTaskIds(prev => [...prev, taskId]);
+
+    // Trigger a new recommendation request (will automatically exclude the skipped task)
+    setTimeout(() => {
+      handleRequestRecommendation();
+    }, 100);
+  }, [handleRequestRecommendation]);
+
+  const handleStartRecommendedFocus = useCallback((taskId: string) => {
+    // Find the queue item for this task
+    const queueItem = state.focusQueue.items.find(
+      item => item.taskId === taskId && !item.completed
+    );
+
+    if (queueItem) {
+      // Clear excluded list for next time
+      setExcludedTaskIds([]);
+
+      // Start focus on this item
+      handleStartFocus(queueItem.id);
+    }
+  }, [state.focusQueue.items, handleStartFocus]);
+
+  const handleDismissRecommendation = useCallback(() => {
+    setExcludedTaskIds([]);
+    aiAssistant.dismissResponse();
+  }, [aiAssistant]);
+
+  // ============================================
   // Staging Area Handlers
   // ============================================
 
@@ -2510,6 +2825,7 @@ export default function Home() {
                 onCreateTask={handleCreateTaskForFocus}
                 onStartFocus={handleStartFocus}
                 onRemoveFromQueue={handleRemoveFromQueue}
+                onUpdateStepSelection={handleUpdateStepSelection}
                 onReorderQueue={handleReorderQueue}
                 onMoveItemUp={handleMoveQueueItemUp}
                 onMoveItemDown={handleMoveQueueItemDown}
@@ -2523,7 +2839,7 @@ export default function Home() {
                 poolTasks={poolTasks}
                 queue={state.focusQueue}
                 projects={state.projects}
-                onCreateTask={handleCreateTask}
+                onCreateTask={handleCreateTaskQuick}
                 onOpenTask={handleOpenTask}
                 onSendToPool={handleSendToPool}
                 onAddToQueue={handleAddToQueue}
@@ -2557,6 +2873,9 @@ export default function Home() {
                 tasks={state.tasks}
                 onOpenTask={handleOpenTask}
                 onNavigateToProjects={handleGoToProjects}
+                onExportData={handleExportData}
+                onImportData={handleImportData}
+                showToast={showToast}
               />
             )}
 
@@ -2599,6 +2918,7 @@ export default function Home() {
                 onMoveSubstepUp={handleMoveSubstepUp}
                 onMoveSubstepDown={handleMoveSubstepDown}
                 onAddToQueue={handleAddToQueue}
+                onUpdateStepSelection={handleUpdateStepSelection}
                 onSendToPool={handleSendToPool}
                 onDefer={handleDefer}
                 onPark={handlePark}
@@ -2660,20 +2980,6 @@ export default function Home() {
         </main>
       </div>
 
-      {/* AI Column - Side-by-side, full height */}
-      <AIDrawer
-        isOpen={state.aiDrawer.isOpen}
-        messages={state.currentView === 'focusMode'
-          ? activeTask?.focusModeMessages || []
-          : activeTask?.messages || []}
-        isLoading={state.aiDrawer.isLoading}
-        onToggle={handleToggleAIDrawer}
-        onSendMessage={handleSendMessage}
-        variant={state.currentView === 'focusMode' ? 'focus' : 'planning'}
-        currentStepId={state.focusMode.currentStepId}
-        steps={activeTask?.steps}
-      />
-
       {/* Project Modal */}
       <ProjectModal
         isOpen={projectModalOpen}
@@ -2726,6 +3032,11 @@ export default function Home() {
             onDismiss={aiAssistant.dismissResponse}
             disableAutoCollapse={paletteManuallyOpened}
             onManualInteraction={() => setPaletteManuallyOpened(true)}
+            onRequestRecommendation={handleRequestRecommendation}
+            onStartRecommendedFocus={handleStartRecommendedFocus}
+            onSkipRecommendation={handleSkipRecommendation}
+            onOpenDrawer={aiAssistant.openDrawer}
+            exchangeCount={Math.floor(aiAssistant.state.messages.length / 2)}
           />
         </div>
       )}

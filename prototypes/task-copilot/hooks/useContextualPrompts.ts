@@ -29,6 +29,7 @@ interface PromptContext {
 interface PromptHandlers {
   submitQuery: (query: string) => void;
   navigateToFocusMode: (queueItemId: string) => void;
+  requestRecommendation: () => void;
 }
 
 const PROMPT_CONFIGS: Record<AIAssistantContext, PromptConfig | null> = {
@@ -55,14 +56,12 @@ const PROMPT_CONFIGS: Record<AIAssistantContext, PromptConfig | null> = {
   queue: {
     delay: PROMPT_TIMING.queue,
     condition: (ctx) => (ctx.queueItemCount ?? 0) > 0 && !!ctx.topQueueItemId,
-    getPrompt: (ctx, handlers) => ({
+    getPrompt: (_ctx, handlers) => ({
       text: 'Need help?',
-      pillLabel: 'Start',
-      pillIcon: '🎯',
+      pillLabel: AI_ACTIONS.queue.whatNext.label,
+      pillIcon: AI_ACTIONS.queue.whatNext.icon,
       action: () => {
-        if (ctx.topQueueItemId) {
-          handlers.navigateToFocusMode(ctx.topQueueItemId);
-        }
+        handlers.requestRecommendation();
       },
     }),
   },

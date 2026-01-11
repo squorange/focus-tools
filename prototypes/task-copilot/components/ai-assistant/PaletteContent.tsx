@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AIResponse, QuickAction, SuggestionsContent } from '@/lib/ai-types';
+import { AIResponse, QuickAction, SuggestionsContent, RecommendationContent } from '@/lib/ai-types';
 import { HEIGHT_TRANSITION } from '@/lib/ai-constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuickActions } from './QuickActions';
@@ -28,6 +28,13 @@ interface PaletteContentProps {
   // Auto-collapse control: prevents outdated content from persisting, but respects user engagement
   disableAutoCollapse?: boolean;  // True when user has shown intent to interact
   onManualInteraction?: () => void;  // Called when user signals intent (e.g., clicks "Ask AI")
+  // Recommendation handlers
+  onRequestRecommendation?: () => void;  // For "What next?" quick action
+  onStartRecommendedFocus?: (taskId: string) => void;
+  onSkipRecommendation?: (taskId: string) => void;
+  // Drawer access
+  onOpenDrawer?: () => void;
+  exchangeCount?: number;  // For "Continue in expanded view" prompt
 }
 
 export function PaletteContent({
@@ -45,6 +52,11 @@ export function PaletteContent({
   onScrollToSuggestions,
   disableAutoCollapse = false,
   onManualInteraction,
+  onRequestRecommendation,
+  onStartRecommendedFocus,
+  onSkipRecommendation,
+  onOpenDrawer,
+  exchangeCount = 0,
 }: PaletteContentProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -64,6 +76,7 @@ export function PaletteContent({
   const hasTextResponse = response && response.type === 'text';
   const hasSuggestionsResponse = response && response.type === 'suggestions';
   const hasExplanationResponse = response && response.type === 'explanation';
+  const hasRecommendationResponse = response && response.type === 'recommendation';
   const hasErrorResponse = response && response.type === 'error';
 
   // For unified button rendering: text and explanation get same buttons
@@ -188,6 +201,12 @@ export function PaletteContent({
   };
 
   const handleQuickAction = (action: QuickAction) => {
+    // Special case: "What next?" action should use recommendation handler
+    if (action.id === 'next' && onRequestRecommendation) {
+      onRequestRecommendation();
+      return;
+    }
+
     // Refinement 3: Use directSubmit to bypass input field population
     if (onDirectSubmit) {
       onDirectSubmit(action.query);
@@ -277,6 +296,19 @@ export function PaletteContent({
                       <div className="py-2">
                         <p className="text-base text-zinc-600 dark:text-zinc-400 text-left">
                           I've prepared {(response.content as SuggestionsContent).suggestions?.length || 0} suggestions.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Recommendation: Show task suggestion card */}
+                    {hasRecommendationResponse && (
+                      <div className="space-y-2 text-left">
+                        <p className="text-base text-zinc-500 dark:text-zinc-400">I'd suggest...</p>
+                        <p className="text-base font-medium text-zinc-800 dark:text-zinc-200">
+                          "{(response.content as RecommendationContent).taskTitle}"
+                        </p>
+                        <p className="text-base text-zinc-600 dark:text-zinc-300">
+                          {(response.content as RecommendationContent).reason}
                         </p>
                       </div>
                     )}
@@ -402,6 +434,42 @@ export function PaletteContent({
               </button>
             </>
           )}
+
+          {/* RECOMMENDATION: Start Focus + Not this one */}
+          {hasRecommendationResponse && (
+            <>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
+                  const taskId = (response?.content as RecommendationContent)?.taskId;
+                  if (taskId && onStartRecommendedFocus) {
+                    onStartRecommendedFocus(taskId);
+                  }
+                  onDismiss();
+                  onCollapse?.();
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
+                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
+              >
+                Start Focus
+              </button>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
+                  const taskId = (response?.content as RecommendationContent)?.taskId;
+                  if (taskId && onSkipRecommendation) {
+                    onSkipRecommendation(taskId);
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
+                  hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              >
+                Not this one
+              </button>
+            </>
+          )}
               </div>
             </motion.div>
           )}
@@ -445,7 +513,21 @@ export function PaletteContent({
                   outline-none text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500
                   disabled:opacity-50"
               />
-              <div className="flex items-center justify-end gap-2 px-3 pb-2">
+              <div className="flex items-center justify-between gap-2 px-3 pb-2">
+                {/* Left side: Drawer icon */}
+                <button
+                  type="button"
+                  onClick={onOpenDrawer}
+                  className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  aria-label="Open expanded chat"
+                  title="Open expanded chat"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </button>
+
+                {/* Right side: Send button */}
                 <motion.button
                   type="submit"
                   disabled={!query.trim() || isLoading}
@@ -461,6 +543,16 @@ export function PaletteContent({
               </div>
             </div>
               </form>
+
+              {/* "Continue in expanded view" prompt after 3+ exchanges */}
+              {exchangeCount >= 3 && onOpenDrawer && (
+                <button
+                  onClick={onOpenDrawer}
+                  className="mt-2 w-full text-center text-sm text-zinc-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
+                >
+                  Continue in expanded view →
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

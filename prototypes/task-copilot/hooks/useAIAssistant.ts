@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useMemo } from 'react';
+import { useReducer, useCallback, useMemo, useEffect } from 'react';
 import {
   AIAssistantState,
   AIAssistantContext,
@@ -229,6 +229,7 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
 
 interface UseAIAssistantOptions {
   initialContext?: AIAssistantContext;
+  defaultIdleContent?: CollapsedContent;  // Contextual idle status (e.g., "3 tasks today")
   onSubmit?: (query: string, context: AIAssistantContext) => Promise<AIResponse>;
   onAcceptSuggestions?: (response: AIResponse) => void;
 }
@@ -236,9 +237,13 @@ interface UseAIAssistantOptions {
 export function useAIAssistant(options: UseAIAssistantOptions = {}) {
   const {
     initialContext = 'global',
+    defaultIdleContent,
     onSubmit,
     onAcceptSuggestions,
   } = options;
+
+  // Use contextual idle content if provided, otherwise default
+  const idleContent = defaultIdleContent ?? MOCK_COLLAPSED.idle;
 
   const [state, dispatch] = useReducer(
     aiAssistantReducer,
@@ -251,7 +256,11 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
   const expand = useCallback(() => dispatch({ type: 'EXPAND' }), []);
   const collapse = useCallback(() => dispatch({ type: 'COLLAPSE' }), []);
   const openDrawer = useCallback(() => dispatch({ type: 'OPEN_DRAWER' }), []);
-  const closeDrawer = useCallback(() => dispatch({ type: 'CLOSE_DRAWER' }), []);
+  const closeDrawer = useCallback(() => {
+    dispatch({ type: 'CLOSE_DRAWER' });
+    // Set contextual idle content after closing
+    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+  }, [idleContent]);
 
   const setQuery = useCallback((query: string) => {
     dispatch({ type: 'SET_QUERY', query });
@@ -265,7 +274,9 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
   // Refinement 7: Reset appearance but keep drawer history
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
-  }, []);
+    // Set contextual idle content after reset
+    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+  }, [idleContent]);
 
   const submitQuery = useCallback(async () => {
     if (!state.query.trim()) return;
@@ -345,16 +356,18 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     // Auto-collapse after delay
     setTimeout(() => {
       dispatch({ type: 'COLLAPSE' });
-      // Reset to idle after showing confirmation
+      // Reset to contextual idle after showing confirmation
       setTimeout(() => {
-        dispatch({ type: 'SET_COLLAPSED_CONTENT', content: MOCK_COLLAPSED.idle });
+        dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
       }, 2000);
     }, ANIMATIONS.autoCollapseDelay);
-  }, [state.response, onAcceptSuggestions]);
+  }, [state.response, onAcceptSuggestions, idleContent]);
 
   const dismissResponse = useCallback(() => {
     dispatch({ type: 'DISMISS_RESPONSE' });
-  }, []);
+    // Set contextual idle content after dismissing
+    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+  }, [idleContent]);
 
   const setContext = useCallback((context: AIAssistantContext) => {
     dispatch({ type: 'SET_CONTEXT', context });
@@ -366,7 +379,9 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
 
   const clearNudge = useCallback(() => {
     dispatch({ type: 'CLEAR_NUDGE' });
-  }, []);
+    // Set contextual idle content after clearing nudge
+    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+  }, [idleContent]);
 
   const setCollapsedContent = useCallback((content: CollapsedContent) => {
     dispatch({ type: 'SET_COLLAPSED_CONTENT', content });
@@ -382,11 +397,37 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     }
   }, []);
 
+  // Start loading state (for external async operations)
+  const startLoading = useCallback(() => {
+    dispatch({ type: 'SUBMIT_QUERY' });
+  }, []);
+
+  // Receive a response directly (for external async operations)
+  const receiveResponse = useCallback((response: AIResponse) => {
+    dispatch({ type: 'RECEIVE_RESPONSE', response });
+  }, []);
+
+  // Set error state directly
+  const setError = useCallback((error: string) => {
+    dispatch({ type: 'ERROR', error });
+  }, []);
+
   // ============ Computed Values ============
 
   const quickActions = useMemo(() => {
     return QUICK_ACTIONS_BY_CONTEXT[state.context] || QUICK_ACTIONS_BY_CONTEXT.global;
   }, [state.context]);
+
+  // Update collapsed content when defaultIdleContent changes and we're showing idle/status
+  useEffect(() => {
+    if (
+      state.mode === 'collapsed' &&
+      !state.isLoading &&
+      (state.collapsedContent.type === 'idle' || state.collapsedContent.type === 'status')
+    ) {
+      dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+    }
+  }, [idleContent, state.mode, state.isLoading, state.collapsedContent.type]);
 
   return {
     state,
@@ -409,6 +450,9 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     clearNudge,
     setCollapsedContent,
     triggerMockResponse,
+    startLoading,
+    receiveResponse,
+    setError,
   };
 }
 

@@ -128,10 +128,11 @@ export function changeHorizon(
 export function updateStepSelection(
   queue: FocusQueue,
   itemId: string,
+  selectionType: 'all_today' | 'all_upcoming' | 'specific_steps',
   stepIds: string[]
 ): FocusQueue {
   return updateQueueItem(queue, itemId, {
-    selectionType: stepIds.length === 0 ? 'entire_task' : 'specific_steps',
+    selectionType,
     selectedStepIds: stepIds,
   });
 }
@@ -232,11 +233,11 @@ export function isTaskInQueue(queue: FocusQueue, taskId: string): boolean {
 
 /**
  * Check if a queue item's goal is complete
- * For entire_task: all steps complete
+ * For all_today/all_upcoming: all steps complete
  * For specific_steps: selected steps complete
  */
 export function isQueueItemComplete(item: FocusQueueItem, task: Task): boolean {
-  if (item.selectionType === 'entire_task') {
+  if (item.selectionType === 'all_today' || item.selectionType === 'all_upcoming') {
     return task.steps.length > 0 && task.steps.every((s) => s.completed);
   } else {
     return item.selectedStepIds.every((stepId) => {
@@ -250,7 +251,7 @@ export function isQueueItemComplete(item: FocusQueueItem, task: Task): boolean {
  * Get the steps in scope for a queue item
  */
 export function getStepsInScope(item: FocusQueueItem, task: Task): typeof task.steps {
-  if (item.selectionType === 'entire_task') {
+  if (item.selectionType === 'all_today' || item.selectionType === 'all_upcoming') {
     return task.steps;
   } else {
     return task.steps.filter((s) => item.selectedStepIds.includes(s.id));
@@ -272,7 +273,7 @@ export function getQueueItemProgress(item: FocusQueueItem, task: Task): number {
  * e.g., "Steps 2-4 of 7" or "All steps"
  */
 export function getSelectionDisplay(item: FocusQueueItem, task: Task): string {
-  if (item.selectionType === 'entire_task') {
+  if (item.selectionType === 'all_today' || item.selectionType === 'all_upcoming') {
     return task.steps.length === 0 ? 'No steps' : `All ${task.steps.length} steps`;
   }
 

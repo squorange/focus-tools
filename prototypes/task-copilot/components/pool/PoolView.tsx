@@ -69,7 +69,8 @@ function getResurfacedTasks(tasks: Task[]): Task[] {
     (t) =>
       t.deferredUntil &&
       t.deferredUntil <= today &&
-      !t.deletedAt
+      !t.deletedAt &&
+      t.status !== 'archived'
   );
 }
 
@@ -79,7 +80,8 @@ function getRegularPoolTasks(tasks: Task[]): Task[] {
   return tasks.filter(
     (t) =>
       (!t.deferredUntil || t.deferredUntil > today) &&
-      !t.deletedAt
+      !t.deletedAt &&
+      t.status !== 'archived'
   );
 }
 

@@ -6,6 +6,7 @@ import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusI
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
 import MetadataPill from "@/components/shared/MetadataPill";
+import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 
 interface TaskDetailProps {
   task: Task;
@@ -32,7 +33,8 @@ interface TaskDetailProps {
   onDeleteSubstep: (taskId: string, stepId: string, substepId: string) => void;
   onMoveSubstepUp: (taskId: string, stepId: string, substepId: string) => void;
   onMoveSubstepDown: (taskId: string, stepId: string, substepId: string) => void;
-  onAddToQueue: (taskId: string, forToday?: boolean) => void;
+  onAddToQueue: (taskId: string, forToday?: boolean, selectionType?: 'all_today' | 'all_upcoming' | 'specific_steps', selectedStepIds?: string[]) => void;
+  onUpdateStepSelection: (queueItemId: string, selectionType: 'all_today' | 'all_upcoming' | 'specific_steps', selectedStepIds: string[]) => void;
   onSendToPool: (taskId: string) => void;
   onDefer: (taskId: string, until: string) => void;
   onPark: (taskId: string) => void;
@@ -85,6 +87,7 @@ export default function TaskDetail({
   onMoveSubstepUp,
   onMoveSubstepDown,
   onAddToQueue,
+  onUpdateStepSelection,
   onSendToPool,
   onDefer,
   onPark,
@@ -111,6 +114,10 @@ export default function TaskDetail({
   const [completedStepsExpanded, setCompletedStepsExpanded] = useState(false);
   // Auto-expand details for inbox tasks (triage mode), collapse for ready/queued tasks
   const [detailsExpanded, setDetailsExpanded] = useState(task.status === 'inbox');
+  // Focus selection modal state
+  const [showFocusModal, setShowFocusModal] = useState(false);
+  // Add to Focus dropdown state
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
 
   // Swipe-back gesture handling
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -159,6 +166,17 @@ export default function TaskDetail({
   const hasCompletedSteps = completedSteps.length > 0;
   const hasIncompleteSteps = incompleteSteps.length > 0;
   const allStepsComplete = task.steps.length > 0 && incompleteSteps.length === 0;
+
+  // When in queue, split incomplete steps into Today vs Upcoming based on selection
+  const todayStepIds = isInQueue
+    ? (queueItem!.selectionType === 'all_today'
+        ? incompleteSteps.map(s => s.id) // All incomplete are Today
+        : queueItem!.selectionType === 'all_upcoming'
+          ? [] // All incomplete are Upcoming
+          : queueItem!.selectedStepIds.filter(id => incompleteSteps.some(s => s.id === id)))
+    : [];
+  const todaySteps = incompleteSteps.filter(s => todayStepIds.includes(s.id));
+  const upcomingSteps = incompleteSteps.filter(s => !todayStepIds.includes(s.id));
 
   // Build details summary for collapsed view
   const getDetailsSummary = () => {
@@ -336,12 +354,41 @@ export default function TaskDetail({
                     Move to Ready
                   </button>
                 )}
-                <button
-                  onClick={() => onAddToQueue(task.id)}
-                  className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-                >
-                  Add to Focus
-                </button>
+                {/* Add to Focus with dropdown */}
+                <div className="relative">
+                  <div className="flex">
+                    <button
+                      onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
+                      className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-l-lg transition-colors"
+                    >
+                      Add to Focus
+                    </button>
+                    <button
+                      onClick={() => setShowAddDropdown(!showAddDropdown)}
+                      className="px-2 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-l-0 border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-r-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                  {showAddDropdown && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
+                      <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                        <button
+                          onClick={() => {
+                            onAddToQueue(task.id, true, 'all_today', []);
+                            setShowAddDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                        >
+                          Add to Today
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -382,16 +429,65 @@ export default function TaskDetail({
                   Move to Ready
                 </button>
               )}
-              <button
-                onClick={() => onAddToQueue(task.id)}
-                className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
-              >
-                Add to Focus
-              </button>
+              {/* Add to Focus with dropdown - mobile */}
+              <div className="relative">
+                <div className="flex">
+                  <button
+                    onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
+                    className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-l-lg transition-colors"
+                  >
+                    Add to Focus
+                  </button>
+                  <button
+                    onClick={() => setShowAddDropdown(!showAddDropdown)}
+                    className="px-2 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-l-0 border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-r-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                {showAddDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
+                    <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                      <button
+                        onClick={() => {
+                          onAddToQueue(task.id, true, 'all_today', []);
+                          setShowAddDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Add to Today
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
       </div>
+
+      {/* Focus Selection Modal - only used for Edit Focus when task is in queue */}
+      {isInQueue && (
+        <FocusSelectionModal
+          isOpen={showFocusModal}
+          task={task}
+          initialSelectionType={queueItem!.selectionType}
+          initialSelectedStepIds={
+            queueItem!.selectionType === 'specific_steps'
+              ? queueItem!.selectedStepIds
+              : []
+          }
+          onClose={() => setShowFocusModal(false)}
+          onConfirm={(selectionType, selectedStepIds) => {
+            setShowFocusModal(false);
+            onUpdateStepSelection(queueItem!.id, selectionType, selectedStepIds);
+          }}
+          mode="edit"
+        />
+      )}
 
       {/* Progress bar */}
       {progress && progress.total > 0 && (
@@ -445,15 +541,28 @@ export default function TaskDetail({
             <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide">
               Steps
             </h2>
-            <button
-              onClick={onAIBreakdown}
-              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
-            >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-              </svg>
-              AI Breakdown
-            </button>
+            {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
+            {isInQueue && task.steps.length > 0 ? (
+              <button
+                onClick={() => setShowFocusModal(true)}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Focus
+              </button>
+            ) : (
+              <button
+                onClick={onAIBreakdown}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
+              >
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                </svg>
+                AI Breakdown
+              </button>
+            )}
           </div>
 
           {/* Steps list */}
@@ -509,32 +618,111 @@ export default function TaskDetail({
                 );
               })}
 
-              {/* Incomplete steps - always visible */}
-              {incompleteSteps.map((step) => {
-                const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                return (
-                  <StepItem
-                    key={step.id}
-                    step={step}
-                    index={originalIndex}
-                    totalSteps={task.steps.length}
-                    taskId={task.id}
-                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
-                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
-                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
-                    onDelete={() => onDeleteStep(task.id, step.id)}
-                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
-                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
-                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
-                  />
-                );
-              })}
+              {/* Incomplete steps - with Today/Upcoming sections when in queue */}
+              {isInQueue ? (
+                <>
+                  {/* TODAY section */}
+                  {todaySteps.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 mt-2 mb-1 pl-1">
+                        <div className="w-1 h-4 bg-violet-500 rounded-full" />
+                        <span className="text-xs font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wide">
+                          Today
+                        </span>
+                      </div>
+                      {todaySteps.map((step) => {
+                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                        return (
+                          <StepItem
+                            key={step.id}
+                            step={step}
+                            index={originalIndex}
+                            totalSteps={task.steps.length}
+                            taskId={task.id}
+                            isToday
+                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                            onDelete={() => onDeleteStep(task.id, step.id)}
+                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                            onStartFocus={() => onStartFocus(queueItem!.id)}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* UPCOMING section */}
+                  {upcomingSteps.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 mt-4 mb-1 pl-1">
+                        <div className="w-1 h-4 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
+                        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                          Upcoming
+                        </span>
+                      </div>
+                      {upcomingSteps.map((step) => {
+                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                        return (
+                          <StepItem
+                            key={step.id}
+                            step={step}
+                            index={originalIndex}
+                            totalSteps={task.steps.length}
+                            taskId={task.id}
+                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                            onDelete={() => onDeleteStep(task.id, step.id)}
+                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                            onStartFocus={() => onStartFocus(queueItem!.id)}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Not in queue - show all incomplete steps without sections */
+                incompleteSteps.map((step) => {
+                  const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                  return (
+                    <StepItem
+                      key={step.id}
+                      step={step}
+                      index={originalIndex}
+                      totalSteps={task.steps.length}
+                      taskId={task.id}
+                      onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                      onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                      onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                      onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                      onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                      onDelete={() => onDeleteStep(task.id, step.id)}
+                      onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                      onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                      onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                      onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                      onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                      onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                    />
+                  );
+                })
+              )}
             </div>
           )}
 
@@ -853,6 +1041,7 @@ interface StepItemProps {
   index: number;
   totalSteps: number;
   taskId: string;
+  isToday?: boolean; // When in queue, indicates if step is selected for Today
   onToggleComplete: (completed: boolean) => void;
   onSubstepComplete: (substepId: string, completed: boolean) => void;
   onUpdateStep: (text: string) => void;
@@ -868,7 +1057,7 @@ interface StepItemProps {
   onStartFocus?: () => void;
 }
 
-function StepItem({ step, index, totalSteps, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus }: StepItemProps) {
+function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus }: StepItemProps) {
   const [editingStep, setEditingStep] = useState(false);
   const [stepText, setStepText] = useState(step.text);
   const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
@@ -904,6 +1093,8 @@ function StepItem({ step, index, totalSteps, onToggleComplete, onSubstepComplete
         ${
           step.completed
             ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50"
+            : isToday
+            ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800 hover:border-violet-300 dark:hover:border-violet-700"
             : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-violet-300 dark:hover:border-violet-700"
         }
       `}

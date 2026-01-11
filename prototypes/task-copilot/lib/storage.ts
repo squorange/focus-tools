@@ -201,6 +201,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV4(state);
   }
 
+  // Version 4 → 5: selectionType: 'entire_task' → 'all_today'
+  if (version < 5) {
+    state = migrateToV5(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -357,7 +362,7 @@ function migrateToV2(state: Partial<AppState> & Record<string, unknown>): Partia
       focusQueue.items = todayPlan.focusItems.map((item, index): FocusQueueItem => ({
         id: item.id,
         taskId: item.taskId,
-        selectionType: item.type === 'task' ? 'entire_task' : 'specific_steps',
+        selectionType: item.type === 'task' ? 'all_today' : 'specific_steps',
         selectedStepIds: item.stepId ? [item.stepId] : [],
         horizon: 'today',
         scheduledDate: null,
@@ -472,6 +477,36 @@ function migrateToV4(state: Partial<AppState> & Record<string, unknown>): Partia
     deletions: undefined,
     suggestedTitle: undefined,
     pendingAction: undefined,
+  };
+}
+
+/**
+ * Migrate from v4 to v5 (selectionType: 'entire_task' → 'all_today')
+ */
+function migrateToV5(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const focusQueue = state.focusQueue as FocusQueue | undefined;
+
+  if (!focusQueue || !focusQueue.items) {
+    return {
+      ...state,
+      schemaVersion: 5,
+    };
+  }
+
+  // Convert 'entire_task' to 'all_today' for existing items
+  // Cast to string for comparison since 'entire_task' may exist in old data but not in new type
+  const migratedItems = focusQueue.items.map((item) => ({
+    ...item,
+    selectionType: (item.selectionType as string) === 'entire_task' ? 'all_today' : item.selectionType,
+  }));
+
+  return {
+    ...state,
+    schemaVersion: 5,
+    focusQueue: {
+      ...focusQueue,
+      items: migratedItems,
+    },
   };
 }
 

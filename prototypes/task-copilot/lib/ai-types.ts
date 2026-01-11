@@ -65,11 +65,11 @@ export interface CollapsedContent {
 
 // ============ Responses ============
 
-export type AIResponseType = 'text' | 'suggestions' | 'explanation' | 'error';
+export type AIResponseType = 'text' | 'suggestions' | 'explanation' | 'recommendation' | 'error';
 
 export interface AIResponse {
   type: AIResponseType;
-  content: TextContent | SuggestionsContent | ExplanationContent;
+  content: TextContent | SuggestionsContent | ExplanationContent | RecommendationContent;
   actions?: ResponseAction[];
 }
 
@@ -91,6 +91,13 @@ export interface Suggestion {
 export interface ExplanationContent {
   title: string;      // What's being explained
   explanation: string;
+}
+
+export interface RecommendationContent {
+  taskId: string;
+  taskTitle: string;
+  reason: string;
+  reasonType: 'deadline' | 'momentum' | 'quick_win' | 'priority' | 'oldest';
 }
 
 export interface ResponseAction {

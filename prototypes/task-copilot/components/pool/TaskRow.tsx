@@ -45,6 +45,7 @@ export default function TaskRow({
   onPark,
 }: TaskRowProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showFocusDropdown, setShowFocusDropdown] = useState(false);
 
   const priority = getPriorityIndicator(task.priority);
   const progress = getProgress(task);
@@ -184,12 +185,37 @@ export default function TaskRow({
             Done
           </span>
         ) : (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
-            className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-none rounded px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
-          >
-            → Focus
-          </button>
+          <div className="relative flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            <div className="flex">
+              <button
+                onClick={() => onAddToQueue(task.id, false)}
+                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-l px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
+              >
+                → Focus
+              </button>
+              <button
+                onClick={() => setShowFocusDropdown(!showFocusDropdown)}
+                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-r border-l border-violet-200 dark:border-violet-700 px-1 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            {showFocusDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowFocusDropdown(false)} />
+                <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[120px]">
+                  <button
+                    onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
+                    className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  >
+                    Add to Today
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {/* Actions menu */}
@@ -230,12 +256,37 @@ export default function TaskRow({
                 Done
               </span>
             ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); onAddToQueue(task.id); }}
-                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded px-2 py-1"
-              >
-                → Focus
-              </button>
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div className="flex">
+                  <button
+                    onClick={() => onAddToQueue(task.id, false)}
+                    className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-l px-2 py-1"
+                  >
+                    → Focus
+                  </button>
+                  <button
+                    onClick={() => setShowFocusDropdown(!showFocusDropdown)}
+                    className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-r border-l border-violet-200 dark:border-violet-700 px-1 py-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                {showFocusDropdown && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowFocusDropdown(false)} />
+                    <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[120px]">
+                      <button
+                        onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
+                        className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Add to Today
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {(onDelete || onDefer || onPark) && (
               <div className="relative">

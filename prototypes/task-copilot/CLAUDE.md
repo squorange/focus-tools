@@ -803,6 +803,7 @@ task-copilot/
 │   │   └── ProjectsView.tsx  # Projects management view
 │   ├── shared/
 │   │   ├── DurationInput.tsx # Hours/minutes duration selector
+│   │   ├── FocusSelectionModal.tsx # Step selection for Today/Upcoming
 │   │   ├── MetadataPill.tsx  # Compact metadata badge
 │   │   ├── ProjectModal.tsx  # Create/edit project modal
 │   │   ├── Toast.tsx         # Toast notifications with undo
@@ -876,15 +877,43 @@ Tasks Tab ──► TasksView ─┘       │
 
 ---
 
-## AI Integration Points
+## AI Integration (Four-Surface Model)
 
-| Context | AI Drawer Behavior |
-|---------|-------------------|
-| **Inbox** | Help clarify, suggest breakdown, detect duplicates |
-| **Pool** | Answer questions, suggest what to work on |
-| **Queue** | Suggest additions, help prioritize |
-| **Task Detail** | Break down, add steps, explain |
-| **Focus Mode** | Body double, help if stuck, encourage |
+The AI assistant uses a four-surface interaction model:
+
+| Surface | Role | Persistence | Content Type |
+|---------|------|-------------|--------------|
+| **MiniBar** | Status bar + notification | Always visible | One-line status, icons |
+| **Palette** | Conversational layer | Ephemeral (auto-minimize) | Text responses, input |
+| **Drawer** | Extended chat | Session (until closed) | Full history, multi-turn |
+| **StagingArea** | Decision workspace | Until resolved | Steps, edits, suggestions |
+
+### Context-Aware Behavior
+
+| Context | Quick Actions | Contextual Prompts | MiniBar Idle Status |
+|---------|---------------|-------------------|-------------------|
+| **Queue** | 🎯 What next?, Plan my day | "Need help?" + [What next?] | "N tasks for today" |
+| **Task Detail** | 📋 Break down, ⏱ Estimate | "Need help?" + [Break down] | "N/M steps • ~X min" |
+| **Focus Mode** | 📋 Break down, 👉 Help me start | "Need help?" + [Help me start] | "Step N of M" |
+| **Inbox** | 📥 Help triage, ⚡ Priority? | — | "N items to triage" |
+
+### MiniBar States
+
+| State | Content | Tap Action |
+|-------|---------|------------|
+| Idle | "Ask AI..." | Expand Palette |
+| Contextual status | "3 tasks for today" | Expand Palette |
+| Contextual prompt | "Need help?" + [🎯 What next?] | Pill triggers action |
+| Loading | "Thinking..." (shimmer) | None |
+| Response ready | "Response ready" | Expand Palette |
+| Suggestions ready | "5 suggestions ready" | Scroll to StagingArea |
+| Confirmation | "✓ Added 5 steps" | Fades to idle |
+
+### Drawer Access
+
+- **Location:** `↗️` icon inside Palette input field (bottom-left)
+- **Auto-suggest:** After 3+ exchanges, shows "Continue in expanded view →"
+- **History:** Full conversation history preserved
 
 ---
 
@@ -912,7 +941,7 @@ Tasks Tab ──► TasksView ─┘       │
 3. **Step selection** — entire task OR specific steps (multi-select)
 4. **Waiting On is non-blocking** — can still focus on other steps
 5. **Deferral hides from Pool** — resurfaces on date
-6. **AI Drawer available everywhere** — context-aware
+6. **AI MiniBar always visible** — context-aware status and prompts
 7. **List-based UI for MVP** — Orbital Zen deferred
 
 ---
@@ -1071,6 +1100,55 @@ Full CRUD operations with reordering:
 - **Specific Steps** - Multi-select subset of steps
 - Focus mode respects selection (only shows selected steps)
 - Progress tracked per selection
+
+### Add to Focus Pattern (January 2026)
+Simplified one-click pattern with dropdown for options:
+
+**"Add to Focus" Button (Split Button):**
+- **Main click:** Add to Upcoming (first position below Today line)
+- **Dropdown arrow:** Shows "Add to Today" option
+- Available in: TaskDetail, TaskRow (Pool)
+
+**"Edit Focus" Button:**
+- Only shows when task is already in Focus Queue
+- Located in Steps header (conditional swap with "AI Breakdown")
+- Opens FocusSelectionModal for adjusting Today/Upcoming selection
+
+### Focus Selection Modal (Simplified)
+Modal for editing which steps are Today vs Upcoming (only for tasks already in queue):
+
+**Entry Points:**
+| Entry Point | Button Label |
+|-------------|--------------|
+| Focus Queue → TaskDetail Steps header | "Edit Focus" |
+| Focus Queue → QueueItem kebab menu | "Edit Focus" |
+
+**Modal Features (Simplified):**
+- Just checkbox list (no segmented control)
+- Checked = Today (violet highlight)
+- Unchecked = Upcoming (neutral)
+- Completed steps = strikethrough + disabled
+- "Select all" / "Clear all" bulk buttons
+- Footer summary: "N steps for Today · M for Upcoming"
+- "Save" button confirms
+
+**TaskDetail Today/Upcoming Sections:**
+When viewing a queued task, steps are grouped with section headers:
+- **TODAY** section: Violet tint (`bg-violet-50 dark:bg-violet-900/20`), violet left border
+- **UPCOMING** section: Normal styling, zinc left border
+- Section headers only show when task is in Focus Queue
+
+**Mental Model:**
+```
+Checked steps → TODAY section (violet tint)
+Unchecked steps → UPCOMING section (normal)
+```
+
+**Files:**
+- `components/shared/FocusSelectionModal.tsx` - Modal component (simplified)
+- `components/task-detail/TaskDetail.tsx` - Add to Focus dropdown, Edit Focus in Steps header
+- `components/pool/TaskRow.tsx` - Add to Focus dropdown
+- `components/queue/QueueItem.tsx` - "Edit Focus" in kebab menu
 
 ### Visual-First Drag/Drop (Queue Reorder)
 Focus Queue uses a visual-first approach for drag/drop reordering:
@@ -1264,16 +1342,26 @@ Comprehensive utility functions:
 - `handleBackToList()` - Return to previous view
 
 ### Task Lifecycle
-- `handleCreateTask(title)` - Create new task in inbox
+- `handleCreateTask(title)` - Create task, navigate to TaskDetail (used by InboxView)
+- `handleCreateTaskQuick(title)` - Create task in inbox, stay in view, show toast (used by TasksView)
+- `handleCreateTaskForFocus(title)` - Create task, add to Today queue, navigate to TaskDetail (used by QueueView)
 - `handleUpdateTask(taskId, updates)` - Update task properties
 - `handleDeleteTask(taskId)` - Delete task
 - `handleSendToPool(taskId)` - Move inbox → pool
 - `handleDefer(taskId, until)` - Defer until date
 - `handlePark(taskId)` - Archive as parked
 
+**Task Creation Behavior (January 2026):**
+| View | Handler | Behavior |
+|------|---------|----------|
+| **Tasks view** | `handleCreateTaskQuick` | Quick dump to Inbox, stay in view, toast confirmation |
+| **Focus Queue** | `handleCreateTaskForFocus` | Intentional capture, add to Today, open TaskDetail for enrichment |
+| **Inbox view** | `handleCreateTask` | Create and open TaskDetail |
+
 ### Queue Management
-- `handleAddToQueue(taskId, horizon)` - Add to focus queue
+- `handleAddToQueue(taskId, forToday?, selectedStepIds?)` - Add to focus queue with optional step selection
 - `handleRemoveFromQueue(queueItemId)` - Remove from queue
+- `handleUpdateStepSelection(queueItemId, selectedStepIds)` - Update Today/Upcoming step selection
 - `handleStartFocus(queueItemId)` - Enter focus mode
 
 ### Step Management
@@ -1319,6 +1407,9 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-11 | **v14:** AI MiniBar integration complete: Four-surface model (MiniBar/Palette/Drawer/StagingArea), contextual idle status ("3 tasks for today"), contextual prompts with action pills, "What next?" AI recommendations, Drawer icon in input field, "Continue in expanded view" after 3+ exchanges, AI_ACTIONS central registry |
+| 2026-01-11 | **v13:** UX refinements: Add to Focus dropdown pattern (one-click to Upcoming, dropdown for Today), Edit Focus relocated to Steps header (conditional swap with AI Breakdown), simplified FocusSelectionModal (removed segmented control), task creation behavior swap (TasksView→quick dump, QueueView→intentional), Toast positioning above minibar, queue positioning fix (new items as first Upcoming) |
+| 2026-01-10 | **v12:** Focus Selection Modal (step selection for Today/Upcoming), TaskDetail Today/Upcoming section headers, Edit Focus in QueueItem kebab menu, handleUpdateStepSelection handler |
 | 2026-01-06 | **v11:** Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling across all views, QueueView empty state "Show completed" button |
 | 2025-01-06 | **v10:** Documented keyboard shortcuts, mobile AI floating bar, QuickAccess cards |
 | 2025-01-06 | **v9:** Added visual-first drag/drop documentation (queue-reorder.ts), file structure updates |

@@ -77,6 +77,7 @@ interface QueueItemProps {
   onOpenTask: (id: string) => void;
   onStartFocus: (queueItemId: string) => void;
   onRemoveFromQueue: (queueItemId: string) => void;
+  onEditFocus?: (queueItemId: string) => void; // Opens focus selection modal
   onMoveUp?: (queueItemId: string) => void;
   onMoveDown?: (queueItemId: string) => void;
 }
@@ -86,7 +87,7 @@ function getProgress(
   task: Task,
   item: FocusQueueItem
 ): { completed: number; total: number; label: string } {
-  if (item.selectionType === "entire_task") {
+  if (item.selectionType === "all_today" || item.selectionType === "all_upcoming") {
     if (task.steps.length === 0) {
       return { completed: 0, total: 0, label: "No steps" };
     }
@@ -121,7 +122,7 @@ function getProgress(
 // Get time estimate for queue item
 function getEstimate(task: Task, item: FocusQueueItem): string | null {
   const steps =
-    item.selectionType === "entire_task"
+    item.selectionType === "all_today" || item.selectionType === "all_upcoming"
       ? task.steps
       : task.steps.filter((s) => item.selectedStepIds.includes(s.id));
 
@@ -155,6 +156,7 @@ export default function QueueItem({
   onOpenTask,
   onStartFocus,
   onRemoveFromQueue,
+  onEditFocus,
   onMoveUp,
   onMoveDown,
 }: QueueItemProps) {
@@ -294,6 +296,17 @@ export default function QueueItem({
                     Start Focus
                   </button>
                 )}
+                {!isComplete && onEditFocus && task.steps.length > 0 && (
+                  <button
+                    onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
+                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    Edit Focus
+                  </button>
+                )}
                 {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
                 {onMoveUp && (
                   <button
@@ -401,6 +414,17 @@ export default function QueueItem({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Start Focus
+                      </button>
+                    )}
+                    {!isComplete && onEditFocus && task.steps.length > 0 && (
+                      <button
+                        onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        Edit Focus
                       </button>
                     )}
                     {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}

@@ -376,6 +376,63 @@ When in doubt, use break_down_step instead—it's better to provide actionable s
 ];
 
 // ============================================
+// Queue Mode Tools (Task Selection)
+// ============================================
+
+export const queueModeTools: Tool[] = [
+  {
+    name: "recommend_task",
+    description: `Recommend a single task from the user's Focus Queue to work on next.
+
+## CRITICAL: reasonType Rules
+
+You MUST select the correct reasonType based on the ACTUAL DATA:
+
+- **"deadline"**: ONLY use if deadlineDate is NOT null. Never use if deadlineDate is null!
+- **"momentum"**: Use if completedSteps > 0 (task has progress)
+- **"priority"**: Use if priority === "high"
+- **"quick_win"**: Use if effort === "quick" OR focusScore indicates quick task
+- **"oldest"**: Fallback based on addedAt (earliest in queue)
+- **"no_recommendation"**: Only if queue is empty or all tasks excluded
+
+## Selection Priority
+
+1. Has deadline (deadlineDate NOT null) → reasonType: "deadline"
+2. Has progress (completedSteps > 0) → reasonType: "momentum"
+3. High priority (priority === "high") → reasonType: "priority"
+4. Quick effort (effort === "quick") → reasonType: "quick_win"
+5. Highest focusScore → reasonType based on why score is high
+6. Oldest in queue (earliest addedAt) → reasonType: "oldest"
+
+Consider excludeTaskIds if provided and skip those tasks.
+If only one task in queue, still recommend it (validates user's choice).`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        taskId: {
+          type: "string",
+          description: "ID of the recommended task from the queue",
+        },
+        taskTitle: {
+          type: "string",
+          description: "Title of the task (for display)",
+        },
+        reason: {
+          type: "string",
+          description: "Brief explanation why this task (1-2 sentences). ONLY mention deadline if deadlineDate is NOT null!",
+        },
+        reasonType: {
+          type: "string",
+          enum: ["deadline", "momentum", "quick_win", "priority", "oldest", "no_recommendation"],
+          description: "Category of reasoning. 'deadline' ONLY if deadlineDate is NOT null. 'no_recommendation' if queue empty/all excluded.",
+        },
+      },
+      required: ["taskId", "taskTitle", "reason", "reasonType"],
+    },
+  },
+];
+
+// ============================================
 // Tool Response Types
 // ============================================
 
@@ -455,6 +512,13 @@ export interface EncourageInput {
   message: string;
 }
 
+export interface RecommendTaskInput {
+  taskId: string;
+  taskTitle: string;
+  reason: string;
+  reasonType: "deadline" | "momentum" | "quick_win" | "priority" | "oldest" | "no_recommendation";
+}
+
 // Union type for all tool inputs
 export type ToolInput =
   | { name: "replace_task_steps"; input: ReplaceStepsInput }
@@ -466,4 +530,5 @@ export type ToolInput =
   | { name: "break_down_step"; input: BreakDownStepInput }
   | { name: "suggest_first_action"; input: SuggestFirstActionInput }
   | { name: "explain_step"; input: ExplainStepInput }
-  | { name: "encourage"; input: EncourageInput };
+  | { name: "encourage"; input: EncourageInput }
+  | { name: "recommend_task"; input: RecommendTaskInput };

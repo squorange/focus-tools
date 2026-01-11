@@ -35,6 +35,13 @@ interface AIAssistantOverlayProps {
   // If user shows intent to interact → don't auto-collapse; if passive notification → auto-collapse
   disableAutoCollapse?: boolean;  // True when user has shown intent to interact
   onManualInteraction?: () => void;  // Called when user signals intent (e.g., clicks "Ask AI")
+  // Recommendation handlers
+  onRequestRecommendation?: () => void;  // For "What next?" quick action
+  onStartRecommendedFocus?: (taskId: string) => void;
+  onSkipRecommendation?: (taskId: string) => void;
+  // Drawer access
+  onOpenDrawer?: () => void;
+  exchangeCount?: number;
 }
 
 export function AIAssistantOverlay({
@@ -56,6 +63,11 @@ export function AIAssistantOverlay({
   isAnimating = false,
   disableAutoCollapse = false,
   onManualInteraction,
+  onRequestRecommendation,
+  onStartRecommendedFocus,
+  onSkipRecommendation,
+  onOpenDrawer,
+  exchangeCount = 0,
 }: AIAssistantOverlayProps) {
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
@@ -172,6 +184,11 @@ export function AIAssistantOverlay({
             onScrollToSuggestions={onScrollToSuggestions}
             disableAutoCollapse={disableAutoCollapse}
             onManualInteraction={onManualInteraction}
+            onRequestRecommendation={onRequestRecommendation}
+            onStartRecommendedFocus={onStartRecommendedFocus}
+            onSkipRecommendation={onSkipRecommendation}
+            onOpenDrawer={onOpenDrawer}
+            exchangeCount={exchangeCount}
           />
         )}
       </AnimatePresence>
