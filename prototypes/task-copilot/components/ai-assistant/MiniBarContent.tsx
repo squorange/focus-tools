@@ -21,12 +21,12 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
   const isConfirmation = content.type === 'confirmation';
   const isPrompt = content.type === 'prompt';
 
-  // Handle click: suggestions-ready scrolls to StagingArea, others expand Palette
+  // Handle click: always expand Palette, and also scroll to StagingArea if suggestions ready
   const handleClick = () => {
+    onExpand();
+    // Additionally scroll to suggestions if they're ready (bonus convenience)
     if (isSuggestionsReady && onScrollToSuggestions) {
       onScrollToSuggestions();
-    } else {
-      onExpand();
     }
   };
 
