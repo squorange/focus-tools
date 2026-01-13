@@ -105,6 +105,48 @@ interface ExtendedStructureRequest extends StructureRequest {
       inQueue: boolean;
     }>;
   };
+  // Task detail mode (full task context for AI assistance)
+  taskDetailMode?: boolean;
+  taskDetailContext?: {
+    taskId: string;
+    status: string;
+    priority: string | null;
+    targetDate: string | null;
+    deadlineDate: string | null;
+    effort: string | null;
+    health: {
+      status: string;
+      reasons: string[];
+    };
+    reminder: {
+      type: 'relative' | 'absolute';
+      relativeMinutes?: number;
+      relativeTo?: 'target' | 'deadline';
+      absoluteTime?: number;
+    } | null;
+    waitingOn: {
+      who: string;
+      since: number;
+      followUpDate: string | null;
+    } | null;
+    inFocusQueue: boolean;
+    progress: {
+      completedSteps: number;
+      totalSteps: number;
+    };
+    steps: Array<{
+      id: string;
+      text: string;
+      completed: boolean;
+      stepNumber: number;
+      substeps: Array<{
+        id: string;
+        text: string;
+        completed: boolean;
+        label: string;
+      }>;
+    }>;
+  };
 }
 
 // Extended response for recommendations
@@ -163,12 +205,13 @@ function cleanStepText<T extends { text: string; estimatedMinutes?: number | nul
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, taskDetailMode, taskDetailContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
 
     // Determine which prompt and tools to use
     const isFocusMode = Boolean(focusMode);
     const isQueueMode = Boolean(queueMode);
     const isTasksViewMode = Boolean(tasksViewMode);
+    const isTaskDetailMode = Boolean(taskDetailMode);
 
     let systemPrompt = SYSTEM_PROMPT;
     let tools = structuringTools;
@@ -182,13 +225,16 @@ export async function POST(request: NextRequest) {
       systemPrompt = FOCUS_MODE_PROMPT;
       tools = focusModeTools;
     }
+    // Task detail mode uses the default structuring prompt/tools but with rich context
 
     // Build context message with current state
     const contextMessage = isQueueMode
       ? buildQueueContextMessage(userMessage, queueContext)
       : isTasksViewMode
         ? buildTasksViewContextMessage(userMessage, tasksViewContext)
-        : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
+        : isTaskDetailMode
+          ? buildTaskDetailContextMessage(userMessage, taskTitle, taskDescription, taskNotes, taskDetailContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction)
+          : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
     console.log("[AI Debug] Context message:", contextMessage);
     console.log("[AI Debug] Focus mode:", isFocusMode);
     console.log("[AI Debug] Queue mode:", isQueueMode);
@@ -826,6 +872,134 @@ function buildTasksViewContextMessage(
   }
 
   context += `=========================\n\n`;
+  context += `User message: ${userMessage}`;
+
+  return context;
+}
+
+// Build context message for task detail mode (full task context)
+function buildTaskDetailContextMessage(
+  userMessage: string,
+  taskTitle: string | null,
+  taskDescription: string | null | undefined,
+  taskNotes: string | undefined,
+  taskDetailContext?: ExtendedStructureRequest["taskDetailContext"],
+  pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
+  pendingEdits?: ExtendedStructureRequest["pendingEdits"],
+  pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
+  pendingAction?: ExtendedStructureRequest["pendingAction"]
+): string {
+  const today = new Date().toISOString().split("T")[0];
+  let context = `=== TASK DETAIL CONTEXT ===\n`;
+  context += `Today's date: ${today}\n\n`;
+
+  context += `Task: "${taskTitle || "Untitled"}"\n`;
+  if (taskDescription) {
+    context += `Description: ${taskDescription}\n`;
+  }
+  if (taskNotes) {
+    context += `Notes: ${taskNotes}\n`;
+  }
+
+  if (!taskDetailContext) {
+    context += `\n=========================\n\n`;
+    context += `User message: ${userMessage}`;
+    return context;
+  }
+
+  // Task metadata
+  context += `\n--- Task Status ---\n`;
+  context += `Status: ${taskDetailContext.status}\n`;
+  if (taskDetailContext.priority) {
+    context += `Priority: ${taskDetailContext.priority}\n`;
+  }
+  if (taskDetailContext.effort) {
+    context += `Effort: ${taskDetailContext.effort}\n`;
+  }
+  context += `In Focus Queue: ${taskDetailContext.inFocusQueue ? 'Yes' : 'No'}\n`;
+
+  // Health status
+  context += `\n--- Health Status ---\n`;
+  const healthLabels: Record<string, string> = {
+    'healthy': 'On track',
+    'at_risk': 'Check in (needs attention)',
+    'critical': 'Needs attention (critical)',
+  };
+  context += `Health: ${healthLabels[taskDetailContext.health.status] || taskDetailContext.health.status}\n`;
+  if (taskDetailContext.health.reasons.length > 0) {
+    context += `Reasons:\n`;
+    taskDetailContext.health.reasons.forEach(reason => {
+      context += `  • ${reason}\n`;
+    });
+  }
+
+  // Dates
+  if (taskDetailContext.targetDate || taskDetailContext.deadlineDate) {
+    context += `\n--- Dates ---\n`;
+    if (taskDetailContext.targetDate) {
+      const isToday = taskDetailContext.targetDate === today;
+      const isPast = taskDetailContext.targetDate < today;
+      const target = isToday ? "TODAY" : isPast ? `${taskDetailContext.targetDate} (PAST)` : taskDetailContext.targetDate;
+      context += `Target (personal goal): ${target}\n`;
+    }
+    if (taskDetailContext.deadlineDate) {
+      const isToday = taskDetailContext.deadlineDate === today;
+      const isPast = taskDetailContext.deadlineDate < today;
+      const deadline = isToday ? "TODAY" : isPast ? `${taskDetailContext.deadlineDate} (OVERDUE!)` : taskDetailContext.deadlineDate;
+      context += `Deadline (hard): ${deadline}\n`;
+    }
+  }
+
+  // Reminder
+  if (taskDetailContext.reminder) {
+    context += `\n--- Reminder ---\n`;
+    if (taskDetailContext.reminder.type === 'relative') {
+      const mins = taskDetailContext.reminder.relativeMinutes || 0;
+      const relTo = taskDetailContext.reminder.relativeTo || 'target';
+      const timeStr = mins >= 1440 ? `${Math.floor(mins / 1440)} day(s)` : mins >= 60 ? `${Math.floor(mins / 60)} hour(s)` : `${mins} minutes`;
+      context += `Reminder: ${timeStr} before ${relTo}\n`;
+    } else if (taskDetailContext.reminder.type === 'absolute' && taskDetailContext.reminder.absoluteTime) {
+      const reminderDate = new Date(taskDetailContext.reminder.absoluteTime);
+      context += `Reminder: ${reminderDate.toLocaleString()}\n`;
+    }
+  }
+
+  // Waiting on
+  if (taskDetailContext.waitingOn) {
+    context += `\n--- Waiting On ---\n`;
+    context += `Waiting on: ${taskDetailContext.waitingOn.who}\n`;
+    const sinceDate = new Date(taskDetailContext.waitingOn.since);
+    context += `Since: ${sinceDate.toLocaleDateString()}\n`;
+    if (taskDetailContext.waitingOn.followUpDate) {
+      context += `Follow-up: ${taskDetailContext.waitingOn.followUpDate}\n`;
+    }
+  }
+
+  // Progress and steps
+  context += `\n--- Progress ---\n`;
+  const { completedSteps, totalSteps } = taskDetailContext.progress;
+  if (totalSteps === 0) {
+    context += `No steps defined yet.\n`;
+  } else {
+    context += `Progress: ${completedSteps}/${totalSteps} steps completed (${Math.round((completedSteps / totalSteps) * 100)}%)\n\n`;
+    context += `Steps:\n`;
+    taskDetailContext.steps.forEach(step => {
+      const status = step.completed ? "[COMPLETED]" : "[ ]";
+      context += `${status} ${step.stepNumber}. ${step.text} (id: ${step.id})\n`;
+      if (step.substeps.length > 0) {
+        step.substeps.forEach(sub => {
+          const subStatus = sub.completed ? "[COMPLETED]" : "[ ]";
+          context += `    ${subStatus} ${step.stepNumber}${sub.label}. ${sub.text} (id: ${sub.id})\n`;
+        });
+      }
+    });
+  }
+
+  // Add pending staging context if available
+  context += buildStagingContext(pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
+
+  context += `\n=========================\n\n`;
+  context += `IMPORTANT: When suggesting steps or first actions, ALWAYS check the progress above. Do NOT recommend steps that are already marked [COMPLETED].\n\n`;
   context += `User message: ${userMessage}`;
 
   return context;

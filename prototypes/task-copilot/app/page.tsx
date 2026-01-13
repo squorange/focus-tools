@@ -64,6 +64,7 @@ import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, Col
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
+import { initializeReminders } from "@/lib/notifications";
 
 // ============================================
 // Initial States
@@ -320,6 +321,59 @@ export default function Home() {
           },
         };
       }
+    } else if (state.currentView === 'taskDetail' && currentTask) {
+      // Task Detail view - pass full task context including progress, health, dates
+      const health = computeHealthStatus(currentTask);
+      const queueItem = state.focusQueue.items.find(i => i.taskId === currentTask.id);
+
+      viewContext = {
+        taskDetailMode: true,
+        taskDetailContext: {
+          taskId: currentTask.id,
+          status: currentTask.status,
+          priority: currentTask.priority || null,
+          targetDate: currentTask.targetDate || null,
+          deadlineDate: currentTask.deadlineDate || null,
+          effort: currentTask.effort || null,
+          health: {
+            status: health.status,
+            reasons: health.reasons,
+          },
+          reminder: currentTask.reminder ? {
+            type: currentTask.reminder.type,
+            ...(currentTask.reminder.type === 'relative' && {
+              relativeMinutes: currentTask.reminder.relativeMinutes,
+              relativeTo: currentTask.reminder.relativeTo,
+            }),
+            ...(currentTask.reminder.type === 'absolute' && {
+              absoluteTime: currentTask.reminder.absoluteTime,
+            }),
+          } : null,
+          waitingOn: currentTask.waitingOn ? {
+            who: currentTask.waitingOn.who,
+            since: currentTask.waitingOn.since,
+            followUpDate: currentTask.waitingOn.followUpDate,
+          } : null,
+          inFocusQueue: !!queueItem,
+          progress: {
+            completedSteps: currentTask.steps.filter(s => s.completed).length,
+            totalSteps: currentTask.steps.length,
+          },
+          // Send step-by-step breakdown with completion status
+          steps: currentTask.steps.map((step, index) => ({
+            id: step.id,
+            text: step.text,
+            completed: step.completed,
+            stepNumber: index + 1,
+            substeps: step.substeps.map((sub, subIndex) => ({
+              id: sub.id,
+              text: sub.text,
+              completed: sub.completed,
+              label: String.fromCharCode(97 + subIndex), // 'a', 'b', 'c'...
+            })),
+          })),
+        },
+      };
     }
 
     // Get active staging context for follow-up questions about pending suggestions
@@ -805,11 +859,29 @@ export default function Home() {
         currentView = 'focusMode';
       }
 
+      // Check for deep link task parameter (from notification click)
+      const urlParams = new URLSearchParams(window.location.search);
+      const taskIdParam = urlParams.get('task');
+      let deepLinkTaskId: string | null = null;
+
+      if (taskIdParam && loaded.tasks.some(t => t.id === taskIdParam)) {
+        deepLinkTaskId = taskIdParam;
+        currentView = 'taskDetail';
+        // Clear the URL param after handling
+        const url = new URL(window.location.href);
+        url.searchParams.delete('task');
+        window.history.replaceState({}, '', url.toString());
+      }
+
       setState({
         ...loaded,
         focusMode,
         currentView,
+        activeTaskId: deepLinkTaskId || loaded.activeTaskId,
       });
+
+      // Initialize reminders (check for any due while app was closed)
+      initializeReminders();
     } catch (e) {
       console.error("Failed to load saved state:", e);
     }
@@ -822,6 +894,28 @@ export default function Home() {
       saveState(state);
     }
   }, [state, hasHydrated]);
+
+  // Handle notification click deep links while app is open
+  useEffect(() => {
+    const handleReminderClick = (e: CustomEvent<{ taskId: string }>) => {
+      const taskId = e.detail.taskId;
+      setState(prev => {
+        if (prev.tasks.some(t => t.id === taskId)) {
+          return {
+            ...prev,
+            activeTaskId: taskId,
+            currentView: 'taskDetail' as ViewType,
+          };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('task-reminder-click', handleReminderClick as EventListener);
+    return () => {
+      window.removeEventListener('task-reminder-click', handleReminderClick as EventListener);
+    };
+  }, []);
 
   // Sync AI Assistant context when view changes
   // Refinement 7: Reset appearance on context change (but preserve drawer history)
