@@ -683,6 +683,19 @@ export default function Home() {
     }
   }, [aiAssistant.state.response, aiAssistant.state.isLoading]);
 
+  // Auto-scroll to staging area when suggestions arrive
+  useEffect(() => {
+    if (aiAssistant.state.response?.type === 'suggestions') {
+      const el = document.getElementById('staging-area');
+      if (el) {
+        // Small delay to let staging area render
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [aiAssistant.state.response]);
+
   // Reset prompt when user interacts with AI (expand or submit)
   useEffect(() => {
     if (aiAssistant.state.mode !== 'collapsed') {

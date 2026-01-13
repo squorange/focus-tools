@@ -10,6 +10,7 @@ export type AIAssistantContext =
   | 'taskDetail'   // Viewing a specific task
   | 'focusMode'    // In focus session
   | 'inbox'        // Inbox/triage view
+  | 'search'       // Search view
   | 'global';      // Fallback
 
 export interface AIAssistantState {
@@ -107,6 +108,14 @@ export interface ResponseAction {
   onClick: () => void;
 }
 
+// ============ Submit Result ============
+// Return type from onSubmit handler - allows returning collapsedContent for structured responses
+
+export interface AISubmitResult {
+  response: AIResponse | null;           // Response to show in Palette (null for structured responses)
+  collapsedContent?: CollapsedContent;   // What to show in MiniBar (for structured responses)
+}
+
 // ============ Quick Actions ============
 
 export interface QuickAction {
@@ -138,7 +147,8 @@ export type AIAction =
   | { type: 'SET_QUERY'; query: string }
   | { type: 'CLEAR_QUERY' }           // Refinement 2
   | { type: 'SUBMIT_QUERY' }
-  | { type: 'RECEIVE_RESPONSE'; response: AIResponse }
+  | { type: 'RECEIVE_RESPONSE'; response: AIResponse; collapsedContent?: CollapsedContent }
+  | { type: 'LOADING_COMPLETE'; collapsedContent?: CollapsedContent }  // Clear loading, optionally set collapsedContent for structured responses
   | { type: 'ACCEPT_SUGGESTIONS' }
   | { type: 'DISMISS_RESPONSE' }
   | { type: 'SET_CONTEXT'; context: AIAssistantContext }
@@ -147,4 +157,6 @@ export type AIAction =
   | { type: 'SET_COLLAPSED_CONTENT'; content: CollapsedContent }
   | { type: 'RESET' }                 // Refinement 7
   | { type: 'ERROR'; error: string }
-  | { type: 'CLEAR_ERROR' };
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'SYNC_MESSAGES'; messages: AIMessage[] }  // Issue 10: Sync from external source
+  | { type: 'CLEAR_MESSAGES' };                        // Issue 10: Clear messages

@@ -567,15 +567,15 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
     },
     today: {
       label: 'Today',
-      color: '#f59e0b', // amber-500
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-      textClass: 'text-amber-700 dark:text-amber-300',
-    },
-    focus: {
-      label: 'Focus',
       color: '#8b5cf6', // violet-500
       bgClass: 'bg-violet-100 dark:bg-violet-900/30',
       textClass: 'text-violet-700 dark:text-violet-300',
+    },
+    focus: {
+      label: 'Focus',
+      color: '#6d28d9', // violet-700
+      bgClass: 'bg-violet-50 dark:bg-violet-950/30',
+      textClass: 'text-violet-600 dark:text-violet-400',
     },
     waiting: {
       label: 'Waiting',

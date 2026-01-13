@@ -5,10 +5,23 @@
 import { StructureResponse, SuggestedStep } from './types';
 import { AIResponse, Suggestion } from './ai-types';
 
+// Extended response type that includes recommendation (from API route)
+type ReasonType = 'deadline' | 'momentum' | 'quick_win' | 'priority' | 'oldest';
+interface ExtendedStructureResponse extends StructureResponse {
+  recommendation?: {
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+    reasonType: ReasonType | string;  // API may return string, we cast it
+  };
+}
+
 /**
  * Convert StructureResponse from /api/structure to AIResponse for minibar display
  */
-export function structureToAIResponse(response: StructureResponse): AIResponse {
+export function structureToAIResponse(response: StructureResponse | ExtendedStructureResponse): AIResponse {
+  // Cast to extended type for recommendation handling
+  const extResponse = response as ExtendedStructureResponse;
   switch (response.action) {
     case 'replace':
       // Replace action - show all steps as suggestions
@@ -82,6 +95,25 @@ export function structureToAIResponse(response: StructureResponse): AIResponse {
         actions: [
           { id: 'review', label: 'Review', variant: 'primary', onClick: () => {} },
         ],
+      };
+
+    case 'recommend':
+      // Recommendation - show task recommendation card
+      if (extResponse.recommendation) {
+        return {
+          type: 'recommendation',
+          content: {
+            taskId: extResponse.recommendation.taskId,
+            taskTitle: extResponse.recommendation.taskTitle,
+            reason: extResponse.recommendation.reason,
+            reasonType: extResponse.recommendation.reasonType as ReasonType,
+          },
+        };
+      }
+      // Fallback if no recommendation data
+      return {
+        type: 'text',
+        content: { text: response.message },
       };
 
     case 'none':

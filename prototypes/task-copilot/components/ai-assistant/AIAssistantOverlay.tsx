@@ -41,7 +41,6 @@ interface AIAssistantOverlayProps {
   onSkipRecommendation?: (taskId: string) => void;
   // Drawer access
   onOpenDrawer?: () => void;
-  exchangeCount?: number;
 }
 
 export function AIAssistantOverlay({
@@ -67,7 +66,6 @@ export function AIAssistantOverlay({
   onStartRecommendedFocus,
   onSkipRecommendation,
   onOpenDrawer,
-  exchangeCount = 0,
 }: AIAssistantOverlayProps) {
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
@@ -181,14 +179,12 @@ export function AIAssistantOverlay({
             onCollapse={onCollapse}
             onInputFocus={onInputFocus}
             onInputBlur={onInputBlur}
-            onScrollToSuggestions={onScrollToSuggestions}
             disableAutoCollapse={disableAutoCollapse}
             onManualInteraction={onManualInteraction}
             onRequestRecommendation={onRequestRecommendation}
             onStartRecommendedFocus={onStartRecommendedFocus}
             onSkipRecommendation={onSkipRecommendation}
             onOpenDrawer={onOpenDrawer}
-            exchangeCount={exchangeCount}
           />
         )}
       </AnimatePresence>

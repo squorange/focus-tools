@@ -376,10 +376,36 @@ When in doubt, use break_down_step instead—it's better to provide actionable s
 ];
 
 // ============================================
-// Queue Mode Tools (Task Selection)
+// Queue Mode Tools (Task Selection + Conversation)
 // ============================================
 
 export const queueModeTools: Tool[] = [
+  {
+    name: "conversational_response",
+    description: `Respond conversationally to questions about the queue or tasks.
+
+USE THIS TOOL when user asks:
+- Questions about counts/status: "how many tasks?", "what's in my queue?", "what do I have?"
+- Summaries: "what's for today?", "overview of my tasks", "what's on my plate?"
+- Reordering/prioritization help: "help me prioritize", "what order should I do these?"
+- General questions that aren't asking for a specific task recommendation
+
+DO NOT use this tool for:
+- "What should I work on next?" → use recommend_task
+- "What next?" → use recommend_task
+- "Help me choose" → use recommend_task
+- Any request for a single task recommendation → use recommend_task`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        message: {
+          type: "string",
+          description: "Your conversational response answering the user's question",
+        },
+      },
+      required: ["message"],
+    },
+  },
   {
     name: "recommend_task",
     description: `Recommend a single task from the user's Focus Queue to work on next.

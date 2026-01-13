@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 7;
 
 // ============================================
 // Task Structure Types
@@ -501,6 +501,14 @@ export interface Message {
   stepId?: string;  // For focus mode: which step this message belongs to
 }
 
+// Queue-specific message (for 48h retention)
+export interface QueueMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+}
+
 // ============================================
 // API Types
 // ============================================
@@ -598,19 +606,6 @@ export type SortOption =
   | 'updatedAt';
 
 // ============================================
-// AI Drawer Types (Model E: updated)
-// ============================================
-
-export type AIDrawerContext = 'focus' | 'tasks' | 'inbox' | 'search' | 'task' | 'focusMode';
-
-export interface AIDrawerState {
-  isOpen: boolean;
-  messages: Message[];
-  isLoading: boolean;
-  context: AIDrawerContext;
-}
-
-// ============================================
 // App State Types (Model E: updated)
 // ============================================
 
@@ -651,9 +646,16 @@ export interface AppState {
   focusMode: FocusModeState;
   currentSessionId: string | null;
 
-  // AI
-  aiDrawer: AIDrawerState;
-  globalStaging: StagingState | null;  // Staging for top-level screens (Queue, Tasks, Inbox)
+  // AI staging (for top-level screens: Queue, Tasks, Inbox)
+  globalStaging: StagingState | null;
+
+  // Queue AI messages (48h retention, 60m display window)
+  queueMessages: QueueMessage[];
+  queueLastInteractionAt: number | null;
+
+  // Tasks view AI messages (same 60m display window as queue)
+  tasksMessages: QueueMessage[];
+  tasksLastInteractionAt: number | null;
 
   // Filters & sort
   filters: FilterState;
@@ -869,13 +871,15 @@ export function createInitialAppState(): AppState {
     },
     currentSessionId: null,
 
-    aiDrawer: {
-      isOpen: false,
-      messages: [],
-      isLoading: false,
-      context: 'focus',
-    },
     globalStaging: null,
+
+    // Queue AI messages (48h retention, 60m display window)
+    queueMessages: [],
+    queueLastInteractionAt: null,
+
+    // Tasks view AI messages (same 60m display window as queue)
+    tasksMessages: [],
+    tasksLastInteractionAt: null,
 
     filters: {
       status: ['inbox', 'pool'],

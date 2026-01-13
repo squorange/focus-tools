@@ -95,6 +95,22 @@ export const AI_ACTIONS = {
     },
   },
 
+  // Search actions
+  search: {
+    summarize: {
+      id: 'summarize',
+      label: 'Summarize results',
+      icon: '📊',
+      query: 'Summarize these search results',
+    },
+    mostUrgent: {
+      id: 'mostUrgent',
+      label: 'Most urgent',
+      icon: '🔥',
+      query: 'Which of these is most urgent?',
+    },
+  },
+
   // Global actions (fallback)
   global: {
     whatNext: {
@@ -119,6 +135,7 @@ export type FocusModeAction = keyof typeof AI_ACTIONS.focusMode;
 export type TaskDetailAction = keyof typeof AI_ACTIONS.taskDetail;
 export type QueueAction = keyof typeof AI_ACTIONS.queue;
 export type InboxAction = keyof typeof AI_ACTIONS.inbox;
+export type SearchAction = keyof typeof AI_ACTIONS.search;
 export type GlobalAction = keyof typeof AI_ACTIONS.global;
 
 // ============ Helper Functions ============

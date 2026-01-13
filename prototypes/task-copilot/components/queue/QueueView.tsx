@@ -391,20 +391,20 @@ export default function QueueView({
   return (
     <div className="flex flex-col">
       {/* Quick Capture */}
-      <div className="mb-4">
+      <div className="mb-6">
         <QuickCapture onCapture={onCreateTask} placeholder="Add a task to focus..." />
       </div>
 
       {/* Header with today estimate */}
       <div className="flex items-center justify-between px-1 mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-baseline gap-2">
           {todayItems.length > 0 && (
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="text-base font-medium text-zinc-500 dark:text-zinc-400">
               {todayItems.length} for today
             </span>
           )}
           {todayEstimate && (
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            <span className="text-sm text-zinc-400 dark:text-zinc-500">
               {todayEstimate}
             </span>
           )}
@@ -414,7 +414,7 @@ export default function QueueView({
           {totalItems > 0 && (
             <button
               onClick={() => setCompletedDrawerOpen(true)}
-              className="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
             >
               {completionCount > 0 ? `${completionCount} completed` : "Completed"}
             </button>
@@ -453,14 +453,14 @@ export default function QueueView({
               {inboxCount > 0 && (
                 <button
                   onClick={onGoToInbox}
-                  className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded-lg transition-colors"
                 >
                   Go to Inbox ({inboxCount})
                 </button>
               )}
               <button
                 onClick={() => setCompletedDrawerOpen(true)}
-                className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
               >
                 Show completed
               </button>

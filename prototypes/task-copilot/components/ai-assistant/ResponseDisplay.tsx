@@ -57,7 +57,7 @@ export function ResponseDisplay({ response }: ResponseDisplayProps) {
 
 function TextResponse({ content }: { content: TextContent }) {
   return (
-    <p className="text-base text-zinc-600 dark:text-zinc-300 leading-relaxed text-left">
+    <p className="text-base text-zinc-600 dark:text-zinc-300 leading-relaxed text-left whitespace-pre-wrap">
       {content.text}
     </p>
   );

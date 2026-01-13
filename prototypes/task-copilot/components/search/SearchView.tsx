@@ -144,7 +144,7 @@ export default function SearchView({
       {/* Quick Access - show when no query and no filter */}
       {!query.trim() && !activeFilter && (
         <section>
-          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
             Quick Access
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -218,7 +218,7 @@ export default function SearchView({
 
           {/* Data Management */}
           <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-            <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+            <h3 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
               Data
             </h3>
             <div className="flex gap-3">
@@ -259,7 +259,7 @@ export default function SearchView({
       {!query.trim() && activeFilter && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+            <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
               {activeFilter === "high_priority" && "High Priority"}
               {activeFilter === "waiting" && "Waiting On"}
               {activeFilter === "deferred" && "Deferred"}
@@ -269,7 +269,7 @@ export default function SearchView({
             </h2>
             <button
               onClick={() => setActiveFilter(null)}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
             >
               Clear filter
             </button>
@@ -312,7 +312,7 @@ export default function SearchView({
       {/* Search Results */}
       {query.trim() && (
         <section>
-          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
             Results ({searchResults.length})
           </h2>
           {searchResults.length > 0 ? (

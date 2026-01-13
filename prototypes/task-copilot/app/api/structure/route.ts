@@ -37,6 +37,29 @@ interface ExtendedStructureRequest extends StructureRequest {
     text: string;
     completed: boolean;
   } | null;
+  // Pending staging context (for follow-up questions about suggestions)
+  pendingSuggestions?: Array<{
+    id: string;
+    text: string;
+    substeps?: Array<{ id: string; text: string }>;
+    parentStepId?: string;
+    estimatedMinutes?: number;
+  }> | null;
+  pendingEdits?: Array<{
+    targetId: string;
+    targetType: 'step' | 'substep';
+    parentId?: string;
+    originalText: string;
+    newText: string;
+  }> | null;
+  pendingDeletions?: Array<{
+    targetId: string;
+    targetType: 'step' | 'substep';
+    parentId?: string;
+    originalText: string;
+    reason: string;
+  }> | null;
+  pendingAction?: 'replace' | 'suggest' | 'edit' | 'delete' | null;
   // Queue mode (task recommendation)
   queueMode?: boolean;
   queueContext?: {
@@ -44,19 +67,43 @@ interface ExtendedStructureRequest extends StructureRequest {
       taskId: string;
       taskTitle: string;
       priority: string | null;
+      targetDate: string | null;
       deadlineDate: string | null;
       completedSteps: number;
       totalSteps: number;
       effort: string | null;
-      addedAt: number;
+      addedAt?: number;
+      focusScore?: number;
     }>;
     upcomingItems: Array<{
       taskId: string;
       taskTitle: string;
       priority: string | null;
+      targetDate: string | null;
       deadlineDate: string | null;
+      focusScore?: number;
     }>;
     excludeTaskIds?: string[];
+  };
+  // Tasks view mode (inbox + pool context)
+  tasksViewMode?: boolean;
+  tasksViewContext?: {
+    triageItems: Array<{
+      taskId: string;
+      taskTitle: string;
+      createdAt: number;
+    }>;
+    readyTasks: Array<{
+      taskId: string;
+      taskTitle: string;
+      priority: string | null;
+      targetDate: string | null;
+      deadlineDate: string | null;
+      stepsCount: number;
+      completedSteps: number;
+      focusScore: number;
+      inQueue: boolean;
+    }>;
   };
 }
 
@@ -116,16 +163,19 @@ function cleanStepText<T extends { text: string; estimatedMinutes?: number | nul
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
 
     // Determine which prompt and tools to use
     const isFocusMode = Boolean(focusMode);
     const isQueueMode = Boolean(queueMode);
+    const isTasksViewMode = Boolean(tasksViewMode);
 
     let systemPrompt = SYSTEM_PROMPT;
     let tools = structuringTools;
 
-    if (isQueueMode) {
+    if (isQueueMode || isTasksViewMode) {
+      // Both queue and tasks view use queue mode prompt/tools for now
+      // They provide list context for conversational help
       systemPrompt = QUEUE_MODE_PROMPT;
       tools = queueModeTools;
     } else if (isFocusMode) {
@@ -136,7 +186,9 @@ export async function POST(request: NextRequest) {
     // Build context message with current state
     const contextMessage = isQueueMode
       ? buildQueueContextMessage(userMessage, queueContext)
-      : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep);
+      : isTasksViewMode
+        ? buildTasksViewContextMessage(userMessage, tasksViewContext)
+        : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
     console.log("[AI Debug] Context message:", contextMessage);
     console.log("[AI Debug] Focus mode:", isFocusMode);
     console.log("[AI Debug] Queue mode:", isQueueMode);
@@ -461,6 +513,56 @@ function processToolResult(
   }
 }
 
+// Build staging context for follow-up questions about pending suggestions/edits
+function buildStagingContext(
+  pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
+  pendingEdits?: ExtendedStructureRequest["pendingEdits"],
+  pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
+  pendingAction?: ExtendedStructureRequest["pendingAction"]
+): string {
+  // Skip if no pending staging
+  if (!pendingAction) return "";
+
+  let context = "\n=== PENDING STAGING (waiting for user acceptance) ===\n";
+
+  if (pendingAction === 'suggest' || pendingAction === 'replace') {
+    if (pendingSuggestions && pendingSuggestions.length > 0) {
+      context += `Pending suggestions (${pendingSuggestions.length}):\n`;
+      pendingSuggestions.forEach((s, i) => {
+        const time = s.estimatedMinutes ? ` (~${s.estimatedMinutes}min)` : "";
+        const parent = s.parentStepId ? ` [substep of ${s.parentStepId}]` : "";
+        context += `  ${i + 1}. ${s.text}${time}${parent}\n`;
+        if (s.substeps && s.substeps.length > 0) {
+          s.substeps.forEach((sub, j) => {
+            context += `     ${String.fromCharCode(97 + j)}. ${sub.text}\n`;
+          });
+        }
+      });
+    }
+  }
+
+  if (pendingAction === 'edit') {
+    if (pendingEdits && pendingEdits.length > 0) {
+      context += `Pending edits (${pendingEdits.length}):\n`;
+      pendingEdits.forEach((e, i) => {
+        context += `  ${i + 1}. "${e.originalText}" → "${e.newText}"\n`;
+      });
+    }
+  }
+
+  if (pendingAction === 'delete') {
+    if (pendingDeletions && pendingDeletions.length > 0) {
+      context += `Pending deletions (${pendingDeletions.length}):\n`;
+      pendingDeletions.forEach((d, i) => {
+        context += `  ${i + 1}. "${d.originalText}" (${d.reason})\n`;
+      });
+    }
+  }
+
+  context += "The user may be asking about these pending changes.\n";
+  return context;
+}
+
 // Build context message with current list state
 function buildContextMessage(
   userMessage: string,
@@ -469,7 +571,11 @@ function buildContextMessage(
   taskDescription: string | null | undefined,
   taskNotes?: string,
   focusMode?: ExtendedStructureRequest["focusMode"],
-  currentStep?: ExtendedStructureRequest["currentStep"]
+  currentStep?: ExtendedStructureRequest["currentStep"],
+  pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
+  pendingEdits?: ExtendedStructureRequest["pendingEdits"],
+  pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
+  pendingAction?: ExtendedStructureRequest["pendingAction"]
 ): string {
   let context = "";
 
@@ -521,6 +627,9 @@ function buildContextMessage(
       context += `\nTask Notes:\n${taskNotes}\n`;
     }
 
+    // Add pending staging context if available
+    context += buildStagingContext(pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
+
     context += `\n=========================\n\n`;
     context += `User message: ${userMessage}`;
     return context;
@@ -554,6 +663,9 @@ function buildContextMessage(
     }
     context += "Current list: EMPTY (no steps added yet)\n\n";
   }
+
+  // Add pending staging context if available
+  context += buildStagingContext(pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
 
   context += `User message: ${userMessage}`;
 
@@ -597,19 +709,26 @@ function buildQueueContextMessage(
       if (item.priority) {
         context += `     Priority: ${item.priority}\n`;
       }
+      if (item.targetDate) {
+        const isToday = item.targetDate === today;
+        const target = isToday ? "TODAY" : item.targetDate;
+        context += `     Target (personal goal): ${target}\n`;
+      }
       if (item.deadlineDate) {
         const isToday = item.deadlineDate === today;
         const deadline = isToday ? "TODAY" : item.deadlineDate;
-        context += `     Deadline: ${deadline}\n`;
+        context += `     Deadline (hard): ${deadline}\n`;
       }
       if (item.effort) {
         context += `     Effort: ${item.effort}\n`;
       }
 
       // Calculate days in queue
-      const daysInQueue = Math.floor((Date.now() - item.addedAt) / (1000 * 60 * 60 * 24));
-      if (daysInQueue > 0) {
-        context += `     In queue: ${daysInQueue} day${daysInQueue > 1 ? "s" : ""}\n`;
+      if (item.addedAt) {
+        const daysInQueue = Math.floor((Date.now() - item.addedAt) / (1000 * 60 * 60 * 24));
+        if (daysInQueue > 0) {
+          context += `     In queue: ${daysInQueue} day${daysInQueue > 1 ? "s" : ""}\n`;
+        }
       }
     });
     context += "\n";
@@ -636,6 +755,74 @@ function buildQueueContextMessage(
   // Note excluded tasks
   if (excludeTaskIds && excludeTaskIds.length > 0) {
     context += `(${excludeTaskIds.length} task${excludeTaskIds.length > 1 ? "s" : ""} excluded from consideration)\n\n`;
+  }
+
+  context += `=========================\n\n`;
+  context += `User message: ${userMessage}`;
+
+  return context;
+}
+
+// Build context message for tasks view mode (inbox triage + pool browse)
+function buildTasksViewContextMessage(
+  userMessage: string,
+  tasksViewContext?: ExtendedStructureRequest["tasksViewContext"]
+): string {
+  let context = `=== TASKS VIEW CONTEXT ===\n`;
+  const today = new Date().toISOString().split("T")[0];
+  context += `Today's date: ${today}\n\n`;
+
+  if (!tasksViewContext) {
+    context += `No tasks data available.\n`;
+    context += `\n=========================\n\n`;
+    context += `User message: ${userMessage}`;
+    return context;
+  }
+
+  const { triageItems, readyTasks } = tasksViewContext;
+
+  // TRIAGE (inbox) items
+  if (triageItems.length > 0) {
+    context += `TRIAGE / INBOX (${triageItems.length} items to process):\n`;
+    triageItems.forEach((item, index) => {
+      const daysAgo = Math.floor((Date.now() - item.createdAt) / (1000 * 60 * 60 * 24));
+      const ageText = daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+      context += `  ${index + 1}. "${item.taskTitle}" (added ${ageText})\n`;
+    });
+    context += "\n";
+  } else {
+    context += `TRIAGE / INBOX: Empty (all caught up!)\n\n`;
+  }
+
+  // READY (pool) tasks
+  if (readyTasks.length > 0) {
+    context += `READY / POOL (${readyTasks.length} tasks available):\n`;
+    readyTasks.forEach((task, index) => {
+      const progressText = task.stepsCount > 0
+        ? `${task.completedSteps}/${task.stepsCount} steps`
+        : "no steps";
+      const queueStatus = task.inQueue ? " [in Focus Queue]" : "";
+
+      context += `  ${index + 1}. "${task.taskTitle}"${queueStatus}\n`;
+      context += `     Progress: ${progressText}\n`;
+
+      if (task.priority) {
+        context += `     Priority: ${task.priority}\n`;
+      }
+      if (task.targetDate) {
+        const isToday = task.targetDate === today;
+        const target = isToday ? "TODAY" : task.targetDate;
+        context += `     Target (personal goal): ${target}\n`;
+      }
+      if (task.deadlineDate) {
+        const isToday = task.deadlineDate === today;
+        const deadline = isToday ? "TODAY" : task.deadlineDate;
+        context += `     Deadline (hard): ${deadline}\n`;
+      }
+    });
+    context += "\n";
+  } else {
+    context += `READY / POOL: Empty\n\n`;
   }
 
   context += `=========================\n\n`;

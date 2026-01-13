@@ -308,19 +308,19 @@ export default function InboxItem({
             → Ready
           </button>
 
-          {/* Add to Focus button */}
+          {/* Add to Focus button (SECONDARY-violet) */}
           <button
             onClick={() => onAddToQueue(task.id)}
-            className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded transition-colors"
+            className="px-3 py-1.5 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded transition-colors"
           >
             → Focus
           </button>
 
-          {/* Defer dropdown */}
+          {/* Defer dropdown (SECONDARY-zinc) */}
           <div className="relative">
             <button
               onClick={() => setShowDeferMenu(!showDeferMenu)}
-              className="px-3 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+              className="px-3 py-1.5 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded transition-colors"
             >
               Defer ▾
             </button>
@@ -352,10 +352,10 @@ export default function InboxItem({
             Park
           </button>
 
-          {/* Delete */}
+          {/* Delete (DANGER) */}
           <button
             onClick={() => onDelete(task.id)}
-            className="px-3 py-1.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+            className="px-3 py-1.5 text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
           >
             Delete
           </button>

@@ -2,21 +2,26 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { motion, PanInfo } from 'framer-motion';
-import { AIMessage } from '@/lib/ai-types';
+import { AIMessage, QuickAction } from '@/lib/ai-types';
 import { HEIGHTS, WIDTHS, getSpringConfig } from '@/lib/ai-constants';
 import { useDeviceType } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ChatHistory } from './ChatHistory';
+import { ShimmerText } from './ShimmerText';
+import { QuickActions } from './QuickActions';
 
 interface AIDrawerProps {
   messages: AIMessage[];
   query: string;
   onQueryChange: (query: string) => void;
   onSubmit: () => void;
+  onDirectSubmit?: (query: string) => void;  // For quick actions
   isLoading: boolean;
   onClose: () => void;
   onInputFocus?: () => void;
   onInputBlur?: () => void;
+  quickActions?: QuickAction[];  // For empty state
+  onRequestRecommendation?: () => void;  // For "What next?" quick action
 }
 
 export function AIDrawer({
@@ -24,19 +29,24 @@ export function AIDrawer({
   query,
   onQueryChange,
   onSubmit,
+  onDirectSubmit,
   isLoading,
   onClose,
   onInputFocus,
   onInputBlur,
+  quickActions = [],
+  onRequestRecommendation,
 }: AIDrawerProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [dragY, setDragY] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [isHandleHovered, setIsHandleHovered] = useState(false);
   const deviceType = useDeviceType();
   const prefersReducedMotion = useReducedMotion();
 
   const isMobile = deviceType === 'mobile';
+  const isDesktop = deviceType === 'desktop';
   const springConfig = getSpringConfig(prefersReducedMotion);
 
   // Wait for mount to avoid SSR hydration mismatch with media queries
@@ -114,13 +124,13 @@ export function AIDrawer({
 
   // Container styles based on device type
   const getContainerClassName = () => {
-    const baseStyles = 'fixed z-50 flex flex-col bg-white/98 dark:bg-zinc-900/98 backdrop-blur-xl shadow-2xl';
+    const baseStyles = 'fixed z-50 flex flex-col shadow-xl shadow-black/10 dark:shadow-black/30';
 
     if (isMobile) {
-      return `${baseStyles} inset-x-0 bottom-0 border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-2xl touch-none`;
+      return `${baseStyles} inset-x-0 bottom-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl touch-none`;
     }
-    // Side drawer for tablet/desktop
-    return `${baseStyles} right-0 top-0 bottom-0 border-l border-zinc-300/50 dark:border-zinc-700/50`;
+    // Side drawer for tablet/desktop - solid background to match app header
+    return `${baseStyles} right-0 top-0 bottom-0 bg-white dark:bg-[#0c0c0c] border-l border-zinc-200 dark:border-zinc-800 pt-[env(safe-area-inset-top)]`;
   };
 
   const getContainerStyle = () => {
@@ -149,11 +159,32 @@ export function AIDrawer({
       className={getContainerClassName()}
       style={getContainerStyle()}
     >
-        {/* Header - h-14 (56px) to match top bar */}
-        <div className={`flex-shrink-0 h-14 px-4 flex items-center ${isMobile ? 'flex-col justify-center' : 'justify-between'}`}>
-          {/* Drag handle (mobile only) */}
+        {/* Header - h-14 (56px) to match app header */}
+        <div className={`flex-shrink-0 h-14 px-4 flex items-center border-b border-zinc-200 dark:border-transparent ${isMobile ? 'flex-col justify-center' : 'justify-between'}`}>
+          {/* Animated drag handle (mobile only) - tap/hover to close */}
           {isMobile && (
-            <div className="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-600 mb-2" />
+            <button
+              onClick={onClose}
+              onMouseEnter={() => setIsHandleHovered(true)}
+              onMouseLeave={() => setIsHandleHovered(false)}
+              className="w-full py-2 flex justify-center cursor-pointer bg-transparent border-0"
+              aria-label="Close drawer"
+            >
+              <motion.div className="relative w-10 h-1 flex">
+                {/* Left half */}
+                <motion.div
+                  className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
+                  animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                />
+                {/* Right half */}
+                <motion.div
+                  className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
+                  animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                />
+              </motion.div>
+            </button>
           )}
 
           <div className={`flex items-center justify-between ${isMobile ? 'w-full' : 'w-full'}`}>
@@ -172,8 +203,25 @@ export function AIDrawer({
         {/* Messages area - flex col to bottom-align messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col">
           {messages.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-sm text-zinc-400 dark:text-zinc-500">
-              Start a conversation with AI...
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                Start a conversation with AI...
+              </p>
+              {/* Quick action pills for empty state - horizontal like palette */}
+              {quickActions.length > 0 && (
+                <QuickActions
+                  actions={quickActions}
+                  onSelect={(action) => {
+                    // Special case: "What next?" uses recommendation handler
+                    if (action.id === 'next' && onRequestRecommendation) {
+                      onRequestRecommendation();
+                    } else if (onDirectSubmit) {
+                      onDirectSubmit(action.query);
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              )}
             </div>
           ) : (
             <div className="mt-auto">
@@ -183,11 +231,12 @@ export function AIDrawer({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Loading indicator */}
+        {/* Loading indicator - styled as assistant message bubble for consistency */}
         {isLoading && (
-          <div className="px-4 py-2 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400" aria-live="polite">
-            <span className="animate-spin">◐</span>
-            <span>Thinking...</span>
+          <div className="px-4 py-2 flex justify-start" aria-live="polite">
+            <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-zinc-100 dark:bg-zinc-800">
+              <ShimmerText text="Thinking..." className="text-sm" />
+            </div>
           </div>
         )}
 

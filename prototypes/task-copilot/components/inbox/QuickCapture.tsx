@@ -87,24 +87,17 @@ export default function QuickCapture({
           className="flex-1 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none text-sm"
         />
 
-        {/* Submit button */}
-        {input.trim() && (
-          <button
-            type="submit"
-            className="flex-shrink-0 px-3 py-1 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
-          >
-            Add
-          </button>
-        )}
+        {/* Submit button - always rendered to prevent height change */}
+        <button
+          type="submit"
+          className={`flex-shrink-0 px-3 py-1 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-all ${
+            input.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          Add
+        </button>
       </div>
 
-      {/* Helper text */}
-      {isFocused && (
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400 px-1">
-          Press Enter to capture, Escape to cancel. Don&apos;t worry about
-          details—just get it out of your head.
-        </p>
-      )}
     </form>
   );
 }

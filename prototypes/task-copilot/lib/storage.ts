@@ -206,6 +206,16 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV5(state);
   }
 
+  // Version 5 → 6: Fix Upcoming items to have selectionType: 'all_upcoming'
+  if (version < 6) {
+    state = migrateToV6(state);
+  }
+
+  // Version 6 → 7: Add queue messages with 48h retention
+  if (version < 7) {
+    state = migrateToV7(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -511,6 +521,60 @@ function migrateToV5(state: Partial<AppState> & Record<string, unknown>): Partia
 }
 
 /**
+ * Migrate from v5 to v6 (Fix Upcoming items to have selectionType: 'all_upcoming')
+ * Items positioned after todayLineIndex should have 'all_upcoming', not 'all_today'
+ */
+function migrateToV6(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const focusQueue = state.focusQueue as FocusQueue | undefined;
+
+  if (!focusQueue || !focusQueue.items) {
+    return {
+      ...state,
+      schemaVersion: 6,
+    };
+  }
+
+  const todayLineIndex = focusQueue.todayLineIndex ?? 0;
+
+  // Fix items in Upcoming position (index >= todayLineIndex) that have 'all_today'
+  // Active items only (not completed)
+  const activeItems = focusQueue.items.filter((i) => !i.completed);
+  const completedItems = focusQueue.items.filter((i) => i.completed);
+
+  const migratedActiveItems = activeItems.map((item, index) => {
+    // Items at or after todayLineIndex should be 'all_upcoming' if they were 'all_today'
+    if (index >= todayLineIndex && item.selectionType === 'all_today') {
+      return {
+        ...item,
+        selectionType: 'all_upcoming' as const,
+      };
+    }
+    return item;
+  });
+
+  return {
+    ...state,
+    schemaVersion: 6,
+    focusQueue: {
+      ...focusQueue,
+      items: [...migratedActiveItems, ...completedItems],
+    },
+  };
+}
+
+/**
+ * Migrate from v6 to v7 (Add queue messages with 48h retention)
+ */
+function migrateToV7(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  return {
+    ...state,
+    schemaVersion: 7,
+    queueMessages: [],
+    queueLastInteractionAt: null,
+  };
+}
+
+/**
  * Migrate legacy step format to new format
  */
 function migrateSteps(legacySteps: unknown[]): Step[] {
@@ -610,6 +674,12 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     showDeferred: partial.filters?.showDeferred ?? false,
   };
 
+  // Queue messages: apply 48h retention cleanup on load
+  const QUEUE_MESSAGE_RETENTION_MS = 48 * 60 * 60 * 1000; // 48 hours
+  const queueMessageCutoff = Date.now() - QUEUE_MESSAGE_RETENTION_MS;
+  const rawQueueMessages = (partial.queueMessages as AppState['queueMessages']) ?? [];
+  const queueMessages = rawQueueMessages.filter(m => m.timestamp > queueMessageCutoff);
+
   return {
     schemaVersion: SCHEMA_VERSION,
     currentUser: partial.currentUser ?? initial.currentUser,
@@ -634,8 +704,11 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
       pauseStartTime: focusMode.pauseStartTime ?? null,
     },
     currentSessionId: partial.currentSessionId ?? initial.currentSessionId,
-    aiDrawer: partial.aiDrawer ?? initial.aiDrawer,
     globalStaging: partial.globalStaging ?? initial.globalStaging,
+    queueMessages,
+    queueLastInteractionAt: (partial.queueLastInteractionAt as number | null) ?? null,
+    tasksMessages: (partial.tasksMessages as typeof initial.tasksMessages) ?? [],
+    tasksLastInteractionAt: (partial.tasksLastInteractionAt as number | null) ?? null,
     filters,
     sortBy: partial.sortBy ?? initial.sortBy,
     sortOrder: partial.sortOrder ?? initial.sortOrder,

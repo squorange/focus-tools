@@ -594,10 +594,115 @@ npm run build
 
 ---
 
+## Recent UX Refinements (January 2026)
+
+### Add to Focus Pattern ✅ NEW
+- Split button: main click → Upcoming, dropdown → Today
+- Available in TaskDetail and TaskRow (Pool)
+- Removes need for modal on initial add
+
+### Edit Focus Relocation ✅ NEW
+- Moved from top button bar to Steps section header
+- Conditional swap: shows "Edit Focus" when in queue, "AI Breakdown" when not
+- Only triggers modal for tasks already in Focus Queue
+
+### FocusSelectionModal Simplification ✅ NEW
+- Removed segmented control ("For Today" / "For Upcoming")
+- Now just checkbox list (checked = Today)
+- Simplified UX for adjusting Today/Upcoming selection
+
+### Task Creation Behavior Swap ✅ NEW
+| View | Behavior |
+|------|----------|
+| **Tasks view** | Quick dump to Inbox, stay in view, toast |
+| **Focus Queue** | Intentional capture, add to Today, open TaskDetail |
+
+### Toast Positioning ✅ NEW
+- Changed from `bottom-24 lg:bottom-4` to `bottom-24 sm:bottom-16`
+- Now clears the AI minibar on all screen sizes
+
+### Queue Positioning ✅ NEW
+- New items added via "Add to Focus" (default) go to first Upcoming position
+- Below Today line, not at end of queue
+
+---
+
+## Pre-Testing Phase Priorities
+
+From `ASSESSMENT_AND_GAPS.md`:
+
+| Priority | Feature | Impact | Status |
+|----------|---------|--------|--------|
+| **P0** | Export/Import JSON | Medium | ✅ Complete |
+| **P1** | "What should I do?" AI button | High | ✅ Complete |
+| **P2** | Surface health status visually | Medium | ⬜ Not started |
+| **P2** | Basic PWA notification | High | ⬜ Not started |
+
+### Export/Import JSON ✅ NEW (January 2026)
+- Located in Search view → Quick Access → Data section
+- **Export:** Downloads `focus-tools-export-{date}.json` with all data
+- **Import:** File picker validates JSON and applies migration
+- Uses `exportData()` and `importData()` from `lib/storage.ts`
+
+---
+
+## Future Enhancements Roadmap
+
+### Phase A: AI Minibar Integration (6 sessions)
+From `AI_MINIBAR_INTEGRATION_PROMPTS.md` — complete ai-minibar prototype ready for integration:
+
+| Session | Focus | Effort |
+|---------|-------|--------|
+| 1 | Extract MiniBar scaffold + CSS | Small |
+| 2 | Port useAIAssistant hook | Medium |
+| 3 | Wire up chat history + input | Medium |
+| 4 | Context-aware quick actions | Medium |
+| 5 | Response handling + staging | Medium |
+| 6 | Polish + edge cases | Small |
+
+**Key files:** `prototypes/ai-minibar/EXPORT_GUIDE.md`
+
+### Phase B: Framer Motion Animations
+
+Framer Motion enhancements should come **after** AI Minibar integration for coordinated animation system.
+
+| Feature | Complexity | Priority | Dependencies |
+|---------|------------|----------|--------------|
+| Focus Queue drag/drop | Medium | P2 | AI Minibar (for coordinated layout shifts) |
+| List item enter/exit | Small | P3 | None |
+| View transitions | Medium | P3 | None |
+| Gesture navigation (swipe) | Medium | P3 | Mobile testing |
+| Toast animations | Small | P3 | None |
+
+**Recommended order:**
+1. AI Minibar Integration (Phase A) — establishes layout + animation patterns
+2. Focus Queue drag/drop — core UX improvement, builds on minibar animations
+3. List animations (enter/exit) — polish
+4. View transitions — polish
+5. Gesture navigation — mobile-specific, test thoroughly
+
+**Why defer Framer Motion?**
+- AI Minibar introduces animation primitives (slide in/out, collapse/expand)
+- Queue drag/drop needs to coordinate with minibar expansion state
+- Consistent animation system = less technical debt
+
+### Phase C: Advanced Features (Post-Testing)
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Nudge system | P3 | Types exist, needs generation logic |
+| Bulk inbox actions | P4 | Low usage frequency |
+| StepSelector (partial focus) | P4 | Current flow works well |
+| Backend integration (Supabase) | P4 | Requires architectural decisions |
+
+---
+
 ## Revision History
 
 | Date | Changes |
 |------|---------|
+| 2026-01-11 | Export/Import JSON complete (P0), added Future Enhancements Roadmap with AI Minibar phases and Framer Motion recommendations |
+| 2026-01-11 | Added Recent UX Refinements section (Add to Focus dropdown, Edit Focus relocation, modal simplification, task creation swap, toast/queue positioning), added Pre-Testing Phase Priorities section |
 | 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements, navigation state management updates |
 | 2025-01-06 | Documented keyboard shortcuts, mobile AI floating bar, QuickAccess cards as implemented; added iOS PWA dark mode theming, visual-first drag/drop, Today/Upcoming distinction, progress ring, completed task styling; updated file structure |
 | 2025-01-04 | Added PWA support (manifest.json, service worker, usePWA hook, SVG icons) |

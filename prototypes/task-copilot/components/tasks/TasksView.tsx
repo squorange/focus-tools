@@ -123,14 +123,17 @@ export default function TasksView({
         <section>
           <div className="flex items-center justify-between mb-3">
             {/* Static title - no longer clickable */}
-            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-              Needs Triage ({filteredInboxTasks.length})
+            <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400">
+              <span>Needs Triage</span>
+              <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                {filteredInboxTasks.length}
+              </span>
             </h2>
             {/* Right: Show All + Collapse toggle */}
             <div className="flex items-center gap-2">
               <button
                 onClick={onGoToInbox}
-                className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
               >
                 Show All
               </button>
@@ -172,7 +175,7 @@ export default function TasksView({
                 <div className="text-center mt-3">
                   <button
                     onClick={onGoToInbox}
-                    className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                    className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
                   >
                     +{remainingInboxCount} More
                   </button>
@@ -186,8 +189,11 @@ export default function TasksView({
       {/* Resurfaced Section */}
       {resurfacedTasks.length > 0 && (
         <section>
-          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-            Resurfaced ({resurfacedTasks.length})
+          <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+            <span>Resurfaced</span>
+            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              {resurfacedTasks.length}
+            </span>
           </h2>
           <div className="space-y-2">
             {resurfacedTasks.map((task) => (
@@ -210,8 +216,11 @@ export default function TasksView({
 
       {/* Ready Section */}
       <section>
-        <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-          Ready ({readyTasks.length})
+        <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+          <span>Ready</span>
+          <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+            {readyTasks.length}
+          </span>
         </h2>
         {readyTasks.length > 0 ? (
           <div className="space-y-2">
@@ -244,8 +253,11 @@ export default function TasksView({
       {/* Waiting Section */}
       {waitingTasks.length > 0 && (
         <section>
-          <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-            Waiting On ({waitingTasks.length})
+          <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+            <span>Waiting On</span>
+            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              {waitingTasks.length}
+            </span>
           </h2>
           <div className="space-y-2">
             {waitingTasks.map((task) => (

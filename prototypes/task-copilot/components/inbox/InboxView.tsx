@@ -67,7 +67,7 @@ export default function InboxView({
         {tasks.length > 1 && (
           <button
             onClick={handleProcessAll}
-            className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded-lg transition-colors"
           >
             Move all to Ready
           </button>
@@ -76,7 +76,7 @@ export default function InboxView({
 
       {/* Quick Capture */}
       <div className="mb-6">
-        <QuickCapture onCapture={onCreateTask} />
+        <QuickCapture onCapture={onCreateTask} placeholder="Add a task..." />
       </div>
 
       {/* Inbox items */}

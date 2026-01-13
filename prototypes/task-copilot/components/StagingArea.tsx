@@ -77,7 +77,7 @@ export default function StagingArea({
         bg-violet-50 dark:bg-violet-900/20 border rounded-lg overflow-hidden transition-all
         ${isPulsing
           ? 'border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 animate-pulse-glow'
-          : 'border-violet-200 dark:border-violet-800'}
+          : 'border-violet-200/60 dark:border-violet-700/40'}
       `}
     >
       {/* Collapsible Header */}
@@ -95,7 +95,7 @@ export default function StagingArea({
           </span>
         </div>
         <svg
-          className={`w-5 h-5 text-violet-600 dark:text-violet-400 transition-transform duration-200 ${
+          className={`w-4 h-4 text-violet-600 dark:text-violet-400 transition-transform duration-200 ${
             isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
@@ -111,7 +111,7 @@ export default function StagingArea({
         <div className="px-4 pb-4">
           {/* Title suggestion */}
           {hasTitleSuggestion && (
-            <div className="mb-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg border border-purple-200 dark:border-purple-700">
+            <div className="mb-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg border border-violet-300 dark:border-violet-600">
               <div className="flex items-start gap-3">
                 {/* Title badge */}
                 <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
@@ -160,7 +160,7 @@ export default function StagingArea({
                 <li
                   key={`edit-${edit.targetId}`}
                   className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-blue-200 dark:border-blue-700"
+                             border border-violet-300 dark:border-violet-600"
                 >
                   {/* Edit badge */}
                   <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
@@ -215,7 +215,7 @@ export default function StagingArea({
                 <li
                   key={`delete-${deletion.targetId}`}
                   className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-red-200 dark:border-red-700"
+                             border border-violet-300 dark:border-violet-600"
                 >
                   {/* Delete badge */}
                   <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
@@ -270,7 +270,7 @@ export default function StagingArea({
                 <li
                   key={suggestion.id}
                   className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-amber-200 dark:border-amber-700"
+                             border border-violet-300 dark:border-violet-600"
                 >
                   {/* New badge */}
                   <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">
@@ -333,16 +333,13 @@ export default function StagingArea({
           <div className="flex items-center gap-3 pt-2 border-t border-violet-200 dark:border-violet-700">
             <button
               onClick={onAcceptAll}
-              className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700
-                         text-white rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
             >
               Accept all
             </button>
             <button
               onClick={onDismiss}
-              className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400
-                         hover:bg-neutral-100 dark:hover:bg-neutral-800
-                         rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
             >
               Dismiss
             </button>

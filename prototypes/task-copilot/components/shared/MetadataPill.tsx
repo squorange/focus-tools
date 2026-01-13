@@ -26,7 +26,7 @@ export default function MetadataPill({
 
   const variantClasses: Record<PillVariant, string> = {
     default:
-      "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400",
+      "bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-400",
     "priority-high":
       "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
     "priority-medium":

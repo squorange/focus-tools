@@ -70,7 +70,7 @@ export default function CompletedDrawer({
           {completionGroups.map((group) => (
             <div key={group.dateKey}>
               {/* Date header */}
-              <div className="px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider bg-zinc-50 dark:bg-zinc-800/50 sticky top-0">
+              <div className="px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 sticky top-0">
                 {group.displayDate}
               </div>
 
@@ -108,18 +108,18 @@ export default function CompletedDrawer({
       {/* Desktop: Side drawer from right */}
       <div
         className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200 lg:dark:border-zinc-700 lg:bg-white lg:dark:bg-zinc-800
+          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200 lg:dark:border-zinc-800 lg:bg-white lg:dark:bg-[#0c0c0c]
           transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
-          ${isOpen ? "lg:w-80" : "lg:w-0 lg:border-l-0"}
+          ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
         `}
       >
         <div
-          className={`w-80 flex flex-col h-full transition-opacity duration-200 ${
+          className={`w-[400px] flex flex-col h-full transition-opacity duration-200 ${
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
           {/* Header */}
-          <div className="h-14 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
+          <div className="h-14 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
             <div className="flex items-center gap-2">
               <svg
                 className="w-5 h-5 text-green-600 dark:text-green-400"
@@ -134,27 +134,15 @@ export default function CompletedDrawer({
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="font-medium text-zinc-700 dark:text-zinc-200">
+              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                 Completed
               </span>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+              className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             >
-              <svg
-                className="w-5 h-5 text-zinc-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              Done
             </button>
           </div>
 
@@ -176,7 +164,7 @@ export default function CompletedDrawer({
       {/* Mobile: Bottom sheet - z-50 to be above AI floating bar */}
       <div
         className={`
-          lg:hidden fixed inset-x-0 bottom-0 z-50 h-[50vh] bg-white dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col
+          lg:hidden fixed inset-x-0 bottom-0 z-50 h-[50vh] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col
           transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-y-0" : "translate-y-full"}
         `}
@@ -184,7 +172,7 @@ export default function CompletedDrawer({
         {/* Mobile header - clickable button like AIDrawer */}
         <button
           onClick={onClose}
-          className="w-full h-12 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0"
+          className="w-full h-12 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-transparent flex-shrink-0"
         >
           <div className="flex items-center gap-2">
             <svg
@@ -200,7 +188,7 @@ export default function CompletedDrawer({
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="font-medium text-zinc-700 dark:text-zinc-200">
+            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
               Completed
             </span>
           </div>

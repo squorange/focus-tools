@@ -24,7 +24,6 @@ interface PaletteContentProps {
   onCollapse?: () => void;  // Collapse Palette to MiniBar
   onInputFocus?: () => void;
   onInputBlur?: () => void;
-  onScrollToSuggestions?: () => void;
   // Auto-collapse control: prevents outdated content from persisting, but respects user engagement
   disableAutoCollapse?: boolean;  // True when user has shown intent to interact
   onManualInteraction?: () => void;  // Called when user signals intent (e.g., clicks "Ask AI")
@@ -48,7 +47,6 @@ export function PaletteContent({
   onCollapse,
   onInputFocus,
   onInputBlur,
-  onScrollToSuggestions,
   disableAutoCollapse = false,
   onManualInteraction,
   onRequestRecommendation,
@@ -342,32 +340,19 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <div className="flex items-center justify-start gap-3 pt-2">
-          {/* SUGGESTIONS: Go to suggestions + Dismiss + Ask AI */}
+          {/* SUGGESTIONS: Got it + Ask AI (auto-scroll handles navigation) */}
           {hasSuggestionsResponse && (
             <>
               <button
                 onClick={() => {
                   cancelAutoCollapse();
-                  onScrollToSuggestions?.();
                   onDismiss();
                   onCollapse?.();
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                  bg-violet-600 text-white hover:bg-violet-700"
               >
-                ↑ Review
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onDismiss();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
-                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Dismiss
+                Got it
               </button>
               <button
                 onClick={() => {
@@ -376,15 +361,15 @@ export function PaletteContent({
                   setShowInput(true);
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
-                  hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-600
+                  hover:bg-zinc-50 dark:hover:bg-zinc-800"
               >
                 Ask AI
               </button>
             </>
           )}
 
-          {/* TEXT / EXPLANATION: Got it + Ask AI */}
+          {/* TEXT / EXPLANATION: Got it (PRIMARY) + Ask AI (SECONDARY) */}
           {hasContentResponse && (
             <>
               <button
@@ -394,8 +379,7 @@ export function PaletteContent({
                   onCollapse?.();
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
-                  hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  text-white bg-violet-600 hover:bg-violet-700"
               >
                 Got it
               </button>
@@ -414,7 +398,7 @@ export function PaletteContent({
             </>
           )}
 
-          {/* ERROR: Retry + Dismiss + Ask AI */}
+          {/* ERROR: Retry (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
           {hasErrorResponse && (
             <>
               <button
@@ -424,10 +408,21 @@ export function PaletteContent({
                   onSubmit(); // Retry the query
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  text-white bg-violet-600 hover:bg-violet-700"
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
+                  onManualInteraction?.();
+                  setShowInput(true);
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
                   hover:bg-violet-200 dark:hover:bg-violet-800/40"
               >
-                Retry
+                Ask AI
               </button>
               <button
                 onClick={() => {
@@ -440,22 +435,10 @@ export function PaletteContent({
               >
                 Dismiss
               </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  setShowInput(true);
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
-                  hover:bg-zinc-200 dark:hover:bg-zinc-700"
-              >
-                Ask AI
-              </button>
             </>
           )}
 
-          {/* RECOMMENDATION: Start Focus + Not this one + Dismiss */}
+          {/* RECOMMENDATION: Start Focus (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
           {hasRecommendationResponse && (
             <>
               <button
@@ -469,8 +452,7 @@ export function PaletteContent({
                   onCollapse?.();
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                  text-white bg-violet-600 hover:bg-violet-700"
               >
                 Start Focus
               </button>
@@ -481,8 +463,8 @@ export function PaletteContent({
                   setShowInput(true);
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
-                  hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
+                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
               >
                 Ask AI
               </button>
