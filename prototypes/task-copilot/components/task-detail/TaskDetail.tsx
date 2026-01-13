@@ -448,8 +448,8 @@ export default function TaskDetail({
               )}
             </>
           )}
-          {/* Add to Focus split button (mobile) */}
-          {!isInQueue && (task.status === 'pool' || task.status === 'inbox') && (
+          {/* Add to Focus split button (mobile) - only for pool tasks, not inbox (too wide) */}
+          {!isInQueue && task.status === 'pool' && (
             <div className="relative">
               <div className="flex">
                 <button
@@ -472,6 +472,45 @@ export default function TaskDetail({
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
                   <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                    <button
+                      onClick={() => {
+                        onAddToQueue(task.id, true, 'all_today', []);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Add to Today
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          {/* Add to Focus kebab menu (mobile inbox only) - prevents line wrapping on small viewports */}
+          {!isInQueue && task.status === 'inbox' && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                title="Add to Focus options"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+              {showMobileMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                    <button
+                      onClick={() => {
+                        onAddToQueue(task.id, false, 'all_upcoming', []);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Add to Focus
+                    </button>
                     <button
                       onClick={() => {
                         onAddToQueue(task.id, true, 'all_today', []);

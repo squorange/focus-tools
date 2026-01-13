@@ -163,24 +163,24 @@ export default function TriageRow({
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Ready button */}
+          {/* Ready button - transparent style for colored backgrounds */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onSendToPool(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Ready
           </button>
 
-          {/* Add to Focus button */}
+          {/* Add to Focus button - transparent style for colored backgrounds */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onAddToQueue(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Focus
           </button>
@@ -255,14 +255,14 @@ export default function TriageRow({
           </div>
         )}
 
-        {/* Row 3: Action buttons */}
+        {/* Row 3: Action buttons - transparent style for colored backgrounds */}
         <div className="flex items-center gap-2 mt-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onSendToPool(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Ready
           </button>
@@ -271,7 +271,7 @@ export default function TriageRow({
               e.stopPropagation();
               onAddToQueue(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Focus
           </button>
