@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Task, FocusQueueItem } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, computeHealthStatus } from "@/lib/utils";
+import HealthPill from "@/components/shared/HealthPill";
 
 interface TaskRowProps {
   task: Task;
@@ -54,6 +55,11 @@ export default function TaskRow({
   const isDeadlineOverdue = task.deadlineDate && task.deadlineDate < new Date().toISOString().split('T')[0];
   const isComplete = task.status === 'complete' ||
     (progress.total > 0 && progress.completed === progress.total);
+
+  // Health status - only show for pool tasks that need attention
+  const health = task.status === 'pool' ? computeHealthStatus(task) : null;
+  const showHealthPill = health && health.status !== 'healthy';
+  const hasReminder = !!task.reminder;
 
   // Calculate defer dates
   const getDeferDate = (days: number) => {
@@ -153,6 +159,20 @@ export default function TaskRow({
         }`}>
           {task.title || "Untitled"}
         </span>
+
+        {/* Health status pill (non-healthy only) */}
+        {showHealthPill && health && (
+          <HealthPill health={health} size="sm" />
+        )}
+
+        {/* Reminder indicator */}
+        {hasReminder && (
+          <span className="flex-shrink-0 text-violet-500" title="Reminder set">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </span>
+        )}
 
         {/* Progress */}
         {progress.total > 0 && (
@@ -306,6 +326,18 @@ export default function TaskRow({
 
         {/* Row 2: Metadata */}
         <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-zinc-500 dark:text-zinc-400">
+          {/* Health pill (leading position for non-healthy) */}
+          {showHealthPill && health && (
+            <HealthPill health={health} size="sm" />
+          )}
+          {/* Reminder indicator */}
+          {hasReminder && (
+            <span className="text-violet-500 flex items-center" title="Reminder set">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </span>
+          )}
           {priority && (
             <div className="flex items-center gap-1">
               <div className={`w-2 h-2 rounded-full ${priority.bg}`} />

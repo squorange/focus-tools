@@ -2,11 +2,14 @@
 
 import { useState, useRef } from "react";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, createStep } from "@/lib/types";
-import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo } from "@/lib/utils";
+import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
 import MetadataPill from "@/components/shared/MetadataPill";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
+import HealthPill from "@/components/shared/HealthPill";
+import ReminderPicker from "@/components/shared/ReminderPicker";
+import { formatReminder, scheduleReminder, cancelReminder } from "@/lib/notifications";
 
 interface TaskDetailProps {
   task: Task;
@@ -120,6 +123,8 @@ export default function TaskDetail({
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   // Mobile kebab menu state
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  // Reminder picker state
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
 
   // Swipe-back gesture handling
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -182,7 +187,7 @@ export default function TaskDetail({
 
   // Build details summary for collapsed view
   const getDetailsSummary = () => {
-    const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'due' | 'overdue' | 'project'; color?: string }[] = [];
+    const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'healthy' | 'due' | 'overdue' | 'project'; color?: string; icon?: 'bell'; health?: ReturnType<typeof computeHealthStatus> }[] = [];
     // Use utility function to get proper display status (Today/Focus instead of Ready for queued items)
     const displayStatus = getDisplayStatus(task, queueItem, queue.todayLineIndex);
     const statusInfo = getStatusInfo(displayStatus);
@@ -192,11 +197,20 @@ export default function TaskDetail({
     } else if (task.priority === 'medium') {
       pills.push({ label: 'Medium', variant: 'priority-medium' });
     }
+    // Health status (pool tasks - show all statuses, use HealthPill for info icon)
+    if (task.status === 'pool') {
+      const health = computeHealthStatus(task);
+      pills.push({ label: '', variant: 'default', health });
+    }
     if (task.deadlineDate) {
       const overdue = isDateOverdue(task.deadlineDate);
       pills.push({ label: `Due ${formatDate(task.deadlineDate)}`, variant: overdue ? 'overdue' : 'due' });
     } else if (task.targetDate) {
       pills.push({ label: `Target ${formatDate(task.targetDate)}`, variant: 'default' });
+    }
+    // Reminder (with bell icon)
+    if (task.reminder) {
+      pills.push({ label: formatReminder(task.reminder, task.targetDate, task.deadlineDate), variant: 'default', icon: 'bell' });
     }
     const project = projects.find(p => p.id === task.projectId);
     if (project) {
@@ -434,30 +448,30 @@ export default function TaskDetail({
               )}
             </>
           )}
-          {/* Mobile kebab menu for Add to Focus */}
+          {/* Add to Focus split button (mobile) */}
           {!isInQueue && (task.status === 'pool' || task.status === 'inbox') && (
             <div className="relative">
-              <button
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700"
-              >
-                <svg className="w-5 h-5 text-zinc-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                </svg>
-              </button>
+              <div className="flex">
+                <button
+                  onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
+                  className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
+                >
+                  Add to Focus
+                </button>
+                <div className="w-px" />
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
               {showMobileMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[180px]">
-                    <button
-                      onClick={() => {
-                        onAddToQueue(task.id, false, 'all_upcoming', []);
-                        setShowMobileMenu(false);
-                      }}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Add to Focus
-                    </button>
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
                     <button
                       onClick={() => {
                         onAddToQueue(task.id, true, 'all_today', []);
@@ -778,9 +792,22 @@ export default function TaskDetail({
             >
               {detailsSummary.length > 0 ? (
                 detailsSummary.map((pill, idx) => (
-                  <MetadataPill key={idx} variant={pill.variant} color={pill.color}>
-                    {pill.label}
-                  </MetadataPill>
+                  pill.health ? (
+                    <HealthPill key={idx} health={pill.health} size="sm" showInfo={true} />
+                  ) : (
+                    <MetadataPill
+                      key={idx}
+                      variant={pill.variant}
+                      color={pill.color}
+                      icon={pill.icon === 'bell' ? (
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                      ) : undefined}
+                    >
+                      {pill.label}
+                    </MetadataPill>
+                  )
                 ))
               ) : (
                 <span className="text-sm text-zinc-400 dark:text-zinc-500">No details set</span>
@@ -790,47 +817,50 @@ export default function TaskDetail({
 
           {/* Expanded Details */}
           {detailsExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
-              {/* Status */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+              {/* Status (+ Health for pool tasks) - 50% */}
               <div>
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
-                <div className="h-8 flex items-center">
+                <div className="h-8 flex items-center gap-1.5">
                   {(() => {
                     const displayStatus = getDisplayStatus(task, queueItem, queue.todayLineIndex);
                     const statusInfo = getStatusInfo(displayStatus);
                     return (
                       <span
-                        className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusInfo.bgClass} ${statusInfo.textClass}`}
+                        className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${statusInfo.bgClass} ${statusInfo.textClass}`}
                       >
                         {statusInfo.label}
                       </span>
                     );
                   })()}
+                  {task.status === 'pool' && (
+                    <HealthPill health={computeHealthStatus(task)} size="sm" showInfo={true} />
+                  )}
                 </div>
               </div>
 
-              {/* Priority */}
+              {/* Priority - 50% */}
               <div>
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
                 <div className="h-8 flex items-center gap-1.5">
-                  {(["high", "medium", "low"] as const).map((priority) => (
+                  {(["high", "medium", "low"] as const).map((p) => (
                     <button
-                      key={priority}
-                      onClick={() => onUpdateTask(task.id, { priority })}
+                      key={p}
+                      onClick={() => onUpdateTask(task.id, { priority: task.priority === p ? null : p })}
                       className={`
-                        px-2 py-0.5 text-xs rounded-full capitalize transition-colors
+                        px-1.5 py-0.5 text-xs font-medium rounded-full capitalize transition-colors
                         ${
-                          task.priority === priority
-                            ? priority === "high"
+                          task.priority === p
+                            ? p === "high"
                               ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : priority === "medium"
+                              : p === "medium"
                               ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                               : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
                         }
                       `}
                     >
-                      {priority}
+                      {p}
                     </button>
                   ))}
                 </div>
@@ -913,22 +943,68 @@ export default function TaskDetail({
                 </div>
               </div>
 
-              {/* Waiting On - full width */}
-              <div className="col-span-2">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
-                <input
-                  type="text"
-                  value={task.waitingOn?.who || ""}
-                  onChange={(e) =>
-                    onUpdateTask(task.id, {
-                      waitingOn: e.target.value
-                        ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
-                        : null,
-                    })
-                  }
-                  placeholder="Nobody"
-                  className="w-full h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
+              {/* Reminder + Waiting On - side by side on desktop */}
+              <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                {/* Reminder */}
+                <div>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowReminderPicker(!showReminderPicker)}
+                      className="w-full h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
+                    >
+                      <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
+                        {task.reminder
+                          ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
+                          : "None"}
+                      </span>
+                      <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </button>
+                    {showReminderPicker && (
+                      <ReminderPicker
+                        reminder={task.reminder}
+                        targetDate={task.targetDate}
+                        deadlineDate={task.deadlineDate}
+                        onChange={(reminder) => {
+                          onUpdateTask(task.id, { reminder });
+                          // Schedule or cancel the reminder
+                          if (reminder) {
+                            scheduleReminder(
+                              task.id,
+                              task.title,
+                              reminder,
+                              task.targetDate,
+                              task.deadlineDate
+                            );
+                          } else {
+                            cancelReminder(task.id);
+                          }
+                        }}
+                        onClose={() => setShowReminderPicker(false)}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Waiting On */}
+                <div>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
+                  <input
+                    type="text"
+                    value={task.waitingOn?.who || ""}
+                    onChange={(e) =>
+                      onUpdateTask(task.id, {
+                        waitingOn: e.target.value
+                          ? { who: e.target.value, since: Date.now(), followUpDate: null, notes: null }
+                          : null,
+                      })
+                    }
+                    placeholder="Nobody"
+                    className="w-full h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -949,9 +1025,6 @@ export default function TaskDetail({
 
         {/* Actions section */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-            Actions
-          </h2>
           <div className="flex items-center gap-3">
             {/* Defer dropdown */}
             <div className="relative">

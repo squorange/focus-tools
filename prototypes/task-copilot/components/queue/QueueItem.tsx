@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Task, FocusQueueItem, Project } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, computeHealthStatus } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
+import HealthPill from "@/components/shared/HealthPill";
 
 // Progress ring showing step completion as a circular indicator
 function ProgressRing({
@@ -167,11 +168,15 @@ export default function QueueItem({
   const isComplete = task.status === 'complete' || item.completed ||
     (progress.total > 0 && progress.completed === progress.total);
   const hasWaiting = !!task.waitingOn;
+  const hasReminder = !!task.reminder;
   const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
+  // Health status for pool tasks (non-healthy only)
+  const health = task.status === 'pool' ? computeHealthStatus(task) : null;
+  const showHealthPill = health && health.status !== 'healthy';
 
   // Check if we have any metadata to display
   const hasMetadata = progress.total > 0 || estimate || task.targetDate ||
-    task.deadlineDate || task.priority === "high" || task.priority === "medium" || project;
+    task.deadlineDate || task.priority === "high" || task.priority === "medium" || project || showHealthPill;
 
   return (
     <div
@@ -243,9 +248,20 @@ export default function QueueItem({
                 </svg>
               </span>
             )}
+            {hasReminder && (
+              <span className="flex-shrink-0 text-violet-500" title="Reminder set">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </span>
+            )}
           </div>
           {hasMetadata && (
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {showHealthPill && health && (
+                <HealthPill health={health} size="sm" />
+              )}
               {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
               {estimate && <MetadataPill>{estimate}</MetadataPill>}
               {task.targetDate && (
@@ -385,6 +401,14 @@ export default function QueueItem({
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
                     clipRule="evenodd"
                   />
+                </svg>
+              </span>
+            )}
+            {hasReminder && (
+              <span className="text-violet-500" title="Reminder set">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </span>
             )}

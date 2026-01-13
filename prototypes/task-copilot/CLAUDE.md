@@ -804,8 +804,10 @@ task-copilot/
 │   ├── shared/
 │   │   ├── DurationInput.tsx # Hours/minutes duration selector
 │   │   ├── FocusSelectionModal.tsx # Step selection for Today/Upcoming
+│   │   ├── HealthPill.tsx    # Health status pill with tooltip
 │   │   ├── MetadataPill.tsx  # Compact metadata badge
 │   │   ├── ProjectModal.tsx  # Create/edit project modal
+│   │   ├── ReminderPicker.tsx # Reminder selection dropdown
 │   │   ├── Toast.tsx         # Toast notifications with undo
 │   │   └── TriageRow.tsx     # Triage actions for inbox items
 │   ├── AIDrawer.tsx          # Side panel AI chat
@@ -823,6 +825,7 @@ task-copilot/
 │   ├── queue-reorder.ts      # Visual-first drag/drop reorder functions
 │   ├── queue-reorder.test.ts # Tests for queue-reorder (npx tsx lib/queue-reorder.test.ts)
 │   ├── pool.ts               # Pool filters
+│   ├── notifications.ts      # PWA notification helpers for reminders
 │   ├── prompts.ts            # AI system prompts (simplified)
 │   ├── ai-tools.ts           # AI tool definitions for function calling
 │   ├── ai-actions.ts         # Central registry for AI action labels/icons/queries
@@ -1323,6 +1326,71 @@ Focus mode completion triggers automatic navigation:
 - **healthStatus** (healthy | at_risk | critical) - Based on deadlines and staleness
 - Used for smart sorting in pool view
 
+**Health Status Visualization (January 2026):**
+`computeHealthStatus()` returns both status and reasons:
+```typescript
+interface HealthResult {
+  status: 'healthy' | 'at_risk' | 'critical';
+  reasons: string[];  // e.g., "Past deadline", "No activity in 7+ days"
+}
+```
+
+**HealthPill Component** (`components/shared/HealthPill.tsx`):
+| Status | Label | Colors |
+|--------|-------|--------|
+| `healthy` | "On track" | Green bg, green text |
+| `at_risk` | "Check in" | Amber bg, amber text |
+| `critical` | "Needs attention" | Red bg, red text |
+
+- Uses `rounded-full` to match MetadataPill styling
+- Info icon (ⓘ) shows reasons tooltip on tap
+- Size variants: `sm` (list rows), `md` (TaskDetail)
+- Shown in: TaskDetail (expanded + collapsed), QueueItem, TaskRow
+- In collapsed details: Uses HealthPill component directly (with info icon)
+
+**Bell Indicator (Reminders):**
+- Shown on QueueItem and TaskRow when `task.reminder` is set
+- Violet color (`text-violet-500`) for consistency
+- In collapsed details: Bell icon via MetadataPill `icon` prop
+
+**QuickAccess "Needs Attention" Card:**
+- Red-themed card in SearchView
+- Filters tasks with `at_risk` or `critical` health status
+- Shows count badge
+
+### Task Reminders (PWA Notifications)
+Manual reminder system using browser Notification API.
+
+**Data Model:**
+```typescript
+interface Reminder {
+  type: 'relative' | 'absolute';
+  relativeMinutes?: number;      // Minutes before target/deadline
+  relativeTo?: 'target' | 'deadline';
+  absoluteTime?: number;         // Unix timestamp
+}
+```
+
+**ReminderPicker Component** (`components/shared/ReminderPicker.tsx`):
+- Located in TaskDetail Details section (under dates)
+- Two modes:
+  - **Relative:** "1 hour before deadline", "1 day before target", etc.
+  - **Absolute:** Date/time picker with presets ("Tomorrow 9am", "Next Monday 9am")
+- Handles notification permission request
+- Shows current reminder with remove option
+
+**Notification Flow:**
+1. User sets reminder in TaskDetail → `scheduleReminder()` called
+2. Reminder stored in localStorage + in-memory timer
+3. When due: `showNotification()` fires browser notification
+4. Click notification → Deep links to task via `?task={taskId}` URL param
+5. Service worker handles click when app is closed
+
+**Files:**
+- `lib/notifications.ts` - Permission, scheduling, display helpers
+- `lib/types.ts` - `Reminder` interface, `Task.reminder` field
+- `public/sw.js` - Notification click handler for deep linking
+
 ### Utility Library (lib/utils.ts)
 Comprehensive utility functions:
 - **Date:** `getTodayISO`, `formatDate`, `formatDuration`, `daysBetween`, `getTimeOfDay`
@@ -1407,6 +1475,8 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-13 | **v18:** UI polish: HealthPill `rounded-full` to match MetadataPill, health pill in collapsed details with info icon, bell indicator on QueueItem/TaskRow, TaskDetail 50/50 layout (Status+Health \| Priority), priority toggle (tap to deselect), Reminder+WaitingOn share row on desktop, MetadataPill `icon` prop + `healthy` variant |
+| 2026-01-13 | **v17:** Health status visualization (HealthPill with reasons tooltip, "Needs Attention" QuickAccess card), PWA task reminders (ReminderPicker in TaskDetail, relative/absolute times, notification deep linking via `?task=` param, service worker click handler), schema v8 migration for `reminder` field |
 | 2026-01-12 | **v16:** AI polish: auto-collapse delay 7s (was 300ms, uses `ANIMATIONS.autoCollapseDelay`), StagingArea violet theme (matches Today steps), mobile TaskDetail kebab menu for overflow actions, dead code cleanup (`acceptSuggestions` timer removed), MiniBar tap fix (always expands palette, was only scrolling for `suggestionsReady` state) |
 | 2026-01-11 | **v15:** Phase 1 AI response display fix (protected types guards prevent useEffect race conditions), documented Phase 2 state machine simplification and Phase 3 future AI architecture in product doc (Section 8.2). See `resources/focus-tools-product-doc.md` for proactive AI, AI actions with confirmation, voice/multimodal input requirements. |
 | 2026-01-11 | **v14:** AI MiniBar integration complete: Four-surface model (MiniBar/Palette/Drawer/StagingArea), contextual idle status ("3 tasks for today"), contextual prompts with action pills, "What next?" AI recommendations, Drawer icon in input field, "Continue in expanded view" after 3+ exchanges, AI_ACTIONS central registry |

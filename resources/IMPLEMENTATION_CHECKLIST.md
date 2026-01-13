@@ -635,14 +635,42 @@ From `ASSESSMENT_AND_GAPS.md`:
 |----------|---------|--------|--------|
 | **P0** | Export/Import JSON | Medium | ✅ Complete |
 | **P1** | "What should I do?" AI button | High | ✅ Complete |
-| **P2** | Surface health status visually | Medium | ⬜ Not started |
-| **P2** | Basic PWA notification | High | ⬜ Not started |
+| **P2** | Surface health status visually | Medium | ✅ Complete |
+| **P2** | Basic PWA notification | High | ✅ Complete |
 
-### Export/Import JSON ✅ NEW (January 2026)
+### Export/Import JSON ✅ (January 2026)
 - Located in Search view → Quick Access → Data section
 - **Export:** Downloads `focus-tools-export-{date}.json` with all data
 - **Import:** File picker validates JSON and applies migration
 - Uses `exportData()` and `importData()` from `lib/storage.ts`
+
+### Health Status Visualization ✅ (January 2026)
+- `computeHealthStatus()` returns `HealthResult` with status + reasons array
+- `HealthPill` component shows status with info icon for reasons tooltip
+- Statuses: "On track" (green), "Check in" (amber), "Needs attention" (red)
+- Uses `rounded-full` to match MetadataPill styling
+- Shown in: TaskDetail (expanded + collapsed), QueueItem, TaskRow
+- Collapsed details: Uses HealthPill directly with info icon (consistent UX)
+- "Needs Attention" QuickAccess card in SearchView
+
+### PWA Task Reminders ✅ (January 2026)
+- `Reminder` interface: relative (before target/deadline) or absolute (specific time)
+- `ReminderPicker` component in TaskDetail Details section
+- Relative options: 1 hour, 1 day, 2 days, 1 week before target/deadline
+- Absolute options: Date/time picker with presets
+- `lib/notifications.ts`: Permission handling, scheduling, display
+- Deep link support: `?task={taskId}` URL param handled on app load
+- Service worker click handler navigates to task
+- Bell indicator on QueueItem/TaskRow when reminder is set (violet color)
+- Collapsed details: Bell icon via MetadataPill `icon` prop
+
+### TaskDetail Layout ✅ (January 2026)
+- 50%/50% grid: Status+Health | Priority
+- Status + HealthPill side-by-side under single "Status" label
+- Priority toggle: tap selected to deselect (sets to null)
+- Reminder + Waiting On share row on desktop, stack on mobile
+- Consistent pill styling: `px-1.5 py-0.5 text-xs font-medium rounded-full`
+- MetadataPill: Added `healthy` variant + optional `icon` prop
 
 ---
 
