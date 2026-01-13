@@ -74,28 +74,28 @@ export default function StagingArea({
   return (
     <div
       className={`
-        bg-amber-50 dark:bg-amber-900/20 border rounded-lg overflow-hidden transition-all
+        bg-violet-50 dark:bg-violet-900/20 border rounded-lg overflow-hidden transition-all
         ${isPulsing
           ? 'border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 animate-pulse-glow'
-          : 'border-amber-200 dark:border-amber-800'}
+          : 'border-violet-200 dark:border-violet-800'}
       `}
     >
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between gap-2 p-4 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 transition-colors"
+        className="w-full flex items-center justify-between gap-2 p-4 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">💡</span>
-          <span className="font-medium text-amber-800 dark:text-amber-200">
+          <span className="font-medium text-violet-800 dark:text-violet-300">
             Suggested Changes
           </span>
-          <span className="text-sm text-amber-600 dark:text-amber-400">
+          <span className="text-sm text-violet-600 dark:text-violet-400">
             ({totalItems} {totalItems === 1 ? "item" : "items"})
           </span>
         </div>
         <svg
-          className={`w-5 h-5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${
+          className={`w-5 h-5 text-violet-600 dark:text-violet-400 transition-transform duration-200 ${
             isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
@@ -330,7 +330,7 @@ export default function StagingArea({
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-2 border-t border-amber-200 dark:border-amber-700">
+          <div className="flex items-center gap-3 pt-2 border-t border-violet-200 dark:border-violet-700">
             <button
               onClick={onAcceptAll}
               className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700

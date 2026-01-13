@@ -118,6 +118,8 @@ export default function TaskDetail({
   const [showFocusModal, setShowFocusModal] = useState(false);
   // Add to Focus dropdown state
   const [showAddDropdown, setShowAddDropdown] = useState(false);
+  // Mobile kebab menu state
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Swipe-back gesture handling
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -395,7 +397,7 @@ export default function TaskDetail({
         </div>
 
         {/* Row 2: Mobile buttons */}
-        <div className="flex sm:hidden items-center gap-2 mt-3 ml-8 flex-wrap">
+        <div className="flex sm:hidden items-center gap-2 mt-3 ml-8">
           {canMarkComplete && (
             <button
               onClick={handleMarkTaskComplete}
@@ -429,42 +431,45 @@ export default function TaskDetail({
                   Move to Ready
                 </button>
               )}
-              {/* Add to Focus with dropdown - mobile */}
-              <div className="relative">
-                <div className="flex">
-                  <button
-                    onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                    className="px-4 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-l-lg transition-colors"
-                  >
-                    Add to Focus
-                  </button>
-                  <button
-                    onClick={() => setShowAddDropdown(!showAddDropdown)}
-                    className="px-2 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-l-0 border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-r-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-                {showAddDropdown && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
-                    <div className="absolute left-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
-                      <button
-                        onClick={() => {
-                          onAddToQueue(task.id, true, 'all_today', []);
-                          setShowAddDropdown(false);
-                        }}
-                        className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Add to Today
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
             </>
+          )}
+          {/* Mobile kebab menu for Add to Focus */}
+          {!isInQueue && (task.status === 'pool' || task.status === 'inbox') && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700"
+              >
+                <svg className="w-5 h-5 text-zinc-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              {showMobileMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[180px]">
+                    <button
+                      onClick={() => {
+                        onAddToQueue(task.id, false, 'all_upcoming', []);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Add to Focus
+                    </button>
+                    <button
+                      onClick={() => {
+                        onAddToQueue(task.id, true, 'all_today', []);
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                      Add to Today
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       </div>

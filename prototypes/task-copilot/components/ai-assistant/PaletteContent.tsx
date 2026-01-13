@@ -3,7 +3,7 @@
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AIResponse, QuickAction, SuggestionsContent, RecommendationContent } from '@/lib/ai-types';
-import { HEIGHT_TRANSITION } from '@/lib/ai-constants';
+import { HEIGHT_TRANSITION, ANIMATIONS } from '@/lib/ai-constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuickActions } from './QuickActions';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -34,7 +34,6 @@ interface PaletteContentProps {
   onSkipRecommendation?: (taskId: string) => void;
   // Drawer access
   onOpenDrawer?: () => void;
-  exchangeCount?: number;  // For "Continue in expanded view" prompt
 }
 
 export function PaletteContent({
@@ -56,7 +55,6 @@ export function PaletteContent({
   onStartRecommendedFocus,
   onSkipRecommendation,
   onOpenDrawer,
-  exchangeCount = 0,
 }: PaletteContentProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -113,7 +111,7 @@ export function PaletteContent({
       cancelAutoCollapse(); // Clear any existing timer
       autoCollapseTimerRef.current = setTimeout(() => {
         onCollapse();
-      }, 5000); // 5 second delay
+      }, ANIMATIONS.autoCollapseDelay);
     } else {
       cancelAutoCollapse();
     }
@@ -237,7 +235,7 @@ export function PaletteContent({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="overflow-y-auto max-h-[calc(50vh-180px)] scrollbar-hide"
+          className="overflow-y-auto overflow-x-visible max-h-[calc(50vh-180px)] scrollbar-hide"
         >
           <motion.div
             animate={{
@@ -295,15 +293,15 @@ export function PaletteContent({
                     {hasSuggestionsResponse && (
                       <div className="py-2">
                         <p className="text-base text-zinc-600 dark:text-zinc-400 text-left">
-                          I've prepared {(response.content as SuggestionsContent).suggestions?.length || 0} suggestions.
+                          {(response.content as SuggestionsContent).message}
                         </p>
                       </div>
                     )}
 
                     {/* Recommendation: Show task suggestion card */}
                     {hasRecommendationResponse && (
-                      <div className="space-y-2 text-left">
-                        <p className="text-base text-zinc-500 dark:text-zinc-400">I'd suggest...</p>
+                      <div className="space-y-2 text-left overflow-visible">
+                        <p className="text-base text-zinc-500 dark:text-zinc-400 whitespace-nowrap">I&apos;d suggest...</p>
                         <p className="text-base font-medium text-zinc-800 dark:text-zinc-200">
                           "{(response.content as RecommendationContent).taskTitle}"
                         </p>
@@ -344,7 +342,7 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <div className="flex items-center justify-start gap-3 pt-2">
-          {/* SUGGESTIONS: Go to suggestions + Ask AI */}
+          {/* SUGGESTIONS: Go to suggestions + Dismiss + Ask AI */}
           {hasSuggestionsResponse && (
             <>
               <button
@@ -359,6 +357,17 @@ export function PaletteContent({
                   hover:bg-violet-200 dark:hover:bg-violet-800/40"
               >
                 Go to suggestions ↑
+              </button>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
+                  onDismiss();
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Dismiss
               </button>
               <button
                 onClick={() => {
@@ -405,7 +414,7 @@ export function PaletteContent({
             </>
           )}
 
-          {/* ERROR: Retry + Ask AI */}
+          {/* ERROR: Retry + Dismiss + Ask AI */}
           {hasErrorResponse && (
             <>
               <button
@@ -423,6 +432,17 @@ export function PaletteContent({
               <button
                 onClick={() => {
                   cancelAutoCollapse();
+                  onDismiss();
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
                   onManualInteraction?.();
                   setShowInput(true);
                 }}
@@ -435,7 +455,7 @@ export function PaletteContent({
             </>
           )}
 
-          {/* RECOMMENDATION: Start Focus + Not this one */}
+          {/* RECOMMENDATION: Start Focus + Not this one + Dismiss */}
           {hasRecommendationResponse && (
             <>
               <button
@@ -457,16 +477,25 @@ export function PaletteContent({
               <button
                 onClick={() => {
                   cancelAutoCollapse();
-                  const taskId = (response?.content as RecommendationContent)?.taskId;
-                  if (taskId && onSkipRecommendation) {
-                    onSkipRecommendation(taskId);
-                  }
+                  onManualInteraction?.();
+                  setShowInput(true);
                 }}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
                   hover:bg-zinc-200 dark:hover:bg-zinc-700"
               >
-                Not this one
+                Ask AI
+              </button>
+              <button
+                onClick={() => {
+                  cancelAutoCollapse();
+                  onDismiss();
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Dismiss
               </button>
             </>
           )}
@@ -513,8 +542,8 @@ export function PaletteContent({
                   outline-none text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500
                   disabled:opacity-50"
               />
-              <div className="flex items-center justify-between gap-2 px-3 pb-2">
-                {/* Left side: Drawer icon */}
+              <div className="flex items-center justify-end gap-2 px-3 pb-2">
+                {/* Right side controls (left reserved for future: attach, audio) */}
                 <button
                   type="button"
                   onClick={onOpenDrawer}
@@ -522,12 +551,14 @@ export function PaletteContent({
                   aria-label="Open expanded chat"
                   title="Open expanded chat"
                 >
+                  {/* Panel/drawer icon - distinct from send arrow */}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7V17" />
+                    <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v18" />
                   </svg>
                 </button>
 
-                {/* Right side: Send button */}
+                {/* Send button */}
                 <motion.button
                   type="submit"
                   disabled={!query.trim() || isLoading}
@@ -543,16 +574,6 @@ export function PaletteContent({
               </div>
             </div>
               </form>
-
-              {/* "Continue in expanded view" prompt after 3+ exchanges */}
-              {exchangeCount >= 3 && onOpenDrawer && (
-                <button
-                  onClick={onOpenDrawer}
-                  className="mt-2 w-full text-center text-sm text-zinc-400 hover:text-violet-500 dark:hover:text-violet-400 transition-colors"
-                >
-                  Continue in expanded view →
-                </button>
-              )}
             </motion.div>
           )}
         </AnimatePresence>

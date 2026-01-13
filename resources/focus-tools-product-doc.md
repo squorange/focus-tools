@@ -539,9 +539,9 @@ The AI visual system distinguishes between contexts where AI actions appear alon
 | Surface | Role | Content Type | Design Character |
 |---------|------|--------------|------------------|
 | **MiniBar** | Status bar + notification | One-line status, icons | Minimal (48px), always visible |
-| **Palette** | Conversational layer (ephemeral) | Text responses, input | Auto-expands on response, auto-collapses after 5s |
+| **Palette** | Conversational layer (ephemeral) | Text responses, input | Auto-expands on response, auto-collapses after 7s |
 | **Drawer** | Extended chat (escape hatch) | Full history, multi-turn | Side panel or bottom sheet |
-| **StagingArea** | Decision workspace | Steps, edits, accept/reject | Inline, pulse animation |
+| **StagingArea** | Decision workspace | Steps, edits, accept/reject | Inline, violet theme, pulse animation |
 
 **Core Principles:**
 1. Palette is for dialogue (questions, answers, text responses)
@@ -601,14 +601,15 @@ hover:bg-zinc-200 dark:hover:bg-zinc-700
 - Drawer mode is preserved (doesn't force to expanded)
 
 **Auto-Collapse Timer:**
-- 5 second timer starts when response is displayed
+- 7 second timer starts when response is displayed (`ANIMATIONS.autoCollapseDelay`)
 - Cancelled if user interacts (clicks buttons, types)
 - User interaction sets `paletteManuallyOpened = true` → disables auto-collapse
+- Timer resets when `paletteManuallyOpened` is cleared (on response arrival)
 
 **Flow:**
 ```
 Query submitted → MiniBar shows "Thinking..." → Response arrives
-    → Auto-expand to Palette → Show response → 5s timer
+    → Auto-expand to Palette → Show response → 7s timer
     → Auto-collapse (unless user interacted)
 ```
 
@@ -637,6 +638,151 @@ Query submitted → MiniBar shows "Thinking..." → Response arrives
 | **Stuck menu (focus mode)** | Emoji + text menu items |
 | **TaskDetail AI button** | Sparkle icon + "Break down", violet outline |
 | **Step/Task row AI button** | Sparkle icon only, violet |
+
+### 8.2 Future AI Architecture (Planned)
+
+This section documents the architecture requirements for planned AI capabilities beyond the current implementation.
+
+#### Planned AI Capabilities
+
+| Capability | Description | Timeline |
+|------------|-------------|----------|
+| **Proactive AI** | AI initiates interactions based on context/triggers | Phase 3 |
+| **AI Actions with Confirmation** | AI performs actions, user confirms/undoes | Phase 3 |
+| **Voice/Multimodal Input** | Speech-to-text, potentially image input | Phase 3 |
+
+#### State Machine v2 (Target Architecture)
+
+```
+┌─────────────────────────────────────────────────┐
+│                  AI SYSTEM                       │
+├─────────────────────────────────────────────────┤
+│  Input Layer                                     │
+│  - Text input (current)                         │
+│  - Voice input (future)                         │
+│  - Context triggers (proactive)                 │
+├─────────────────────────────────────────────────┤
+│  Processing Layer                                │
+│  - Request → Response (current)                 │
+│  - Streaming responses (future)                 │
+│  - Action planning (future)                     │
+├─────────────────────────────────────────────────┤
+│  Output Layer                                    │
+│  - Conversational (Palette)                     │
+│  - Structured (Staging Area)                    │
+│  - Actions (Confirmation Modal)                 │
+│  - Proactive (Nudge Cards)                      │
+└─────────────────────────────────────────────────┘
+```
+
+#### Proactive AI Requirements
+
+| Requirement | Description |
+|-------------|-------------|
+| **Trigger Conditions** | Time-based, inactivity detection, deadline proximity, pattern recognition |
+| **Delivery Surface** | Nudge cards (separate from MiniBar), non-modal |
+| **Dismissal Behavior** | Swipe to dismiss, snooze options (1h, tomorrow, next week) |
+| **Rate Limiting** | Max 3 nudges/hour, respect user engagement state |
+
+**Trigger Examples:**
+- "You've been on this step for 20 minutes—need help?"
+- "Deadline for 'File Taxes' is tomorrow"
+- "3 tasks deferred 3+ times—want to review?"
+- "Good morning! Here's your focus queue for today"
+
+**Design Principles:**
+- Curious and warm, never parental
+- Dismissible without explanation required
+- Learn from dismissal patterns (reduce frequency)
+- Respect focus mode (minimal interruptions)
+
+#### AI Actions Requirements
+
+| Action Type | Examples | Confirmation UX |
+|-------------|----------|-----------------|
+| **Move/Reorganize** | Reorder queue, move to horizon | Preview modal with before/after |
+| **Schedule** | Add to Today, set deadline | Inline confirmation with undo toast |
+| **Archive** | Park task, mark complete | Undo toast (5s) |
+| **Batch Operations** | "Clear completed", "Defer all waiting" | Modal with item list |
+
+**Confirmation Flow:**
+```
+AI suggests action → Preview modal shows impact
+    → User confirms → Action executes → Undo toast (5s)
+    → User cancels → No action taken
+```
+
+**Undo Mechanism:**
+- State snapshot before action
+- Toast notification with "Undo" button
+- 5-second window for reversal
+- For batch operations: restore entire batch
+
+**Failure Handling:**
+- Clear error messages in modal
+- Retry option with modified parameters
+- Graceful degradation (partial success for batches)
+
+#### Voice Input Requirements
+
+| Aspect | Specification |
+|--------|---------------|
+| **Transcription Feedback** | Live text appearing as user speaks |
+| **Error States** | "Didn't catch that—try again?" with retry button |
+| **Activation Method** | Tap microphone icon (no wake word initially) |
+| **Privacy** | Audio processed via API, not stored locally |
+| **Platform Support** | Web Speech API fallback, native on mobile |
+
+**Voice Command Examples:**
+- "Add task: buy groceries"
+- "What's next?"
+- "Mark current step done"
+- "I'm stuck"
+
+**Design Considerations:**
+- Visual feedback during listening (pulsing indicator)
+- Abort option (tap again to cancel)
+- Seamless fallback to text input on failure
+- Consider accessibility (screen reader compatibility)
+
+#### Multimodal Input (Future)
+
+| Input Type | Use Case | Processing |
+|------------|----------|------------|
+| **Image** | Capture whiteboard, receipt, handwritten list | OCR + AI extraction |
+| **Screenshot** | Share context from other apps | Visual analysis |
+| **Document** | PDF task extraction | Document parsing |
+
+**Not in Initial Scope:**
+- Camera-based capture (complex permissions)
+- Real-time video analysis
+- AR/VR integration
+
+#### State Machine Simplification (Phase 2 Prerequisite)
+
+Before implementing Phase 3 capabilities, the current state machine should be simplified:
+
+**Current Complexity:**
+- 8 `CollapsedContentType` values
+- 17 reducer action types
+- Multiple useEffects competing to set state
+
+**Target State:**
+
+| CollapsedContentType | Purpose |
+|---------------------|---------|
+| `idle` | Default state with quick actions |
+| `loading` | Waiting for AI response |
+| `response` | Conversational response ready |
+| `suggestionsReady` | Structured response in staging |
+
+**Types to Remove/Consolidate:**
+- `nudge` → Separate nudge notification system
+- `status` → Merge into `idle` (just different text)
+- `confirmation` → Toast notification instead
+- `prompt` → Part of `idle` state (quick action pills)
+
+**Benefit:** Simpler state machine reduces race conditions and makes it easier to add new capabilities cleanly.
 
 ---
 
@@ -750,6 +896,7 @@ The POC implements the full Model E workflow with extensive AI integration:
 - Consistent task row styling across all views (unified backgrounds, borders, fonts)
 - Keyboard shortcuts (`n`, `f`, `t`, `/`, `Escape`, `a`)
 - Mobile AI floating bar (Apple Music-style) + 50vh bottom sheet
+- Mobile TaskDetail: kebab menu for overflow actions (Add to Focus options)
 - QuickAccess cards in Search view (6 filter cards with counts)
 - Task completion flow: focus mode success (2s) → task details → back returns to Focus Queue
 - QueueView empty state "Show completed" button (Completed button hidden when queue empty)
@@ -799,6 +946,8 @@ Plant, Water, Tend, Prune, Harvest, Compost, Resurface
 
 | Date | Changes |
 |------|---------|
+| 2026-01-12 | AI polish: auto-collapse timer updated to 7s (was 300ms), StagingArea violet theme (matches Today steps), mobile TaskDetail kebab menu for overflow actions, dead code cleanup in useAIAssistant |
+| 2026-01-11 | Added Section 8.2 "Future AI Architecture" documenting planned capabilities: proactive AI, AI actions with confirmation, voice/multimodal input; includes state machine v2 target architecture and Phase 2 simplification requirements |
 | 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements |
 | 2025-01-06 | Documented keyboard shortcuts, mobile AI floating bar, QuickAccess cards; added iOS PWA dark mode theming, Today/Upcoming visual distinction, progress ring indicator, completed task styling, visual-first drag/drop |
 | 2025-01-04 | Added PWA support to POC status |

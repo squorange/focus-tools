@@ -9,6 +9,7 @@ import {
   CollapsedContent,
   AIMessage,
   QuickAction,
+  AISubmitResult,
 } from '@/lib/ai-types';
 import { QUICK_ACTIONS_BY_CONTEXT, ANIMATIONS } from '@/lib/ai-constants';
 import { MOCK_COLLAPSED, getRandomDelay, MOCK_RESPONSES } from '@/lib/mock-responses';
@@ -46,19 +47,12 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
             collapsedContent: MOCK_COLLAPSED.loading,
           };
         }
-        // If there's a response, show summary in collapsed state
+        // If there's a response, preserve existing collapsedContent (set by RECEIVE_RESPONSE with correct count)
         if (state.response) {
-          const summaryText = state.response.type === 'suggestions'
-            ? `Added ${(state.response.content as { suggestions: unknown[] }).suggestions.length} steps — tap to review`
-            : 'Response ready — tap to view';
           return {
             ...state,
             mode: 'collapsed',
-            collapsedContent: {
-              type: 'response',
-              text: summaryText,
-              icon: '✨',
-            },
+            // Preserve collapsedContent - it was set with correct count by RECEIVE_RESPONSE
           };
         }
         return {
@@ -103,7 +97,8 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
       return {
         ...state,
         mode: 'collapsed',
-        collapsedContent: MOCK_COLLAPSED.idle,
+        // Preserve loading state when closing drawer mid-request
+        collapsedContent: state.isLoading ? MOCK_COLLAPSED.loading : MOCK_COLLAPSED.idle,
       };
 
     case 'SET_QUERY':
@@ -139,6 +134,15 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
           ]
         : state.messages;
 
+      // Use provided collapsedContent if available, otherwise generate from response
+      const defaultCollapsedContent: CollapsedContent = {
+        type: 'response',
+        text: action.response.type === 'suggestions'
+          ? 'Suggestions ready — tap to review'  // Generic text, actual count in provided collapsedContent
+          : 'Response ready',
+        icon: '✨',
+      };
+
       return {
         ...state,
         mode: state.mode === 'drawer' ? 'drawer' : 'expanded',  // Auto-expand on response (preserve drawer)
@@ -146,13 +150,20 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
         response: action.response,
         query: '',  // Refinement 2: Always clear query after receiving response
         messages: updatedMessages,
-        collapsedContent: {
-          type: 'response',
-          text: action.response.type === 'suggestions'
-            ? `Added ${(action.response.content as { suggestions: unknown[] }).suggestions.length} steps — tap to review`
-            : 'Response ready',
-          icon: '✨',
-        },
+        collapsedContent: action.collapsedContent || defaultCollapsedContent,
+      };
+
+    case 'LOADING_COMPLETE':
+      // Clear loading state without setting response - used when structured response
+      // was handled externally (e.g., suggestions went to staging area)
+      // If collapsedContent is provided, set it atomically with clearing loading
+      // Auto-expand to palette so user can see the status message
+      return {
+        ...state,
+        isLoading: false,
+        query: '',
+        mode: 'expanded',  // Auto-expand palette when structured response arrives
+        ...(action.collapsedContent ? { collapsedContent: action.collapsedContent } : {}),
       };
 
     case 'ACCEPT_SUGGESTIONS':
@@ -220,6 +231,14 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
         // Note: messages (drawer history) is preserved
       };
 
+    // Issue 10: Sync messages from external source (task or queue)
+    case 'SYNC_MESSAGES':
+      return { ...state, messages: action.messages };
+
+    // Issue 10: Clear messages (fresh UI)
+    case 'CLEAR_MESSAGES':
+      return { ...state, messages: [] };
+
     default:
       return state;
   }
@@ -230,7 +249,7 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
 interface UseAIAssistantOptions {
   initialContext?: AIAssistantContext;
   defaultIdleContent?: CollapsedContent;  // Contextual idle status (e.g., "3 tasks today")
-  onSubmit?: (query: string, context: AIAssistantContext) => Promise<AIResponse>;
+  onSubmit?: (query: string, context: AIAssistantContext) => Promise<AISubmitResult>;  // Returns response + optional collapsedContent
   onAcceptSuggestions?: (response: AIResponse) => void;
 }
 
@@ -284,15 +303,16 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     dispatch({ type: 'SUBMIT_QUERY' });
 
     try {
-      let response: AIResponse;
+      let result: AISubmitResult;
 
       if (onSubmit) {
-        response = await onSubmit(state.query, state.context);
+        result = await onSubmit(state.query, state.context);
       } else {
         // Mock response based on query content
         await new Promise(resolve => setTimeout(resolve, getRandomDelay()));
 
         const query = state.query.toLowerCase();
+        let response: AIResponse;
         if (query.includes('break') || query.includes('step')) {
           response = MOCK_RESPONSES.breakdown;
         } else if (query.includes('next') || query.includes('what')) {
@@ -304,9 +324,16 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
         } else {
           response = MOCK_RESPONSES.whatNext;
         }
+        result = { response };
       }
 
-      dispatch({ type: 'RECEIVE_RESPONSE', response });
+      // null response means structured data was handled externally (e.g., staging area)
+      // Pass collapsedContent to either action if provided
+      if (result.response) {
+        dispatch({ type: 'RECEIVE_RESPONSE', response: result.response, collapsedContent: result.collapsedContent });
+      } else {
+        dispatch({ type: 'LOADING_COMPLETE', collapsedContent: result.collapsedContent });
+      }
     } catch (error) {
       dispatch({ type: 'ERROR', error: error instanceof Error ? error.message : 'Something went wrong' });
     }
@@ -319,15 +346,16 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     dispatch({ type: 'SUBMIT_QUERY' });
 
     try {
-      let response: AIResponse;
+      let result: AISubmitResult;
 
       if (onSubmit) {
-        response = await onSubmit(query, state.context);
+        result = await onSubmit(query, state.context);
       } else {
         // Mock response based on query content
         await new Promise(resolve => setTimeout(resolve, getRandomDelay()));
 
         const queryLower = query.toLowerCase();
+        let response: AIResponse;
         if (queryLower.includes('break') || queryLower.includes('step')) {
           response = MOCK_RESPONSES.breakdown;
         } else if (queryLower.includes('next') || queryLower.includes('what')) {
@@ -339,9 +367,16 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
         } else {
           response = MOCK_RESPONSES.whatNext;
         }
+        result = { response };
       }
 
-      dispatch({ type: 'RECEIVE_RESPONSE', response });
+      // null response means structured data was handled externally (e.g., staging area)
+      // Pass collapsedContent to either action if provided
+      if (result.response) {
+        dispatch({ type: 'RECEIVE_RESPONSE', response: result.response, collapsedContent: result.collapsedContent });
+      } else {
+        dispatch({ type: 'LOADING_COMPLETE', collapsedContent: result.collapsedContent });
+      }
     } catch (error) {
       dispatch({ type: 'ERROR', error: error instanceof Error ? error.message : 'Something went wrong' });
     }
@@ -352,16 +387,8 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
       onAcceptSuggestions(state.response);
     }
     dispatch({ type: 'ACCEPT_SUGGESTIONS' });
-
-    // Auto-collapse after delay
-    setTimeout(() => {
-      dispatch({ type: 'COLLAPSE' });
-      // Reset to contextual idle after showing confirmation
-      setTimeout(() => {
-        dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
-      }, 2000);
-    }, ANIMATIONS.autoCollapseDelay);
-  }, [state.response, onAcceptSuggestions, idleContent]);
+    // Note: Collapse is handled immediately by handleAcceptAll in page.tsx
+  }, [state.response, onAcceptSuggestions]);
 
   const dismissResponse = useCallback(() => {
     dispatch({ type: 'DISMISS_RESPONSE' });
@@ -379,9 +406,9 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
 
   const clearNudge = useCallback(() => {
     dispatch({ type: 'CLEAR_NUDGE' });
-    // Set contextual idle content after clearing nudge
-    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
-  }, [idleContent]);
+    // Return to generic idle after prompt dismissal (Option C: prompt → idle, not status)
+    dispatch({ type: 'SET_COLLAPSED_CONTENT', content: { type: 'idle', text: 'Ask AI...' } });
+  }, []);
 
   const setCollapsedContent = useCallback((content: CollapsedContent) => {
     dispatch({ type: 'SET_COLLAPSED_CONTENT', content });
@@ -412,6 +439,16 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     dispatch({ type: 'ERROR', error });
   }, []);
 
+  // Issue 10: Sync messages from external source (task or queue)
+  const syncMessages = useCallback((messages: AIMessage[]) => {
+    dispatch({ type: 'SYNC_MESSAGES', messages });
+  }, []);
+
+  // Issue 10: Clear messages (fresh UI)
+  const clearMessages = useCallback(() => {
+    dispatch({ type: 'CLEAR_MESSAGES' });
+  }, []);
+
   // ============ Computed Values ============
 
   const quickActions = useMemo(() => {
@@ -419,15 +456,23 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
   }, [state.context]);
 
   // Update collapsed content when defaultIdleContent changes and we're showing idle/status
+  // Guard: Don't override if there's a pending response (Issue 8 fix)
   useEffect(() => {
+    // Explicitly protect response states from being overwritten
+    const isResponseState = ['response', 'suggestionsReady', 'confirmation', 'loading'].includes(
+      state.collapsedContent.type
+    );
+
     if (
       state.mode === 'collapsed' &&
       !state.isLoading &&
+      !state.response &&  // Don't override if response is pending
+      !isResponseState &&  // Don't override response states (Phase 1 fix)
       (state.collapsedContent.type === 'idle' || state.collapsedContent.type === 'status')
     ) {
       dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
     }
-  }, [idleContent, state.mode, state.isLoading, state.collapsedContent.type]);
+  }, [idleContent, state.mode, state.isLoading, state.response, state.collapsedContent.type]);
 
   return {
     state,
@@ -453,6 +498,8 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     startLoading,
     receiveResponse,
     setError,
+    syncMessages,      // Issue 10
+    clearMessages,     // Issue 10
   };
 }
 

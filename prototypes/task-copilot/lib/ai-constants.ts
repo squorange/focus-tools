@@ -19,7 +19,7 @@ export const ANIMATIONS = {
   responseDelay: 0.05,        // Stagger for list items (seconds)
 
   // Auto-collapse after response accepted
-  autoCollapseDelay: 300,     // ms
+  autoCollapseDelay: 7000,    // ms (7 seconds to read response)
 };
 
 // Spring config for framer-motion
@@ -97,6 +97,10 @@ export const QUICK_ACTIONS_BY_CONTEXT: Record<string, QuickAction[]> = {
     { ...AI_ACTIONS.inbox.triage, contexts: ['inbox'] },
     { ...AI_ACTIONS.inbox.priority, contexts: ['inbox'] },
   ],
+  search: [
+    { ...AI_ACTIONS.search.summarize, contexts: ['search'] },
+    { ...AI_ACTIONS.search.mostUrgent, contexts: ['search'] },
+  ],
   global: [
     { ...AI_ACTIONS.global.whatNext, contexts: ['global'] },
     { ...AI_ACTIONS.global.help, contexts: ['global'] },
@@ -116,9 +120,9 @@ export const DEFAULT_COLLAPSED_BY_CONTEXT: Record<string, { type: 'idle' | 'stat
 // ============ Contextual Prompt Timing ============
 
 export const PROMPT_TIMING = {
-  focusMode: 5000,   // 5 seconds
-  taskDetail: 5000,  // 5 seconds
-  queue: 5000,       // 5 seconds
+  focusMode: 3000,   // 3 seconds
+  taskDetail: 3000,  // 3 seconds
+  queue: 3000,       // 3 seconds
 };
 
 // ============ Loading Animation ============

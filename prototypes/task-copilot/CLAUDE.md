@@ -1407,6 +1407,8 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-12 | **v16:** AI polish: auto-collapse delay 7s (was 300ms, uses `ANIMATIONS.autoCollapseDelay`), StagingArea violet theme (matches Today steps), mobile TaskDetail kebab menu for overflow actions, dead code cleanup (`acceptSuggestions` timer removed) |
+| 2026-01-11 | **v15:** Phase 1 AI response display fix (protected types guards prevent useEffect race conditions), documented Phase 2 state machine simplification and Phase 3 future AI architecture in product doc (Section 8.2). See `resources/focus-tools-product-doc.md` for proactive AI, AI actions with confirmation, voice/multimodal input requirements. |
 | 2026-01-11 | **v14:** AI MiniBar integration complete: Four-surface model (MiniBar/Palette/Drawer/StagingArea), contextual idle status ("3 tasks for today"), contextual prompts with action pills, "What next?" AI recommendations, Drawer icon in input field, "Continue in expanded view" after 3+ exchanges, AI_ACTIONS central registry |
 | 2026-01-11 | **v13:** UX refinements: Add to Focus dropdown pattern (one-click to Upcoming, dropdown for Today), Edit Focus relocated to Steps header (conditional swap with AI Breakdown), simplified FocusSelectionModal (removed segmented control), task creation behavior swap (TasksView→quick dump, QueueView→intentional), Toast positioning above minibar, queue positioning fix (new items as first Upcoming) |
 | 2026-01-10 | **v12:** Focus Selection Modal (step selection for Today/Upcoming), TaskDetail Today/Upcoming section headers, Edit Focus in QueueItem kebab menu, handleUpdateStepSelection handler |

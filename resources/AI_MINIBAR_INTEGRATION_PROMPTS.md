@@ -1,10 +1,20 @@
 # AI Minibar Integration Prompts
 
-> **Purpose:** Claude Code prompts for integrating the AI minibar prototype into task-copilot (v3 refactor)  
-> **Prerequisites:** 
+> **Purpose:** Claude Code prompts for integrating the AI minibar prototype into task-copilot (v3 refactor)
+> **Prerequisites:**
 > - AI minibar prototype complete with EXPORT_GUIDE.md
 > - task-copilot at v2 (tagged `v2-pre-refactor`)
 > **Location:** `~/Projects/focus-tools/prototypes/task-copilot/`
+
+## Current Status: ✅ Integration Complete
+
+**All 6 sessions complete.** Recent refinements (Jan 2026):
+- Auto-collapse delay: 7 seconds (was 300ms, gives time to read responses)
+- StagingArea: Violet theme (matches "Today" steps visual language)
+- Mobile TaskDetail: Kebab menu for overflow actions
+- Code cleanup: Removed unused timer from `acceptSuggestions`
+
+See **Success Criteria** section at bottom for full checklist.
 
 ---
 
@@ -46,7 +56,7 @@ User asks question (Palette or quick action)
     → MiniBar: "Thinking..."
     → Palette expands with response (large text, primary focus)
     → Action buttons: [Got it] [Ask more]
-    → Auto-minimize after 8-10 sec idle
+    → Auto-minimize after 7 sec idle (ANIMATIONS.autoCollapseDelay)
     → MiniBar: "Tap to see response"
 ```
 
@@ -946,14 +956,14 @@ task-copilot/
 ### Core Functionality
 - [x] MiniBar visible on all views (status, icons)
 - [x] Palette expands/collapses smoothly
-- [x] Palette auto-minimizes after idle (5 sec)
+- [x] Palette auto-minimizes after idle (7 sec) *(updated from 5s)*
 - [x] Drawer accessible via [↗️] icon in input field
 - [x] "Continue in expanded view →" after 3+ exchanges
 
 ### Response Routing
 - [x] Text responses (explain, chat) → Palette
 - [x] Structured responses (breakdown, edits) → StagingArea
-- [x] StagingArea pulses on new suggestions
+- [x] StagingArea pulses on new suggestions (violet theme)
 - [x] MiniBar shows "N suggestions ready" + scroll action
 
 ### Context Awareness
@@ -968,6 +978,7 @@ task-copilot/
 
 ### Polish
 - [x] Mobile touch interactions work
+- [x] Mobile TaskDetail: kebab menu for overflow actions (Add to Focus)
 - [x] No animation jank
 - [x] Dark mode looks correct
 - [x] No regression in existing functionality
@@ -979,6 +990,11 @@ task-copilot/
 - [x] focusScore sent to AI for better recommendations
 - [x] Action coordination: same icon/label/handler everywhere
 - [x] Recommendation card: clean styling, emoji removed
+
+### Code Quality
+- [x] StagingArea uses violet theme (matches "Today" steps visual language)
+- [x] Auto-collapse uses constant `ANIMATIONS.autoCollapseDelay` (not hardcoded)
+- [x] Dead code removed from `useAIAssistant.ts` (unused timer in `acceptSuggestions`)
 
 ### Release
 - [x] Tagged as `v3-ai-minibar`

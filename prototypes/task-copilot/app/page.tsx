@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AppState,
   Task,
   Step,
   Message,
+  QueueMessage,
   ViewType,
   FocusModeState,
   FocusQueueItem,
@@ -40,7 +41,7 @@ import {
   getTodayISO,
 } from "@/lib/utils";
 import { filterInbox, filterPool } from "@/lib/utils";
-import { getTodayItems } from "@/lib/queue";
+import { getTodayItems, getStepsInScope } from "@/lib/queue";
 import Header from "@/components/layout/Header";
 // Old AIDrawer removed - functionality moved to minibar/palette
 // import AIDrawer from "@/components/AIDrawer";
@@ -59,9 +60,10 @@ import { usePWA } from "@/lib/usePWA";
 import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/ai-assistant";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
-import { AIAssistantContext, AIResponse, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
+import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
+import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
 
 // ============================================
 // Initial States
@@ -151,81 +153,23 @@ export default function Home() {
       case 'taskDetail': return 'taskDetail';
       case 'inbox': return 'inbox';
       case 'tasks': return 'inbox';
+      case 'search': return 'search';
       default: return 'global';
     }
   };
 
-  // Helper to get contextual idle content for MiniBar
+  // Helper to get contextual idle content for MiniBar (using Rules Registry)
   const getIdleContent = (): CollapsedContent => {
     const context = getAIContext();
-    switch (context) {
-      case 'queue': {
-        const todayItems = state.focusQueue.items.filter(
-          item => item.horizon === 'today' && !item.completed
-        );
-        const count = todayItems.length;
-        if (count > 0) {
-          return {
-            type: 'status',
-            text: `${count} task${count !== 1 ? 's' : ''} for today`,
-          };
-        }
-        return { type: 'idle', text: 'Ask AI...' };
-      }
-      case 'taskDetail': {
-        const task = activeTask;
-        if (task) {
-          const stepCount = task.steps.length;
-          const completedSteps = task.steps.filter(s => s.completed).length;
-          const estimate = task.estimatedMinutes;
-          if (stepCount > 0) {
-            const parts = [`${completedSteps}/${stepCount} steps`];
-            if (estimate) parts.push(`~${estimate} min`);
-            return {
-              type: 'status',
-              text: parts.join(' • '),
-            };
-          }
-        }
-        return { type: 'idle', text: 'Ask AI...' };
-      }
-      case 'focusMode': {
-        const task = activeTask;
-        if (task && state.focusMode.currentStepId) {
-          const currentIndex = task.steps.findIndex(
-            s => s.id === state.focusMode.currentStepId
-          );
-          const totalSteps = task.steps.length;
-          if (currentIndex >= 0) {
-            return {
-              type: 'status',
-              text: `Step ${currentIndex + 1} of ${totalSteps}`,
-            };
-          }
-        }
-        return { type: 'idle', text: 'Ask AI...' };
-      }
-      case 'inbox': {
-        const inboxItems = state.tasks.filter(t => t.status === 'inbox' && !t.deletedAt);
-        const count = inboxItems.length;
-        if (count > 0) {
-          return {
-            type: 'status',
-            text: `${count} item${count !== 1 ? 's' : ''} to triage`,
-          };
-        }
-        return { type: 'idle', text: 'Ask AI...' };
-      }
-      default:
-        return { type: 'idle', text: 'Ask AI...' };
-    }
+    const statusContext = buildStatusContext(state, activeTask ?? null, state.focusMode.startTime);
+    return resolveStatus(context, statusContext);
   };
 
   // AI Assistant API handler - calls /api/structure
   const handleAIMinibarSubmit = useCallback(async (
     query: string,
     context: AIAssistantContext
-  ): Promise<AIResponse> => {
+  ): Promise<AISubmitResult> => {
     // Track when query was submitted for staging/palette relationship
     setLastQuerySubmittedAt(Date.now());
 
@@ -238,6 +182,148 @@ export default function Home() {
     const currentStep = inFocusMode && currentStepId && currentTask
       ? currentTask.steps.find(s => s.id === currentStepId)
       : null;
+
+    // Build view-specific context for queue and tasks views
+    let viewContext: Record<string, unknown> = {};
+
+    if (state.currentView === 'focus' && !taskId) {
+      // Focus Queue view (no active task) - pass queue items for context
+      const todayLineIndex = state.focusQueue.todayLineIndex;
+      const activeItems = state.focusQueue.items
+        .filter(i => !i.completed)
+        .sort((a, b) => a.order - b.order);
+      const todayItemsData = activeItems.slice(0, todayLineIndex);
+      const upcomingItemsData = activeItems.slice(todayLineIndex);
+
+      const todayItems = todayItemsData.map(item => {
+        const task = state.tasks.find(t => t.id === item.taskId);
+        return {
+          taskId: item.taskId,
+          taskTitle: task?.title || "Untitled",
+          priority: task?.priority || null,
+          targetDate: task?.targetDate || null,
+          deadlineDate: task?.deadlineDate || null,
+          completedSteps: task?.steps.filter(s => s.completed).length || 0,
+          totalSteps: task?.steps.length || 0,
+          effort: task?.effort || null,
+          focusScore: task ? computeFocusScore(task) : 0,
+        };
+      });
+
+      const upcomingItems = upcomingItemsData.map(item => {
+        const task = state.tasks.find(t => t.id === item.taskId);
+        return {
+          taskId: item.taskId,
+          taskTitle: task?.title || "Untitled",
+          priority: task?.priority || null,
+          targetDate: task?.targetDate || null,
+          deadlineDate: task?.deadlineDate || null,
+          focusScore: task ? computeFocusScore(task) : 0,
+        };
+      });
+
+      viewContext = {
+        queueMode: true,
+        queueContext: { todayItems, upcomingItems },
+      };
+    } else if (state.currentView === 'tasks' && !taskId) {
+      // Tasks view (no active task) - pass inbox + pool for context
+      const inboxTasks = filterInbox(state.tasks);
+      const poolTasks = filterPool(state.tasks);
+
+      // Get queue task IDs to filter them out of ready tasks
+      const queueTaskIds = new Set(state.focusQueue.items.map(i => i.taskId));
+
+      const triageItems = inboxTasks.map(t => ({
+        taskId: t.id,
+        taskTitle: t.title,
+        createdAt: t.createdAt,
+      }));
+
+      // Filter out tasks that are already in Focus Queue (consistent with TasksView display)
+      const readyTasks = poolTasks
+        .filter(t => !queueTaskIds.has(t.id))
+        .map(t => ({
+          taskId: t.id,
+          taskTitle: t.title,
+          priority: t.priority || null,
+          targetDate: t.targetDate || null,
+          deadlineDate: t.deadlineDate || null,
+          effort: t.effort || null,
+          stepsCount: t.steps.length,
+          completedSteps: t.steps.filter(s => s.completed).length,
+          focusScore: computeFocusScore(t),
+          waitingOn: t.waitingOn ? true : null,
+        }));
+
+      viewContext = {
+        tasksViewMode: true,
+        tasksViewContext: { triageItems, readyTasks },
+      };
+    } else if (state.currentView === 'search' && !taskId) {
+      // Search view - pass search query and results for context
+      const searchLower = searchQuery.toLowerCase();
+      const results = searchQuery.trim()
+        ? state.tasks.filter(t =>
+            !t.deletedAt &&
+            (t.title.toLowerCase().includes(searchLower) ||
+             t.description?.toLowerCase().includes(searchLower) ||
+             t.steps.some(s => s.text.toLowerCase().includes(searchLower)))
+          )
+        : [];
+
+      // Limit to top 10 results to avoid large payloads
+      const searchResults = results.slice(0, 10).map(t => ({
+        taskId: t.id,
+        taskTitle: t.title,
+        status: t.status,
+        priority: t.priority || null,
+        targetDate: t.targetDate || null,
+        deadlineDate: t.deadlineDate || null,
+        effort: t.effort || null,
+        stepsCount: t.steps.length,
+        completedSteps: t.steps.filter(s => s.completed).length,
+      }));
+
+      viewContext = {
+        searchMode: true,
+        searchContext: {
+          query: searchQuery,
+          resultCount: results.length,
+          results: searchResults,
+        },
+      };
+    } else if (state.currentView === 'focusMode' && taskId) {
+      // Focus Mode - pass rich context about current focus session
+      const focusTask = state.tasks.find(t => t.id === taskId);
+      const queueItem = state.focusQueue.items.find(i => i.taskId === taskId);
+      if (focusTask && queueItem) {
+        const stepsInScope = getStepsInScope(queueItem, focusTask);
+        const focusCurrentStep = stepsInScope.find(s => s.id === state.focusMode.currentStepId);
+        const currentStepIndex = stepsInScope.findIndex(s => s.id === state.focusMode.currentStepId);
+
+        viewContext = {
+          focusModeContext: {
+            taskTitle: focusTask.title,
+            currentStep: focusCurrentStep ? {
+              text: focusCurrentStep.text,
+              substeps: focusCurrentStep.substeps.map(sub => ({
+                text: sub.text,
+                completed: sub.completed,
+              })),
+            } : null,
+            progress: {
+              completed: stepsInScope.filter(s => s.completed).length,
+              total: stepsInScope.length,
+            },
+            currentStepIndex: currentStepIndex + 1, // 1-indexed for display
+          },
+        };
+      }
+    }
+
+    // Get active staging context for follow-up questions about pending suggestions
+    const activeStaging = getActiveStaging();
 
     try {
       const response = await fetch("/api/structure", {
@@ -258,6 +344,12 @@ export default function Home() {
             text: currentStep.text,
             completed: currentStep.completed,
           } : null,
+          // Include pending staging context for follow-up questions
+          pendingSuggestions: activeStaging?.suggestions || null,
+          pendingEdits: activeStaging?.edits || null,
+          pendingDeletions: activeStaging?.deletions || null,
+          pendingAction: activeStaging?.pendingAction || null,
+          ...viewContext,  // Include view-specific context
         }),
       });
 
@@ -298,15 +390,6 @@ export default function Home() {
         if (responseCategory === 'structured') {
           setStagingIsNewArrival(true);
           setStagingPopulatedAt(Date.now());  // Track when staging was populated
-
-          // Update MiniBar to show suggestions-ready state
-          const itemCount = suggestions.length;
-          const statusMessage = buildSuggestionsReadyMessage(actionName, itemCount);
-          aiAssistant.setCollapsedContent({
-            type: 'suggestionsReady',
-            text: statusMessage,
-            icon: '💡',
-          });
         }
       }
 
@@ -325,14 +408,6 @@ export default function Home() {
         if (responseCategory === 'structured') {
           setStagingIsNewArrival(true);
           setStagingPopulatedAt(Date.now());  // Track when staging was populated
-
-          // Update MiniBar to show edits-ready state
-          const itemCount = editsToApply.length;
-          aiAssistant.setCollapsedContent({
-            type: 'suggestionsReady',
-            text: `${itemCount} edit${itemCount !== 1 ? 's' : ''} ready`,
-            icon: '💡',
-          });
         }
       }
 
@@ -351,24 +426,128 @@ export default function Home() {
         if (responseCategory === 'structured') {
           setStagingIsNewArrival(true);
           setStagingPopulatedAt(Date.now());  // Track when staging was populated
-
-          // Update MiniBar to show deletions-ready state
-          const itemCount = deletionsToApply.length;
-          aiAssistant.setCollapsedContent({
-            type: 'suggestionsReady',
-            text: `${itemCount} deletion${itemCount !== 1 ? 's' : ''} ready`,
-            icon: '💡',
-          });
         }
       }
 
-      // Convert to AIResponse for minibar display
-      return structureToAIResponse(data);
+      // Issue 10: Store queue messages for 48h retention (queue context only)
+      if (state.currentView === 'focus' && !currentTask) {
+        const now = Date.now();
+        const userMessage: QueueMessage = {
+          id: crypto.randomUUID(),
+          role: 'user',
+          content: query,
+          timestamp: now - 100, // Slightly before AI response
+        };
+        const aiMessage: QueueMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: data.message || '',
+          timestamp: now,
+        };
+        setState(prev => ({
+          ...prev,
+          queueMessages: [...prev.queueMessages, userMessage, aiMessage],
+          queueLastInteractionAt: now,
+        }));
+      }
+
+      // Issue 3 Round 3: Store Tasks view messages for 60m display window
+      if (state.currentView === 'tasks' && !currentTask) {
+        const now = Date.now();
+        const userMessage: QueueMessage = {
+          id: crypto.randomUUID(),
+          role: 'user',
+          content: query,
+          timestamp: now - 100, // Slightly before AI response
+        };
+        const aiMessage: QueueMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: data.message || '',
+          timestamp: now,
+        };
+        setState(prev => ({
+          ...prev,
+          tasksMessages: [...prev.tasksMessages, userMessage, aiMessage],
+          tasksLastInteractionAt: now,
+        }));
+      }
+
+      // Save task messages for task detail and focus mode contexts
+      if (currentTask) {
+        const now = Date.now();
+        const userMsg: Message = {
+          role: 'user',
+          content: query,
+          timestamp: now - 100,
+          ...(inFocusMode && currentStepId ? { stepId: currentStepId } : {}),
+        };
+        const aiMsg: Message = {
+          role: 'assistant',
+          content: data.message || '',
+          timestamp: now,
+          ...(inFocusMode && currentStepId ? { stepId: currentStepId } : {}),
+        };
+        setState(prev => ({
+          ...prev,
+          tasks: prev.tasks.map(t =>
+            t.id === currentTask.id
+              ? {
+                  ...t,
+                  ...(inFocusMode
+                    ? { focusModeMessages: [...(t.focusModeMessages || []), userMsg, aiMsg] }
+                    : { messages: [...(t.messages || []), userMsg, aiMsg] }
+                  ),
+                  updatedAt: now,
+                }
+              : t
+          ),
+        }));
+      }
+
+      // For structured responses (suggestions/edits/deletions going to staging), return collapsedContent
+      // so the reducer can set it atomically with clearing loading state.
+      // For conversational responses, return the AIResponse to show in palette.
+      if (responseCategory === 'structured') {
+        // Build collapsedContent based on what was staged
+        let statusMessage = '';
+        let itemCount = 0;
+        if (pendingAction === 'replace' || pendingAction === 'suggest') {
+          itemCount = (data.suggestions || data.steps || []).length;
+          statusMessage = buildSuggestionsReadyMessage(actionName, itemCount);
+        } else if (pendingAction === 'edit') {
+          itemCount = (data.edits || []).length;
+          statusMessage = `${itemCount} edit${itemCount !== 1 ? 's' : ''} ready`;
+        } else if (pendingAction === 'delete') {
+          itemCount = (data.deletions || []).length;
+          statusMessage = `${itemCount} deletion${itemCount !== 1 ? 's' : ''} ready`;
+        }
+
+        // Return a suggestions-type response so palette can display a summary
+        // The actual suggestions/edits are in StagingArea
+        return {
+          response: {
+            type: 'suggestions' as const,
+            content: {
+              message: data.message || `I've prepared ${itemCount} suggestions.`,
+              suggestions: [], // Actual suggestions are in staging, not palette
+            },
+          },
+          collapsedContent: {
+            type: 'suggestionsReady' as const,
+            text: statusMessage,
+            icon: '💡',
+          },
+        };
+      }
+      return { response: structureToAIResponse(data) };
     } catch (error) {
       return {
-        type: 'error',
-        content: { text: error instanceof Error ? error.message : 'Something went wrong' },
-        actions: [{ id: 'retry', label: 'Retry', variant: 'primary', onClick: () => {} }],
+        response: {
+          type: 'error',
+          content: { text: error instanceof Error ? error.message : 'Something went wrong' },
+          actions: [{ id: 'retry', label: 'Retry', variant: 'primary', onClick: () => {} }],
+        },
       };
     }
   }, [state.activeTaskId, state.tasks, state.currentView, state.focusMode.currentStepId, updateActiveStaging]);
@@ -386,10 +565,17 @@ export default function Home() {
     }
   }, []);
 
+  // Memoize idle content to prevent new object on every render
+  // (which would trigger useEffect in useAIAssistant and break expansion)
+  const defaultIdleContent = useMemo(
+    () => getIdleContent(),
+    [state.currentView, state.focusQueue, activeTask, state.focusMode, state.tasks]
+  );
+
   // AI Assistant hook (MiniBar/Palette/Drawer)
   const aiAssistant = useAIAssistant({
     initialContext: getAIContext(),
-    defaultIdleContent: getIdleContent(),
+    defaultIdleContent,
     onSubmit: handleAIMinibarSubmit,
     onAcceptSuggestions: handleAIMinibarAccept,
   });
@@ -439,7 +625,7 @@ export default function Home() {
     },
   };
 
-  // Contextual prompts hook - only enabled when minibar is truly idle
+  // Contextual prompts hook - enabled when minibar shows idle or status
   const contextualPrompts = useContextualPrompts({
     context: getAIContext(),
     promptContext,
@@ -447,19 +633,33 @@ export default function Home() {
     enabled:
       aiAssistant.state.mode === 'collapsed' &&
       !aiAssistant.state.isLoading &&
-      aiAssistant.state.collapsedContent.type === 'idle',
+      (aiAssistant.state.collapsedContent.type === 'idle' ||
+       aiAssistant.state.collapsedContent.type === 'status'),
   });
 
-  // Update MiniBar collapsed content when contextual prompt becomes active
+  // Update MiniBar collapsed content when contextual prompt becomes active or times out
   useEffect(() => {
+    // Don't override loading state - contextual action was triggered
+    if (aiAssistant.state.isLoading) return;
+
+    // Don't override response states - these should persist until user dismisses
+    const protectedTypes = ['response', 'suggestionsReady', 'confirmation', 'loading'];
+    if (protectedTypes.includes(aiAssistant.state.collapsedContent.type)) return;
+
+    // Don't override if there's an active response (even if collapsedContent.type isn't set yet)
+    if (aiAssistant.state.response) return;
+
     if (contextualPrompts.showPrompt && contextualPrompts.prompt) {
       aiAssistant.setCollapsedContent({
         type: 'prompt',
         text: contextualPrompts.prompt.text,
         prompt: contextualPrompts.prompt,
       });
+    } else if (!contextualPrompts.showPrompt && aiAssistant.state.collapsedContent.type === 'prompt') {
+      // Prompt timed out - return to idle/status (Issue 9 fix)
+      aiAssistant.setCollapsedContent(defaultIdleContent);
     }
-  }, [contextualPrompts.showPrompt, contextualPrompts.prompt, aiAssistant.setCollapsedContent]);
+  }, [contextualPrompts.showPrompt, contextualPrompts.prompt, aiAssistant.setCollapsedContent, aiAssistant.state.collapsedContent.type, aiAssistant.state.isLoading, aiAssistant.state.response, defaultIdleContent]);
 
   // Auto-expand Palette when response arrives after prompt-triggered submission
   useEffect(() => {
@@ -474,12 +674,87 @@ export default function Home() {
     }
   }, [aiAssistant.state.isLoading, aiAssistant.state.response, aiAssistant.state.mode, aiAssistant.expand]);
 
+  // Reset manual flag when response arrives so auto-collapse can work
+  useEffect(() => {
+    if (aiAssistant.state.response && !aiAssistant.state.isLoading) {
+      setPaletteManuallyOpened(false);
+    }
+  }, [aiAssistant.state.response, aiAssistant.state.isLoading]);
+
   // Reset prompt when user interacts with AI (expand or submit)
   useEffect(() => {
     if (aiAssistant.state.mode !== 'collapsed') {
       contextualPrompts.resetPrompt();
     }
   }, [aiAssistant.state.mode, contextualPrompts.resetPrompt]);
+
+  // ============================================
+  // Drawer Message Sync (Issue 10)
+  // ============================================
+
+  const QUEUE_SESSION_TIMEOUT = 60 * 60 * 1000; // 60 minutes
+
+  // Sync drawer messages when drawer opens based on context
+  useEffect(() => {
+    if (aiAssistant.state.mode === 'drawer') {
+      if (state.currentView === 'focusMode' && activeTask) {
+        // Focus Mode: load focusModeMessages
+        const messages = (activeTask.focusModeMessages || []).map(m => ({
+          id: crypto.randomUUID(),
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        }));
+        aiAssistant.syncMessages(messages);
+      } else if (state.currentView === 'taskDetail' && activeTask) {
+        // Task Detail: load task messages
+        const messages = (activeTask.messages || []).map(m => ({
+          id: crypto.randomUUID(),
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+        }));
+        aiAssistant.syncMessages(messages);
+      } else if (state.currentView === 'focus') {
+        // Queue: apply 60-minute window logic
+        const isStale = !state.queueLastInteractionAt ||
+          (Date.now() - state.queueLastInteractionAt > QUEUE_SESSION_TIMEOUT);
+
+        if (isStale) {
+          aiAssistant.clearMessages(); // Fresh UI
+        } else {
+          // Show recent messages within session window
+          const messages = (state.queueMessages || []).map(m => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          }));
+          aiAssistant.syncMessages(messages);
+        }
+      } else if (state.currentView === 'tasks' && !state.activeTaskId) {
+        // Tasks view (not in TaskDetail): apply same 60-minute window logic as queue
+        const isStale = !state.tasksLastInteractionAt ||
+          (Date.now() - state.tasksLastInteractionAt > QUEUE_SESSION_TIMEOUT);
+
+        if (isStale) {
+          aiAssistant.clearMessages(); // Fresh UI
+        } else {
+          // Show recent messages within session window
+          const messages = (state.tasksMessages || []).map(m => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          }));
+          aiAssistant.syncMessages(messages);
+        }
+      } else {
+        // Other views (inbox, search): fresh UI
+        aiAssistant.clearMessages();
+      }
+    }
+  }, [aiAssistant.state.mode, state.currentView, activeTask?.id]);
 
   // ============================================
   // State Persistence
@@ -519,10 +794,6 @@ export default function Home() {
         ...loaded,
         focusMode,
         currentView,
-        aiDrawer: {
-          ...loaded.aiDrawer,
-          isOpen: loaded.tasks.length === 0 && !focusMode.active,
-        },
       });
     } catch (e) {
       console.error("Failed to load saved state:", e);
@@ -539,10 +810,14 @@ export default function Home() {
 
   // Sync AI Assistant context when view changes
   // Refinement 7: Reset appearance on context change (but preserve drawer history)
+  // IMPORTANT: Only trigger on actual view changes - not callback recreation
+  // The callbacks depend on idleContent which changes when state.tasks changes,
+  // causing this effect to fire unexpectedly and clear responses
   useEffect(() => {
     aiAssistant.setContext(getAIContext());
     aiAssistant.reset();  // Collapse MiniBar, clear response, clear query
-  }, [state.currentView, aiAssistant.setContext, aiAssistant.reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentView]);
 
   // ============================================
   // Keyboard Shortcuts
@@ -645,13 +920,16 @@ export default function Home() {
           break;
 
         case 'a':
-          // Toggle AI drawer
+          // Toggle AI palette
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault();
-            setState((prev) => ({
-              ...prev,
-              aiDrawer: { ...prev.aiDrawer, isOpen: !prev.aiDrawer.isOpen },
-            }));
+            if (aiAssistant.state.mode === 'collapsed') {
+              aiAssistant.expand();
+            } else if (aiAssistant.state.mode === 'expanded') {
+              aiAssistant.collapse();
+            } else if (aiAssistant.state.mode === 'drawer') {
+              aiAssistant.closeDrawer();
+            }
           }
           break;
       }
@@ -659,7 +937,7 @@ export default function Home() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [state.aiDrawer.isOpen, state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.closeDrawer, aiAssistant.collapse]);
+  }, [state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.closeDrawer, aiAssistant.collapse, aiAssistant.expand]);
 
   // ============================================
   // Edge Swipe Navigation
@@ -1278,9 +1556,12 @@ export default function Home() {
   const handleAddToQueue = useCallback((
     taskId: string,
     forToday: boolean = false,
-    selectionType: 'all_today' | 'all_upcoming' | 'specific_steps' = 'all_today',
+    selectionType?: 'all_today' | 'all_upcoming' | 'specific_steps',
     selectedStepIds: string[] = []
   ) => {
+    // Derive selectionType from forToday if not explicitly provided
+    const effectiveSelectionType = selectionType ?? (forToday ? 'all_today' : 'all_upcoming');
+
     let addedTask: Task | undefined;
     let addedItemId: string | undefined;
     setState((prev) => {
@@ -1300,7 +1581,7 @@ export default function Home() {
           : t
       );
 
-      const newItem = createFocusQueueItem(taskId, 'today', { selectionType, selectedStepIds }); // horizon kept for type compat
+      const newItem = createFocusQueueItem(taskId, 'today', { selectionType: effectiveSelectionType, selectedStepIds }); // horizon kept for type compat
       addedItemId = newItem.id;
 
       // Determine insertion position and new todayLineIndex
@@ -1377,26 +1658,77 @@ export default function Home() {
   }, []);
 
   // Update step selection for an existing queue item
+  // Also moves task between Today/Upcoming based on selection:
+  // - If ANY steps selected for today (all_today or specific_steps) → task in Today
+  // - If NO steps for today (all_upcoming) → task in Upcoming
   const handleUpdateStepSelection = useCallback((
     queueItemId: string,
     selectionType: 'all_today' | 'all_upcoming' | 'specific_steps',
     selectedStepIds: string[]
   ) => {
     setState((prev) => {
+      // IMPORTANT: Sort by order first (same as QueueView display)
+      // todayLineIndex is relative to this sorted order, not raw array order
+      const sortedItems = [...prev.focusQueue.items]
+        .filter(i => !i.completed)
+        .sort((a, b) => a.order - b.order);
+
+      const sortedIndex = sortedItems.findIndex(i => i.id === queueItemId);
+      if (sortedIndex === -1) return prev;
+
+      // Update the item's selection
+      const updatedItem: FocusQueueItem = {
+        ...sortedItems[sortedIndex],
+        selectionType,
+        selectedStepIds,
+        lastInteractedAt: Date.now(),
+      };
+
+      // Determine if task should be in Today or Upcoming based on SORTED position
+      // all_today or specific_steps = has Today steps → should be in Today section
+      // all_upcoming = no Today steps → should be in Upcoming section
+      const hasAnyTodaySteps = selectionType !== 'all_upcoming';
+      const currentlyInToday = sortedIndex < prev.focusQueue.todayLineIndex;
+
+      // No movement needed if already in correct section
+      if (hasAnyTodaySteps === currentlyInToday) {
+        // Just update the item in place
+        const newItems = prev.focusQueue.items.map(item =>
+          item.id === queueItemId ? updatedItem : item
+        );
+        return { ...prev, focusQueue: { ...prev.focusQueue, items: newItems } };
+      }
+
+      // Remove item from sorted array
+      sortedItems.splice(sortedIndex, 1);
+
+      let newTodayLineIndex = prev.focusQueue.todayLineIndex;
+
+      if (hasAnyTodaySteps && !currentlyInToday) {
+        // Move from Upcoming → Today (insert at end of Today section)
+        sortedItems.splice(newTodayLineIndex, 0, updatedItem);
+        newTodayLineIndex += 1;  // Line moves down to accommodate new Today item
+      } else if (!hasAnyTodaySteps && currentlyInToday) {
+        // Move from Today → Upcoming (insert at start of Upcoming section)
+        newTodayLineIndex -= 1;  // Line moves up since we removed a Today item
+        sortedItems.splice(newTodayLineIndex, 0, updatedItem);
+      }
+
+      // Re-assign order values to maintain visual order
+      const reorderedItems = sortedItems.map((item, idx) => ({
+        ...item,
+        order: idx,
+      }));
+
+      // Also include any completed items that were filtered out
+      const completedItems = prev.focusQueue.items.filter(i => i.completed);
+
       return {
         ...prev,
         focusQueue: {
           ...prev.focusQueue,
-          items: prev.focusQueue.items.map((item) =>
-            item.id === queueItemId
-              ? {
-                  ...item,
-                  selectionType,
-                  selectedStepIds,
-                  lastInteractedAt: Date.now(),
-                }
-              : item
-          ),
+          items: [...reorderedItems, ...completedItems],
+          todayLineIndex: newTodayLineIndex,
         },
       };
     });
@@ -1733,12 +2065,9 @@ export default function Home() {
   }, []);
 
   const handleStuck = useCallback(() => {
-    // Open AI drawer for help
-    setState((prev) => ({
-      ...prev,
-      aiDrawer: { ...prev.aiDrawer, isOpen: true },
-    }));
-  }, []);
+    // Open AI palette for help
+    aiAssistant.expand();
+  }, [aiAssistant]);
 
   const handleExitFocus = useCallback(() => {
     let shouldSetPreviousViewToFocus = false;
@@ -2091,187 +2420,45 @@ export default function Home() {
   // AI Integration
   // ============================================
 
-  const handleToggleAIDrawer = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      aiDrawer: { ...prev.aiDrawer, isOpen: !prev.aiDrawer.isOpen },
-    }));
-  }, []);
-
-  const handleSendMessage = useCallback(async (message: string) => {
-    // Capture task ID and data BEFORE any async operations to avoid stale closure
-    const taskId = state.activeTaskId;
-    if (!taskId) return;
-
-    const currentTask = state.tasks.find((t) => t.id === taskId);
-    if (!currentTask) return;
-
-    // Determine if in focus mode and get current step
-    const inFocusMode = state.currentView === 'focusMode';
-    const currentStepId = inFocusMode ? state.focusMode.currentStepId : undefined;
-    const currentStep = inFocusMode && currentStepId
-      ? currentTask.steps.find(s => s.id === currentStepId)
-      : null;
-
-    const newUserMessage: Message = {
-      role: "user",
-      content: message,
-      timestamp: Date.now(),
-      stepId: currentStepId || undefined,
-    };
-
-    // Add user message to appropriate message array based on mode
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              ...(inFocusMode
-                ? { focusModeMessages: [...(t.focusModeMessages || []), newUserMessage] }
-                : { messages: [...t.messages, newUserMessage] }),
-              updatedAt: Date.now(),
-            }
-          : t
-      ),
-      aiDrawer: { ...prev.aiDrawer, isLoading: true },
-    }));
-
-    try {
-      const response = await fetch("/api/structure", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userMessage: message,
-          currentList: currentTask.steps,
-          taskTitle: currentTask.title,
-          taskDescription: currentTask.description,
-          taskNotes: currentTask.notes,
-          conversationHistory: inFocusMode
-            ? (currentTask.focusModeMessages || [])
-            : currentTask.messages,
-          // Focus mode context
-          focusMode: inFocusMode,
-          currentStep: currentStep ? {
-            id: currentStep.id,
-            text: currentStep.text,
-            completed: currentStep.completed,
-          } : null,
-        }),
-      });
-
-      if (!response.ok) throw new Error("API request failed");
-
-      const data: StructureResponse = await response.json();
-
-      const aiMessage: Message = {
-        role: "assistant",
-        content: data.message,
-        timestamp: Date.now(),
-        stepId: currentStepId || undefined,
-      };
-
-      // Handle different action types
-      let suggestions: SuggestedStep[] = [];
-      let pendingAction: 'replace' | 'suggest' | null = null;
-      // Handle title from either taskTitle (replace) or suggestedTitle (suggest)
-      let suggestedTitle: string | null = data.suggestedTitle || data.taskTitle || null;
-
-      if (data.action === 'replace' && data.steps) {
-        // Convert full Step objects to SuggestedStep format for staging
-        pendingAction = 'replace';
-        suggestions = data.steps.map((step: Step) => ({
-          id: step.id,
-          text: step.text,
-          substeps: step.substeps.map((sub) => ({
-            id: sub.id,
-            text: sub.text,
-          })),
-          estimatedMinutes: step.estimatedMinutes || undefined,
-        }));
-      } else if (data.action === 'suggest' && data.suggestions) {
-        pendingAction = 'suggest';
-        suggestions = data.suggestions;
-      }
-
-      setState((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                ...(inFocusMode
-                  ? { focusModeMessages: [...(t.focusModeMessages || []), aiMessage] }
-                  : { messages: [...t.messages, aiMessage] }),
-                updatedAt: Date.now(),
-              }
-            : t
-        ),
-        aiDrawer: { ...prev.aiDrawer, isLoading: false },
-        suggestions,
-        pendingAction,
-        edits: data.edits || [],
-        deletions: data.deletions || [],
-        suggestedTitle,
-      }));
-    } catch (error) {
-      console.error("AI request failed:", error);
-      setState((prev) => ({
-        ...prev,
-        aiDrawer: { ...prev.aiDrawer, isLoading: false },
-        error: "Failed to get AI response",
-      }));
-    }
-  }, [state.activeTaskId, state.tasks, state.currentView, state.focusMode.currentStepId]);
-
   // Auto-trigger AI breakdown request
-  const handleAutoBreakdown = useCallback(async () => {
+  const handleAutoBreakdown = useCallback(() => {
     if (!state.activeTaskId) return;
     const task = state.tasks.find(t => t.id === state.activeTaskId);
     if (!task) return;
 
-    // Open drawer first to show loading state
-    setState(prev => ({
-      ...prev,
-      aiDrawer: { ...prev.aiDrawer, isOpen: true },
-    }));
-
-    // Generate contextual message
+    // Generate contextual message and submit via new AI system
     const hasSteps = task.steps.length > 0;
     const message = hasSteps
       ? "Can you help me break down these steps further? Add substeps or additional steps as needed."
       : "Can you help me break this task down into concrete, actionable steps?";
 
-    await handleSendMessage(message);
-  }, [state.activeTaskId, state.tasks, handleSendMessage]);
+    aiAssistant.directSubmit(message);
+  }, [state.activeTaskId, state.tasks, aiAssistant]);
 
-  // Stuck helpers - auto-send specific requests
-  const handleStuckBreakdown = useCallback(async () => {
+  // Stuck helpers - submit via new AI system
+  const handleStuckBreakdown = useCallback(() => {
     if (!state.focusMode.currentStepId || !activeTask) return;
     const currentStep = activeTask.steps.find(s => s.id === state.focusMode.currentStepId);
     if (!currentStep) return;
 
-    setState(prev => ({ ...prev, aiDrawer: { ...prev.aiDrawer, isOpen: true } }));
-    await handleSendMessage(`I'm stuck on this step: "${currentStep.text}". Can you break it down into smaller substeps?`);
-  }, [state.focusMode.currentStepId, activeTask, handleSendMessage]);
+    aiAssistant.directSubmit(`I'm stuck on this step: "${currentStep.text}". Can you break it down into smaller substeps?`);
+  }, [state.focusMode.currentStepId, activeTask, aiAssistant]);
 
-  const handleStuckFirstStep = useCallback(async () => {
+  const handleStuckFirstStep = useCallback(() => {
     if (!state.focusMode.currentStepId || !activeTask) return;
     const currentStep = activeTask.steps.find(s => s.id === state.focusMode.currentStepId);
     if (!currentStep) return;
 
-    setState(prev => ({ ...prev, aiDrawer: { ...prev.aiDrawer, isOpen: true } }));
-    await handleSendMessage(`I'm stuck on this step: "${currentStep.text}". What's the very first tiny action I should take to get started?`);
-  }, [state.focusMode.currentStepId, activeTask, handleSendMessage]);
+    aiAssistant.directSubmit(`I'm stuck on this step: "${currentStep.text}". What's the very first tiny action I should take to get started?`);
+  }, [state.focusMode.currentStepId, activeTask, aiAssistant]);
 
-  const handleStuckExplain = useCallback(async () => {
+  const handleStuckExplain = useCallback(() => {
     if (!state.focusMode.currentStepId || !activeTask) return;
     const currentStep = activeTask.steps.find(s => s.id === state.focusMode.currentStepId);
     if (!currentStep) return;
 
-    setState(prev => ({ ...prev, aiDrawer: { ...prev.aiDrawer, isOpen: true } }));
-    await handleSendMessage(`Can you explain what this step means in simple terms: "${currentStep.text}"? I'm not sure what I need to do.`);
-  }, [state.focusMode.currentStepId, activeTask, handleSendMessage]);
+    aiAssistant.directSubmit(`Can you explain what this step means in simple terms: "${currentStep.text}"? I'm not sure what I need to do.`);
+  }, [state.focusMode.currentStepId, activeTask, aiAssistant]);
 
   // ============================================
   // Recommendation Handlers (What should I do?)
@@ -2296,6 +2483,7 @@ export default function Home() {
         taskId: item.taskId,
         taskTitle: task?.title || "Untitled",
         priority: task?.priority || null,
+        targetDate: task?.targetDate || null,
         deadlineDate: task?.deadlineDate || null,
         completedSteps,
         totalSteps,
@@ -2311,6 +2499,7 @@ export default function Home() {
         taskId: item.taskId,
         taskTitle: task?.title || "Untitled",
         priority: task?.priority || null,
+        targetDate: task?.targetDate || null,
         deadlineDate: task?.deadlineDate || null,
         focusScore: task ? computeFocusScore(task) : 0,
       };
@@ -2798,22 +2987,24 @@ export default function Home() {
           currentView={state.currentView}
           previousView={previousView}
           onViewChange={handleViewChange}
-          onToggleAI={handleToggleAIDrawer}
-          isAIDrawerOpen={state.aiDrawer.isOpen}
+          onToggleAI={() => aiAssistant.expand()}
+          isAIDrawerOpen={aiAssistant.state.mode !== 'collapsed'}
           inboxCount={inboxTasks.length}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSearchFocus={handleSearchFocus}
         />
 
-        {/* Main Content */}
+        {/* Main Content - shifts left when drawer open on desktop */}
         <main
-          className="flex-1 overflow-y-auto"
+          className={`flex-1 overflow-y-auto transition-all duration-300 ${
+            aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : ''
+          }`}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
           {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet */}
-          <div className={`max-w-4xl mx-auto px-4 py-6 ${state.aiDrawer.isOpen ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
+          <div className={`max-w-4xl mx-auto px-4 py-6 ${aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
@@ -2847,7 +3038,7 @@ export default function Home() {
                 onPark={handlePark}
                 onDelete={handleDeleteTask}
                 onGoToInbox={handleGoToInbox}
-                onOpenAIDrawer={handleToggleAIDrawer}
+                onOpenAIDrawer={() => aiAssistant.expand()}
                 onOpenProjectModal={handleOpenProjectModal}
               />
             )}
@@ -2925,7 +3116,7 @@ export default function Home() {
                 onUnarchive={handleUnarchive}
                 onDeleteTask={handleDeleteTask}
                 onStartFocus={handleStartFocus}
-                onOpenAIDrawer={handleToggleAIDrawer}
+                onOpenAIDrawer={() => aiAssistant.expand()}
                 onAIBreakdown={handleAutoBreakdown}
                 onAcceptOne={handleAcceptSuggestion}
                 onAcceptAll={handleAcceptAll}
@@ -2960,7 +3151,7 @@ export default function Home() {
                 onPause={handlePauseFocus}
                 onResume={handleResumeFocus}
                 onExit={handleExitFocus}
-                onOpenAIDrawer={handleToggleAIDrawer}
+                onOpenAIDrawer={() => aiAssistant.expand()}
                 suggestions={activeTask.staging?.suggestions || []}
                 edits={activeTask.staging?.edits || []}
                 deletions={activeTask.staging?.deletions || []}
@@ -3036,7 +3227,6 @@ export default function Home() {
             onStartRecommendedFocus={handleStartRecommendedFocus}
             onSkipRecommendation={handleSkipRecommendation}
             onOpenDrawer={aiAssistant.openDrawer}
-            exchangeCount={Math.floor(aiAssistant.state.messages.length / 2)}
           />
         </div>
       )}
@@ -3045,21 +3235,24 @@ export default function Home() {
       <AnimatePresence>
         {aiAssistant.state.mode === 'drawer' && (
           <>
-            {/* Backdrop */}
+            {/* Backdrop - hidden on desktop (side-by-side), visible on tablet/mobile */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={aiAssistant.closeDrawer}
-              className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
+              className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 lg:hidden"
             />
             <AIAssistantDrawer
               messages={aiAssistant.state.messages}
               query={aiAssistant.state.query}
               onQueryChange={aiAssistant.setQuery}
               onSubmit={aiAssistant.submitQuery}
+              onDirectSubmit={aiAssistant.directSubmit}
               isLoading={aiAssistant.state.isLoading}
               onClose={aiAssistant.closeDrawer}
+              quickActions={aiAssistant.quickActions}
+              onRequestRecommendation={handleRequestRecommendation}
             />
           </>
         )}
