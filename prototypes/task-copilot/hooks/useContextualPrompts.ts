@@ -198,6 +198,18 @@ export function useContextualPrompts({
     setPrompt(null);
   }, [context]);
 
+  // Reset when step count changes (e.g., after breakdown accepted or manual step added)
+  // This allows the prompt to re-evaluate with appropriate content
+  const prevStepCountRef = useRef(promptContext.taskStepCount);
+  useEffect(() => {
+    if (promptContext.taskStepCount !== prevStepCountRef.current) {
+      hasShownRef.current = false;
+      setShowPrompt(false);
+      setPrompt(null);
+      prevStepCountRef.current = promptContext.taskStepCount;
+    }
+  }, [promptContext.taskStepCount]);
+
   return {
     showPrompt,
     prompt,
