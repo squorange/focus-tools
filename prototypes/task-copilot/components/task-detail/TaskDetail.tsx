@@ -1170,7 +1170,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
         {step.substeps.length > 0 && (
           <div className="mt-2 pl-2 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-700">
             {step.substeps.map((substep, substepIndex) => (
-              <div key={substep.id} className="flex items-center gap-2 group/substep">
+              <div key={substep.id} className="flex items-center gap-3 group/substep">
                 <button
                   onClick={() => onSubstepComplete(substep.id, !substep.completed)}
                   className={`
@@ -1224,7 +1224,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
                 <div className="relative opacity-0 group-hover/substep:opacity-100 transition-opacity">
                   <button
                     onClick={() => setShowSubstepMenu(showSubstepMenu === substep.id ? null : substep.id)}
-                    className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+                    className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
                   >
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />

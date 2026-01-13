@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 import { AIResponse, QuickAction, SuggestionsContent, RecommendationContent } from '@/lib/ai-types';
 import { HEIGHT_TRANSITION, ANIMATIONS } from '@/lib/ai-constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -356,7 +357,8 @@ export function PaletteContent({
                   bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
                   hover:bg-violet-200 dark:hover:bg-violet-800/40"
               >
-                Go to suggestions ↑
+                <span className="sm:hidden">Review ↑</span>
+                <span className="hidden sm:inline">Go to suggestions ↑</span>
               </button>
               <button
                 onClick={() => {
@@ -375,11 +377,13 @@ export function PaletteContent({
                   onManualInteraction?.();
                   setShowInput(true);
                 }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                className="px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
                   hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                title="Ask AI"
               >
-                Ask AI
+                <Sparkles size={16} className="sm:hidden" />
+                <span className="hidden sm:inline">Ask AI</span>
               </button>
             </>
           )}
@@ -446,11 +450,13 @@ export function PaletteContent({
                   onManualInteraction?.();
                   setShowInput(true);
                 }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                className="px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-colors
                   bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
                   hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                title="Ask AI"
               >
-                Ask AI
+                <Sparkles size={16} className="sm:hidden" />
+                <span className="hidden sm:inline">Ask AI</span>
               </button>
             </>
           )}

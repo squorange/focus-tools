@@ -588,6 +588,8 @@ export default function Home() {
   const promptContext: PromptContext = {
     // Task Detail context
     taskStepCount: activeTask?.steps.length ?? 0,
+    isInQueue: activeTask ? state.focusQueue.items.some(item => item.taskId === activeTask.id) : false,
+    hasEstimate: activeTask?.estimatedMinutes !== null && activeTask?.estimatedMinutes !== undefined,
     // Focus Mode context - check if current step is incomplete
     currentStepCompleted: state.focusMode.currentStepId
       ? activeTask?.steps.find(s => s.id === state.focusMode.currentStepId)?.completed ?? false
