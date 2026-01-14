@@ -823,7 +823,7 @@ export default function Home() {
         aiAssistant.clearMessages();
       }
     }
-  }, [aiAssistant.state.mode, state.currentView, activeTask?.id]);
+  }, [aiAssistant.state.mode, state.currentView, activeTask?.id, state.queueMessages, state.tasksMessages]);
 
   // ============================================
   // State Persistence
@@ -915,6 +915,35 @@ export default function Home() {
     return () => {
       window.removeEventListener('task-reminder-click', handleReminderClick as EventListener);
     };
+  }, []);
+
+  // Handle URL changes from service worker navigation (notification deep links)
+  // When SW calls client.navigate(), the app is already hydrated so init useEffect doesn't run
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const taskIdParam = urlParams.get('task');
+      if (taskIdParam) {
+        setState(prev => {
+          if (prev.tasks.some(t => t.id === taskIdParam)) {
+            // Clear the URL param after handling
+            const url = new URL(window.location.href);
+            url.searchParams.delete('task');
+            window.history.replaceState({}, '', url.toString());
+            return {
+              ...prev,
+              activeTaskId: taskIdParam,
+              currentView: 'taskDetail' as ViewType,
+            };
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Listen for window focus (when SW navigates and focuses the window)
+    window.addEventListener('focus', handleUrlChange);
+    return () => window.removeEventListener('focus', handleUrlChange);
   }, []);
 
   // Sync AI Assistant context when view changes
@@ -1786,10 +1815,11 @@ export default function Home() {
       if (sortedIndex === -1) return prev;
 
       // Update the item's selection
+      // Clear selectedStepIds when moving to all_upcoming (no steps should be marked for "today")
       const updatedItem: FocusQueueItem = {
         ...sortedItems[sortedIndex],
         selectionType,
-        selectedStepIds,
+        selectedStepIds: selectionType === 'all_upcoming' ? [] : selectedStepIds,
         lastInteractedAt: Date.now(),
       };
 
