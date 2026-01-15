@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useRef } from "react";
 import { Task } from "@/lib/types";
+import { computeHealthStatus } from "@/lib/utils";
 
-type FilterType = "high_priority" | "waiting" | "deferred" | "completed" | "archived" | null;
+type FilterType = "needs_attention" | "high_priority" | "waiting" | "deferred" | "completed" | "archived" | null;
 
 interface SearchViewProps {
   query: string;
@@ -80,6 +81,12 @@ export default function SearchView({
   const filterResults = useMemo(() => {
     if (!activeFilter) return [];
     switch (activeFilter) {
+      case "needs_attention":
+        return tasks.filter((t) => {
+          if (t.deletedAt || t.status === "archived" || t.status === "complete") return false;
+          const health = computeHealthStatus(t);
+          return health.status === "at_risk" || health.status === "critical";
+        });
       case "high_priority":
         return tasks.filter((t) => !t.deletedAt && t.status !== "archived" && t.priority === "high");
       case "waiting":
@@ -102,8 +109,12 @@ export default function SearchView({
 
   // Quick Access counts
   const counts = useMemo(() => {
-    const activeTasks = tasks.filter((t) => !t.deletedAt && t.status !== "archived");
+    const activeTasks = tasks.filter((t) => !t.deletedAt && t.status !== "archived" && t.status !== "complete");
     return {
+      needsAttention: activeTasks.filter((t) => {
+        const health = computeHealthStatus(t);
+        return health.status === "at_risk" || health.status === "critical";
+      }).length,
       highPriority: activeTasks.filter((t) => t.priority === "high").length,
       projects: new Set(activeTasks.map((t) => t.projectId).filter(Boolean)).size,
       completed: tasks.filter((t) => t.status === "complete" && !t.deletedAt).length,
@@ -149,6 +160,17 @@ export default function SearchView({
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <QuickAccessCard
+              label="Needs Attention"
+              count={counts.needsAttention}
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+              color="red"
+              onClick={() => handleFilterClick("needs_attention")}
+            />
+            <QuickAccessCard
               label="High Priority"
               count={counts.highPriority}
               icon={
@@ -156,7 +178,7 @@ export default function SearchView({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               }
-              color="red"
+              color="yellow"
               onClick={() => handleFilterClick("high_priority")}
             />
             <QuickAccessCard
@@ -260,6 +282,7 @@ export default function SearchView({
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+              {activeFilter === "needs_attention" && "Needs Attention"}
               {activeFilter === "high_priority" && "High Priority"}
               {activeFilter === "waiting" && "Waiting On"}
               {activeFilter === "deferred" && "Deferred"}

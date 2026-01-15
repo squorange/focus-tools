@@ -319,29 +319,103 @@ export function computeFocusScore(task: Task): number {
 }
 
 /**
- * Compute health status for task (Model E: uses deferredCount)
+ * Health status result with reasons
  */
-export function computeHealthStatus(task: Task): 'healthy' | 'at_risk' | 'critical' {
-  const today = getTodayISO();
+export interface HealthResult {
+  status: 'healthy' | 'at_risk' | 'critical';
+  reasons: string[];
+}
 
-  // Critical: Overdue or deadline today
+/**
+ * Health status display info
+ */
+export interface HealthStatusInfo {
+  label: string;
+  color: string;
+  bgClass: string;
+  textClass: string;
+}
+
+/**
+ * Get display info for health status
+ */
+export function getHealthStatusInfo(status: HealthResult['status']): HealthStatusInfo {
+  const statusMap: Record<HealthResult['status'], HealthStatusInfo> = {
+    healthy: {
+      label: '', // Not displayed - healthy tasks show no health pill
+      color: '#16a34a', // green-600
+      bgClass: 'bg-green-100 dark:bg-green-900/30',
+      textClass: 'text-green-700 dark:text-green-300',
+    },
+    at_risk: {
+      label: 'Watch',
+      color: '#f59e0b', // amber-500
+      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
+      textClass: 'text-amber-700 dark:text-amber-300',
+    },
+    critical: {
+      label: 'Alert',
+      color: '#ef4444', // red-500
+      bgClass: 'bg-red-100 dark:bg-red-900/30',
+      textClass: 'text-red-700 dark:text-red-300',
+    },
+  };
+  return statusMap[status];
+}
+
+/**
+ * Compute health status for task with reasons (Model E)
+ */
+export function computeHealthStatus(task: Task): HealthResult {
+  const today = getTodayISO();
+  const reasons: string[] = [];
+
+  // Check deadline-related issues
   if (task.deadlineDate) {
     const daysUntil = daysBetween(today, task.deadlineDate);
-    if (daysUntil < 0) return 'critical'; // Overdue
-    if (daysUntil === 0) return 'critical'; // Due today
-    if (daysUntil <= 2) return 'at_risk'; // Due soon
+    if (daysUntil < 0) {
+      reasons.push('Past deadline');
+    } else if (daysUntil === 0) {
+      reasons.push('Due today');
+    } else if (daysUntil <= 2) {
+      reasons.push(`Due in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`);
+    }
   }
 
-  // At risk: Deferred multiple times (Model E: uses deferredCount)
-  if (task.deferredCount >= 3) return 'at_risk';
-
-  // At risk: Stale (not touched in 2+ weeks)
+  // Check staleness
   const daysSinceUpdate = Math.floor(
     (Date.now() - task.updatedAt) / (1000 * 60 * 60 * 24)
   );
-  if (daysSinceUpdate > 14) return 'at_risk';
+  if (daysSinceUpdate > 14) {
+    reasons.push('No activity in 2+ weeks');
+  } else if (daysSinceUpdate > 7) {
+    reasons.push('No activity in 1+ week');
+  }
 
-  return 'healthy';
+  // Check deferral count
+  if (task.deferredCount >= 3) {
+    reasons.push(`Deferred ${task.deferredCount} times`);
+  }
+
+  // Determine status based on reasons
+  let status: HealthResult['status'] = 'healthy';
+
+  // Critical conditions
+  const hasCritical = reasons.some(r =>
+    r === 'Past deadline' || r === 'Due today'
+  );
+  if (hasCritical) {
+    status = 'critical';
+  } else if (reasons.length > 0) {
+    status = 'at_risk';
+  }
+
+  // Add positive reason for healthy tasks
+  if (status === 'healthy') {
+    reasons.push('No issues detected');
+  }
+
+  return { status, reasons };
 }
 
 // ============================================

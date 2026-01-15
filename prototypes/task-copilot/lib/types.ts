@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 // ============================================
 // Task Structure Types
@@ -76,6 +76,14 @@ export interface WaitingOn {
   notes: string | null;
 }
 
+// Reminder for notifications
+export interface Reminder {
+  type: 'relative' | 'absolute';
+  relativeMinutes?: number;         // Minutes before target/deadline
+  relativeTo?: 'target' | 'deadline';
+  absoluteTime?: number;            // Unix timestamp for absolute reminders
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -109,6 +117,9 @@ export interface Task {
   // Dates
   targetDate: string | null;        // ISO date (YYYY-MM-DD)
   deadlineDate: string | null;      // ISO date (YYYY-MM-DD)
+
+  // Reminder (for PWA notifications)
+  reminder: Reminder | null;
 
   // Effort & Time
   effort: Effort | null;
@@ -760,6 +771,7 @@ export function createTask(title: string, options?: Partial<Task>): Task {
 
     targetDate: null,
     deadlineDate: null,
+    reminder: null,
 
     effort: null,
     estimatedMinutes: null,

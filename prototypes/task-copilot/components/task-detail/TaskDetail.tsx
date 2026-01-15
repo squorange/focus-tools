@@ -197,10 +197,12 @@ export default function TaskDetail({
     } else if (task.priority === 'medium') {
       pills.push({ label: 'Medium', variant: 'priority-medium' });
     }
-    // Health status (pool tasks - show all statuses, use HealthPill for info icon)
+    // Health status (pool tasks - only show for non-healthy status)
     if (task.status === 'pool') {
       const health = computeHealthStatus(task);
-      pills.push({ label: '', variant: 'default', health });
+      if (health.status !== 'healthy') {
+        pills.push({ label: '', variant: 'default', health });
+      }
     }
     if (task.deadlineDate) {
       const overdue = isDateOverdue(task.deadlineDate);
@@ -872,9 +874,12 @@ export default function TaskDetail({
                       </span>
                     );
                   })()}
-                  {task.status === 'pool' && (
-                    <HealthPill health={computeHealthStatus(task)} size="sm" showInfo={true} />
-                  )}
+                  {task.status === 'pool' && (() => {
+                    const health = computeHealthStatus(task);
+                    return health.status !== 'healthy' ? (
+                      <HealthPill health={health} size="sm" showInfo={true} />
+                    ) : null;
+                  })()}
                 </div>
               </div>
 

@@ -1336,17 +1336,18 @@ interface HealthResult {
 ```
 
 **HealthPill Component** (`components/shared/HealthPill.tsx`):
-| Status | Label | Colors |
-|--------|-------|--------|
-| `healthy` | "On track" | Green bg, green text |
-| `at_risk` | "Check in" | Amber bg, amber text |
-| `critical` | "Needs attention" | Red bg, red text |
+| Status | Display | Colors |
+|--------|---------|--------|
+| `healthy` | No pill (hidden) | — |
+| `at_risk` | "Watch" | Amber bg, amber text |
+| `critical` | "Alert" | Red bg, red text |
 
+- **Design principle:** Only show pills when attention needed (no noise for healthy)
 - Uses `rounded-full` to match MetadataPill styling
 - Info icon (ⓘ) shows reasons tooltip on tap
 - Size variants: `sm` (list rows), `md` (TaskDetail)
 - Shown in: TaskDetail (expanded + collapsed), QueueItem, TaskRow
-- In collapsed details: Uses HealthPill component directly (with info icon)
+- Only renders when `health.status !== 'healthy'`
 
 **Bell Indicator (Reminders):**
 - Shown on QueueItem and TaskRow when `task.reminder` is set
@@ -1475,6 +1476,7 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-14 | **v19:** Health status pills simplified: healthy tasks show no pill (reduces noise), "Watch" replaces "Check in", "Alert" replaces "Needs attention". Focus Queue drag/drop transition fix: dragging Upcoming→Today auto-promotes all steps to Today, dragging Today→Upcoming demotes to all Upcoming |
 | 2026-01-13 | **v18:** UI polish: HealthPill `rounded-full` to match MetadataPill, health pill in collapsed details with info icon, bell indicator on QueueItem/TaskRow, TaskDetail 50/50 layout (Status+Health \| Priority), priority toggle (tap to deselect), Reminder+WaitingOn share row on desktop, MetadataPill `icon` prop + `healthy` variant |
 | 2026-01-13 | **v17:** Health status visualization (HealthPill with reasons tooltip, "Needs Attention" QuickAccess card), PWA task reminders (ReminderPicker in TaskDetail, relative/absolute times, notification deep linking via `?task=` param, service worker click handler), schema v8 migration for `reminder` field |
 | 2026-01-12 | **v16:** AI polish: auto-collapse delay 7s (was 300ms, uses `ANIMATIONS.autoCollapseDelay`), StagingArea violet theme (matches Today steps), mobile TaskDetail kebab menu for overflow actions, dead code cleanup (`acceptSuggestions` timer removed), MiniBar tap fix (always expands palette, was only scrolling for `suggestionsReady` state) |

@@ -2076,6 +2076,7 @@ export default function Home() {
   }, []);
 
   // Unified reorder handler for visual-first drag/drop
+  // Syncs selectionType with visual position when items cross the Today/Upcoming line
   const handleReorderQueue = useCallback((
     newItems: FocusQueueItem[],
     newTodayLineIndex: number
@@ -2083,11 +2084,33 @@ export default function Home() {
     setState((prev) => {
       const completedItems = prev.focusQueue.items.filter(i => i.completed);
 
-      // Re-assign orders to the reordered active items
-      const reorderedActive = newItems.map((item, idx) => ({
-        ...item,
-        order: idx,
-      }));
+      // Re-assign orders and sync selectionType with visual position
+      const reorderedActive = newItems.map((item, idx) => {
+        const isInTodaySection = idx < newTodayLineIndex;
+
+        // If item moved to Today section but has all_upcoming, promote to all_today
+        if (isInTodaySection && item.selectionType === 'all_upcoming') {
+          return {
+            ...item,
+            order: idx,
+            selectionType: 'all_today' as const,
+            selectedStepIds: [], // all_today means all steps, so empty array
+          };
+        }
+
+        // If item moved to Upcoming section but doesn't have all_upcoming, demote
+        if (!isInTodaySection && item.selectionType !== 'all_upcoming') {
+          return {
+            ...item,
+            order: idx,
+            selectionType: 'all_upcoming' as const,
+            selectedStepIds: [], // all_upcoming means no today steps
+          };
+        }
+
+        // No change needed - already in sync
+        return { ...item, order: idx };
+      });
 
       return {
         ...prev,

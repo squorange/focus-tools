@@ -216,6 +216,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV7(state);
   }
 
+  // Version 7 → 8: Add reminder field to tasks
+  if (version < 8) {
+    state = migrateToV8(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -258,6 +263,7 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         context: null,
         targetDate: null,
         deadlineDate: null,
+        reminder: null,
         effort: null,
         estimatedMinutes: null,
         totalTimeSpent: 0,
@@ -575,6 +581,22 @@ function migrateToV7(state: Partial<AppState> & Record<string, unknown>): Partia
 }
 
 /**
+ * Migrate from v7 to v8 (Add reminder field to tasks)
+ */
+function migrateToV8(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const tasks = ((state.tasks as Task[]) || []).map((task) => ({
+    ...task,
+    reminder: task.reminder ?? null,
+  }));
+
+  return {
+    ...state,
+    schemaVersion: 8,
+    tasks,
+  };
+}
+
+/**
  * Migrate legacy step format to new format
  */
 function migrateSteps(legacySteps: unknown[]): Step[] {
@@ -644,6 +666,8 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     focusModeMessages: task.focusModeMessages ?? [],
     // Per-task staging
     staging: task.staging ?? null,
+    // Reminder (v8)
+    reminder: task.reminder ?? null,
     // Ensure steps have Model E fields
     steps: task.steps.map((step) => ({
       ...step,
