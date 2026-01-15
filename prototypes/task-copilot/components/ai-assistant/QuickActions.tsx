@@ -12,7 +12,7 @@ interface QuickActionsProps {
 
 export function QuickActions({ actions, onSelect, disabled = false }: QuickActionsProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto py-2 px-1 -mx-1 scrollbar-hide">
+    <div className="flex flex-wrap gap-2 py-2">
       {actions.map((action, index) => (
         <motion.button
           key={action.id}

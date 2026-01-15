@@ -105,6 +105,8 @@ interface ExtendedStructureRequest extends StructureRequest {
       inQueue: boolean;
     }>;
   };
+  // Targeted step ID (for step-scoped AI actions via sparkle button)
+  targetedStepId?: string | null;
   // Task detail mode (full task context for AI assistance)
   taskDetailMode?: boolean;
   taskDetailContext?: {
@@ -205,7 +207,7 @@ function cleanStepText<T extends { text: string; estimatedMinutes?: number | nul
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, taskDetailMode, taskDetailContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, targetedStepId, taskDetailMode, taskDetailContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
 
     // Determine which prompt and tools to use
     const isFocusMode = Boolean(focusMode);
@@ -233,7 +235,7 @@ export async function POST(request: NextRequest) {
       : isTasksViewMode
         ? buildTasksViewContextMessage(userMessage, tasksViewContext)
         : isTaskDetailMode
-          ? buildTaskDetailContextMessage(userMessage, taskTitle, taskDescription, taskNotes, taskDetailContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction)
+          ? buildTaskDetailContextMessage(userMessage, taskTitle, taskDescription, taskNotes, taskDetailContext, targetedStepId, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction)
           : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
     console.log("[AI Debug] Context message:", contextMessage);
     console.log("[AI Debug] Focus mode:", isFocusMode);
@@ -884,6 +886,7 @@ function buildTaskDetailContextMessage(
   taskDescription: string | null | undefined,
   taskNotes: string | undefined,
   taskDetailContext?: ExtendedStructureRequest["taskDetailContext"],
+  targetedStepId?: string | null,
   pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
   pendingEdits?: ExtendedStructureRequest["pendingEdits"],
   pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
@@ -993,6 +996,20 @@ function buildTaskDetailContextMessage(
         });
       }
     });
+  }
+
+  // Add targeted step context when user clicked sparkle on a specific step
+  if (targetedStepId && taskDetailContext.steps) {
+    const targetedStep = taskDetailContext.steps.find(s => s.id === targetedStepId);
+    if (targetedStep) {
+      context += `\n=== TARGETED STEP ===\n`;
+      context += `The user is asking specifically about this step:\n`;
+      context += `  Step ${targetedStep.stepNumber}: "${targetedStep.text}" (id: ${targetedStepId})\n\n`;
+      context += `IMPORTANT: When breaking down or expanding this step:\n`;
+      context += `  - Set parentStepId to "${targetedStepId}" in your suggest_additions response\n`;
+      context += `  - Suggestions will become SUBSTEPS of this step, not new top-level steps\n`;
+      context += `  - Keep edits localized to this step unless user explicitly asks for more\n`;
+    }
   }
 
   // Add pending staging context if available

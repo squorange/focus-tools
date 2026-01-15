@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import StagingArea from "@/components/StagingArea";
@@ -59,6 +59,7 @@ interface TaskDetailProps {
   onOpenProjectModal: (project?: Project) => void;
   // Inline AI actions
   aiTargetContext?: AITargetContext | null;
+  isAILoading?: boolean;  // True when AI request is in flight
   onOpenAIPalette?: (taskId: string, stepId: string) => void;
   onClearAITarget?: () => void;
 }
@@ -115,6 +116,7 @@ export default function TaskDetail({
   onRejectTitle,
   onOpenProjectModal,
   aiTargetContext,
+  isAILoading,
   onOpenAIPalette,
   onClearAITarget,
 }: TaskDetailProps) {
@@ -671,6 +673,7 @@ export default function TaskDetail({
                     totalSteps={task.steps.length}
                     taskId={task.id}
                     isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                    isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                     onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                     onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                     onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -711,6 +714,7 @@ export default function TaskDetail({
                             taskId={task.id}
                             isToday
                             isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -749,6 +753,7 @@ export default function TaskDetail({
                             totalSteps={task.steps.length}
                             taskId={task.id}
                             isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -781,6 +786,7 @@ export default function TaskDetail({
                       totalSteps={task.steps.length}
                       taskId={task.id}
                       isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                      isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                       onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                       onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                       onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -1180,6 +1186,7 @@ interface StepItemProps {
   taskId: string;
   isToday?: boolean; // When in queue, indicates if step is selected for Today
   isAITarget?: boolean; // Highlight when this step is targeted by AI action
+  isAITargetLoading?: boolean; // Show spinner when this step is AI target AND request in flight
   onToggleComplete: (completed: boolean) => void;
   onSubstepComplete: (substepId: string, completed: boolean) => void;
   onUpdateStep: (text: string) => void;
@@ -1196,7 +1203,7 @@ interface StepItemProps {
   onOpenAIPalette?: () => void;
 }
 
-function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus, onOpenAIPalette }: StepItemProps) {
+function StepItem({ step, index, totalSteps, isToday, isAITarget, isAITargetLoading, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus, onOpenAIPalette }: StepItemProps) {
   const [editingStep, setEditingStep] = useState(false);
   const [stepText, setStepText] = useState(step.text);
   const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
@@ -1229,7 +1236,7 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
     <div
       data-step-id={step.id}
       className={`
-        group flex items-start gap-3 p-3 rounded-lg border transition-all
+        group p-3 rounded-lg border transition-all
         ${
           isAITarget
             ? "border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 ring-2 ring-violet-400/30"
@@ -1241,28 +1248,36 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
         }
       `}
     >
-      {/* Checkbox */}
-      <button
-        onClick={() => onToggleComplete(!step.completed)}
-        className={`
-          flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors
-          ${
-            step.completed
-              ? "bg-green-500 border-green-500 text-white"
-              : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
-          }
-        `}
-      >
-        {step.completed && (
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-        )}
-      </button>
+      {/* Step row - flex container for checkbox, number, text, actions */}
+      <div className="flex items-start gap-3">
+      {/* Checkbox - replaced with spinner during AI processing */}
+      {isAITargetLoading ? (
+        <div className="flex-shrink-0 w-5 h-5 mt-0.5 flex items-center justify-center">
+          <Loader2 size={16} className="animate-spin text-violet-500" />
+        </div>
+      ) : (
+        <button
+          onClick={() => onToggleComplete(!step.completed)}
+          className={`
+            flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors
+            ${
+              step.completed
+                ? "bg-green-500 border-green-500 text-white"
+                : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+            }
+          `}
+        >
+          {step.completed && (
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          )}
+        </button>
+      )}
 
       {/* Step number */}
       <span className="flex-shrink-0 w-5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
@@ -1290,10 +1305,16 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
         ) : (
           <span
             onClick={() => {
-              setEditingStep(true);
-              setStepText(step.text);
+              if (!isAITargetLoading) {
+                setEditingStep(true);
+                setStepText(step.text);
+              }
             }}
-            className={`block min-h-[1.5rem] text-sm cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
+            className={`block min-h-[1.5rem] text-sm px-1 -mx-1 rounded transition-colors ${
+              isAITargetLoading
+                ? "cursor-not-allowed opacity-70"
+                : "cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            } ${
               step.completed
                 ? "text-zinc-500 dark:text-zinc-400 line-through"
                 : "text-zinc-900 dark:text-zinc-100"
@@ -1301,142 +1322,6 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
           >
             {step.text}
           </span>
-        )}
-
-        {/* Substeps */}
-        {step.substeps.length > 0 && (
-          <div className="mt-2 pl-2 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-700">
-            {step.substeps.map((substep, substepIndex) => (
-              <div key={substep.id} className="flex items-center gap-3 group/substep">
-                <button
-                  onClick={() => onSubstepComplete(substep.id, !substep.completed)}
-                  className={`
-                    flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors
-                    ${
-                      substep.completed
-                        ? "bg-green-500 border-green-500 text-white"
-                        : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
-                    }
-                  `}
-                >
-                  {substep.completed && (
-                    <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </button>
-                {editingSubstepId === substep.id ? (
-                  <input
-                    type="text"
-                    value={substepText}
-                    onChange={(e) => setSubstepText(e.target.value)}
-                    onBlur={() => handleSubstepSave(substep.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSubstepSave(substep.id);
-                      if (e.key === "Escape") setEditingSubstepId(null);
-                    }}
-                    className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400"
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                    onClick={() => {
-                      setEditingSubstepId(substep.id);
-                      setSubstepText(substep.text);
-                    }}
-                    className={`flex-1 text-xs cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
-                      substep.completed
-                        ? "text-zinc-400 line-through"
-                        : "text-zinc-600 dark:text-zinc-400"
-                    }`}
-                  >
-                    {substep.text}
-                  </span>
-                )}
-                {/* Substep actions menu */}
-                <div className="relative opacity-0 group-hover/substep:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => setShowSubstepMenu(showSubstepMenu === substep.id ? null : substep.id)}
-                    className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
-                  >
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
-                  </button>
-                  {showSubstepMenu === substep.id && (
-                    <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[120px]">
-                      <button
-                        onClick={() => { onMoveSubstepUp(substep.id); setShowSubstepMenu(null); }}
-                        disabled={substepIndex === 0}
-                        className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                        Move Up
-                      </button>
-                      <button
-                        onClick={() => { onMoveSubstepDown(substep.id); setShowSubstepMenu(null); }}
-                        disabled={substepIndex === step.substeps.length - 1}
-                        className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                        Move Down
-                      </button>
-                      <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
-                      <button
-                        onClick={() => { onDeleteSubstep(substep.id); setShowSubstepMenu(null); }}
-                        className="w-full px-3 py-1.5 text-xs text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Add substep form */}
-        {addingSubstep && (
-          <div className="mt-2 pl-2 border-l-2 border-zinc-200 dark:border-zinc-700">
-            <input
-              type="text"
-              value={newSubstepText}
-              onChange={(e) => setNewSubstepText(e.target.value)}
-              onBlur={() => {
-                if (newSubstepText.trim()) {
-                  onAddSubstep(newSubstepText.trim());
-                }
-                setNewSubstepText("");
-                setAddingSubstep(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newSubstepText.trim()) {
-                  onAddSubstep(newSubstepText.trim());
-                  setNewSubstepText("");
-                  setAddingSubstep(false);
-                }
-                if (e.key === "Escape") {
-                  setNewSubstepText("");
-                  setAddingSubstep(false);
-                }
-              }}
-              placeholder="Add substep..."
-              className="w-full text-xs px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
-              autoFocus
-            />
-          </div>
         )}
 
         {/* Estimate */}
@@ -1506,9 +1391,14 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onOpenAIPalette();
+              if (!isAITargetLoading) onOpenAIPalette();
             }}
-            className="p-1.5 rounded-md text-violet-500 hover:text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors"
+            disabled={isAITargetLoading}
+            className={`p-1.5 rounded-md transition-colors ${
+              isAITargetLoading
+                ? "opacity-50 cursor-not-allowed text-violet-400"
+                : "text-violet-500 hover:text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+            }`}
             title="AI actions"
           >
             <Sparkles size={16} />
@@ -1584,6 +1474,144 @@ function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComple
           )}
         </div>
       </div>
+      </div>
+      {/* End of step row inner flex */}
+
+      {/* Substeps - rendered outside inner flex for full width */}
+      {step.substeps.length > 0 && (
+        <div className="mt-2 ml-16 pl-2 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-700">
+          {step.substeps.map((substep, substepIndex) => (
+            <div key={substep.id} className="flex items-center gap-3 group/substep">
+              <button
+                onClick={() => onSubstepComplete(substep.id, !substep.completed)}
+                className={`
+                  flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors
+                  ${
+                    substep.completed
+                      ? "bg-green-500 border-green-500 text-white"
+                      : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+                  }
+                `}
+              >
+                {substep.completed && (
+                  <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                )}
+              </button>
+              {editingSubstepId === substep.id ? (
+                <input
+                  type="text"
+                  value={substepText}
+                  onChange={(e) => setSubstepText(e.target.value)}
+                  onBlur={() => handleSubstepSave(substep.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSubstepSave(substep.id);
+                    if (e.key === "Escape") setEditingSubstepId(null);
+                  }}
+                  className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400"
+                  autoFocus
+                />
+              ) : (
+                <span
+                  onClick={() => {
+                    setEditingSubstepId(substep.id);
+                    setSubstepText(substep.text);
+                  }}
+                  className={`flex-1 text-xs cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
+                    substep.completed
+                      ? "text-zinc-400 line-through"
+                      : "text-zinc-600 dark:text-zinc-400"
+                  }`}
+                >
+                  {substep.text}
+                </span>
+              )}
+              {/* Substep actions menu */}
+              <div className="relative opacity-0 group-hover/substep:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setShowSubstepMenu(showSubstepMenu === substep.id ? null : substep.id)}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+                </button>
+                {showSubstepMenu === substep.id && (
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                    <button
+                      onClick={() => { onMoveSubstepUp(substep.id); setShowSubstepMenu(null); }}
+                      disabled={substepIndex === 0}
+                      className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                      Move Up
+                    </button>
+                    <button
+                      onClick={() => { onMoveSubstepDown(substep.id); setShowSubstepMenu(null); }}
+                      disabled={substepIndex === step.substeps.length - 1}
+                      className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      Move Down
+                    </button>
+                    <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                    <button
+                      onClick={() => { onDeleteSubstep(substep.id); setShowSubstepMenu(null); }}
+                      className="w-full px-3 py-1.5 text-xs text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add substep form */}
+      {addingSubstep && (
+        <div className="mt-2 ml-16 pl-2 border-l-2 border-zinc-200 dark:border-zinc-700">
+          <input
+            type="text"
+            value={newSubstepText}
+            onChange={(e) => setNewSubstepText(e.target.value)}
+            onBlur={() => {
+              if (newSubstepText.trim()) {
+                onAddSubstep(newSubstepText.trim());
+              }
+              setNewSubstepText("");
+              setAddingSubstep(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newSubstepText.trim()) {
+                onAddSubstep(newSubstepText.trim());
+                setNewSubstepText("");
+                setAddingSubstep(false);
+              }
+              if (e.key === "Escape") {
+                setNewSubstepText("");
+                setAddingSubstep(false);
+              }
+            }}
+            placeholder="Add substep..."
+            className="w-full text-xs px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
+            autoFocus
+          />
+        </div>
+      )}
     </div>
   );
 }

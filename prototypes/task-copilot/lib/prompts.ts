@@ -44,13 +44,36 @@ When user asks "estimate times" or "add time estimates":
 ALWAYS choose an action tool when user asks for help. Use conversational_response ONLY for pure questions.
 
 - **suggest_additions**: DEFAULT CHOICE. Use for "break down", "add steps", "help me", or any action request.
-- **replace_task_steps**: ONLY if list is empty OR user says "start over"
+- **replace_task_steps**: Use if list is EMPTY, user says "start over", OR user wants to RESTRUCTURE (see below)
 - **edit_steps**: User wants to change existing step text
 - **edit_title**: User wants to rename the task or change the title
 - **conversational_response**: ONLY for pure questions with NO action needed. NEVER for "break down" or "help me".
 
 RULE: If user says "break", "stuck", "help", or asks for steps → use suggest_additions, NOT conversational_response.
-RULE: If user says "rename", "title", "call this" → use edit_title.`;
+RULE: If user says "rename", "title", "call this" → use edit_title.
+RULE: If user says "simplify", "clean up", "reorder", "reorganize", "consolidate", "fewer steps", "too many steps", "streamline", or "tidy up" → use replace_task_steps (see Step Restructuring section).
+
+## Targeted Step Requests (CRITICAL)
+
+When the context includes "=== TARGETED STEP ===" section:
+1. The user is asking about a SPECIFIC step (they clicked the sparkle button on it)
+2. Use suggest_additions with parentStepId set to the targeted step's ID
+3. Suggestions become SUBSTEPS of that step, not new top-level steps
+4. Only add new top-level steps if user explicitly asks for "more steps", "additional tasks", or similar
+5. Keep changes localized - don't restructure unrelated steps
+6. The parentStepId MUST match the step ID from the targeted step context exactly
+
+## Step Restructuring
+
+When user asks to "restructure", "reorder", "reorganize", "simplify", "clean up", "tidy up", "streamline", "consolidate", "merge steps", "combine steps", "reduce steps", "fewer steps", or "too many steps":
+1. Use replace_task_steps to provide a new step structure
+2. PRESERVE completed steps - include them in the new structure marked [COMPLETED] in their text or note
+3. Maintain the user's progress - don't remove work they've done
+4. Completed steps can be reordered but keep them in the list
+5. Consolidate/merge similar incomplete steps if requested
+6. Reorder for logical flow if requested
+
+RULE: If user says "restructure", "reorder", "reorganize", "simplify steps" → use replace_task_steps.`;
 
 
 

@@ -14,7 +14,7 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 
 ## Current Sprint / Next Steps
 
-**Last Updated:** January 14, 2026
+**Last Updated:** January 15, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -32,6 +32,9 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 - **Nav Restructure:** Push sidebar (search, destinations, projects, archives), unified navbar for modals
 
 **Recently Completed:**
+- [v25.1] Restructuring trigger refinement: Expanded trigger words (simplify, clean up, tidy up, streamline, consolidate, merge/combine/reduce/fewer steps, too many steps), fixed conflicting prompt guidance, added explicit RULE for restructuring triggers
+- [v25] Object-scoped AI: Step-targeted suggestions create substeps (via `targetedStepId` in API), step restructuring prompt guidance, checkbox-area loading indicator when step is AI target
+- [v24] Quick actions wrap to rows on mobile (QuickActions.tsx), substep rows full width (moved outside inner flex, ml-16 alignment for kebab alignment)
 - [v23] Palette target banner refinements ("Step:" prefix for scannability, consistent 8px spacing, banner border styling)
 - [v22] Unified AI palette for steps (eliminated popover, reply-arrow banner, step-specific quick actions, Escape key cancellation)
 - [v21] Inline AI refinements (Lucide Sparkles icon, concise labels, single-popover, in-field context indicator)
@@ -1599,6 +1602,9 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-15 | **v25.1:** Restructuring trigger refinement: Fixed conflicting prompt guidance (line 47 said "ONLY if empty" which overrode restructuring guidance), expanded trigger word list (added tidy up, streamline, consolidate, merge/combine/reduce steps, fewer steps, too many steps), added explicit RULE for restructuring triggers in "Choosing the Right Tool" section |
+| 2026-01-15 | **v25:** Object-scoped AI improvements: (1) Step-targeted suggestions now correctly create substeps via `targetedStepId` field in API request + targeted step context in prompt, (2) Step restructuring/reordering now uses `replace_task_steps` with guidance to preserve completed steps, (3) Checkbox-area loading indicator when step is AI target (Loader2 spinner replaces checkbox, step text editing disabled, sparkle button disabled) |
+| 2026-01-14 | **v24:** Quick actions wrap to rows on mobile (`flex-wrap` in QuickActions.tsx), substep rows full width (moved outside inner flex wrapper in StepItem, `ml-16` for kebab alignment with parent step) |
 | 2026-01-14 | **v23:** Palette target banner refinements: "Step:" prefix for scannability (future-proofs for "Task:"), consistent 8px spacing throughout palette (removed form `mt-2`), banner styling differentiation (lighter bg + subtle border vs input field) |
 | 2026-01-14 | **v22:** Unified AI palette for steps: Eliminated AIStepPopover (sparkle button now opens palette directly), reply-arrow (↳) target banner above quick actions, STEP_QUICK_ACTIONS in palette when step targeted, 8px gap throughout palette, Escape key cancellation with AbortController (Priority 0, stays in place with "Cancelled" feedback), 'cancelled' CollapsedContentType |
 | 2026-01-14 | **v21:** Inline AI refinements: Lucide `Sparkles` icon (matches MiniBar), concise popover labels (Explain, Estimate, Ask AI), single-popover constraint (only kebab OR AI open at once), in-field context indicator (zinc styling with separator, not purple pill) |

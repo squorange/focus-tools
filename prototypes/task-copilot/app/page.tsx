@@ -402,6 +402,8 @@ export default function Home() {
             text: currentStep.text,
             completed: currentStep.completed,
           } : null,
+          // Include targeted step ID for step-scoped AI actions
+          targetedStepId: aiTargetContext?.type === 'step' ? aiTargetContext.stepId : null,
           // Include pending staging context for follow-up questions
           pendingSuggestions: activeStaging?.suggestions || null,
           pendingEdits: activeStaging?.edits || null,
@@ -3351,6 +3353,7 @@ export default function Home() {
                 onRejectTitle={handleRejectTitle}
                 onOpenProjectModal={handleOpenProjectModal}
                 aiTargetContext={aiTargetContext}
+                isAILoading={aiAssistant.state.isLoading}
                 onOpenAIPalette={handleOpenAIPalette}
                 onClearAITarget={clearAITargetContext}
               />

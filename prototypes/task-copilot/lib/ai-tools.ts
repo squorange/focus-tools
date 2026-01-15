@@ -12,12 +12,21 @@ export const structuringTools: Tool[] = [
     name: "replace_task_steps",
     description: `Replace all steps with a complete new breakdown.
 
-ONLY use this tool when:
-- The current list is EMPTY (no steps exist yet)
+USE this tool when:
+- The current list is EMPTY (no steps exist yet) - initial breakdown
 - User explicitly says "start over", "redo from scratch", or "replace all"
+- User asks to "restructure", "reorder", "simplify", "reorganize", or "clean up" ALL steps
 
 If steps already exist and user asks to "break down" or add more, use suggest_additions instead.
-This tool is for initial task setup or complete rewrites only.`,
+
+## Step Restructuring Guidelines
+
+When restructuring existing steps:
+1. PRESERVE completed steps - include them in the new structure marked with completion status
+2. Maintain the user's progress - don't remove work they've done
+3. Completed steps can be reordered but should not be deleted unless explicitly requested
+4. Consolidate/merge similar steps if requested
+5. Reorder for logical flow if requested`,
     input_schema: {
       type: "object" as const,
       properties: {
