@@ -3,7 +3,8 @@
 import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AIResponse, QuickAction, SuggestionsContent, RecommendationContent } from '@/lib/ai-types';
-import { HEIGHT_TRANSITION, ANIMATIONS } from '@/lib/ai-constants';
+import { AITargetContext } from '@/lib/types';
+import { HEIGHT_TRANSITION, ANIMATIONS, STEP_QUICK_ACTIONS } from '@/lib/ai-constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuickActions } from './QuickActions';
 import { ResponseDisplay } from './ResponseDisplay';
@@ -33,6 +34,9 @@ interface PaletteContentProps {
   onSkipRecommendation?: (taskId: string) => void;
   // Drawer access
   onOpenDrawer?: () => void;
+  // Inline AI target context (for step/task targeting)
+  aiTargetContext?: AITargetContext | null;
+  onClearAITarget?: () => void;
 }
 
 export function PaletteContent({
@@ -53,6 +57,8 @@ export function PaletteContent({
   onStartRecommendedFocus,
   onSkipRecommendation,
   onOpenDrawer,
+  aiTargetContext,
+  onClearAITarget,
 }: PaletteContentProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -203,12 +209,18 @@ export function PaletteContent({
       return;
     }
 
+    // Build query - include step context if targeting a step
+    let query = action.query;
+    if (aiTargetContext && aiTargetContext.type === 'step') {
+      query = `${action.query}\n\nStep: "${aiTargetContext.label}"`;
+    }
+
     // Refinement 3: Use directSubmit to bypass input field population
     if (onDirectSubmit) {
-      onDirectSubmit(action.query);
+      onDirectSubmit(query);
     } else {
       // Fallback to old behavior
-      onQueryChange(action.query);
+      onQueryChange(query);
       setTimeout(() => onSubmit(), 100);
     }
   };
@@ -222,8 +234,36 @@ export function PaletteContent({
       transition={{ duration: 0.15, delay: 0.05, layout: heightTransition }}
       className="px-6 pb-6 sm:px-4 sm:pb-4 flex flex-col h-full"
     >
+      {/* Target banner - shows when step is targeted (reply arrow style) */}
+      {aiTargetContext && !isLoading && !response && (
+        <div className="flex items-center justify-between px-3 py-2 mb-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Reply arrow icon */}
+            <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0 text-zinc-400">
+              <path d="M4 2v8h8" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M9 7l3 3-3 3" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
+              Step: {aiTargetContext.label}
+            </span>
+          </div>
+          {onClearAITarget && (
+            <button
+              type="button"
+              onClick={onClearAITarget}
+              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors flex-shrink-0"
+              aria-label="Clear target"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Content area - scrollable with gradient fades */}
-      <div className="relative flex-1 min-h-0 mb-3">
+      <div className="relative flex-1 min-h-0 mb-2">
         {/* Top gradient fade (visible when scrolled down) */}
         <div
           className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
@@ -246,6 +286,7 @@ export function PaletteContent({
             <div ref={contentRef}>
               <AnimatePresence mode="popLayout">
                 {/* Quick actions (hide when loading or has response) */}
+                {/* When step is targeted, show step-specific actions */}
                 {!isLoading && !response && (
                   <motion.div
                     key="quick-actions"
@@ -255,7 +296,7 @@ export function PaletteContent({
                     transition={{ duration: 0.15 }}
                   >
                     <QuickActions
-                      actions={quickActions}
+                      actions={aiTargetContext ? STEP_QUICK_ACTIONS : quickActions}
                       onSelect={handleQuickAction}
                       disabled={isLoading}
                     />
@@ -497,7 +538,7 @@ export function PaletteContent({
               transition={{ duration: 0.15 }}
               className="overflow-hidden"
             >
-              <form onSubmit={handleSubmit} className="mt-2">
+              <form onSubmit={handleSubmit}>
             <div className="bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-transparent focus-within:border-violet-500 transition-colors">
               <textarea
                 ref={inputRef}

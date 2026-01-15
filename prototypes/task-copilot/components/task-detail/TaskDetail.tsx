@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, createStep } from "@/lib/types";
+import { Sparkles } from "lucide-react";
+import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
@@ -56,6 +57,10 @@ interface TaskDetailProps {
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
   onOpenProjectModal: (project?: Project) => void;
+  // Inline AI actions
+  aiTargetContext?: AITargetContext | null;
+  onOpenAIPalette?: (taskId: string, stepId: string) => void;
+  onClearAITarget?: () => void;
 }
 
 // Get queue item for this task
@@ -109,6 +114,9 @@ export default function TaskDetail({
   onAcceptTitle,
   onRejectTitle,
   onOpenProjectModal,
+  aiTargetContext,
+  onOpenAIPalette,
+  onClearAITarget,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -662,6 +670,7 @@ export default function TaskDetail({
                     index={originalIndex}
                     totalSteps={task.steps.length}
                     taskId={task.id}
+                    isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                     onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                     onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                     onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -675,6 +684,7 @@ export default function TaskDetail({
                     onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
                     onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
                     onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
+                    onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
                   />
                 );
               })}
@@ -700,6 +710,7 @@ export default function TaskDetail({
                             totalSteps={task.steps.length}
                             taskId={task.id}
                             isToday
+                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -713,6 +724,7 @@ export default function TaskDetail({
                             onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
                             onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
                             onStartFocus={() => onStartFocus(queueItem!.id)}
+                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
                           />
                         );
                       })}
@@ -736,6 +748,7 @@ export default function TaskDetail({
                             index={originalIndex}
                             totalSteps={task.steps.length}
                             taskId={task.id}
+                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -749,6 +762,7 @@ export default function TaskDetail({
                             onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
                             onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
                             onStartFocus={() => onStartFocus(queueItem!.id)}
+                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
                           />
                         );
                       })}
@@ -766,6 +780,7 @@ export default function TaskDetail({
                       index={originalIndex}
                       totalSteps={task.steps.length}
                       taskId={task.id}
+                      isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                       onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                       onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
                       onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
@@ -778,6 +793,7 @@ export default function TaskDetail({
                       onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
                       onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
                       onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                      onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
                     />
                   );
                 })
@@ -1163,6 +1179,7 @@ interface StepItemProps {
   totalSteps: number;
   taskId: string;
   isToday?: boolean; // When in queue, indicates if step is selected for Today
+  isAITarget?: boolean; // Highlight when this step is targeted by AI action
   onToggleComplete: (completed: boolean) => void;
   onSubstepComplete: (substepId: string, completed: boolean) => void;
   onUpdateStep: (text: string) => void;
@@ -1176,14 +1193,15 @@ interface StepItemProps {
   onMoveSubstepUp: (substepId: string) => void;
   onMoveSubstepDown: (substepId: string) => void;
   onStartFocus?: () => void;
+  onOpenAIPalette?: () => void;
 }
 
-function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus }: StepItemProps) {
+function StepItem({ step, index, totalSteps, isToday, isAITarget, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus, onOpenAIPalette }: StepItemProps) {
   const [editingStep, setEditingStep] = useState(false);
   const [stepText, setStepText] = useState(step.text);
   const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
   const [substepText, setSubstepText] = useState("");
-  const [showStepMenu, setShowStepMenu] = useState(false);
+  const [showKebabMenu, setShowKebabMenu] = useState(false);
   const [showSubstepMenu, setShowSubstepMenu] = useState<string | null>(null);
   const [addingSubstep, setAddingSubstep] = useState(false);
   const [newSubstepText, setNewSubstepText] = useState("");
@@ -1209,10 +1227,13 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
 
   return (
     <div
+      data-step-id={step.id}
       className={`
-        group flex items-start gap-3 p-3 rounded-lg border transition-colors
+        group flex items-start gap-3 p-3 rounded-lg border transition-all
         ${
-          step.completed
+          isAITarget
+            ? "border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 ring-2 ring-violet-400/30"
+            : step.completed
             ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50"
             : isToday
             ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800 hover:border-violet-300 dark:hover:border-violet-700"
@@ -1466,8 +1487,8 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
         ) : null}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions - visible on hover (desktop) or always (mobile) */}
+      <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         {!step.completed && onStartFocus && (
           <button
             onClick={onStartFocus}
@@ -1480,10 +1501,23 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
             </svg>
           </button>
         )}
-        {/* Step actions menu */}
+        {/* AI Sparkle button - opens palette with step target context */}
+        {!step.completed && onOpenAIPalette && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenAIPalette();
+            }}
+            className="p-1.5 rounded-md text-violet-500 hover:text-violet-600 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors"
+            title="AI actions"
+          >
+            <Sparkles size={16} />
+          </button>
+        )}
+        {/* Step actions kebab menu */}
         <div className="relative">
           <button
-            onClick={() => setShowStepMenu(!showStepMenu)}
+            onClick={() => setShowKebabMenu(!showKebabMenu)}
             className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded"
             title="Step options"
           >
@@ -1491,10 +1525,10 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </button>
-          {showStepMenu && (
+          {showKebabMenu && (
             <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
               <button
-                onClick={() => { onMoveUp(); setShowStepMenu(false); }}
+                onClick={() => { onMoveUp(); setShowKebabMenu(false); }}
                 disabled={isFirst}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -1504,7 +1538,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
                 Move Up
               </button>
               <button
-                onClick={() => { onMoveDown(); setShowStepMenu(false); }}
+                onClick={() => { onMoveDown(); setShowKebabMenu(false); }}
                 disabled={isLast}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -1515,7 +1549,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
               </button>
               <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
               <button
-                onClick={() => { setAddingSubstep(true); setShowStepMenu(false); }}
+                onClick={() => { setAddingSubstep(true); setShowKebabMenu(false); }}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1527,7 +1561,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
                 onClick={() => {
                   setEstimateValue(step.estimatedMinutes?.toString() || "");
                   setEditingEstimate(true);
-                  setShowStepMenu(false);
+                  setShowKebabMenu(false);
                 }}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
@@ -1538,7 +1572,7 @@ function StepItem({ step, index, totalSteps, isToday, onToggleComplete, onSubste
               </button>
               <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
               <button
-                onClick={() => { onDelete(); setShowStepMenu(false); }}
+                onClick={() => { onDelete(); setShowKebabMenu(false); }}
                 className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

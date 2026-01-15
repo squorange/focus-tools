@@ -11,6 +11,7 @@ export type AIAssistantContext =
   | 'focusMode'    // In focus session
   | 'inbox'        // Inbox/triage view
   | 'search'       // Search view
+  | 'step'         // Targeting a specific step (from sparkle button)
   | 'global';      // Fallback
 
 export interface AIAssistantState {
@@ -42,7 +43,8 @@ export type CollapsedContentType =
   | 'suggestionsReady' // Structured suggestions ready (show count + down arrow)
   | 'confirmation'   // Action completed (e.g., "✓ Added 5 steps")
   | 'loading'        // Waiting for AI
-  | 'prompt';        // Contextual prompt with action pill
+  | 'prompt'         // Contextual prompt with action pill
+  | 'cancelled';     // Request was cancelled (Escape key)
 
 // ============ Contextual Prompts ============
 
@@ -159,4 +161,5 @@ export type AIAction =
   | { type: 'ERROR'; error: string }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SYNC_MESSAGES'; messages: AIMessage[] }  // Issue 10: Sync from external source
-  | { type: 'CLEAR_MESSAGES' };                        // Issue 10: Clear messages
+  | { type: 'CLEAR_MESSAGES' }                        // Issue 10: Clear messages
+  | { type: 'CANCEL_REQUEST' };                       // Escape key cancellation

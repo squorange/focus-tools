@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useMemo, useEffect } from 'react';
+import { useReducer, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   AIAssistantState,
   AIAssistantContext,
@@ -239,6 +239,20 @@ function aiAssistantReducer(state: AIAssistantState, action: AIAction): AIAssist
     case 'CLEAR_MESSAGES':
       return { ...state, messages: [] };
 
+    // Escape key cancellation - stay in place with brief "Cancelled" feedback
+    case 'CANCEL_REQUEST':
+      return {
+        ...state,
+        isLoading: false,
+        query: '',
+        // Stay in expanded mode (don't collapse)
+        collapsedContent: {
+          type: 'cancelled' as CollapsedContent['type'],
+          text: 'Cancelled',
+          icon: '✕',
+        },
+      };
+
     default:
       return state;
   }
@@ -270,6 +284,9 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     createInitialState
   );
 
+  // AbortController for cancelling in-flight requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // ============ Actions ============
 
   const expand = useCallback(() => dispatch({ type: 'EXPAND' }), []);
@@ -295,6 +312,19 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     dispatch({ type: 'RESET' });
     // Set contextual idle content after reset
     dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+  }, [idleContent]);
+
+  // Cancel in-flight request (Escape key)
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    dispatch({ type: 'CANCEL_REQUEST' });
+    // After brief "Cancelled" feedback, return to idle
+    setTimeout(() => {
+      dispatch({ type: 'SET_COLLAPSED_CONTENT', content: idleContent });
+    }, 1500);
   }, [idleContent]);
 
   const submitQuery = useCallback(async () => {
@@ -486,6 +516,7 @@ export function useAIAssistant(options: UseAIAssistantOptions = {}) {
     setQuery,
     clearQuery,      // Refinement 2
     reset,           // Refinement 7
+    cancelRequest,   // Escape key cancellation
     submitQuery,
     directSubmit,    // Refinement 3
     acceptSuggestions,

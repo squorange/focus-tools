@@ -102,6 +102,7 @@ const PROMPT_CONFIGS: Record<AIAssistantContext, PromptConfig | null> = {
   },
   inbox: null,   // Skip - no AI backend
   search: null,  // Skip - uses quick actions instead
+  step: null,    // Skip - step targeting uses quick actions in palette
   global: null,  // Skip - too generic
 };
 

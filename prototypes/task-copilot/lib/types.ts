@@ -526,6 +526,17 @@ export interface QueueMessage {
 
 export type AIAction = "replace" | "suggest" | "edit" | "delete" | "recommend" | "none";
 
+// AI Target Context - tracks which object is targeted by inline AI actions
+export type AITargetType = 'step' | 'substep' | 'task';
+
+export interface AITargetContext {
+  type: AITargetType;
+  taskId: string;
+  stepId?: string;          // For step or substep targets
+  substepId?: string;       // For substep targets
+  label: string;            // Display label, e.g., "Make coffee"
+}
+
 export interface StructureRequest {
   userMessage: string;
   currentList: Step[] | null;

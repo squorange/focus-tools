@@ -77,6 +77,33 @@ export const WIDTHS = {
   drawer: 400,              // Side drawer width on tablet/desktop
 };
 
+// ============ Step-Specific Quick Actions ============
+// Shown in palette when a step is targeted (sparkle button)
+
+export const STEP_QUICK_ACTIONS: QuickAction[] = [
+  {
+    id: 'breakdown',
+    icon: '📋',
+    label: 'Break down',
+    query: 'Break this step into smaller substeps',
+    contexts: ['step'],
+  },
+  {
+    id: 'clarify',
+    icon: '❓',
+    label: 'Explain',
+    query: 'What does this step mean? Explain it clearly',
+    contexts: ['step'],
+  },
+  {
+    id: 'estimate',
+    icon: '⏱',
+    label: 'Estimate',
+    query: 'How long will this step take? Give a time estimate',
+    contexts: ['step'],
+  },
+];
+
 // ============ Quick Actions by Context ============
 // Derived from AI_ACTIONS registry (lib/ai-actions.ts) - single source of truth
 

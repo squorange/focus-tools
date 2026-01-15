@@ -20,6 +20,7 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
   const isSuggestionsReady = content.type === 'suggestionsReady';
   const isConfirmation = content.type === 'confirmation';
   const isPrompt = content.type === 'prompt';
+  const isCancelled = content.type === 'cancelled';
 
   // Handle click: always expand Palette, and also scroll to StagingArea if suggestions ready
   const handleClick = () => {
@@ -88,6 +89,7 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
                 ${isResponse ? 'text-violet-600 dark:text-violet-300' : ''}
                 ${isSuggestionsReady ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}
                 ${isConfirmation ? 'text-green-600 dark:text-green-400' : ''}
+                ${isCancelled ? 'text-zinc-500 dark:text-zinc-400' : ''}
               `}
             >
               {content.text}
@@ -130,8 +132,8 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
           >
             {content.action.label}
           </motion.button>
-        ) : isConfirmation ? (
-          // No trailing icon for confirmation (it fades out)
+        ) : isConfirmation || isCancelled ? (
+          // No trailing icon for confirmation/cancelled (they fade out)
           null
         ) : isSuggestionsReady ? (
           // Up arrow for suggestions-ready (StagingArea is above MiniBar)

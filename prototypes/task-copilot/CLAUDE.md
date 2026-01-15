@@ -12,6 +12,46 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 
 ---
 
+## Current Sprint / Next Steps
+
+**Last Updated:** January 14, 2026
+
+| Priority | Item | Status | Notes |
+|----------|------|--------|-------|
+| P0 | Inline AI Actions (Steps) | ✅ Complete | Sparkle → Palette with target banner, step-specific quick actions |
+| P1 | Nav/App Restructure | ⬜ Not Started | Push sidebar, unified modal navbar, plus button for capture |
+| P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced proactively |
+| P1 | Recurring tasks | ⬜ Not Started | Critical for routines (AuDHD), daily habits (ADHD) |
+| P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem - needs design discussion |
+| P2 | Reflection/journey view | ⬜ Not Started | "What did I accomplish this week?" |
+| P2 | Voice capture | ⬜ Not Started | Web Speech API to reduce capture friction |
+| P3 | Context switch bookmarking | ⬜ Not Started | AI summarizes state on pause |
+| P3 | Nudge system logic | ⬜ Not Started | Types defined in schema, logic not implemented |
+
+**Planned Features (see plan file for details):**
+- **Nav Restructure:** Push sidebar (search, destinations, projects, archives), unified navbar for modals
+
+**Recently Completed:**
+- [v23] Palette target banner refinements ("Step:" prefix for scannability, consistent 8px spacing, banner border styling)
+- [v22] Unified AI palette for steps (eliminated popover, reply-arrow banner, step-specific quick actions, Escape key cancellation)
+- [v21] Inline AI refinements (Lucide Sparkles icon, concise labels, single-popover, in-field context indicator)
+- [v20] Inline AI Actions for steps (sparkle button, popover, context badge, target highlighting)
+- [v19] Health pills simplified (Watch/Alert), queue drag transitions fixed
+- [v18] HealthPill styling, bell indicators for reminders
+- [v17] Health status visualization, PWA task reminders with deep linking
+- [v14-16] AI MiniBar four-surface integration complete
+- P0-P2 testing features: Export/Import JSON, "What next?" AI, health status surface, PWA notifications
+
+**Deferred:**
+- Calendar integration (high effort)
+- Supabase backend (validate UX first)
+- Collaboration/delegate features
+- Task creation flow design (needs ideation)
+
+**Reference:** See `resources/ASSESSMENT_AND_GAPS.md` for full gap analysis, `resources/IMPLEMENTATION_CHECKLIST.md` for feature status, `~/.claude/plans/crystalline-nibbling-patterson.md` for detailed implementation plans.
+
+---
+
 ## Workflow Model Overview
 
 ```
@@ -802,6 +842,7 @@ task-copilot/
 │   ├── projects/
 │   │   └── ProjectsView.tsx  # Projects management view
 │   ├── shared/
+│   │   ├── AIStepPopover.tsx # Sparkle button + popover for step AI actions
 │   │   ├── DurationInput.tsx # Hours/minutes duration selector
 │   │   ├── FocusSelectionModal.tsx # Step selection for Today/Upcoming
 │   │   ├── HealthPill.tsx    # Health status pill with tooltip
@@ -946,6 +987,88 @@ The AI assistant uses a four-surface interaction model:
 5. **Deferral hides from Pool** — resurfaces on date
 6. **AI MiniBar always visible** — context-aware status and prompts
 7. **List-based UI for MVP** — Orbital Zen deferred
+
+---
+
+## Inline AI Actions (Steps)
+
+Step-level AI actions accessible directly from step rows in TaskDetail. Palette is the unified AI surface—sparkle button opens palette with step-specific quick actions.
+
+### Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `STEP_QUICK_ACTIONS` | `lib/ai-constants.ts` | Step-specific quick actions (Break down, Explain, Estimate) |
+| `AITargetContext` | `lib/types.ts` | Type for tracking targeted step/task |
+
+### UX Pattern (v22)
+
+**Sparkle Button:**
+- Uses Lucide `Sparkles` icon (matches MiniBar)
+- Desktop: Visible on hover (same row as kebab menu)
+- Mobile: Always visible
+- **Single purpose:** Opens palette with step context (no popover)
+
+**Palette with Target Context:**
+When sparkle is tapped:
+1. Target banner appears at top with reply arrow (↳)
+2. Step-specific quick actions replace context quick actions
+3. Input is already targeted for free-form questions
+
+```
+┌─────────────────────────────────────────────────┐
+│ ┌─────────────────────────────────────────────┐ │
+│ │ ↳ Make coffee                             ✕ │ │ ← Reply arrow banner
+│ └─────────────────────────────────────────────┘ │
+│                      ↕ 8px                      │
+│ [📋 Break down] [❓ Explain] [⏱ Estimate]       │ ← Step-specific actions
+│                      ↕ 8px                      │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ Ask AI...                                 → │ │
+│ └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+**Step Quick Actions:**
+| Action | Icon | Query |
+|--------|------|-------|
+| Break down | 📋 | "Break this step into smaller substeps" |
+| Explain | ❓ | "What does this step mean? Explain it clearly" |
+| Estimate | ⏱ | "How long will this step take? Give a time estimate" |
+
+### Target Highlighting
+
+When sparkle is tapped:
+1. `aiTargetContext` state is set with step info
+2. StepItem receives `isAITarget` prop
+3. Violet border + shadow applied via CSS
+4. Step scrolls into view (mobile)
+5. Highlight auto-clears 2s after response
+
+### Escape Key Cancellation
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 0 | AI is loading | Cancel request (AbortController), stay in place, show "Cancelled" |
+| 1 | AI Drawer open | Close drawer |
+| 2 | Palette expanded | Collapse to MiniBar, clear target context |
+| 3 | Modal view open | Go back |
+| 4 | Project modal open | Close modal |
+
+### Data Flow
+
+```
+SparkleButton.onClick
+  → page.handleOpenAIPalette(taskId, stepId)
+    → setAITargetContext({ type: 'step', taskId, stepId, label })
+    → aiAssistant.expand()
+      → PaletteContent detects aiTargetContext
+        → Shows target banner + step-specific quick actions
+          → User taps action OR types question
+            → aiAssistant.directSubmit(query with step context)
+              → AI response arrives
+                → setTimeout clears aiTargetContext after 2s
+```
 
 ---
 
@@ -1476,6 +1599,10 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-14 | **v23:** Palette target banner refinements: "Step:" prefix for scannability (future-proofs for "Task:"), consistent 8px spacing throughout palette (removed form `mt-2`), banner styling differentiation (lighter bg + subtle border vs input field) |
+| 2026-01-14 | **v22:** Unified AI palette for steps: Eliminated AIStepPopover (sparkle button now opens palette directly), reply-arrow (↳) target banner above quick actions, STEP_QUICK_ACTIONS in palette when step targeted, 8px gap throughout palette, Escape key cancellation with AbortController (Priority 0, stays in place with "Cancelled" feedback), 'cancelled' CollapsedContentType |
+| 2026-01-14 | **v21:** Inline AI refinements: Lucide `Sparkles` icon (matches MiniBar), concise popover labels (Explain, Estimate, Ask AI), single-popover constraint (only kebab OR AI open at once), in-field context indicator (zinc styling with separator, not purple pill) |
+| 2026-01-14 | **v20:** Inline AI Actions for steps: AIStepPopover component (sparkle button with popover), AITargetContext type, step highlight styling when AI-targeted, context badge in Palette with dismiss, mobile-first visibility (always show sparkle button on mobile, hover on desktop), scroll target into view on mobile |
 | 2026-01-14 | **v19:** Health status pills simplified: healthy tasks show no pill (reduces noise), "Watch" replaces "Check in", "Alert" replaces "Needs attention". Focus Queue drag/drop transition fix: dragging Upcoming→Today auto-promotes all steps to Today, dragging Today→Upcoming demotes to all Upcoming |
 | 2026-01-13 | **v18:** UI polish: HealthPill `rounded-full` to match MetadataPill, health pill in collapsed details with info icon, bell indicator on QueueItem/TaskRow, TaskDetail 50/50 layout (Status+Health \| Priority), priority toggle (tap to deselect), Reminder+WaitingOn share row on desktop, MetadataPill `icon` prop + `healthy` variant |
 | 2026-01-13 | **v17:** Health status visualization (HealthPill with reasons tooltip, "Needs Attention" QuickAccess card), PWA task reminders (ReminderPicker in TaskDetail, relative/absolute times, notification deep linking via `?task=` param, service worker click handler), schema v8 migration for `reminder` field |

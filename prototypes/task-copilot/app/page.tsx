@@ -17,6 +17,7 @@ import {
   StagingState,
   StructureResponse,
   Project,
+  AITargetContext,
   createTask,
   createStep,
   createProject,
@@ -102,6 +103,9 @@ export default function Home() {
   // Recommendation state (for "What should I do?" feature)
   // Note: Recommendation response is now stored in aiAssistant.state.response
   const [excludedTaskIds, setExcludedTaskIds] = useState<string[]>([]);
+
+  // Inline AI actions - tracks which step/task is targeted
+  const [aiTargetContext, setAITargetContext] = useState<AITargetContext | null>(null);
 
   // Register PWA service worker
   usePWA();
@@ -757,6 +761,17 @@ export default function Home() {
     }
   }, [aiAssistant.state.mode, contextualPrompts.resetPrompt]);
 
+  // Clear AI target context when response arrives (highlight fade)
+  useEffect(() => {
+    if (aiTargetContext && aiAssistant.state.response && !aiAssistant.state.isLoading) {
+      // Delay clearing to let user see the connection between target and response
+      const timeout = setTimeout(() => {
+        setAITargetContext(null);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [aiTargetContext, aiAssistant.state.response, aiAssistant.state.isLoading]);
+
   // ============================================
   // Drawer Message Sync (Issue 10)
   // ============================================
@@ -1025,14 +1040,22 @@ export default function Home() {
           break;
 
         case 'Escape':
+          // Priority 0: Cancel AI request if loading (stay in place)
+          if (aiAssistant.state.isLoading) {
+            aiAssistant.cancelRequest();
+            // Clear AI target context when cancelling
+            setAITargetContext(null);
+          }
           // Priority 1: Close AI drawer if open
-          if (aiAssistant.state.mode === 'drawer') {
+          else if (aiAssistant.state.mode === 'drawer') {
             aiAssistant.closeDrawer();
           }
           // Priority 2: Collapse Palette to MiniBar if expanded
           else if (aiAssistant.state.mode === 'expanded') {
             setPaletteManuallyOpened(false);
             aiAssistant.collapse();
+            // Clear AI target context when collapsing palette
+            setAITargetContext(null);
           }
           // Priority 3: Go back from task detail or focus mode
           else if (state.currentView === 'taskDetail' || state.currentView === 'focusMode') {
@@ -1075,7 +1098,7 @@ export default function Home() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.closeDrawer, aiAssistant.collapse, aiAssistant.expand]);
+  }, [state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.state.isLoading, aiAssistant.closeDrawer, aiAssistant.collapse, aiAssistant.expand, aiAssistant.cancelRequest]);
 
   // ============================================
   // Edge Swipe Navigation
@@ -1137,6 +1160,43 @@ export default function Home() {
       activeTaskId: ['focus', 'tasks', 'inbox', 'search'].includes(view) ? null : prev.activeTaskId,
     }));
   }, []);
+
+  // ============================================
+  // Inline AI Actions (Step-Level)
+  // ============================================
+
+  // Clear AI target context (called on response complete or dismiss)
+  const clearAITargetContext = useCallback(() => {
+    setAITargetContext(null);
+  }, []);
+
+  // Handle opening AI palette for a specific step (sparkle button)
+  // Sets target context and expands palette - quick actions shown IN palette
+  const handleOpenAIPalette = useCallback((taskId: string, stepId: string) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    const step = task?.steps.find(s => s.id === stepId);
+    if (!task || !step) return;
+
+    // Set target context (for highlighting and context badge)
+    const targetContext: AITargetContext = {
+      type: 'step',
+      taskId,
+      stepId,
+      label: step.text.length > 40 ? step.text.substring(0, 40) + '...' : step.text,
+    };
+    setAITargetContext(targetContext);
+
+    // Scroll target step into view (especially for mobile)
+    setTimeout(() => {
+      const stepEl = document.querySelector(`[data-step-id="${stepId}"]`);
+      if (stepEl) {
+        stepEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
+
+    // Expand palette - step-specific quick actions will be shown there
+    aiAssistant.expand();
+  }, [state.tasks, aiAssistant]);
 
   const handleOpenTask = useCallback((taskId: string) => {
     // Save current view before navigating to task detail
@@ -3290,6 +3350,9 @@ export default function Home() {
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
                 onOpenProjectModal={handleOpenProjectModal}
+                aiTargetContext={aiTargetContext}
+                onOpenAIPalette={handleOpenAIPalette}
+                onClearAITarget={clearAITargetContext}
               />
             )}
 
@@ -3389,6 +3452,8 @@ export default function Home() {
             onStartRecommendedFocus={handleStartRecommendedFocus}
             onSkipRecommendation={handleSkipRecommendation}
             onOpenDrawer={aiAssistant.openDrawer}
+            aiTargetContext={aiTargetContext}
+            onClearAITarget={clearAITargetContext}
           />
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { AIResponse, QuickAction, CollapsedContent } from '@/lib/ai-types';
+import { AITargetContext } from '@/lib/types';
 import { HEIGHTS, HEIGHT_TRANSITION } from '@/lib/ai-constants';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -41,6 +42,9 @@ interface AIAssistantOverlayProps {
   onSkipRecommendation?: (taskId: string) => void;
   // Drawer access
   onOpenDrawer?: () => void;
+  // Inline AI target context (for step/task targeting)
+  aiTargetContext?: AITargetContext | null;
+  onClearAITarget?: () => void;
 }
 
 export function AIAssistantOverlay({
@@ -66,6 +70,8 @@ export function AIAssistantOverlay({
   onStartRecommendedFocus,
   onSkipRecommendation,
   onOpenDrawer,
+  aiTargetContext,
+  onClearAITarget,
 }: AIAssistantOverlayProps) {
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
@@ -185,6 +191,8 @@ export function AIAssistantOverlay({
             onStartRecommendedFocus={onStartRecommendedFocus}
             onSkipRecommendation={onSkipRecommendation}
             onOpenDrawer={onOpenDrawer}
+            aiTargetContext={aiTargetContext}
+            onClearAITarget={onClearAITarget}
           />
         )}
       </AnimatePresence>
