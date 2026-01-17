@@ -92,7 +92,7 @@ export default function InboxItem({
   if (!isExpanded) {
     // Collapsed view
     return (
-      <div className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+      <div className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg">
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Expand toggle */}
           <button

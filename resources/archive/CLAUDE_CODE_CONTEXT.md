@@ -1,5 +1,7 @@
 # Task Co-Pilot: Claude Code Context
 
+> ⚠️ **DEPRECATED (v1)** — This document is outdated. The canonical context is at `prototypes/task-copilot/CLAUDE.md`. See also `CLAUDE_CODE_CONTEXT_v3.md` for a reference snapshot.
+
 ## Project Overview
 
 Task Co-Pilot is a POC/prototype for an AI-powered task breakdown assistant, part of the larger "Focus Tools" project—an ADHD-friendly task management tool.

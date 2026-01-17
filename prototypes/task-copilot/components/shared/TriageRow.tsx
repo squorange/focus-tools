@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Task } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
+import ProgressRing from "@/components/shared/ProgressRing";
 
 interface TriageRowProps {
   task: Task;
@@ -128,12 +129,19 @@ export default function TriageRow({
 
   return (
     <div
-      className={`group bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg ${
+      className={`group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg ${
         isCompact ? "p-3" : "p-4"
-      } hover:border-amber-300 dark:hover:border-amber-700 transition-colors`}
+      } hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors`}
     >
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:items-start sm:justify-between sm:gap-3">
+      <div className="hidden sm:flex sm:items-center sm:gap-2">
+        {/* Progress ring - dashed for triage */}
+        <ProgressRing
+          completed={0}
+          total={0}
+          isComplete={false}
+          variant="dashed"
+        />
         {/* Task info */}
         <button
           onClick={() => onOpenTask(task.id)}
@@ -206,8 +214,17 @@ export default function TriageRow({
 
       {/* Mobile layout */}
       <div className="sm:hidden">
-        {/* Row 1: Title + Kebab + Chevron */}
+        {/* Row 1: Ring + Title + Kebab */}
         <div className="flex items-start gap-2">
+          {/* Progress ring - dashed for triage */}
+          <div className="flex-shrink-0 mt-0.5">
+            <ProgressRing
+              completed={0}
+              total={0}
+              isComplete={false}
+              variant="dashed"
+            />
+          </div>
           <button
             onClick={() => onOpenTask(task.id)}
             className="flex-1 text-left min-w-0"

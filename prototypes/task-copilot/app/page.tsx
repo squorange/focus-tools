@@ -3562,7 +3562,7 @@ export default function Home() {
         <main
           className={`flex-1 transition-all duration-300 ${
             aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : ''
-          } ${sidebarOpen ? 'overflow-hidden lg:overflow-y-auto' : 'overflow-y-auto'}`}
+          } ${sidebarOpen ? 'overflow-hidden touch-none lg:overflow-y-auto lg:touch-auto' : 'overflow-y-auto'}`}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >

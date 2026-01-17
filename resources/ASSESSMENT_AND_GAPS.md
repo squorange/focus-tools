@@ -1,8 +1,8 @@
 # Focus Tools — Assessment & Gap Analysis
 
-> **Status:** Living Document  
-> **Created:** January 2025  
-> **Last Updated:** January 2025  
+> **Status:** Living Document
+> **Created:** January 2025
+> **Last Updated:** January 2026
 > **Purpose:** Track implementation progress against functional framework, assess user-type fit, and prioritize opportunities
 
 ---
@@ -69,9 +69,9 @@ The app is a solid execution companion but not yet a complete task management sy
 | Level | Defined Behavior | Implementation Status |
 |-------|-----------------|----------------------|
 | **Silent** | Logs observations, no interruption | ⚠️ Partial — health computed but not logged/used |
-| **Ambient** | Subtle visual indicator (e.g., badge) | ⚠️ Partial — inbox count badge only |
+| **Ambient** | Subtle visual indicator (e.g., badge) | ✅ Good — HealthPill (Watch/Alert), bell indicator, inbox count, "Needs Attention" QuickAccess card |
 | **Nudge** | Gentle prompt, dismissible | ❌ Missing — Nudge types defined but not implemented |
-| **Interrupt** | Demands attention (modal) | ❌ Missing — No notification/interrupt system |
+| **Interrupt** | Demands attention (modal) | ⚠️ Partial — PWA reminders (user-initiated), no proactive interrupts |
 
 ---
 
@@ -205,8 +205,8 @@ The app is a solid execution companion but not yet a complete task management sy
 | Capture | ⚠️ Partial | Jan 2025 | Text only |
 | Triage | ⚠️ Partial | Jan 2025 | Manual UI, no AI recommendations |
 | Structure | ✅ Strong | Jan 2025 | Core strength |
-| Plan/Prioritize | ⚠️ Partial | Jan 2025 | Manual queue, no AI recommendations |
-| Remind | ❌ Missing | Jan 2025 | Critical gap |
+| Plan/Prioritize | ⚠️ Partial | Jan 2026 | Manual queue + "What next?" AI recommendations |
+| Remind | ⚠️ Partial | Jan 2026 | PWA notifications with ReminderPicker; no proactive nudges |
 | Recall | ⚠️ Weak | Jan 2025 | Search only |
 
 #### Execution Domain
@@ -224,11 +224,12 @@ The app is a solid execution companion but not yet a complete task management sy
 
 | # | Opportunity | Status | Date Completed | Notes |
 |---|-------------|--------|----------------|-------|
-| 1 | Export/Import JSON | ⬜ Not Started | — | — |
-| 2 | "What should I do?" button | ⬜ Not Started | — | — |
-| 3 | Surface health status | ⬜ Not Started | — | — |
-| 4 | Basic PWA notification | ⬜ Not Started | — | — |
-| 5 | Proactive stale nudge | ⬜ Not Started | — | — |
+| 1 | Export/Import JSON | ✅ Complete | Jan 2026 | Settings modal with export/import |
+| 2 | "What should I do?" button | ✅ Complete | Jan 2026 | "What next?" in AI MiniBar quick actions |
+| 3 | Surface health status | ✅ Complete | Jan 2026 | HealthPill component, "Watch"/"Alert" labels |
+| 4 | Basic PWA notification | ✅ Complete | Jan 2026 | ReminderPicker, deep linking via `?task=` |
+| — | AI MiniBar Integration | ✅ Complete | Jan 2026 | Four-surface model (MiniBar/Palette/Drawer/StagingArea) |
+| 5 | Proactive stale nudge | ⬜ Not Started | — | Health computed but not surfaced proactively |
 | 6 | Recurring tasks | ⬜ Not Started | — | — |
 | 7 | Reflection/journey view | ⬜ Not Started | — | — |
 | 8 | Voice capture | ⬜ Not Started | — | — |
@@ -239,6 +240,7 @@ The app is a solid execution companion but not yet a complete task management sy
 
 | Date | Changes |
 |------|---------|
+| Jan 2026 | Updated P0-P2 items as complete; added AI MiniBar Integration as complete |
 | Jan 2025 | Initial assessment created from Claude conversation analysis |
 
 ---

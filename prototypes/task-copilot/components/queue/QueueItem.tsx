@@ -5,68 +5,7 @@ import { Task, FocusQueueItem, Project } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
 import HealthPill from "@/components/shared/HealthPill";
-
-// Progress ring showing step completion as a circular indicator
-function ProgressRing({
-  completed,
-  total,
-  isComplete,
-}: {
-  completed: number;
-  total: number;
-  isComplete: boolean;
-}) {
-  const size = 20;
-  const strokeWidth = 2;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const progress = total > 0 ? completed / total : 0;
-  const offset = circumference - progress * circumference;
-
-  if (isComplete) {
-    return (
-      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </div>
-    );
-  }
-
-  return (
-    <svg width={size} height={size} className="transform -rotate-90">
-      {/* Background circle */}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        className="text-zinc-200 dark:text-zinc-700"
-      />
-      {/* Progress arc */}
-      {progress > 0 && (
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="text-violet-500"
-        />
-      )}
-    </svg>
-  );
-}
+import ProgressRing from "@/components/shared/ProgressRing";
 
 interface QueueItemProps {
   item: FocusQueueItem;
@@ -189,7 +128,7 @@ export default function QueueItem({
             ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
             : isToday
               ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
-              : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-600"
+              : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
         }
       `}
     >

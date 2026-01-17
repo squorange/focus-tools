@@ -142,7 +142,7 @@ export default function SearchView({
                   <button
                     key={task.id}
                     onClick={() => onOpenTask(task.id)}
-                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
@@ -171,7 +171,7 @@ export default function SearchView({
                   <button
                     key={task.id}
                     onClick={() => onOpenTask(task.id)}
-                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
@@ -206,7 +206,7 @@ export default function SearchView({
                 <button
                   key={task.id}
                   onClick={() => onOpenTask(task.id)}
-                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <StatusBadge status={task.status} />
@@ -328,7 +328,7 @@ function SearchResultItem({ result, query, preview, onClick }: SearchResultItemP
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+      className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
     >
       {/* Title row with status badge */}
       <div className="flex items-center gap-2">

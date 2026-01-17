@@ -35,9 +35,9 @@ export default function TaskRow({
       className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
         ${isCompleted
           ? "bg-zinc-100/50 dark:bg-zinc-900/50"
-          : "bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-600"
+          : "bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
         }
-        border border-zinc-200 dark:border-zinc-700
+        border border-zinc-200 dark:border-zinc-800
       `}
       onClick={onClick}
     >

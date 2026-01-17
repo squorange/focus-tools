@@ -5,6 +5,7 @@ import { Task, FocusQueue, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
+import ProgressRing from "@/components/shared/ProgressRing";
 
 // Filter types for pills
 type FilterPillType = 'all' | 'triage' | 'ready' | 'high' | 'waiting' | 'deferred' | 'done' | 'archived';
@@ -80,7 +81,7 @@ export default function TasksView({
     { id: 'high', label: 'High' },
     { id: 'waiting', label: 'Waiting' },
     { id: 'deferred', label: 'Deferred' },
-    { id: 'done', label: 'Done' },
+    { id: 'done', label: 'Completed' },
     { id: 'archived', label: 'Archived' },
   ];
 
@@ -525,9 +526,16 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
   );
 
   return (
-    <div className="group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors">
+    <div className="group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:items-start sm:justify-between sm:gap-3">
+      <div className="hidden sm:flex sm:items-center sm:gap-2">
+        {/* Progress ring */}
+        <ProgressRing
+          completed={completedSteps}
+          total={totalSteps}
+          isComplete={task.status === 'complete'}
+          variant="solid"
+        />
         <button onClick={onOpen} className="flex-1 text-left min-w-0">
           <span className="text-zinc-900 dark:text-zinc-100 truncate block">
             {task.title}
@@ -566,8 +574,17 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
 
       {/* Mobile layout */}
       <div className="sm:hidden">
-        {/* Row 1: Title + Actions */}
+        {/* Row 1: Ring + Title + Actions */}
         <div className="flex items-start gap-2">
+          {/* Progress ring */}
+          <div className="flex-shrink-0 mt-0.5">
+            <ProgressRing
+              completed={completedSteps}
+              total={totalSteps}
+              isComplete={task.status === 'complete'}
+              variant="solid"
+            />
+          </div>
           <button onClick={onOpen} className="flex-1 min-w-0 text-left">
             <span className="text-zinc-900 dark:text-zinc-100">
               {task.title}

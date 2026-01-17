@@ -1,7 +1,7 @@
 # Focus Tools — Roadmap
 
-> **Status:** Living document  
-> **Last Updated:** December 22, 2025  
+> **Status:** Living document
+> **Last Updated:** January 14, 2026
 > **Purpose:** Sequence work for maximum learning and progress
 
 ---
@@ -11,10 +11,12 @@
 | Component | Status | Location |
 |-----------|--------|----------|
 | Product Vision & Framework | ✅ Defined | `docs/focus-tools-product-doc.md` |
-| Planning Loop POC (Task Co-Pilot) | ✅ Working | `prototypes/task-copilot/` |
-| Orbital Zen UI Prototype | ✅ Exploratory build | `prototypes/orbital-zen/` |
-| Execution Loop (Body Double) | ❌ Not started | — |
-| Backend / Persistence | ❌ Not started | — |
+| Planning Loop POC (Task Co-Pilot) | ✅ Complete | `prototypes/task-copilot/` |
+| Execution Loop (Body Double) | ✅ Complete | `prototypes/task-copilot/` (Focus Mode) |
+| AI MiniBar Integration | ✅ Complete | Four-surface model (MiniBar/Palette/Drawer/StagingArea) |
+| PWA & Mobile | ✅ Complete | Installable, reminders, dark mode |
+| Orbital Zen UI Prototype | ⏸️ Deferred | `prototypes/orbital-zen/` |
+| Backend / Persistence | ⏸️ Deferred | Validate UX first |
 
 ### What's Been Validated
 
@@ -22,8 +24,9 @@
 |------------|--------|----------|
 | AI can structure messy intent into tasks | ✅ Validated | Task Co-Pilot works reliably |
 | Multi-turn refinement feels natural | ✅ Validated | Hybrid transfer model works |
-| Spatial/orbital UI is intuitive | ⚠️ Partially validated | Prototype conceptually works, needs visual refinement |
-| Body double check-ins help execution | ❓ Untested | Core hypothesis, needs POC |
+| Body double check-ins help execution | ✅ Validated | Focus Mode with StuckMenu, step-by-step flow |
+| AI recommendations add value | ✅ Validated | "What next?" quick action, contextual prompts |
+| Spatial/orbital UI is intuitive | ⏸️ Deferred | List-based UI chosen for MVP |
 
 ---
 
@@ -42,63 +45,66 @@
 
 ---
 
-### Phase 1: Execution Loop POC 🎯 Current Focus
-**Outcome:** Validate body double concept for ADHD execution support
+### Phase 1: Execution Loop POC ✅ Complete
+**Outcome:** Validated body double concept for ADHD execution support
 
-**Core Question:** Does AI-powered accountability help users start and complete tasks?
+**Core Question:** Does AI-powered accountability help users start and complete tasks? **Answer: Yes**
 
 #### 1a: Define Body Double Behavior
-- [ ] Clarify what "body double" means in this context
-- [ ] Define check-in patterns (frequency, tone, content)
-- [ ] Define "focus session" structure (start → work → complete)
-- [ ] Identify minimal UI needed to test
+- [x] Clarify what "body double" means in this context
+- [x] Define check-in patterns (frequency, tone, content)
+- [x] Define "focus session" structure (start → work → complete)
+- [x] Identify minimal UI needed to test
 
 #### 1b: Build Execution POC
-- [ ] Focus mode UI (single task centered)
-- [ ] Session timer (optional)
-- [ ] AI check-ins on step completion
-- [ ] "I'm stuck" → AI helps unblock
-- [ ] Celebration on completion
+- [x] Focus mode UI (single task centered)
+- [x] Session timer (with pause/resume)
+- [x] AI available throughout focus session
+- [x] "I'm stuck" → StuckMenu with 4 resolution paths
+- [x] Celebration on completion
 
 #### 1c: Test & Learn
-- [ ] Does check-in feel supportive or nagging?
-- [ ] What's the right proactivity level?
-- [ ] Does completion acknowledgment provide motivation?
+- [x] Check-in feels supportive via on-demand AI (not nagging)
+- [x] Proactivity level: user-initiated works well
+- [x] Completion acknowledgment provides motivation
 
-**Integration decision:** Build standalone first, or extend Task Co-Pilot?
+**Decision:** Extended Task Co-Pilot (not standalone)
 
 ---
 
-### Phase 2: Unified Prototype
+### Phase 2: Unified Prototype ✅ Complete
 **Outcome:** Single prototype combining Planning + Execution loops with multi-task support
 
-- [ ] Merge Task Co-Pilot + Execution features
-- [ ] **Multi-task support** (manage multiple tasks, not just one)
-- [ ] Task list overview / dashboard
-- [ ] Transition UX: Planning → Execution
-- [ ] Basic task lifecycle (inbox → active → complete)
-- [ ] Decide: List view vs. Orbital view as primary
+- [x] Merge Task Co-Pilot + Execution features
+- [x] **Multi-task support** (manage multiple tasks)
+- [x] Task list overview (TasksView with Inbox + Pool)
+- [x] Transition UX: Pool → Focus Queue → Focus Mode
+- [x] Basic task lifecycle (inbox → pool → complete/archived)
+- [x] Decision: List view as primary (Orbital deferred)
 
-**Orbital Zen consideration:** Current orbital prototype could become the unified UI, with Task Co-Pilot patterns integrated. Evaluate after Phase 1.
+**Decision:** Model E workflow (Inbox → Pool → Focus Queue) chosen over Orbital Zen for MVP.
 
 ---
 
 ### Phase 3: Foundational App + Mobile
 **Outcome:** Usable daily driver on iPhone with real persistence
 
-#### Phase 3a: PWA for Personal Validation
-- [ ] Add PWA manifest + service worker
-- [ ] Mobile viewport optimization
-- [ ] Touch-friendly UI adjustments
-- [ ] Test on iPhone for 2+ weeks
+#### Phase 3a: PWA for Personal Validation ✅ Complete
+- [x] Add PWA manifest + service worker
+- [x] Mobile viewport optimization
+- [x] Touch-friendly UI adjustments
+- [x] iOS PWA dark mode theming (seamless header/status bar)
+- [x] Task reminders with PWA notifications
+- [x] Deep linking via `?task=` URL param
+- [x] Test on iPhone (ongoing)
 
-#### Phase 3b: Backend (if validation successful)
+#### Phase 3b: Backend ⏸️ Deferred
 - [ ] Supabase backend (tasks, projects, user data)
 - [ ] User authentication
 - [ ] Sync across sessions / devices
 - [ ] Basic prioritization (high/medium/low or orbital distance)
 
-**Milestone:** Tool replaces current workaround (partner as reminder system)
+**Decision:** Backend deferred until UX fully validated. localStorage sufficient for personal use.
 
 ---
 
@@ -151,20 +157,18 @@
 
 ## Immediate Next Steps (Current Sprint)
 
-**Goal:** Using on iPhone within 1 week (working ~2 hours/day)
+**Status:** Core app complete. Focus on refinement and gap closure.
 
-| Order | Task | Est. Hours | Purpose |
-|-------|------|------------|---------|
-| 1 | Complete Focus Mode | 4-6 | Finish Execution Loop POC |
-| 2 | Multi-task support | 6-8 | Manage multiple tasks (not just one) |
-| 3 | Task list dashboard | 2-4 | Overview of all tasks, quick navigation |
-| 4 | PWA manifest + service worker | 1-2 | Make installable |
-| 5 | Mobile viewport optimization | 2-4 | Usable on small screen |
-| 6 | Touch-friendly adjustments | 2-4 | Buttons, tap targets, spacing |
+| Priority | Task | Status | Purpose |
+|----------|------|--------|---------|
+| P1 | Proactive stale task nudge | ⬜ | Surface health status proactively (not just on-demand) |
+| P1 | Recurring tasks | ⬜ | Critical for routines (AuDHD), daily habits (ADHD) |
+| P2 | Reflection/journey view | ⬜ | "What did I accomplish this week?" |
+| P2 | Voice capture | ⬜ | Web Speech API to reduce capture friction |
+| P3 | Context switch bookmarking | ⬜ | AI summarizes state on pause |
+| P3 | Nudge system logic | ⬜ | Implement nudge types already defined in schema |
 
-**Total estimate:** 17-28 hours (~1-2 weeks at 2 hrs/day)
-
-**Note:** PWA is added AFTER core functionality (multi-task) is working on desktop. PWA is a thin layer on top of a working web app.
+**Reference:** See `prototypes/task-copilot/CLAUDE.md` for current sprint details.
 
 ---
 
@@ -293,5 +297,6 @@ Option C: New unified build
 
 | Date | Changes |
 |------|---------|
+| 2026-01-14 | Updated phases 1-3a as complete; refreshed next steps |
 | 2025-12-22 | Initial roadmap created |
 | 2025-12-22 | Added mobile path, monetization strategy |

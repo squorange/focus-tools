@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Task, FocusQueueItem } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
 import HealthPill from "@/components/shared/HealthPill";
+import ProgressRing from "@/components/shared/ProgressRing";
 
 interface TaskRowProps {
   task: Task;
@@ -123,20 +124,28 @@ export default function TaskRow({
         group px-3 sm:px-4 py-3
         bg-zinc-50 dark:bg-zinc-800/80
         border rounded-lg
-        hover:border-zinc-300 dark:hover:border-zinc-600
+        hover:border-zinc-300 dark:hover:border-zinc-700
         transition-colors cursor-pointer
         ${
           isComplete
             ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
             : isInQueue
             ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10"
-            : "border-zinc-200 dark:border-zinc-700"
+            : "border-zinc-200 dark:border-zinc-800"
         }
       `}
       onClick={() => onOpenTask(task.id)}
     >
       {/* Desktop layout */}
-      <div className="hidden sm:flex sm:items-center sm:gap-3">
+      <div className="hidden sm:flex sm:items-center sm:gap-2">
+        {/* Progress ring - dashed for inbox, solid for pool */}
+        <ProgressRing
+          completed={progress.completed}
+          total={progress.total}
+          isComplete={isComplete}
+          variant={task.status === 'inbox' ? 'dashed' : 'solid'}
+        />
+
         {/* Priority indicator */}
         {priority && (
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${priority.bg}`} title={priority.label} />
@@ -171,13 +180,6 @@ export default function TaskRow({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-          </span>
-        )}
-
-        {/* Progress */}
-        {progress.total > 0 && (
-          <span className="flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-            {progress.completed}/{progress.total}
           </span>
         )}
 
@@ -257,8 +259,17 @@ export default function TaskRow({
 
       {/* Mobile layout */}
       <div className="sm:hidden">
-        {/* Row 1: Title + Actions */}
+        {/* Row 1: Ring + Title + Actions */}
         <div className="flex items-start gap-2">
+          {/* Progress ring */}
+          <div className="flex-shrink-0 mt-0.5">
+            <ProgressRing
+              completed={progress.completed}
+              total={progress.total}
+              isComplete={isComplete}
+              variant={task.status === 'inbox' ? 'dashed' : 'solid'}
+            />
+          </div>
           <span className={`flex-1 min-w-0 ${
             isComplete
               ? "text-zinc-500 dark:text-zinc-400 line-through"

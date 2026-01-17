@@ -292,7 +292,7 @@ export default function TaskDetail({
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col min-h-full"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
