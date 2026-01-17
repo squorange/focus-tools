@@ -1202,16 +1202,12 @@ export default function Home() {
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - swipeStartRef.current.x;
     const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
-    const isLeftEdgeStart = swipeStartRef.current.x < EDGE_THRESHOLD;
 
     // Check if this is a valid horizontal swipe
     if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
-      // Left edge swipe right → open sidebar (mobile only)
-      if (isLeftEdgeStart && deltaX > 0 && !sidebarOpen && window.innerWidth < 1024) {
-        setSidebarOpen(true);
-      }
       // Focus↔Tasks swipe navigation (when sidebar is closed)
-      else if (!sidebarOpen && (state.currentView === 'focus' || state.currentView === 'tasks')) {
+      // Note: Edge swipe for opening sidebar removed - conflicts with back navigation and Focus/Tasks switching
+      if (!sidebarOpen && (state.currentView === 'focus' || state.currentView === 'tasks')) {
         if (deltaX > 0 && state.currentView === 'tasks') {
           // Swipe right → go to Focus
           setState((prev) => ({ ...prev, currentView: 'focus' }));
@@ -1293,7 +1289,8 @@ export default function Home() {
   const handleBackToList = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      currentView: previousView,
+      // Safety: Prevent stuck state if previousView points to current view or 'taskDetail'
+      currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
       activeTaskId: null,
     }));
   }, [previousView]);
@@ -2464,8 +2461,9 @@ export default function Home() {
       const nextView = wasJustCompleted ? 'taskDetail' as ViewType : previousView;
       const nextActiveTaskId = wasJustCompleted ? focusedTask.id : prev.activeTaskId;
 
-      // Flag to set previousView so back button returns to Focus Queue
-      if (wasJustCompleted) {
+      // FIX: When returning to TaskDetail (completed or not), ensure back goes to Focus Queue
+      // This prevents the stuck state where previousView points to 'taskDetail' itself
+      if (nextView === 'taskDetail') {
         shouldSetPreviousViewToFocus = true;
       }
 
@@ -3562,9 +3560,9 @@ export default function Home() {
 
         {/* Main Content - shifts left when drawer open on desktop */}
         <main
-          className={`flex-1 overflow-y-auto transition-all duration-300 ${
+          className={`flex-1 transition-all duration-300 ${
             aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : ''
-          }`}
+          } ${sidebarOpen ? 'overflow-hidden lg:overflow-y-auto' : 'overflow-y-auto'}`}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >

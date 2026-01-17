@@ -72,16 +72,16 @@ export default function TasksView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFilter]); // Intentionally omit onClearPendingFilter to avoid re-render loop
 
-  // Filter definitions
-  const filterPills: { id: FilterPillType; label: string; icon?: string }[] = [
+  // Filter definitions (no emojis - reserved for AI actions per design principle)
+  const filterPills: { id: FilterPillType; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'triage', label: 'Triage' },
     { id: 'ready', label: 'Ready' },
-    { id: 'high', label: 'High', icon: '🚩' },
-    { id: 'waiting', label: 'Waiting', icon: '⏳' },
-    { id: 'deferred', label: 'Deferred', icon: '📅' },
-    { id: 'done', label: 'Done', icon: '✅' },
-    { id: 'archived', label: 'Archived', icon: '📦' },
+    { id: 'high', label: 'High' },
+    { id: 'waiting', label: 'Waiting' },
+    { id: 'deferred', label: 'Deferred' },
+    { id: 'done', label: 'Done' },
+    { id: 'archived', label: 'Archived' },
   ];
 
   // Compute filtered tasks based on active filter
@@ -203,7 +203,6 @@ export default function TasksView({
                   : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
               }`}
             >
-              {pill.icon && <span className="text-xs">{pill.icon}</span>}
               {pill.label}
               {count > 0 && (
                 <span className={`text-xs ${isActive ? 'text-violet-500 dark:text-violet-400' : 'text-zinc-400 dark:text-zinc-500'}`}>

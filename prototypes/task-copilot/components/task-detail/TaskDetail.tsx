@@ -415,7 +415,7 @@ export default function TaskDetail({
         </div>
 
         {/* Row 2: Mobile buttons */}
-        <div className="flex sm:hidden items-center gap-2 mt-3 ml-8">
+        <div className="flex sm:hidden items-center gap-2 mt-3">
           {canMarkComplete && (
             <button
               onClick={handleMarkTaskComplete}

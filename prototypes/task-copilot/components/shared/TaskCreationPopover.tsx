@@ -282,7 +282,7 @@ export default function TaskCreationPopover({
             onClick={onClose}
             onMouseEnter={() => setIsHandleHovered(true)}
             onMouseLeave={() => setIsHandleHovered(false)}
-            className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
+            className="w-full pt-4 pb-3 flex justify-center cursor-pointer bg-transparent border-0"
             aria-label="Close"
           >
             <motion.div className="relative w-10 h-1 flex">
