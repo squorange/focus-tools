@@ -297,8 +297,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error in structure API:", error);
 
-    const errorMessage =
-      error instanceof Error ? error.message : "Failed to process request";
+    let errorMessage = error instanceof Error ? error.message : "Failed to process request";
+
+    // Parse Anthropic API error for more helpful messages
+    if (errorMessage.includes('credit balance is too low')) {
+      errorMessage = 'AI credits exhausted. Please check your Anthropic account billing.';
+    } else if (errorMessage.includes('invalid_api_key') || errorMessage.includes('401')) {
+      errorMessage = 'Invalid API key. Please check your ANTHROPIC_API_KEY.';
+    } else if (errorMessage.includes('rate_limit')) {
+      errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+    }
 
     return NextResponse.json(
       {

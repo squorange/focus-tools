@@ -56,8 +56,8 @@ export default function TabCluster({
           <span
             className={`min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-semibold rounded-full ${
               isTasksActive
-                ? "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
-                : "bg-amber-500 text-white"
+                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                : "bg-violet-500 text-white"
             }`}
           >
             {inboxCount > 99 ? "99+" : inboxCount}

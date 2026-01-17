@@ -296,19 +296,10 @@ export default function TaskDetail({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Header */}
+      {/* Header - back button now in main Header, edge swipe still works */}
       <div className="mb-6">
-        {/* Row 1: Back + Title + Status + Desktop buttons */}
+        {/* Row 1: Title + Status + Desktop buttons */}
         <div className="flex items-start gap-3">
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
           {/* Title + Status */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 flex-wrap">

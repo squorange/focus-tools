@@ -1,13 +1,10 @@
 "use client";
 
 import { Task } from "@/lib/types";
-import QuickCapture from "./QuickCapture";
 import TriageRow from "@/components/shared/TriageRow";
 
 interface InboxViewProps {
   tasks: Task[];
-  onBack?: () => void; // Optional back button for drill-in from Tasks view
-  onCreateTask: (title: string) => void;
   onOpenTask: (taskId: string) => void;
   onSendToPool: (id: string) => void;
   onAddToQueue: (id: string, forToday?: boolean) => void;
@@ -18,8 +15,6 @@ interface InboxViewProps {
 
 export default function InboxView({
   tasks,
-  onBack,
-  onCreateTask,
   onOpenTask,
   onSendToPool,
   onAddToQueue,
@@ -39,45 +34,18 @@ export default function InboxView({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header - matching TaskDetail pattern */}
-      <div className="flex items-center gap-3 mb-6">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        )}
-
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            Needs Triage
-          </h1>
-          {tasks.length > 0 && (
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {tasks.length} item{tasks.length !== 1 ? "s" : ""} to review
-            </p>
-          )}
-        </div>
-
-        {tasks.length > 1 && (
+    <div className="h-full flex flex-col px-4 lg:px-6 py-4">
+      {/* Move all button - only show when multiple items */}
+      {tasks.length > 1 && (
+        <div className="flex justify-end mb-4">
           <button
             onClick={handleProcessAll}
             className="px-4 py-2 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded-lg transition-colors"
           >
             Move all to Ready
           </button>
-        )}
-      </div>
-
-      {/* Quick Capture */}
-      <div className="mb-6">
-        <QuickCapture onCapture={onCreateTask} placeholder="Add a task..." />
-      </div>
+        </div>
+      )}
 
       {/* Inbox items */}
       {sortedTasks.length === 0 ? (
@@ -101,7 +69,7 @@ export default function InboxView({
             All caught up
           </h3>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
-            No items need triage. Capture new thoughts above.
+            No items need triage. Use the + button to capture new thoughts.
           </p>
         </div>
       ) : (

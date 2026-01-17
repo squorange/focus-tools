@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
-import { Task } from "@/lib/types";
-import { computeHealthStatus } from "@/lib/utils";
+import { useState, useMemo, useEffect } from "react";
+import { Task, Project } from "@/lib/types";
+import {
+  computeHealthStatus,
+  buildProjectMap,
+  searchTasks,
+  getSearchPreview,
+  SearchResult,
+} from "@/lib/utils";
+import {
+  AlertCircle,
+  Eye,
+} from "lucide-react";
 
 type FilterType = "needs_attention" | "high_priority" | "waiting" | "deferred" | "completed" | "archived" | null;
 
@@ -10,72 +20,40 @@ interface SearchViewProps {
   query: string;
   onQueryChange: (query: string) => void;
   tasks: Task[];
+  projects: Project[];
   onOpenTask: (taskId: string) => void;
   onNavigateToProjects: () => void;
-  onExportData: () => void;
-  onImportData: (jsonString: string) => { success: boolean; error?: string };
-  showToast: (toast: { message: string; type: "info" | "success" | "warning" | "error" }) => void;
+  initialFilter?: FilterType;
+  onFilterChange?: (filter: FilterType) => void;
 }
 
 export default function SearchView({
   query,
   onQueryChange,
   tasks,
+  projects,
   onOpenTask,
   onNavigateToProjects,
-  onExportData,
-  onImportData,
-  showToast,
+  initialFilter,
+  onFilterChange,
 }: SearchViewProps) {
-  const [activeFilter, setActiveFilter] = useState<FilterType>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter || null);
 
-  const handleExport = () => {
-    onExportData();
-    showToast({ message: "Data exported successfully", type: "success" });
-  };
+  // Sync activeFilter with initialFilter (handles both setting and clearing)
+  useEffect(() => {
+    setActiveFilter(initialFilter || null);
+  }, [initialFilter]);
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  // Build project map for search (memoized)
+  const projectMap = useMemo(() => buildProjectMap(projects), [projects]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      const result = onImportData(content);
-      if (result.success) {
-        showToast({ message: "Data imported successfully. Refreshing...", type: "success" });
-        // Reload to apply imported data
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        showToast({ message: `Import failed: ${result.error}`, type: "error" });
-      }
-    };
-    reader.onerror = () => {
-      showToast({ message: "Failed to read file", type: "error" });
-    };
-    reader.readAsText(file);
-
-    // Reset input so same file can be selected again
-    e.target.value = "";
-  };
-
-  // Search results - filter tasks by query
-  const searchResults = useMemo(() => {
+  // Search results - use new searchTasks helper with all-field search + ranking
+  const searchResults = useMemo((): SearchResult[] => {
     if (!query.trim()) return [];
-    const lowerQuery = query.toLowerCase();
-    return tasks.filter(
-      (t) =>
-        !t.deletedAt &&
-        (t.title.toLowerCase().includes(lowerQuery) ||
-          t.description?.toLowerCase().includes(lowerQuery) ||
-          t.steps.some((s) => s.text.toLowerCase().includes(lowerQuery)))
-    );
-  }, [query, tasks]);
+    // Filter out deleted tasks before search
+    const activeTasks = tasks.filter((t) => !t.deletedAt);
+    return searchTasks(activeTasks, query, projectMap);
+  }, [query, tasks, projectMap]);
 
   // Filter results for quick access buttons
   const filterResults = useMemo(() => {
@@ -102,10 +80,22 @@ export default function SearchView({
     }
   }, [activeFilter, tasks]);
 
-  const handleFilterClick = (filter: FilterType) => {
-    setActiveFilter(activeFilter === filter ? null : filter);
-    onQueryChange(""); // Clear search when using filter
-  };
+  // Separate alert and watch results for two-section display
+  const alertResults = useMemo(() => {
+    if (activeFilter !== 'needs_attention') return [];
+    return tasks.filter(t => {
+      if (t.deletedAt || t.status === "archived" || t.status === "complete") return false;
+      return computeHealthStatus(t).status === "critical";
+    });
+  }, [activeFilter, tasks]);
+
+  const watchResults = useMemo(() => {
+    if (activeFilter !== 'needs_attention') return [];
+    return tasks.filter(t => {
+      if (t.deletedAt || t.status === "archived" || t.status === "complete") return false;
+      return computeHealthStatus(t).status === "at_risk";
+    });
+  }, [activeFilter, tasks]);
 
   // Quick Access counts
   const counts = useMemo(() => {
@@ -124,179 +114,92 @@ export default function SearchView({
     };
   }, [tasks]);
 
+  const handleFilterClick = (filter: FilterType) => {
+    const newFilter = activeFilter === filter ? null : filter;
+    setActiveFilter(newFilter);
+    onQueryChange(""); // Clear search when using filter
+    // Notify parent of filter change for view title and back button
+    onFilterChange?.(newFilter);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Search input (mobile focused) */}
-      <div className="sm:hidden relative">
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-          />
-        </svg>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search tasks..."
-          autoFocus
-          data-search-input
-          className="w-full pl-10 pr-4 py-3 text-base rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Quick Access - show when no query and no filter */}
-      {!query.trim() && !activeFilter && (
-        <section>
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-            Quick Access
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <QuickAccessCard
-              label="Needs Attention"
-              count={counts.needsAttention}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-              color="red"
-              onClick={() => handleFilterClick("needs_attention")}
-            />
-            <QuickAccessCard
-              label="High Priority"
-              count={counts.highPriority}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              }
-              color="yellow"
-              onClick={() => handleFilterClick("high_priority")}
-            />
-            <QuickAccessCard
-              label="Waiting"
-              count={counts.waiting}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-              color="yellow"
-              onClick={() => handleFilterClick("waiting")}
-            />
-            <QuickAccessCard
-              label="Deferred"
-              count={counts.deferred}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              }
-              color="blue"
-              onClick={() => handleFilterClick("deferred")}
-            />
-            <QuickAccessCard
-              label="Completed"
-              count={counts.completed}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              }
-              color="green"
-              onClick={() => handleFilterClick("completed")}
-            />
-            <QuickAccessCard
-              label="Archived"
-              count={counts.archived}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-              }
-              color="zinc"
-              onClick={() => handleFilterClick("archived")}
-            />
-            <QuickAccessCard
-              label="Projects"
-              count={counts.projects}
-              icon={
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              }
-              color="purple"
-              onClick={onNavigateToProjects}
-            />
-          </div>
-
-          {/* Data Management */}
-          <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-            <h3 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-              Data
-            </h3>
-            <div className="flex gap-3">
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export JSON
-              </button>
-              <button
-                onClick={handleImportClick}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                Import JSON
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+      {/* Needs Attention - Two Sections (Alert + Watch) */}
+      {!query.trim() && activeFilter === "needs_attention" && (
+        <section className="space-y-6">
+          {/* Alert Section (critical) */}
+          {alertResults.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+                <AlertCircle size={16} />
+                <span>Alert</span>
+                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                  {alertResults.length}
+                </span>
+              </h2>
+              <div className="space-y-2">
+                {alertResults.map((task) => (
+                  <button
+                    key={task.id}
+                    onClick={() => onOpenTask(task.id)}
+                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={task.status} />
+                      <span className="text-zinc-900 dark:text-zinc-100">
+                        {task.title}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2">
-              Export your tasks for backup or import from a previous export.
-            </p>
-          </div>
+          )}
+
+          {/* Watch Section (at_risk) */}
+          {watchResults.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+                <Eye size={16} />
+                <span>Watch</span>
+                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                  {watchResults.length}
+                </span>
+              </h2>
+              <div className="space-y-2">
+                {watchResults.map((task) => (
+                  <button
+                    key={task.id}
+                    onClick={() => onOpenTask(task.id)}
+                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={task.status} />
+                      <span className="text-zinc-900 dark:text-zinc-100">
+                        {task.title}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {alertResults.length === 0 && watchResults.length === 0 && (
+            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+              No tasks need attention
+            </div>
+          )}
         </section>
       )}
 
-      {/* Filter Results */}
-      {!query.trim() && activeFilter && (
+      {/* Other Filter Results */}
+      {!query.trim() && activeFilter && activeFilter !== "needs_attention" && (
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-              {activeFilter === "needs_attention" && "Needs Attention"}
-              {activeFilter === "high_priority" && "High Priority"}
-              {activeFilter === "waiting" && "Waiting On"}
-              {activeFilter === "deferred" && "Deferred"}
-              {activeFilter === "completed" && "Completed"}
-              {activeFilter === "archived" && "Archived"}
-              {" "}({filterResults.length})
-            </h2>
-            <button
-              onClick={() => setActiveFilter(null)}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-            >
-              Clear filter
-            </button>
-          </div>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
+            {filterResults.length} task{filterResults.length !== 1 ? 's' : ''}
+          </p>
           {filterResults.length > 0 ? (
             <div className="space-y-2">
               {filterResults.map((task) => (
@@ -340,25 +243,18 @@ export default function SearchView({
           </h2>
           {searchResults.length > 0 ? (
             <div className="space-y-2">
-              {searchResults.map((task) => (
-                <button
-                  key={task.id}
-                  onClick={() => onOpenTask(task.id)}
-                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={task.status} />
-                    <span className="text-zinc-900 dark:text-zinc-100">
-                      {task.title}
-                    </span>
-                  </div>
-                  {task.description && (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">
-                      {task.description}
-                    </p>
-                  )}
-                </button>
-              ))}
+              {searchResults.map((result) => {
+                const preview = getSearchPreview(result, query);
+                return (
+                  <SearchResultItem
+                    key={result.task.id}
+                    result={result}
+                    query={query}
+                    preview={preview}
+                    onClick={() => onOpenTask(result.task.id)}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
@@ -368,39 +264,6 @@ export default function SearchView({
         </section>
       )}
     </div>
-  );
-}
-
-// Quick Access Card Component
-interface QuickAccessCardProps {
-  label: string;
-  count: number;
-  icon: React.ReactNode;
-  color: "red" | "yellow" | "blue" | "green" | "zinc" | "purple";
-  onClick: () => void;
-}
-
-function QuickAccessCard({ label, count, icon, color, onClick }: QuickAccessCardProps) {
-  const colorClasses = {
-    red: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800",
-    yellow: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800",
-    blue: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",
-    green: "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800",
-    zinc: "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700",
-    purple: "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800",
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`p-4 rounded-lg border ${colorClasses[color]} hover:opacity-80 transition-opacity text-left`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-2xl font-semibold">{count}</span>
-      </div>
-      <span className="text-sm opacity-80">{label}</span>
-    </button>
   );
 }
 
@@ -417,5 +280,79 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`text-xs px-1.5 py-0.5 rounded ${classes[status as keyof typeof classes] || classes.pool}`}>
       {status}
     </span>
+  );
+}
+
+// Highlight text matching search query
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
+  const index = lowerText.indexOf(lowerQuery);
+
+  if (index === -1) return <>{text}</>;
+
+  const before = text.slice(0, index);
+  const match = text.slice(index, index + query.length);
+  const after = text.slice(index + query.length);
+
+  return (
+    <>
+      {before}
+      <mark className="bg-yellow-200 dark:bg-yellow-800/50 text-inherit rounded-sm px-0.5">
+        {match}
+      </mark>
+      {after}
+    </>
+  );
+}
+
+// Search Result Item with preview and highlighting
+interface SearchResultItemProps {
+  result: SearchResult;
+  query: string;
+  preview: { text: string; type: 'step' | 'snippet' | 'description' };
+  onClick: () => void;
+}
+
+function SearchResultItem({ result, query, preview, onClick }: SearchResultItemProps) {
+  const { task, matchLocations } = result;
+  const titleHasMatch = matchLocations.includes('title');
+
+  // Preview type indicator
+  const previewIcon = preview.type === 'step' ? (
+    <span className="text-violet-500 dark:text-violet-400 mr-1">→</span>
+  ) : null;
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+    >
+      {/* Title row with status badge */}
+      <div className="flex items-center gap-2">
+        <StatusBadge status={task.status} />
+        <span className="text-zinc-900 dark:text-zinc-100 flex-1 truncate">
+          {titleHasMatch ? (
+            <HighlightedText text={task.title} query={query} />
+          ) : (
+            task.title
+          )}
+        </span>
+      </div>
+
+      {/* Preview line */}
+      {preview.text && (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">
+          {previewIcon}
+          {preview.type === 'snippet' ? (
+            <HighlightedText text={preview.text} query={query} />
+          ) : (
+            preview.text
+          )}
+        </p>
+      )}
+    </button>
   );
 }

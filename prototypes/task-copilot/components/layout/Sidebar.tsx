@@ -1,0 +1,614 @@
+"use client";
+
+import { useState, useEffect, useRef, useMemo } from "react";
+import { ViewType, Task, Project } from "@/lib/types";
+import {
+  Search,
+  Target,
+  ListTodo,
+  FolderOpen,
+  PanelLeft,
+  PanelLeftClose,
+  Download,
+  Upload,
+  Flag,
+  Clock,
+  CalendarClock,
+  CheckCircle,
+  Archive,
+  ChevronRight,
+  XCircle,
+  X,
+} from "lucide-react";
+// Note: ArrowLeft removed - "Back to menu" replaced by X button in search bar
+import { searchTasks, buildProjectMap, SearchResult, getSearchPreview } from "@/lib/utils";
+
+interface FilterCounts {
+  needsAttention: number;
+  highPriority: number;
+  waiting: number;
+  deferred: number;
+  completed: number;
+  archived: number;
+  projects: number;
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+  isCollapsed: boolean;
+  onClose: () => void;
+  onToggleCollapse: () => void;
+  currentView: ViewType;
+  onNavigate: (view: ViewType) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onSearchInputFocus: () => void;
+  onSearchInputBlur: () => void;
+  searchInputFocused: boolean;
+  inboxCount: number;
+  // Auto-focus search input
+  shouldFocusSearch?: boolean;
+  onSearchFocused?: () => void;
+  // Jump To filter shortcuts
+  filterCounts?: FilterCounts;
+  onJumpToFilter?: (filter: string) => void;
+  // Recent tasks
+  recentTasks?: Task[];
+  onOpenTask?: (taskId: string) => void;
+  // Back to menu (exit search mode)
+  onBackToMenu?: () => void;
+  // Data management
+  onExportData?: () => void;
+  onImportData?: () => void;
+  // For search results
+  projects?: Project[];
+  tasks?: Task[];
+}
+
+interface NavItemProps {
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+  isCollapsed: boolean;
+  badge?: number;
+}
+
+function NavItem({ icon, label, isActive, onClick, isCollapsed, badge }: NavItemProps) {
+  const hasBadge = badge !== undefined && badge > 0;
+
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        w-full flex items-center px-3 py-2.5 rounded-lg
+        transition-all duration-300 ease-in-out
+        ${isActive
+          ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        }
+        ${isCollapsed ? "justify-center relative gap-0" : "gap-3"}
+      `}
+      title={isCollapsed ? label : undefined}
+    >
+      <span className="flex-shrink-0">{icon}</span>
+      {/* Label and badge - fade instead of instant hide */}
+      <span
+        className={`
+          flex-1 text-left text-sm font-medium whitespace-nowrap overflow-hidden
+          transition-opacity duration-200
+          ${isCollapsed ? "opacity-0 w-0" : "opacity-100"}
+        `}
+      >
+        {label}
+      </span>
+      {hasBadge && (
+        <span
+          className={`
+            flex-shrink-0 bg-violet-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center
+            transition-opacity duration-200
+            ${isCollapsed ? "opacity-0 absolute" : "opacity-100"}
+          `}
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+      {/* Collapsed badge indicator dot */}
+      {isCollapsed && hasBadge && (
+        <span className="absolute top-1 right-1 w-2 h-2 bg-violet-500 rounded-full" />
+      )}
+    </button>
+  );
+}
+
+// Jump To Filter Row (for search empty state)
+interface JumpToRowProps {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  onClick: () => void;
+}
+
+function JumpToRow({ icon, label, count, onClick }: JumpToRowProps) {
+  return (
+    <button
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent search input blur
+        onClick();
+      }}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left group"
+    >
+      <span className="flex-shrink-0 text-zinc-500 dark:text-zinc-400">{icon}</span>
+      <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        {label}
+      </span>
+      {count > 0 && (
+        <span className="text-sm text-zinc-400 dark:text-zinc-500 tabular-nums">
+          {count}
+        </span>
+      )}
+      <ChevronRight
+        size={16}
+        className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-500 transition-colors"
+      />
+    </button>
+  );
+}
+
+// Search Result Row
+interface SearchResultRowProps {
+  result: SearchResult;
+  query: string;
+  onClick: () => void;
+}
+
+function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
+  const { task, matchLocations } = result;
+  const preview = getSearchPreview(result, query);
+  const titleHasMatch = matchLocations.includes('title');
+
+  // Status badge colors
+  const statusColors = {
+    inbox: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
+    pool: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
+    complete: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
+    archived: "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400",
+  };
+
+  return (
+    <button
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent search input blur
+        onClick();
+      }}
+      className="w-full text-left px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+    >
+      <div className="flex items-center gap-2">
+        <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${statusColors[task.status as keyof typeof statusColors] || statusColors.pool}`}>
+          {task.status}
+        </span>
+        <span className="text-sm text-zinc-900 dark:text-zinc-100 truncate flex-1">
+          {titleHasMatch ? (
+            <HighlightedText text={task.title} query={query} />
+          ) : (
+            task.title
+          )}
+        </span>
+      </div>
+      {preview.text && (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate pl-[52px]">
+          {preview.type === 'step' && <span className="text-violet-500 dark:text-violet-400 mr-1">→</span>}
+          {preview.type === 'snippet' ? (
+            <HighlightedText text={preview.text} query={query} />
+          ) : (
+            preview.text
+          )}
+        </p>
+      )}
+    </button>
+  );
+}
+
+// Highlight text matching search query
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
+  const index = lowerText.indexOf(lowerQuery);
+
+  if (index === -1) return <>{text}</>;
+
+  const before = text.slice(0, index);
+  const match = text.slice(index, index + query.length);
+  const after = text.slice(index + query.length);
+
+  return (
+    <>
+      {before}
+      <mark className="bg-yellow-200 dark:bg-yellow-800/50 text-inherit rounded-sm px-0.5">
+        {match}
+      </mark>
+      {after}
+    </>
+  );
+}
+
+// Recent Task Row
+interface RecentTaskRowProps {
+  task: Task;
+  onClick: () => void;
+}
+
+function RecentTaskRow({ task, onClick }: RecentTaskRowProps) {
+  return (
+    <button
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent search input blur
+        onClick();
+      }}
+      className="w-full text-left px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+    >
+      <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate block">
+        {task.title}
+      </span>
+    </button>
+  );
+}
+
+export default function Sidebar({
+  isOpen,
+  isCollapsed,
+  onClose,
+  onToggleCollapse,
+  currentView,
+  onNavigate,
+  searchQuery,
+  onSearchChange,
+  onSearchInputFocus,
+  onSearchInputBlur,
+  searchInputFocused,
+  inboxCount,
+  shouldFocusSearch,
+  onSearchFocused,
+  filterCounts,
+  onJumpToFilter,
+  recentTasks,
+  onOpenTask,
+  onBackToMenu,
+  onExportData,
+  onImportData,
+  projects,
+  tasks,
+}: SidebarProps) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchDelta, setTouchDelta] = useState(0);
+
+  // Derived: is search active? (query or focused)
+  const isSearchActive = searchInputFocused || searchQuery.trim() !== '';
+
+  // Build project map for search
+  const projectMap = useMemo(() => buildProjectMap(projects || []), [projects]);
+
+  // Search results (memoized)
+  const searchResults = useMemo((): SearchResult[] => {
+    if (!searchQuery.trim() || !tasks) return [];
+    const activeTasks = tasks.filter((t) => !t.deletedAt);
+    return searchTasks(activeTasks, searchQuery, projectMap);
+  }, [searchQuery, tasks, projectMap]);
+
+  // Auto-focus search input when requested
+  useEffect(() => {
+    if (shouldFocusSearch && searchInputRef.current && !isCollapsed) {
+      // Small delay to allow sidebar to expand first
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+        onSearchFocused?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldFocusSearch, isCollapsed, onSearchFocused]);
+
+  // Handle swipe gesture for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+    setTouchDelta(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const delta = e.touches[0].clientX - touchStart;
+    // Only track leftward swipes (negative delta)
+    if (delta < 0) {
+      setTouchDelta(delta);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // If swiped left more than 100px, close sidebar
+    if (touchDelta < -100) {
+      onClose();
+    }
+    setTouchStart(null);
+    setTouchDelta(0);
+  };
+
+  const handleNavigation = (view: ViewType) => {
+    onNavigate(view);
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth < 1024) {
+      onClose();
+    }
+  };
+
+  const sidebarWidth = isCollapsed ? 64 : 320;
+
+  return (
+    <>
+      {/* Sidebar container */}
+      <div
+        ref={sidebarRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className={`
+          fixed top-0 left-0 h-full z-50 bg-white dark:bg-zinc-900
+          border-r border-zinc-200 dark:border-zinc-800
+          transition-all duration-300 ease-in-out
+          lg:translate-x-0
+          ${/* Mobile: slide in/out based on isOpen, wider to show less content */
+            isOpen ? "translate-x-0 max-lg:!w-[calc(100vw-72px)]" : "-translate-x-full lg:translate-x-0"
+          }
+        `}
+        style={{
+          width: sidebarWidth,
+          willChange: 'width, transform',
+          // Apply swipe delta for visual feedback
+          transform: touchDelta < 0
+            ? `translateX(${touchDelta}px)`
+            : undefined,
+        }}
+      >
+        {/* Safe area padding for iOS */}
+        <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
+          {/* Header with drawer toggle (desktop only) - matches main header styling */}
+          <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 border-b border-zinc-200 dark:border-transparent bg-white dark:bg-[#0c0c0c]">
+            {/* Drawer toggle - always in upper-left, easy tap target */}
+            <button
+              onClick={onToggleCollapse}
+              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label={isCollapsed ? "Expand drawer" : "Collapse drawer"}
+            >
+              {isCollapsed ? (
+                <PanelLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
+              ) : (
+                <PanelLeftClose size={20} className="text-zinc-600 dark:text-zinc-400" />
+              )}
+            </button>
+          </div>
+
+          {/* Search - h-14 matches header height, icon stays in place */}
+          <div className="h-14 flex items-center gap-2 px-3 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="relative flex-1">
+              {/* Icon always in same position */}
+              <Search
+                size={18}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-400 transition-opacity duration-300"
+              />
+              {/* Input fades out on collapse */}
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onFocus={onSearchInputFocus}
+                onBlur={onSearchInputBlur}
+                className={`
+                  w-full pl-9 pr-8 py-2 text-sm bg-zinc-100 dark:bg-zinc-800
+                  border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500
+                  text-zinc-900 dark:text-zinc-100 placeholder-zinc-500
+                  transition-opacity duration-300
+                  ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}
+                `}
+              />
+              {/* Clear button - inside input, shows when text exists */}
+              {searchQuery && !isCollapsed && (
+                <button
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Prevent input blur
+                    onSearchChange('');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  title="Clear search"
+                >
+                  <XCircle size={16} />
+                </button>
+              )}
+              {/* Clickable overlay when collapsed */}
+              {isCollapsed && (
+                <button
+                  onClick={() => {
+                    onToggleCollapse();
+                    setTimeout(() => searchInputRef.current?.focus(), 300);
+                  }}
+                  className="absolute inset-0 cursor-pointer"
+                  title="Search"
+                />
+              )}
+            </div>
+
+            {/* Exit search mode button - outside input, always visible when search active */}
+            {isSearchActive && !isCollapsed && (
+              <button
+                onClick={onBackToMenu}
+                className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
+                title="Exit search"
+              >
+                <X size={18} className="text-zinc-500 dark:text-zinc-400" />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation / Search Content */}
+          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+            {/* Search Mode: Empty State (Jump To + Recent) OR Results */}
+            {isSearchActive && !isCollapsed ? (
+              <>
+                {searchQuery.trim() ? (
+                  /* Search Results */
+                  <>
+                    {searchResults.length > 0 ? (
+                      <>
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                          Tasks ({searchResults.length})
+                        </p>
+                        <div className="space-y-1">
+                          {searchResults.slice(0, 10).map((result) => (
+                            <SearchResultRow
+                              key={result.task.id}
+                              result={result}
+                              query={searchQuery}
+                              onClick={() => onOpenTask?.(result.task.id)}
+                            />
+                          ))}
+                        </div>
+                        {searchResults.length > 10 && (
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 px-1 mt-2">
+                            +{searchResults.length - 10} more results
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+                        No tasks found matching "{searchQuery}"
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Search Empty State: Jump To + Recent */
+                  <>
+                    {/* Jump To Filters */}
+                    {filterCounts && onJumpToFilter && (
+                      <>
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                          Jump to
+                        </p>
+                        <JumpToRow
+                          icon={<Flag size={18} />}
+                          label="High Priority"
+                          count={filterCounts.highPriority}
+                          onClick={() => onJumpToFilter("high_priority")}
+                        />
+                        <JumpToRow
+                          icon={<Clock size={18} />}
+                          label="Waiting"
+                          count={filterCounts.waiting}
+                          onClick={() => onJumpToFilter("waiting")}
+                        />
+                        <JumpToRow
+                          icon={<CalendarClock size={18} />}
+                          label="Deferred"
+                          count={filterCounts.deferred}
+                          onClick={() => onJumpToFilter("deferred")}
+                        />
+                        <JumpToRow
+                          icon={<CheckCircle size={18} />}
+                          label="Completed"
+                          count={filterCounts.completed}
+                          onClick={() => onJumpToFilter("completed")}
+                        />
+                        <JumpToRow
+                          icon={<Archive size={18} />}
+                          label="Archived"
+                          count={filterCounts.archived}
+                          onClick={() => onJumpToFilter("archived")}
+                        />
+                      </>
+                    )}
+
+                    {/* Recent Tasks */}
+                    {recentTasks && recentTasks.length > 0 && (
+                      <>
+                        <div className="pt-2" />
+                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                          Recent
+                        </p>
+                        {recentTasks.map((task) => (
+                          <RecentTaskRow
+                            key={task.id}
+                            task={task}
+                            onClick={() => onOpenTask?.(task.id)}
+                          />
+                        ))}
+                      </>
+                    )}
+
+                  </>
+                )}
+              </>
+            ) : (
+              /* Normal Nav Menu */
+              <>
+                {/* Main destinations */}
+                <NavItem
+                  icon={<Target size={20} />}
+                  label="Focus"
+                  isActive={currentView === "focus" || currentView === "focusMode"}
+                  onClick={() => handleNavigation("focus")}
+                  isCollapsed={isCollapsed}
+                />
+                <NavItem
+                  icon={<ListTodo size={20} />}
+                  label="Tasks"
+                  isActive={currentView === "tasks" || currentView === "inbox"}
+                  onClick={() => handleNavigation("tasks")}
+                  isCollapsed={isCollapsed}
+                  badge={inboxCount}
+                />
+
+                {/* Separator - after Focus/Tasks */}
+                <div className="my-3 border-t border-zinc-200 dark:border-zinc-700" />
+
+                {/* Projects */}
+                <NavItem
+                  icon={<FolderOpen size={20} />}
+                  label="Projects"
+                  isActive={currentView === "projects"}
+                  onClick={() => handleNavigation("projects")}
+                  isCollapsed={isCollapsed}
+                />
+              </>
+            )}
+          </nav>
+
+          {/* Data management at bottom - only show when not in search mode */}
+          {!isSearchActive && (
+            <div className="flex-shrink-0 p-3 border-t border-zinc-200 dark:border-zinc-700 space-y-1">
+              {onExportData && (
+                <NavItem
+                  icon={<Download size={20} />}
+                  label="Export"
+                  isActive={false}
+                  onClick={onExportData}
+                  isCollapsed={isCollapsed}
+                />
+              )}
+              {onImportData && (
+                <NavItem
+                  icon={<Upload size={20} />}
+                  label="Import"
+                  isActive={false}
+                  onClick={onImportData}
+                  isCollapsed={isCollapsed}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}

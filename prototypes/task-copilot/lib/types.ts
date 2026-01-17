@@ -542,7 +542,7 @@ export interface StructureRequest {
   currentList: Step[] | null;
   taskTitle: string | null;
   conversationHistory: Message[];
-  targetedStepId?: string;  // When user targets a specific step via sparkle button
+  targetedStepId?: string | null;  // When user targets a specific step via sparkle button
 }
 
 export interface SuggestedStep {

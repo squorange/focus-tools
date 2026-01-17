@@ -175,42 +175,46 @@ export default function FocusModeView({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-1 mb-8">
-        <button
-          onClick={onExit}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Exit
-        </button>
-
-        <div className="flex items-center gap-4">
-          {/* Timer */}
-          <div className="flex items-center gap-2 text-lg font-mono text-zinc-700 dark:text-zinc-300">
-            {formatTime(elapsedSeconds)}
-          </div>
-
-          {/* Pause/Resume */}
+    <div className="h-full flex flex-col -mx-4 -mt-6">
+      {/* Focus Mode Header - matches app header styling */}
+      <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-[#0c0c0c] border-b border-zinc-200 dark:border-transparent px-4 lg:px-6">
+        <div className="h-14 flex items-center justify-between">
+          {/* Left: Exit button */}
           <button
-            onClick={focusState.paused ? onResume : onPause}
-            className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            onClick={onExit}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
           >
-            {focusState.paused ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            )}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Exit
           </button>
+
+          {/* Right: Timer + Pause/Resume */}
+          <div className="flex items-center gap-3">
+            {/* Timer */}
+            <div className="text-lg font-mono text-zinc-700 dark:text-zinc-300">
+              {formatTime(elapsedSeconds)}
+            </div>
+
+            {/* Pause/Resume */}
+            <button
+              onClick={focusState.paused ? onResume : onPause}
+              className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              {focusState.paused ? (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content - pb-28 clears AI minibar, pb-[52vh] would clear expanded palette */}
       <div className="flex-1 flex flex-col items-center justify-center max-w-xl mx-auto w-full px-4 pb-28">

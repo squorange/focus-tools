@@ -44,6 +44,7 @@ import {
 import { filterInbox, filterPool } from "@/lib/utils";
 import { getTodayItems, getStepsInScope } from "@/lib/queue";
 import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
 // Old AIDrawer removed - functionality moved to minibar/palette
 // import AIDrawer from "@/components/AIDrawer";
 import StagingArea from "@/components/StagingArea";
@@ -100,12 +101,31 @@ export default function Home() {
   const [stagingPopulatedAt, setStagingPopulatedAt] = useState<number>(0);
   const [lastQuerySubmittedAt, setLastQuerySubmittedAt] = useState<number>(0);
   const stagingAreaRef = useRef<HTMLDivElement>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   // Recommendation state (for "What should I do?" feature)
   // Note: Recommendation response is now stored in aiAssistant.state.response
   const [excludedTaskIds, setExcludedTaskIds] = useState<string[]>([]);
 
   // Inline AI actions - tracks which step/task is targeted
   const [aiTargetContext, setAITargetContext] = useState<AITargetContext | null>(null);
+
+  // Sidebar state (nav restructure)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [taskCreationOpen, setTaskCreationOpen] = useState(false);
+  const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
+
+  // Search state (simplified - sidebar mode swaps based on focus/query)
+  const [searchInputFocused, setSearchInputFocused] = useState(false);
+  // Recent tasks (for search empty state)
+  const [recentTaskIds, setRecentTaskIds] = useState<string[]>([]);
+  // Frozen recents - snapshot when search starts, prevents reordering during search session
+  const [frozenRecentTaskIds, setFrozenRecentTaskIds] = useState<string[] | null>(null);
+  // Pending filter (for navigation from search shortcuts to TasksView)
+  const [pendingFilter, setPendingFilter] = useState<string | null>(null);
+
+  // Callback for auto-selecting new project after creation (from TaskCreationPopover)
+  const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
 
   // Register PWA service worker
   usePWA();
@@ -414,7 +434,8 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("API request failed");
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`API error ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
       }
 
       const data: StructureResponse = await response.json();
@@ -899,6 +920,19 @@ export default function Home() {
 
       // Initialize reminders (check for any due while app was closed)
       initializeReminders();
+
+      // Load recent task IDs from localStorage
+      try {
+        const savedRecentIds = localStorage.getItem('focus-tools-recent-tasks');
+        if (savedRecentIds) {
+          const parsed = JSON.parse(savedRecentIds);
+          if (Array.isArray(parsed)) {
+            setRecentTaskIds(parsed.slice(0, 5));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load recent tasks:", e);
+      }
     } catch (e) {
       console.error("Failed to load saved state:", e);
     }
@@ -911,6 +945,25 @@ export default function Home() {
       saveState(state);
     }
   }, [state, hasHydrated]);
+
+  // Save recent task IDs to localStorage
+  useEffect(() => {
+    if (hasHydrated && recentTaskIds.length > 0) {
+      localStorage.setItem('focus-tools-recent-tasks', JSON.stringify(recentTaskIds));
+    }
+  }, [recentTaskIds, hasHydrated]);
+
+  // Freeze recents when entering search mode, unfreeze when exiting
+  useEffect(() => {
+    const isSearchActive = searchInputFocused || searchQuery.trim() !== '';
+    if (isSearchActive && frozenRecentTaskIds === null) {
+      // Entering search mode - snapshot current recents
+      setFrozenRecentTaskIds(recentTaskIds);
+    } else if (!isSearchActive && frozenRecentTaskIds !== null) {
+      // Fully exiting search mode - clear frozen state
+      setFrozenRecentTaskIds(null);
+    }
+  }, [searchInputFocused, searchQuery, frozenRecentTaskIds, recentTaskIds]);
 
   // Handle notification click deep links while app is open
   useEffect(() => {
@@ -1003,9 +1056,11 @@ export default function Home() {
           break;
 
         case 'f':
-          // Go to Focus tab
+          // Go to Focus tab (also exits search mode)
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault();
+            setSearchQuery('');
+            setSearchInputFocused(false);
             setState((prev) => ({
               ...prev,
               currentView: 'focus',
@@ -1015,9 +1070,11 @@ export default function Home() {
           break;
 
         case 't':
-          // Go to Tasks tab
+          // Go to Tasks tab (also exits search mode)
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault();
+            setSearchQuery('');
+            setSearchInputFocused(false);
             setState((prev) => ({
               ...prev,
               currentView: 'tasks',
@@ -1027,18 +1084,14 @@ export default function Home() {
           break;
 
         case '/':
-          // Focus search
+          // Focus search input (sidebar mode swaps automatically)
           e.preventDefault();
-          setState((prev) => ({
-            ...prev,
-            currentView: 'search',
-            activeTaskId: null,
-          }));
-          // Focus search input after a short delay to let view render
-          setTimeout(() => {
-            const searchInput = document.querySelector<HTMLInputElement>('[data-search-input]');
-            if (searchInput) searchInput.focus();
-          }, 50);
+          // On desktop: expand sidebar if collapsed
+          if (sidebarCollapsed) {
+            setSidebarCollapsed(false);
+          }
+          // Focus search input after a short delay
+          setShouldFocusSearch(true);
           break;
 
         case 'Escape':
@@ -1048,18 +1101,35 @@ export default function Home() {
             // Clear AI target context when cancelling
             setAITargetContext(null);
           }
-          // Priority 1: Close AI drawer if open
+          // Priority 0.5: Close task creation popover
+          else if (taskCreationOpen) {
+            setTaskCreationOpen(false);
+          }
+          // Priority 1: Close sidebar on mobile
+          else if (sidebarOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setSidebarOpen(false);
+          }
+          // Priority 2: Close AI drawer if open
           else if (aiAssistant.state.mode === 'drawer') {
             aiAssistant.closeDrawer();
           }
-          // Priority 2: Collapse Palette to MiniBar if expanded
+          // Priority 3: Collapse Palette to MiniBar if expanded
           else if (aiAssistant.state.mode === 'expanded') {
             setPaletteManuallyOpened(false);
             aiAssistant.collapse();
             // Clear AI target context when collapsing palette
             setAITargetContext(null);
           }
-          // Priority 3: Go back from task detail or focus mode
+          // Priority 4: Clear search and unfocus (if searching)
+          else if (searchQuery || searchInputFocused) {
+            setSearchQuery('');
+            setSearchInputFocused(false);
+            // Blur search input if focused
+            if (document.activeElement instanceof HTMLInputElement) {
+              document.activeElement.blur();
+            }
+          }
+          // Priority 5: Go back from task detail or focus mode
           else if (state.currentView === 'taskDetail' || state.currentView === 'focusMode') {
             setState((prev) => ({
               ...prev,
@@ -1067,7 +1137,7 @@ export default function Home() {
               activeTaskId: null,
             }));
           }
-          // Priority 4: Close project modal
+          // Priority 6: Close project modal
           else if (projectModalOpen) {
             setProjectModalOpen(false);
             setEditingProject(null);
@@ -1100,7 +1170,7 @@ export default function Home() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [state.currentView, previousView, projectModalOpen, aiAssistant.state.mode, aiAssistant.state.isLoading, aiAssistant.closeDrawer, aiAssistant.collapse, aiAssistant.expand, aiAssistant.cancelRequest]);
+  }, [state.currentView, previousView, projectModalOpen, taskCreationOpen, sidebarOpen, sidebarCollapsed, searchQuery, searchInputFocused, aiAssistant.state.mode, aiAssistant.state.isLoading, aiAssistant.closeDrawer, aiAssistant.collapse, aiAssistant.expand, aiAssistant.cancelRequest]);
 
   // ============================================
   // Edge Swipe Navigation
@@ -1132,11 +1202,16 @@ export default function Home() {
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - swipeStartRef.current.x;
     const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
+    const isLeftEdgeStart = swipeStartRef.current.x < EDGE_THRESHOLD;
 
     // Check if this is a valid horizontal swipe
     if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
-      // Only navigate between Focus and Tasks (the two main tabs)
-      if (state.currentView === 'focus' || state.currentView === 'tasks') {
+      // Left edge swipe right → open sidebar (mobile only)
+      if (isLeftEdgeStart && deltaX > 0 && !sidebarOpen && window.innerWidth < 1024) {
+        setSidebarOpen(true);
+      }
+      // Focus↔Tasks swipe navigation (when sidebar is closed)
+      else if (!sidebarOpen && (state.currentView === 'focus' || state.currentView === 'tasks')) {
         if (deltaX > 0 && state.currentView === 'tasks') {
           // Swipe right → go to Focus
           setState((prev) => ({ ...prev, currentView: 'focus' }));
@@ -1148,7 +1223,7 @@ export default function Home() {
     }
 
     swipeStartRef.current = null;
-  }, [state.currentView]);
+  }, [state.currentView, sidebarOpen]);
 
   // ============================================
   // Navigation
@@ -1208,6 +1283,11 @@ export default function Home() {
       currentView: 'taskDetail',
       activeTaskId: taskId,
     }));
+    // Track recent task (for search empty state)
+    setRecentTaskIds(prev => {
+      const filtered = prev.filter(id => id !== taskId);
+      return [taskId, ...filtered].slice(0, 5); // Keep max 5
+    });
   }, [state.currentView]);
 
   const handleBackToList = useCallback(() => {
@@ -1217,14 +1297,6 @@ export default function Home() {
       activeTaskId: null,
     }));
   }, [previousView]);
-
-  // Navigate to search view
-  const handleSearchFocus = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      currentView: 'search',
-    }));
-  }, []);
 
   // ============================================
   // Task CRUD Operations
@@ -1646,7 +1718,13 @@ export default function Home() {
     }));
     setProjectModalOpen(false);
     setEditingProject(null);
-  }, []);
+
+    // Call pending callback to auto-select the new project (from TaskCreationPopover)
+    if (pendingProjectCallback) {
+      pendingProjectCallback(newProject.id);
+      setPendingProjectCallback(null);
+    }
+  }, [pendingProjectCallback]);
 
   const handleUpdateProject = useCallback((projectId: string, name: string, color: string | null) => {
     setState((prev) => ({
@@ -1720,6 +1798,13 @@ export default function Home() {
     setProjectModalOpen(true);
   }, []);
 
+  // Callback version for auto-selecting new project (used by TaskCreationPopover)
+  const handleOpenProjectModalWithCallback = useCallback((callback: (projectId: string) => void) => {
+    setPendingProjectCallback(() => callback);
+    setEditingProject(null);
+    setProjectModalOpen(true);
+  }, []);
+
   // ============================================
   // Toast Handlers
   // ============================================
@@ -1748,6 +1833,50 @@ export default function Home() {
     });
     showToast({ message: 'Task added to Inbox', type: 'info' });
   }, [showToast]);
+
+  // Quick add task from popover (with optional project) - stays in view
+  const handleQuickAddTask = useCallback((title: string, projectId: string | null) => {
+    const newTask = createTask(title);
+    if (projectId) {
+      newTask.projectId = projectId;
+    }
+    setState((prev) => {
+      const newTasks = [...prev.tasks, newTask];
+      logTaskCreated(newTask, newTasks);
+      return {
+        ...prev,
+        tasks: newTasks,
+      };
+    });
+    showToast({
+      message: 'Added to Inbox',
+      type: 'success',
+      action: {
+        label: 'Show',
+        onClick: () => handleViewChange('tasks'),
+      },
+    });
+  }, [showToast, handleViewChange]);
+
+  // Add task from popover and navigate to TaskDetail
+  const handleAddAndOpenTask = useCallback((title: string, projectId: string | null) => {
+    const newTask = createTask(title);
+    if (projectId) {
+      newTask.projectId = projectId;
+    }
+    setPreviousView(state.currentView);
+    setState((prev) => {
+      const newTasks = [...prev.tasks, newTask];
+      logTaskCreated(newTask, newTasks);
+      return {
+        ...prev,
+        tasks: newTasks,
+        activeTaskId: newTask.id,
+        currentView: 'taskDetail',
+      };
+    });
+    setTaskCreationOpen(false);
+  }, [state.currentView]);
 
   // Add task to queue (new: position-based, not horizon-based)
   // If forToday=true, insert at position todayLineIndex (moves line down)
@@ -2259,6 +2388,36 @@ export default function Home() {
     return importData(jsonString);
   }, []);
 
+  // Trigger file input for import
+  const handleTriggerImport = useCallback(() => {
+    importFileInputRef.current?.click();
+  }, []);
+
+  // Handle file selection for import
+  const handleImportFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const result = handleImportData(content);
+      if (result.success) {
+        showToast({ message: "Data imported successfully. Refreshing...", type: "success" });
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showToast({ message: `Import failed: ${result.error}`, type: "error" });
+      }
+    };
+    reader.onerror = () => {
+      showToast({ message: "Failed to read file", type: "error" });
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  }, [handleImportData, showToast]);
+
   // Focus mode controls
   const handlePauseFocus = useCallback(() => {
     setState((prev) => ({
@@ -2759,7 +2918,10 @@ export default function Home() {
         }),
       });
 
-      if (!response.ok) throw new Error("API request failed");
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`API error ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+      }
 
       const data = await response.json();
 
@@ -3190,6 +3352,91 @@ export default function Home() {
     queue: queueItems.length,
   };
 
+  // Filter counts for sidebar
+  const activeTasks = state.tasks.filter(t => !t.deletedAt && t.status !== 'archived' && t.status !== 'complete');
+  const filterCounts = {
+    needsAttention: activeTasks.filter(t => {
+      const health = computeHealthStatus(t);
+      return health.status === 'critical' || health.status === 'at_risk';
+    }).length,
+    highPriority: activeTasks.filter(t => t.priority === 'high').length,
+    waiting: activeTasks.filter(t => t.waitingOn !== null).length,
+    deferred: activeTasks.filter(t => t.deferredUntil !== null).length,
+    completed: state.tasks.filter(t => !t.deletedAt && t.status === 'complete').length,
+    archived: state.tasks.filter(t => !t.deletedAt && t.status === 'archived').length,
+    projects: new Set(activeTasks.map(t => t.projectId).filter(Boolean)).size,
+  };
+
+  // View title - view-specific (filter titles now in TasksView pills)
+  const viewTitle = (() => {
+    switch (state.currentView) {
+      case 'projects': return 'Projects';
+      case 'inbox': return 'Needs Triage';
+      case 'taskDetail': return null;  // Task title shown elsewhere
+      case 'focusMode': return null;   // Focus mode has own header
+      default: return null;  // focus/tasks use TabCluster
+    }
+  })();
+
+  // ============================================
+  // Sidebar Handlers
+  // ============================================
+
+  // Handle Jump To filter from search empty state - navigates to TasksView with filter
+  const handleJumpToFilter = useCallback((filter: string) => {
+    // Set pending filter for TasksView to pick up
+    setPendingFilter(filter);
+    // Clear search state
+    setSearchQuery('');
+    setSearchInputFocused(false);
+    // Navigate to Tasks view
+    handleViewChange('tasks');
+    // Close sidebar on mobile
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
+
+  // Handle back to menu from search - clears search state
+  const handleBackToMenu = useCallback(() => {
+    setSearchQuery('');
+    setSearchInputFocused(false);
+    // Blur search input if focused
+    if (document.activeElement instanceof HTMLInputElement) {
+      document.activeElement.blur();
+    }
+  }, []);
+
+  // Handle clearing pending filter (memoized to avoid re-render loops)
+  const handleClearPendingFilter = useCallback(() => {
+    setPendingFilter(null);
+  }, []);
+
+  // Handle settings open
+  const handleOpenSettings = () => {
+    // For now, show a simple alert with export/import info
+    // This can be expanded to a full settings modal later
+    const exportData = () => {
+      const data = {
+        tasks: state.tasks,
+        projects: state.projects,
+        focusQueue: state.focusQueue,
+        exportedAt: Date.now(),
+        version: 2,
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `focus-tools-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({ type: 'success', message: 'Data exported successfully' });
+    };
+
+    exportData();
+  };
+
   // ============================================
   // Render
   // ============================================
@@ -3202,22 +3449,116 @@ export default function Home() {
     );
   }
 
+  // Check if we're on desktop (for sidebar behavior)
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+
   return (
     <div className="h-screen flex bg-zinc-50 dark:bg-zinc-900">
-      {/* Main Column */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Main Header */}
-        <Header
-          currentView={state.currentView}
-          previousView={previousView}
-          onViewChange={handleViewChange}
-          onToggleAI={() => aiAssistant.expand()}
-          isAIDrawerOpen={aiAssistant.state.mode !== 'collapsed'}
-          inboxCount={inboxTasks.length}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSearchFocus={handleSearchFocus}
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        currentView={state.currentView}
+        onNavigate={(view) => {
+          // Clear search when navigating via menu
+          setSearchQuery('');
+          setSearchInputFocused(false);
+          handleViewChange(view);
+        }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchInputFocus={() => setSearchInputFocused(true)}
+        onSearchInputBlur={() => setSearchInputFocused(false)}
+        searchInputFocused={searchInputFocused}
+        inboxCount={inboxTasks.length}
+        shouldFocusSearch={shouldFocusSearch}
+        onSearchFocused={() => setShouldFocusSearch(false)}
+        // Jump To filter shortcuts
+        filterCounts={filterCounts}
+        onJumpToFilter={handleJumpToFilter}
+        // Recent tasks - use frozen list during search to prevent reordering
+        recentTasks={(frozenRecentTaskIds || recentTaskIds).map(id => state.tasks.find(t => t.id === id)).filter(Boolean) as Task[]}
+        onOpenTask={(taskId) => {
+          handleOpenTask(taskId);
+          // Close sidebar on mobile
+          if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setSidebarOpen(false);
+          }
+        }}
+        // Back to menu (exit search mode)
+        onBackToMenu={handleBackToMenu}
+        // Data management
+        onExportData={handleExportData}
+        onImportData={handleTriggerImport}
+        // Projects for search results
+        projects={state.projects}
+        tasks={state.tasks}
+      />
+
+      {/* Hidden file input for import */}
+      <input
+        ref={importFileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={handleImportFileChange}
+        className="hidden"
+      />
+
+      {/* Mobile backdrop - full overlay with fade for closing sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
+      )}
+
+      {/* Main Column - pushes based on sidebar state */}
+      <div
+        className={`
+          flex-1 flex flex-col min-w-0 transition-all duration-300
+          ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
+          ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] lg:translate-x-0' : ''}
+        `}
+      >
+        {/* Main Header - hidden in Focus Mode (FocusModeView has its own) */}
+        {state.currentView !== 'focusMode' && (
+          <Header
+            currentView={state.currentView}
+            previousView={previousView}
+            onViewChange={handleViewChange}
+            onToggleAI={() => aiAssistant.expand()}
+            isAIDrawerOpen={aiAssistant.state.mode !== 'collapsed'}
+            inboxCount={inboxTasks.length}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearchFocus={() => {}} // No longer used - search is in sidebar
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            isSidebarOpen={!sidebarCollapsed}
+            taskCreationOpen={taskCreationOpen}
+            onOpenTaskCreation={() => setTaskCreationOpen(true)}
+            onCloseTaskCreation={() => setTaskCreationOpen(false)}
+            onQuickAddTask={handleQuickAddTask}
+            onAddAndOpenTask={handleAddAndOpenTask}
+            projects={state.projects}
+            onOpenProjectModal={() => handleOpenProjectModal()}
+            projectModalOpen={projectModalOpen}
+            onOpenProjectModalWithCallback={handleOpenProjectModalWithCallback}
+            viewTitle={viewTitle}
+            showBackButton={state.currentView === 'projects' || state.currentView === 'inbox' || state.currentView === 'taskDetail'}
+            onBack={() => {
+              if (state.currentView === 'taskDetail') {
+                handleBackToList();
+              } else if (state.currentView === 'inbox') {
+                handleViewChange('tasks');
+              } else {
+                handleBackToList();
+              }
+            }}
+            hideNavigation={state.currentView === 'taskDetail'}
+          />
+        )}
 
         {/* Main Content - shifts left when drawer open on desktop */}
         <main
@@ -3237,7 +3578,6 @@ export default function Home() {
                 projects={state.projects}
                 inboxCount={inboxTasks.length}
                 onOpenTask={handleOpenTask}
-                onCreateTask={handleCreateTaskForFocus}
                 onStartFocus={handleStartFocus}
                 onRemoveFromQueue={handleRemoveFromQueue}
                 onUpdateStepSelection={handleUpdateStepSelection}
@@ -3252,9 +3592,9 @@ export default function Home() {
               <TasksView
                 inboxTasks={inboxTasks}
                 poolTasks={poolTasks}
+                allTasks={state.tasks}
                 queue={state.focusQueue}
                 projects={state.projects}
-                onCreateTask={handleCreateTaskQuick}
                 onOpenTask={handleOpenTask}
                 onSendToPool={handleSendToPool}
                 onAddToQueue={handleAddToQueue}
@@ -3264,33 +3604,21 @@ export default function Home() {
                 onGoToInbox={handleGoToInbox}
                 onOpenAIDrawer={() => aiAssistant.expand()}
                 onOpenProjectModal={handleOpenProjectModal}
+                // Filter pills - pendingFilter from Jump To shortcuts
+                pendingFilter={pendingFilter}
+                onClearPendingFilter={handleClearPendingFilter}
               />
             )}
 
             {state.currentView === 'inbox' && (
               <InboxView
                 tasks={inboxTasks}
-                onBack={handleBackToTasks}
-                onCreateTask={handleCreateTask}
                 onOpenTask={handleOpenTask}
                 onSendToPool={handleSendToPool}
                 onAddToQueue={handleAddToQueue}
                 onDefer={handleDefer}
                 onPark={handlePark}
                 onDelete={handleDeleteTask}
-              />
-            )}
-
-            {state.currentView === 'search' && (
-              <SearchView
-                query={searchQuery}
-                onQueryChange={setSearchQuery}
-                tasks={state.tasks}
-                onOpenTask={handleOpenTask}
-                onNavigateToProjects={handleGoToProjects}
-                onExportData={handleExportData}
-                onImportData={handleImportData}
-                showToast={showToast}
               />
             )}
 
@@ -3406,6 +3734,7 @@ export default function Home() {
         onClose={() => {
           setProjectModalOpen(false);
           setEditingProject(null);
+          setPendingProjectCallback(null); // Clear callback on cancel
         }}
         onSave={(name, color) => {
           if (editingProject) {
@@ -3423,7 +3752,12 @@ export default function Home() {
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
       {/* Only show when not in drawer mode (drawer handled separately) */}
       {aiAssistant.state.mode !== 'drawer' && (
-        <div className="fixed bottom-6 left-6 right-6 sm:bottom-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 sm:w-auto">
+        <div className={`
+          fixed bottom-6 left-6 right-6 z-40
+          sm:bottom-4 sm:w-auto sm:left-1/2 sm:right-auto sm:-translate-x-1/2
+          transition-transform duration-200
+          ${sidebarOpen ? 'max-lg:translate-y-[100vh]' : ''}
+        `}>
           <AIAssistantOverlay
             mode={aiAssistant.state.mode === 'collapsed' ? 'collapsed' : 'expanded'}
             collapsedContent={aiAssistant.state.collapsedContent}

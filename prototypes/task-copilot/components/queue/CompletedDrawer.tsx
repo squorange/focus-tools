@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { Task } from "@/lib/types";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { getCompletions, formatMinutes, TaskCompletion } from "@/lib/completions";
 
 interface CompletedDrawerProps {
@@ -18,6 +20,8 @@ export default function CompletedDrawer({
   onNavigateToTask,
 }: CompletedDrawerProps) {
   const [daysToShow, setDaysToShow] = useState(7);
+  const [isHandleHovered, setIsHandleHovered] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   const { groups: completionGroups, hasMore } = useMemo(
     () => getCompletions(tasks, daysToShow),
@@ -169,11 +173,30 @@ export default function CompletedDrawer({
           ${isOpen ? "translate-y-0" : "translate-y-full"}
         `}
       >
-        {/* Mobile header - clickable button like AIDrawer */}
+        {/* Animated drag handle - tap to close */}
         <button
           onClick={onClose}
-          className="w-full h-12 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-transparent flex-shrink-0"
+          onMouseEnter={() => setIsHandleHovered(true)}
+          onMouseLeave={() => setIsHandleHovered(false)}
+          className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
+          aria-label="Close"
         >
+          <motion.div className="relative w-10 h-1 flex">
+            <motion.div
+              className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
+              animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+            />
+            <motion.div
+              className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
+              animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+            />
+          </motion.div>
+        </button>
+
+        {/* Mobile header row */}
+        <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
           <div className="flex items-center gap-2">
             <svg
               className="w-5 h-5 text-green-600 dark:text-green-400"
@@ -192,21 +215,13 @@ export default function CompletedDrawer({
               Completed
             </span>
           </div>
-          {/* Chevron down icon like AIDrawer */}
-          <svg
-            className="w-5 h-5 text-zinc-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <button
+            onClick={onClose}
+            className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
+            Done
+          </button>
+        </div>
 
         {/* Mobile content - with min-h-0 for proper scroll */}
         <div className="flex-1 overflow-y-auto min-h-0">

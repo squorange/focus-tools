@@ -1,4 +1,4 @@
-import { Task, Step, FocusQueueItem } from './types';
+import { Task, Step, FocusQueueItem, Project } from './types';
 
 // ============================================
 // Date Utilities
@@ -678,4 +678,254 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
   };
 
   return statusMap[status];
+}
+
+// ============ Search Utilities ============
+
+/**
+ * Match location for search results (used for ranking)
+ */
+export type MatchLocation =
+  | 'title'
+  | 'description'
+  | 'step'
+  | 'substep'
+  | 'tag'
+  | 'project'
+  | 'waitingOn'
+  | 'context';
+
+/**
+ * Search result with ranking metadata
+ */
+export interface SearchResult {
+  task: Task;
+  matchLocations: MatchLocation[];
+  matchedText: string; // The actual text that matched
+  rank: number; // Lower = better (title=1, step=2, etc.)
+}
+
+/**
+ * Map of project IDs to project names for search
+ */
+export type ProjectMap = Map<string, string>;
+
+/**
+ * Build a project lookup map for efficient search
+ */
+export function buildProjectMap(projects: Project[]): ProjectMap {
+  return new Map(projects.map(p => [p.id, p.name]));
+}
+
+/**
+ * Rank values for match locations (lower = better)
+ */
+const MATCH_RANK: Record<MatchLocation, number> = {
+  title: 1,
+  step: 2,
+  substep: 3,
+  description: 4,
+  tag: 5,
+  project: 6,
+  waitingOn: 7,
+  context: 8,
+};
+
+/**
+ * Search tasks across all fields with ranking
+ * Returns results sorted by best match location
+ */
+export function searchTasks(
+  tasks: Task[],
+  query: string,
+  projectMap: ProjectMap
+): SearchResult[] {
+  if (!query.trim()) return [];
+
+  const lowerQuery = query.toLowerCase().trim();
+  const results: SearchResult[] = [];
+
+  for (const task of tasks) {
+    const matchLocations: MatchLocation[] = [];
+    let matchedText = '';
+
+    // Title
+    if (task.title.toLowerCase().includes(lowerQuery)) {
+      matchLocations.push('title');
+      if (!matchedText) matchedText = task.title;
+    }
+
+    // Description
+    if (task.description?.toLowerCase().includes(lowerQuery)) {
+      matchLocations.push('description');
+      if (!matchedText) matchedText = task.description;
+    }
+
+    // Steps
+    for (const step of task.steps) {
+      if (step.text.toLowerCase().includes(lowerQuery)) {
+        if (!matchLocations.includes('step')) {
+          matchLocations.push('step');
+        }
+        if (!matchedText) matchedText = step.text;
+      }
+
+      // Substeps
+      for (const substep of step.substeps) {
+        if (substep.text.toLowerCase().includes(lowerQuery)) {
+          if (!matchLocations.includes('substep')) {
+            matchLocations.push('substep');
+          }
+          if (!matchedText) matchedText = substep.text;
+        }
+      }
+    }
+
+    // Tags
+    for (const tag of task.tags) {
+      if (tag.toLowerCase().includes(lowerQuery)) {
+        if (!matchLocations.includes('tag')) {
+          matchLocations.push('tag');
+        }
+        if (!matchedText) matchedText = tag;
+      }
+    }
+
+    // Project name
+    if (task.projectId) {
+      const projectName = projectMap.get(task.projectId);
+      if (projectName?.toLowerCase().includes(lowerQuery)) {
+        matchLocations.push('project');
+        if (!matchedText) matchedText = projectName;
+      }
+    }
+
+    // Waiting on
+    if (task.waitingOn?.who.toLowerCase().includes(lowerQuery)) {
+      matchLocations.push('waitingOn');
+      if (!matchedText) matchedText = task.waitingOn.who;
+    }
+
+    // Context
+    if (task.context?.toLowerCase().includes(lowerQuery)) {
+      matchLocations.push('context');
+      if (!matchedText) matchedText = task.context;
+    }
+
+    if (matchLocations.length > 0) {
+      // Rank by best match location
+      const rank = Math.min(...matchLocations.map(loc => MATCH_RANK[loc]));
+      results.push({
+        task,
+        matchLocations,
+        matchedText,
+        rank,
+      });
+    }
+  }
+
+  // Sort by rank (best matches first)
+  return results.sort((a, b) => a.rank - b.rank);
+}
+
+/**
+ * Extract a snippet around the search term
+ */
+export function extractSnippet(
+  text: string,
+  searchTerm: string,
+  maxLength: number = 60
+): string {
+  const lowerText = text.toLowerCase();
+  const lowerTerm = searchTerm.toLowerCase();
+  const index = lowerText.indexOf(lowerTerm);
+
+  if (index === -1) return truncate(text, maxLength);
+
+  // Calculate window around match
+  const halfWindow = Math.floor((maxLength - searchTerm.length) / 2);
+  let start = Math.max(0, index - halfWindow);
+  let end = Math.min(text.length, index + searchTerm.length + halfWindow);
+
+  // Adjust to not cut words
+  if (start > 0) {
+    const spaceIndex = text.indexOf(' ', start);
+    if (spaceIndex !== -1 && spaceIndex < index) {
+      start = spaceIndex + 1;
+    }
+  }
+  if (end < text.length) {
+    const spaceIndex = text.lastIndexOf(' ', end);
+    if (spaceIndex !== -1 && spaceIndex > index + searchTerm.length) {
+      end = spaceIndex;
+    }
+  }
+
+  let snippet = text.slice(start, end);
+  if (start > 0) snippet = '...' + snippet;
+  if (end < text.length) snippet = snippet + '...';
+
+  return snippet;
+}
+
+/**
+ * Search preview types
+ */
+export type SearchPreviewType = 'step' | 'snippet' | 'description';
+
+export interface SearchPreview {
+  text: string;
+  type: SearchPreviewType;
+}
+
+/**
+ * Get the preview text for a search result
+ * - If title match → show next incomplete step (actionable)
+ * - If other match → show snippet with search term (contextual)
+ * - Fallback to description
+ */
+export function getSearchPreview(
+  result: SearchResult,
+  query: string
+): SearchPreview {
+  const { task, matchLocations, matchedText } = result;
+
+  // Title match → show next incomplete step
+  if (matchLocations.includes('title')) {
+    const nextStep = getNextIncompleteStep(task.steps);
+    if (nextStep) {
+      return { text: nextStep.text, type: 'step' };
+    }
+  }
+
+  // Non-title match → show snippet from matched text
+  if (!matchLocations.includes('title') && matchedText) {
+    const snippet = extractSnippet(matchedText, query);
+    return { text: snippet, type: 'snippet' };
+  }
+
+  // Fallback to description
+  if (task.description) {
+    return { text: truncate(task.description, 60), type: 'description' };
+  }
+
+  // No preview available
+  return { text: '', type: 'description' };
+}
+
+/**
+ * Get human-readable label for match location
+ */
+export function getMatchLocationLabel(location: MatchLocation): string {
+  const labels: Record<MatchLocation, string> = {
+    title: 'Title',
+    description: 'Description',
+    step: 'Step',
+    substep: 'Substep',
+    tag: 'Tag',
+    project: 'Project',
+    waitingOn: 'Waiting on',
+    context: 'Context',
+  };
+  return labels[location];
 }

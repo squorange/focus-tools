@@ -9,7 +9,6 @@ import {
 } from "@/lib/queue-reorder";
 import { countCompletionsToday } from "@/lib/completions";
 import QueueItem from "./QueueItem";
-import QuickCapture from "@/components/inbox/QuickCapture";
 import CompletedDrawer from "./CompletedDrawer";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 
@@ -39,7 +38,6 @@ interface QueueViewProps {
   projects: Project[];
   inboxCount: number;
   onOpenTask: (id: string) => void;
-  onCreateTask: (title: string) => void;
   onStartFocus: (queueItemId: string) => void;
   onRemoveFromQueue: (queueItemId: string) => void;
   onUpdateStepSelection: (queueItemId: string, selectionType: 'all_today' | 'all_upcoming' | 'specific_steps', selectedStepIds: string[]) => void;
@@ -84,7 +82,6 @@ export default function QueueView({
   projects,
   inboxCount,
   onOpenTask,
-  onCreateTask,
   onStartFocus,
   onRemoveFromQueue,
   onUpdateStepSelection,
@@ -390,11 +387,6 @@ export default function QueueView({
 
   return (
     <div className="flex flex-col">
-      {/* Quick Capture */}
-      <div className="mb-6">
-        <QuickCapture onCapture={onCreateTask} placeholder="Add a task to focus..." />
-      </div>
-
       {/* Header with today estimate */}
       <div className="flex items-center justify-between px-1 mb-3">
         <div className="flex items-baseline gap-2">

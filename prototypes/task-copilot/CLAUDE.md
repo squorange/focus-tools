@@ -19,7 +19,7 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
 | P0 | Inline AI Actions (Steps) | ✅ Complete | Sparkle → Palette with target banner, step-specific quick actions |
-| P1 | Nav/App Restructure | ⬜ Not Started | Push sidebar, unified modal navbar, plus button for capture |
+| P0 | Nav/App Restructure | ✅ Complete | Push sidebar, hamburger + plus header, task creation popover |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced proactively |
 | P1 | Recurring tasks | ⬜ Not Started | Critical for routines (AuDHD), daily habits (ADHD) |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem - needs design discussion |
@@ -28,10 +28,8 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 | P3 | Context switch bookmarking | ⬜ Not Started | AI summarizes state on pause |
 | P3 | Nudge system logic | ⬜ Not Started | Types defined in schema, logic not implemented |
 
-**Planned Features (see plan file for details):**
-- **Nav Restructure:** Push sidebar (search, destinations, projects, archives), unified navbar for modals
-
 **Recently Completed:**
+- [v26] Nav Restructure: Push sidebar (collapsible on desktop 280px↔64px, push on mobile), hamburger + plus header, task creation popover (bottom sheet mobile, dropdown desktop), unified Focus Mode header (timer + exit), removed QuickCapture from views
 - [v25.1] Restructuring trigger refinement: Expanded trigger words (simplify, clean up, tidy up, streamline, consolidate, merge/combine/reduce/fewer steps, too many steps), fixed conflicting prompt guidance, added explicit RULE for restructuring triggers
 - [v25] Object-scoped AI: Step-targeted suggestions create substeps (via `targetedStepId` in API), step restructuring prompt guidance, checkbox-area loading indicator when step is AI target
 - [v24] Quick actions wrap to rows on mobile (QuickActions.tsx), substep rows full width (moved outside inner flex, ml-16 alignment for kebab alignment)
@@ -821,13 +819,14 @@ task-copilot/
 │   └── api/structure/route.ts # Claude API endpoint
 ├── components/
 │   ├── layout/
-│   │   ├── Header.tsx        # Top bar with tabs, search, AI toggle
+│   │   ├── Header.tsx        # Top bar with hamburger, tabs, plus button
+│   │   ├── Sidebar.tsx       # Push sidebar (collapsible, navigation)
 │   │   ├── TabCluster.tsx    # [Focus | Tasks] buttons
-│   │   └── SearchBar.tsx     # Desktop search input
+│   │   └── SearchBar.tsx     # Desktop search input (now in sidebar)
 │   ├── inbox/
 │   │   ├── InboxView.tsx     # Full inbox list (drill-in)
 │   │   ├── InboxItem.tsx     # Single inbox item
-│   │   └── QuickCapture.tsx  # Task capture input
+│   │   └── QuickCapture.tsx  # Task capture input (legacy, replaced by popover)
 │   ├── queue/
 │   │   ├── QueueView.tsx     # Focus Queue home with horizons
 │   │   └── QueueItem.tsx     # Queue item row
@@ -852,6 +851,7 @@ task-copilot/
 │   │   ├── MetadataPill.tsx  # Compact metadata badge
 │   │   ├── ProjectModal.tsx  # Create/edit project modal
 │   │   ├── ReminderPicker.tsx # Reminder selection dropdown
+│   │   ├── TaskCreationPopover.tsx # Task creation (bottom sheet/dropdown)
 │   │   ├── Toast.tsx         # Toast notifications with undo
 │   │   └── TriageRow.tsx     # Triage actions for inbox items
 │   ├── AIDrawer.tsx          # Side panel AI chat
@@ -1602,6 +1602,7 @@ Comprehensive utility functions:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-15 | **v26:** Nav Restructure: (1) Push sidebar navigation (desktop: collapsible 280px↔64px icons, mobile: push content right with swipe-to-close), (2) Header simplified to hamburger + TabCluster + plus button, (3) TaskCreationPopover (desktop: dropdown from + button, mobile: bottom sheet) with title + project fields, (4) Focus Mode unified header (timer + exit button, main header hidden), (5) QuickCapture removed from QueueView/TasksView, (6) Escape key priority updates (task creation → sidebar → AI → back), (7) Edge swipe opens sidebar on mobile |
 | 2026-01-15 | **v25.1:** Restructuring trigger refinement: Fixed conflicting prompt guidance (line 47 said "ONLY if empty" which overrode restructuring guidance), expanded trigger word list (added tidy up, streamline, consolidate, merge/combine/reduce steps, fewer steps, too many steps), added explicit RULE for restructuring triggers in "Choosing the Right Tool" section |
 | 2026-01-15 | **v25:** Object-scoped AI improvements: (1) Step-targeted suggestions now correctly create substeps via `targetedStepId` field in API request + targeted step context in prompt, (2) Step restructuring/reordering now uses `replace_task_steps` with guidance to preserve completed steps, (3) Checkbox-area loading indicator when step is AI target (Loader2 spinner replaces checkbox, step text editing disabled, sparkle button disabled) |
 | 2026-01-14 | **v24:** Quick actions wrap to rows on mobile (`flex-wrap` in QuickActions.tsx), substep rows full width (moved outside inner flex wrapper in StepItem, `ml-16` for kebab alignment with parent step) |

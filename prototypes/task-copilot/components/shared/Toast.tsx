@@ -98,7 +98,7 @@ export default function ToastContainer({ toasts, onDismiss }: ToastContainerProp
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-24 sm:bottom-16 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-24 sm:bottom-20 lg:bottom-24 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
