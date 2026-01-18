@@ -136,30 +136,8 @@ export default function TaskDetail({
   // Reminder picker state
   const [showReminderPicker, setShowReminderPicker] = useState(false);
 
-  // Swipe-back gesture handling
-  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const EDGE_THRESHOLD = 50; // px from left edge (wider for natural thumb position)
-  const SWIPE_MIN_DISTANCE = 40; // minimum horizontal swipe distance
-  const SWIPE_RATIO = 1.5; // horizontal must be 1.5x vertical movement (more forgiving)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    if (touch.clientX <= EDGE_THRESHOLD) {
-      swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!swipeStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - swipeStartRef.current.x;
-    const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
-
-    if (deltaX > SWIPE_MIN_DISTANCE && deltaX > deltaY * SWIPE_RATIO) {
-      onBack();
-    }
-    swipeStartRef.current = null;
-  };
+  // Swipe-back gesture handling is now centralized in page.tsx (on <main> element)
+  // This ensures iOS Safari fires touch events correctly on the scroll container
 
   // Calculate defer dates
   const getDeferDate = (days: number) => {
@@ -291,11 +269,7 @@ export default function TaskDetail({
   };
 
   return (
-    <div
-      className="flex flex-col min-h-full"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="flex flex-col min-h-full">
       {/* Header - back button now in main Header, edge swipe still works */}
       <div className="mb-6">
         {/* Row 1: Title + Status + Desktop buttons */}

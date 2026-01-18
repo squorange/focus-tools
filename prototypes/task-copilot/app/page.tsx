@@ -784,6 +784,27 @@ export default function Home() {
     }
   }, [aiAssistant.state.mode, contextualPrompts.resetPrompt]);
 
+  // Lock body scroll when sidebar is open (iOS Safari fix)
+  useEffect(() => {
+    if (sidebarOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [sidebarOpen]);
+
   // Clear AI target context when response arrives (highlight fade)
   useEffect(() => {
     if (aiTargetContext && aiAssistant.state.response && !aiAssistant.state.isLoading) {
@@ -1206,7 +1227,6 @@ export default function Home() {
     // Check if this is a valid horizontal swipe
     if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
       // Focus↔Tasks swipe navigation (when sidebar is closed)
-      // Note: Edge swipe for opening sidebar removed - conflicts with back navigation and Focus/Tasks switching
       if (!sidebarOpen && (state.currentView === 'focus' || state.currentView === 'tasks')) {
         if (deltaX > 0 && state.currentView === 'tasks') {
           // Swipe right → go to Focus
@@ -1216,10 +1236,19 @@ export default function Home() {
           setState((prev) => ({ ...prev, currentView: 'tasks' }));
         }
       }
+
+      // Swipe-right to go back from child views (mirrors handleBackToList logic)
+      if (deltaX > 0 && ['taskDetail', 'focusMode', 'inbox', 'projects', 'search'].includes(state.currentView)) {
+        setState((prev) => ({
+          ...prev,
+          currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
+          activeTaskId: null,
+        }));
+      }
     }
 
     swipeStartRef.current = null;
-  }, [state.currentView, sidebarOpen]);
+  }, [state.currentView, sidebarOpen, previousView]);
 
   // ============================================
   // Navigation
