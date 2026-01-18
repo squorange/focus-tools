@@ -1,7 +1,7 @@
 # Focus Tools — Data Model Reference
 
-> **Status:** Living document  
-> **Last Updated:** January 2025  
+> **Status:** Living document
+> **Last Updated:** January 2026
 > **Purpose:** Document data model decisions, rationale, and future-proofing considerations
 
 ---
@@ -19,7 +19,7 @@
 ### Schema Versioning
 
 ```typescript
-const SCHEMA_VERSION = 2;  // Updated for Model E
+const SCHEMA_VERSION = 8;  // Updated for reminders, staging, analytics
 
 interface StoredState {
   schemaVersion: number;
@@ -134,6 +134,31 @@ interface Task {
 | `waitingOn.notes` | string \| null | Context for the follow-up |
 
 **Decision:** `waitingOn` is a non-blocking flag — user can still focus on other steps. It's informational, surfaced via badge and nudges.
+
+### Reminder (PWA Notifications)
+
+```typescript
+interface Reminder {
+  type: 'relative' | 'absolute';
+  relativeMinutes?: number;         // Minutes before target/deadline
+  relativeTo?: 'target' | 'deadline';
+  absoluteTime?: number;            // Unix timestamp for absolute reminders
+}
+
+interface Task {
+  // ...
+  reminder: Reminder | null;
+}
+```
+
+| Field | Type | Rationale |
+|-------|------|-----------|
+| `reminder.type` | enum | Relative (before deadline) or absolute (specific time) |
+| `reminder.relativeMinutes` | number \| undefined | Minutes before target/deadline |
+| `reminder.relativeTo` | enum \| undefined | Whether relative to target or deadline date |
+| `reminder.absoluteTime` | number \| undefined | Unix timestamp for absolute reminders |
+
+**Decision:** Reminders are user-initiated via ReminderPicker in TaskDetail. PWA notifications with deep linking (`?task=` URL param).
 
 ### Deferral
 
@@ -268,6 +293,9 @@ interface Task {
   messages: Message[];                    // Planning mode conversation
   focusModeMessages: Message[];           // Focus mode conversation (separate context)
 
+  // Per-task AI staging (for suggestions pending acceptance)
+  staging: StagingState | null;
+
   // Metadata
   createdAt: number;
   updatedAt: number;
@@ -382,6 +410,7 @@ interface Step {
   
   // Metadata
   timesStuck: number;
+  skipped: boolean;
   source: 'manual' | 'ai_generated' | 'ai_suggested';
   wasEdited: boolean;
 }
@@ -392,6 +421,7 @@ interface Substep {
   shortLabel: string | null;        // ~12 chars max
   completed: boolean;
   completedAt: number | null;
+  skipped: boolean;
   source: 'manual' | 'ai_generated' | 'ai_suggested';
 }
 ```
@@ -404,6 +434,7 @@ interface Substep {
 | `firstFocusedAt` | number \| null | Enables time-to-start analytics |
 | `estimationAccuracy` | number \| null | Computed on completion: estimate / actual |
 | `context` | string \| null | Override task context for step-specific requirements |
+| `skipped` | boolean | Whether step was skipped (still allows task completion) |
 
 **Display behavior:**
 - Show `~N min` next to steps in Task Detail and Focus Mode
@@ -419,16 +450,19 @@ The Focus Queue replaces the DailyPlan model from v1. It's a single evolving que
 ```typescript
 interface FocusQueue {
   items: FocusQueueItem[];
+  todayLineIndex: number;       // Items 0..todayLineIndex-1 are "for today"
   lastReviewedAt: number;
 }
+
+type SelectionType = 'all_today' | 'all_upcoming' | 'specific_steps';
 
 interface FocusQueueItem {
   id: string;
   taskId: string;
-  
+
   // Step selection
-  selectionType: 'entire_task' | 'specific_steps';
-  selectedStepIds: string[];    // Empty if entire_task
+  selectionType: SelectionType;
+  selectedStepIds: string[];    // Empty if all_today or all_upcoming
   
   // Time commitment
   horizon: 'today' | 'this_week' | 'upcoming';
@@ -467,9 +501,14 @@ type FocusReason =
 - **Rationale:** Reduces planning friction; items naturally roll over
 - **Benefit:** No daily "build the plan" ceremony required
 
+**Decision:** Visual-first queue with `todayLineIndex`.
+- **Rationale:** Items above the line are "for today", items below are "upcoming"
+- **Implementation:** `todayLineIndex` determines the visual separator position
+- **Benefit:** Drag/drop operates on visual layout as source of truth
+
 **Decision:** Support task-level OR step-level selection.
 - **Rationale:** Sometimes you want to focus on "File Taxes" (whole task), sometimes just "Gather W-2s" (specific steps)
-- **Implementation:** `selectionType` + `selectedStepIds`
+- **Implementation:** `selectionType` (`all_today` | `all_upcoming` | `specific_steps`) + `selectedStepIds`
 
 **Decision:** One queue entry per task (no duplicates).
 - **Rationale:** Prevents "File Taxes" appearing 3 times in Today
@@ -482,12 +521,12 @@ type FocusReason =
 
 ```typescript
 function isQueueItemComplete(item: FocusQueueItem, task: Task): boolean {
-  if (item.selectionType === 'entire_task') {
-    return task.steps.every(s => s.completedAt !== null);
+  if (item.selectionType === 'all_today' || item.selectionType === 'all_upcoming') {
+    return task.steps.every(s => s.completedAt !== null || s.skipped);
   } else {
     return item.selectedStepIds.every(stepId => {
       const step = task.steps.find(s => s.id === stepId);
-      return step?.completedAt !== null;
+      return step?.completedAt !== null || step?.skipped;
     });
   }
 }
@@ -703,6 +742,47 @@ interface SnoozedNudge {
 
 ## App State Model
 
+### User Analytics
+
+```typescript
+interface TrendPoint {
+  date: string;
+  value: number;
+}
+
+interface UserAnalytics {
+  // Estimation accuracy
+  overallEstimationAccuracy: number;
+  estimationAccuracyByTag: Record<string, number>;
+  estimationAccuracyByEffort: Record<string, number>;
+  estimationAccuracyTrend: TrendPoint[];
+
+  // Productivity
+  completionRateByHour: Record<number, number>;
+  completionRateByDay: Record<number, number>;
+  avgTasksCompletedPerDay: number;
+  avgFocusMinutesPerDay: number;
+
+  // Task patterns
+  avgTimeToStart: number;
+  avgTimeToComplete: number;
+  abandonmentRate: number;
+  completionRateByTag: Record<string, number>;
+
+  // Stuck patterns
+  stuckFrequency: number;
+  mostEffectiveUnblockStrategy: string;
+
+  // AI effectiveness
+  aiSuggestionAcceptanceRate: number;
+  aiAssistedCompletionRate: number;
+
+  lastUpdated: number;
+}
+```
+
+### App State
+
 ```typescript
 interface AppState {
   schemaVersion: number;
@@ -720,23 +800,32 @@ interface AppState {
   focusSessions: FocusSession[];
   nudges: Nudge[];
   snoozedNudges: SnoozedNudge[];
-  
-  // Navigation
-  currentView: 'inbox' | 'pool' | 'queue' | 'taskDetail' | 'focusMode';
+  analytics: UserAnalytics | null;
+
+  // Navigation (2-tab + Search model)
+  currentView: 'focus' | 'tasks' | 'inbox' | 'projects' | 'search' | 'taskDetail' | 'focusMode';
   activeTaskId: string | null;
-  
+
   // Focus mode
   focusMode: FocusModeState;
   currentSessionId: string | null;
-  
-  // AI
-  aiDrawer: AIDrawerState;
-  
+
+  // AI staging (for top-level screens: Queue, Tasks, Inbox)
+  globalStaging: StagingState | null;
+
+  // Queue AI messages (48h retention, 60m display window)
+  queueMessages: QueueMessage[];
+  queueLastInteractionAt: number | null;
+
+  // Tasks view AI messages (same 60m display window as queue)
+  tasksMessages: QueueMessage[];
+  tasksLastInteractionAt: number | null;
+
   // Filters & sort
   filters: FilterState;
   sortBy: SortOption;
   sortOrder: 'asc' | 'desc';
-  
+
   // UI state
   completedTodayExpanded: boolean;
   error: string | null;
@@ -750,27 +839,32 @@ interface FocusModeState {
   paused: boolean;
   startTime: number | null;
   pausedTime: number;
-}
-
-interface AIDrawerState {
-  isOpen: boolean;
-  messages: Message[];
-  isLoading: boolean;
-  context: 'inbox' | 'pool' | 'queue' | 'task' | 'focus';
+  pauseStartTime: number | null;   // When current pause started
 }
 
 // AI Staging State (for function calling responses)
-interface AIStagingState {
+interface StagingState {
   suggestions: SuggestedStep[];           // New steps/substeps to add
   edits: EditSuggestion[];                // Changes to existing steps
+  deletions: DeletionSuggestion[];        // Steps/substeps to remove
   suggestedTitle: string | null;          // Title improvement
-  pendingAction: 'replace' | 'suggest' | null;  // Tracks AI action type
+  pendingAction: 'replace' | 'suggest' | 'edit' | 'delete' | null;  // Tracks AI action type
+}
+
+interface DeletionSuggestion {
+  targetId: string;           // Display ID like "1", "2", "1a", "1b"
+  targetType: 'step' | 'substep';
+  parentId?: string;          // For substeps, the parent step display ID
+  originalText: string;       // The text of what's being deleted (for display)
+  reason: string;             // Why it should be deleted
 }
 
 interface SuggestedStep {
   id: string;
   text: string;
   substeps: { id: string; text: string }[];
+  parentStepId?: string;          // If set, add as substep to this step
+  insertAfterStepId?: string;     // Insert after this step ID; '0' for beginning
   estimatedMinutes?: number;
 }
 
@@ -788,6 +882,14 @@ interface Message {
   content: string;
   timestamp: number;
   stepId?: string;                        // For focus mode message grouping
+}
+
+// Queue-specific message (for 48h retention)
+interface QueueMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
 }
 
 interface FilterState {
@@ -889,16 +991,33 @@ The AI integration uses Claude's native function calling (tool_use) for reliable
 | `explain_step` | Clarify meaning | `explanation`, `tips[]?`, `message` |
 | `encourage` | Encouragement | `message` |
 
+### AI Target Context
+
+For inline AI actions (step-level sparkle button), the target context tracks which object is being acted upon:
+
+```typescript
+type AITargetType = 'step' | 'substep' | 'task';
+
+interface AITargetContext {
+  type: AITargetType;
+  taskId: string;
+  stepId?: string;          // For step or substep targets
+  substepId?: string;       // For substep targets
+  label: string;            // Display label, e.g., "Make coffee"
+}
+```
+
 ### Response Processing
 
 ```typescript
 interface StructureResponse {
-  action: 'replace' | 'suggest' | 'edit' | 'none';
+  action: 'replace' | 'suggest' | 'edit' | 'delete' | 'recommend' | 'none';
   taskTitle?: string;           // From replace_task_steps
   suggestedTitle?: string;      // From suggest_additions, edit_title
   steps?: Step[];               // From replace_task_steps
   suggestions?: SuggestedStep[];// From suggest_additions
   edits?: EditSuggestion[];     // From edit_steps
+  deletions?: DeletionSuggestion[];  // From delete action
   message: string;              // Always present
 }
 ```
@@ -906,14 +1025,16 @@ interface StructureResponse {
 ### State Flow
 
 1. AI returns tool call → API route processes → returns `StructureResponse`
-2. Client receives response → populates staging state (`suggestions`, `edits`, `suggestedTitle`)
-3. `pendingAction` set to `'replace'` or `'suggest'` based on action type
+2. Client receives response → populates staging state (`suggestions`, `edits`, `deletions`, `suggestedTitle`)
+3. `pendingAction` set to `'replace'`, `'suggest'`, `'edit'`, or `'delete'` based on action type
 4. User accepts/rejects in staging UI
 5. On accept: apply changes, clear staging state
 
 **Key Insight:** `pendingAction` determines "Accept All" behavior:
 - `'replace'` → Replace all steps with suggestions
 - `'suggest'` → Append suggestions to existing steps
+- `'edit'` → Apply text edits to existing steps
+- `'delete'` → Remove specified steps/substeps
 
 ---
 
@@ -1003,6 +1124,7 @@ function migrateState(stored: any): AppState {
 
 | Date | Changes |
 |------|---------|
+| 2026-01-17 | **Schema v8:** Added Reminder interface (PWA notifications), Task.reminder/staging fields, Step/Substep.skipped, SelectionType refactor (all_today/all_upcoming/specific_steps), FocusQueue.todayLineIndex, QueueMessage, AITargetContext, DeletionSuggestion, StagingState.deletions, UserAnalytics, AppState updates (analytics, globalStaging, queueMessages, tasksMessages), FocusModeState.pauseStartTime |
 | 2025-01-06 | Added visual-first queue reordering section (lib/queue-reorder.ts) |
 | 2025-01-03 | Added AI function calling architecture section; AI staging state types; Task.notes and message history fields; Message.stepId for grouping |
 | 2025-01 | **v2:** Model E — Pool replaces Active; Focus Queue replaces DailyPlan; added waitingOn, deferral, nudges |
