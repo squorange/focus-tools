@@ -3517,7 +3517,7 @@ export default function Home() {
         className={`
           flex-1 flex flex-col min-w-0 transition-all duration-300
           ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
-          ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] lg:translate-x-0' : ''}
+          ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] pointer-events-none lg:translate-x-0 lg:pointer-events-auto' : ''}
         `}
       >
         {/* Main Header - hidden in Focus Mode (FocusModeView has its own) */}

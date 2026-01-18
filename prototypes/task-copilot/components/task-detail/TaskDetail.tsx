@@ -138,9 +138,9 @@ export default function TaskDetail({
 
   // Swipe-back gesture handling
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const EDGE_THRESHOLD = 20; // px from left edge
-  const SWIPE_MIN_DISTANCE = 50; // minimum horizontal swipe distance
-  const SWIPE_RATIO = 2; // horizontal must be 2x vertical movement
+  const EDGE_THRESHOLD = 50; // px from left edge (wider for natural thumb position)
+  const SWIPE_MIN_DISTANCE = 40; // minimum horizontal swipe distance
+  const SWIPE_RATIO = 1.5; // horizontal must be 1.5x vertical movement (more forgiving)
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
