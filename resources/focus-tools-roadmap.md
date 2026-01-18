@@ -241,13 +241,13 @@ Option C: New unified build
 
 ### Mobile-Specific Phases
 
-#### Phase 3a: PWA for Personal Validation
+#### Phase 3a: PWA for Personal Validation ✅ Complete
 **Outcome:** Usable on iPhone daily
 
-- [ ] Add PWA manifest + service worker
-- [ ] Mobile viewport optimization
-- [ ] Touch-friendly UI (tap targets, spacing)
-- [ ] Test on personal iPhone for 2+ weeks
+- [x] Add PWA manifest + service worker
+- [x] Mobile viewport optimization
+- [x] Touch-friendly UI (tap targets, spacing)
+- [x] Test on personal iPhone for 2+ weeks
 
 **Success criteria:** Actually using it daily; identifies friction points
 
@@ -297,6 +297,7 @@ Option C: New unified build
 
 | Date | Changes |
 |------|---------|
+| 2026-01-17 | Marked Mobile-Specific Phase 3a as complete with checkboxes |
 | 2026-01-14 | Updated phases 1-3a as complete; refreshed next steps |
 | 2025-12-22 | Initial roadmap created |
 | 2025-12-22 | Added mobile path, monetization strategy |

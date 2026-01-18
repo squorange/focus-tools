@@ -900,6 +900,10 @@ The POC implements the full Model E workflow with extensive AI integration:
 - QuickAccess cards in Search view (6 filter cards with counts)
 - Task completion flow: focus mode success (2s) → task details → back returns to Focus Queue
 - QueueView empty state "Show completed" button (Completed button hidden when queue empty)
+- Inline AI for steps (sparkle button → palette with target banner, step-specific quick actions)
+- Object-scoped AI (step-targeted suggestions create substeps, step restructuring triggers)
+- Nav restructure (push sidebar 280px↔64px, hamburger + plus header, task creation popover)
+- iOS Safari fixes (scroll lock via position:fixed, swipe-to-back centralized in page.tsx)
 
 ### Learnings Captured
 - Claude function calling (tool_use) provides ~99% reliability vs ~85% with JSON-in-text
@@ -946,6 +950,7 @@ Plant, Water, Tend, Prune, Harvest, Compost, Resurface
 
 | Date | Changes |
 |------|---------|
+| 2026-01-17 | v20-v27.5: Inline AI for steps (sparkle → palette), object-scoped AI (substeps), nav restructure (push sidebar, hamburger + plus header, task creation popover), iOS Safari mobile fixes (scroll lock, swipe-to-back) |
 | 2026-01-12 | AI polish: auto-collapse timer updated to 7s (was 300ms), StagingArea violet theme (matches Today steps), mobile TaskDetail kebab menu for overflow actions, dead code cleanup in useAIAssistant |
 | 2026-01-11 | Added Section 8.2 "Future AI Architecture" documenting planned capabilities: proactive AI, AI actions with confirmation, voice/multimodal input; includes state machine v2 target architecture and Phase 2 simplification requirements |
 | 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements |

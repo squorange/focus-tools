@@ -112,10 +112,10 @@ The app is a solid execution companion but not yet a complete task management sy
 |----------------|-------------------|--------|-----------------|
 | **Quick capture → done** | QuickCapture, streamlined flow | ✅ Good | Competitive with Todoist/Things for basic capture |
 | **Calendar integration** | None | ❌ Missing | Major gap — NT users expect calendar sync |
-| **Reminders/notifications** | None | ❌ Missing | Expected baseline feature |
+| **Reminders/notifications** | PWA reminders with ReminderPicker | ⚠️ Partial | User-initiated only, no proactive scheduling |
 | **Collaboration** | None | ❌ Missing | "Delegate" need completely unaddressed |
 | **Multi-platform sync** | localStorage only | ❌ Missing | Expected for any serious daily use |
-| **Keyboard shortcuts** | None | ❌ Missing | Power users expect this |
+| **Keyboard shortcuts** | `n`, `f`, `t`, `/`, `Escape`, `a` | ✅ Good | Implemented in v11 |
 | **Speed** | Quick capture works, AI has latency | ⚠️ Mixed | NT users may find AI interactions slow |
 | **Simplicity** | More complex than Apple Reminders | ⚠️ Mixed | NT users may want less, not more |
 
@@ -240,6 +240,7 @@ The app is a solid execution companion but not yet a complete task management sy
 
 | Date | Changes |
 |------|---------|
+| 2026-01-17 | Fixed keyboard shortcuts (✅), reminders/notifications (⚠️ Partial), updated Section 3.3 |
 | Jan 2026 | Updated P0-P2 items as complete; added AI MiniBar Integration as complete |
 | Jan 2025 | Initial assessment created from Claude conversation analysis |
 

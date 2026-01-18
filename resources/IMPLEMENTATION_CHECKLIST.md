@@ -627,6 +627,18 @@ npm run build
 
 ---
 
+## Recent Features (v20-v27.5) ✅ Complete
+
+| Version | Feature | Key Changes |
+|---------|---------|-------------|
+| v20-v22 | Inline AI for Steps | Sparkle button → unified palette with target banner, step-specific quick actions (Break down, Explain, Estimate) |
+| v23-v24 | Palette Refinements | "Step:" prefix, consistent 8px spacing, quick actions wrap to rows on mobile |
+| v25-v25.1 | Object-Scoped AI | Step-targeted suggestions create substeps, restructuring trigger words (simplify, clean up, merge steps) |
+| v26 | Nav Restructure | Push sidebar (280px↔64px desktop, push content on mobile), hamburger + plus header, task creation popover (bottom sheet mobile, dropdown desktop) |
+| v27.5 | iOS Safari Fixes | Scroll lock via position:fixed on body, swipe-to-back centralized in page.tsx on `<main>` element |
+
+---
+
 ## Pre-Testing Phase Priorities
 
 From `ASSESSMENT_AND_GAPS.md`:
@@ -676,19 +688,8 @@ From `ASSESSMENT_AND_GAPS.md`:
 
 ## Future Enhancements Roadmap
 
-### Phase A: AI Minibar Integration (6 sessions)
-From `AI_MINIBAR_INTEGRATION_PROMPTS.md` — complete ai-minibar prototype ready for integration:
-
-| Session | Focus | Effort |
-|---------|-------|--------|
-| 1 | Extract MiniBar scaffold + CSS | Small |
-| 2 | Port useAIAssistant hook | Medium |
-| 3 | Wire up chat history + input | Medium |
-| 4 | Context-aware quick actions | Medium |
-| 5 | Response handling + staging | Medium |
-| 6 | Polish + edge cases | Small |
-
-**Key files:** `prototypes/ai-minibar/EXPORT_GUIDE.md`
+### Phase A: AI Minibar Integration ✅ COMPLETE
+Four-surface model (MiniBar/Palette/Drawer/StagingArea) fully integrated with context-aware quick actions, auto-expand/collapse, and response handling.
 
 ### Phase B: Framer Motion Animations
 
@@ -729,6 +730,7 @@ Framer Motion enhancements should come **after** AI Minibar integration for coor
 
 | Date | Changes |
 |------|---------|
+| 2026-01-17 | Added v20-v27.5 features section: inline AI for steps, object-scoped AI, nav restructure, iOS Safari fixes; marked AI Minibar complete |
 | 2026-01-11 | Export/Import JSON complete (P0), added Future Enhancements Roadmap with AI Minibar phases and Framer Motion recommendations |
 | 2026-01-11 | Added Recent UX Refinements section (Add to Focus dropdown, Edit Focus relocation, modal simplification, task creation swap, toast/queue positioning), added Pre-Testing Phase Priorities section |
 | 2026-01-06 | Task completion flow refinements (auto-return to Focus Queue), expanded toast notifications (queue/pool actions with undo), consistent task row styling, QueueView empty state enhancements, navigation state management updates |
