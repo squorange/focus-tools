@@ -141,9 +141,9 @@ export default function TasksView({
 
   return (
     <div className="space-y-6">
-      {/* Scrollable Tab Bar */}
-      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 flex justify-center">
-        <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit">
+      {/* Scrollable Tab Bar - centers when fits, left-pins + scrolls when overflows */}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+        <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit mx-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
