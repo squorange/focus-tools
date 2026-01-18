@@ -3595,8 +3595,8 @@ export default function Home() {
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
-          {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet */}
-          <div className={`max-w-4xl mx-auto px-4 py-6 ${aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
+          {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet; when sidebar open use minimal padding */}
+          <div className={`max-w-4xl mx-auto px-4 py-6 ${sidebarOpen ? 'pb-24' : aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView

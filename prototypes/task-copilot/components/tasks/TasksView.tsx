@@ -7,8 +7,8 @@ import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
 import ProgressRing from "@/components/shared/ProgressRing";
 
-// Filter types for pills
-type FilterPillType = 'all' | 'triage' | 'ready' | 'high' | 'waiting' | 'deferred' | 'done' | 'archived';
+// Tab types for navigation
+type TasksTab = 'staging' | 'waiting' | 'deferred' | 'completed' | 'archived';
 
 interface TasksViewProps {
   inboxTasks: Task[];
@@ -50,116 +50,77 @@ export default function TasksView({
 }: TasksViewProps) {
   const [triageCollapsed, setTriageCollapsed] = useState(false);
 
-  // Filter pills state - default to showing triage + ready (current behavior)
-  const [activeFilter, setActiveFilter] = useState<FilterPillType | null>(null);
+  // Tab state - default to staging (triage + ready sectioned view)
+  const [activeTab, setActiveTab] = useState<TasksTab>('staging');
 
-  // Apply pending filter from Jump To shortcuts
+  // Apply pending filter from Jump To shortcuts (maps to tabs)
   useEffect(() => {
     if (pendingFilter) {
-      // Map Jump To filter names to pill types
-      const filterMap: Record<string, FilterPillType> = {
-        'high_priority': 'high',
+      const tabMap: Record<string, TasksTab> = {
         'waiting': 'waiting',
         'deferred': 'deferred',
-        'completed': 'done',
+        'completed': 'completed',
         'archived': 'archived',
       };
-      const pillType = filterMap[pendingFilter] as FilterPillType | undefined;
-      if (pillType) {
-        setActiveFilter(pillType);
+      const tab = tabMap[pendingFilter];
+      if (tab) {
+        setActiveTab(tab);
       }
       onClearPendingFilter?.();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFilter]); // Intentionally omit onClearPendingFilter to avoid re-render loop
 
-  // Filter definitions (no emojis - reserved for AI actions per design principle)
-  const filterPills: { id: FilterPillType; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'triage', label: 'Triage' },
-    { id: 'ready', label: 'Ready' },
-    { id: 'high', label: 'High' },
-    { id: 'waiting', label: 'Waiting' },
-    { id: 'deferred', label: 'Deferred' },
-    { id: 'done', label: 'Completed' },
-    { id: 'archived', label: 'Archived' },
-  ];
-
-  // Compute filtered tasks based on active filter
-  const filteredTasks = useMemo(() => {
-    if (!activeFilter || activeFilter === 'all') return null; // null = show default sectioned view
-
-    // Combine all available tasks
+  // Combine all available tasks for filtering
+  const allTasksList = useMemo(() => {
     const all = allTasks || [...inboxTasks, ...poolTasks];
-    const nonDeleted = all.filter(t => !t.deletedAt);
-
-    switch (activeFilter) {
-      case 'triage':
-        return nonDeleted.filter(t => t.status === 'inbox');
-      case 'ready':
-        return nonDeleted.filter(t =>
-          t.status === 'pool' &&
-          !t.waitingOn &&
-          (!t.deferredUntil || new Date(t.deferredUntil) > new Date())
-        );
-      case 'high':
-        return nonDeleted.filter(t =>
-          t.priority === 'high' &&
-          t.status !== 'archived' &&
-          t.status !== 'complete'
-        );
-      case 'waiting':
-        return nonDeleted.filter(t =>
-          t.waitingOn !== null &&
-          t.status !== 'archived' &&
-          t.status !== 'complete'
-        );
-      case 'deferred':
-        return nonDeleted.filter(t =>
-          t.deferredUntil !== null &&
-          t.status !== 'archived' &&
-          t.status !== 'complete'
-        );
-      case 'done':
-        return nonDeleted.filter(t => t.status === 'complete');
-      case 'archived':
-        return nonDeleted.filter(t => t.status === 'archived');
-      default:
-        return null;
-    }
-  }, [activeFilter, allTasks, inboxTasks, poolTasks]);
-
-  // Get counts for filter pills
-  const filterCounts = useMemo(() => {
-    const all = allTasks || [...inboxTasks, ...poolTasks];
-    const nonDeleted = all.filter(t => !t.deletedAt);
-    const active = nonDeleted.filter(t => t.status !== 'archived' && t.status !== 'complete');
-
-    return {
-      all: nonDeleted.filter(t => t.status !== 'archived').length,
-      triage: nonDeleted.filter(t => t.status === 'inbox').length,
-      ready: nonDeleted.filter(t =>
-        t.status === 'pool' &&
-        !t.waitingOn &&
-        (!t.deferredUntil || new Date(t.deferredUntil) > new Date())
-      ).length,
-      high: active.filter(t => t.priority === 'high').length,
-      waiting: active.filter(t => t.waitingOn !== null).length,
-      deferred: active.filter(t => t.deferredUntil !== null).length,
-      done: nonDeleted.filter(t => t.status === 'complete').length,
-      archived: nonDeleted.filter(t => t.status === 'archived').length,
-    };
+    return all.filter(t => !t.deletedAt);
   }, [allTasks, inboxTasks, poolTasks]);
 
-  // Check if showing filtered view vs default sectioned view
-  const showFilteredView = activeFilter && activeFilter !== 'all' && filteredTasks !== null;
+  // Filtered task lists for each tab
+  const waitingTasksAll = useMemo(() =>
+    allTasksList.filter(t =>
+      t.waitingOn !== null &&
+      t.status !== 'archived' &&
+      t.status !== 'complete'
+    ),
+    [allTasksList]
+  );
+
+  const deferredTasksAll = useMemo(() =>
+    allTasksList.filter(t =>
+      t.deferredUntil !== null &&
+      new Date(t.deferredUntil) > new Date() && // Future deferred only
+      t.status !== 'archived' &&
+      t.status !== 'complete'
+    ),
+    [allTasksList]
+  );
+
+  const completedTasksAll = useMemo(() =>
+    allTasksList.filter(t => t.status === 'complete'),
+    [allTasksList]
+  );
+
+  const archivedTasksAll = useMemo(() =>
+    allTasksList.filter(t => t.status === 'archived'),
+    [allTasksList]
+  );
+
+  // Tab definitions with counts
+  const tabs = useMemo(() => [
+    { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) <= new Date())).length },
+    { id: 'waiting' as TasksTab, label: 'Waiting', count: waitingTasksAll.length },
+    { id: 'deferred' as TasksTab, label: 'Deferred', count: deferredTasksAll.length },
+    { id: 'completed' as TasksTab, label: 'Completed', count: completedTasksAll.length },
+    { id: 'archived' as TasksTab, label: 'Archived', count: archivedTasksAll.length },
+  ], [inboxTasks, poolTasks, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
 
   // Check if task is already in queue
   const queueTaskIds = new Set(queue.items.map((i) => i.taskId));
   const isInQueue = (taskId: string) => queueTaskIds.has(taskId);
 
-  // Filter tasks - exclude tasks already in focus queue from Ready section
-  const waitingTasks = poolTasks.filter((t) => t.waitingOn !== null);
+  // Staging tab: Filter tasks - resurfaced, ready (exclude tasks in queue)
   const resurfacedTasks = poolTasks.filter(
     (t) => t.deferredUntil && new Date(t.deferredUntil) <= new Date()
   );
@@ -178,53 +139,36 @@ export default function TasksView({
     return projects.find(p => p.id === task.projectId) ?? null;
   };
 
-  // Handle filter pill click
-  const handleFilterClick = (filterId: FilterPillType) => {
-    if (activeFilter === filterId) {
-      setActiveFilter(null); // Toggle off
-    } else {
-      setActiveFilter(filterId);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Filter Pills Row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {filterPills.map((pill) => {
-          const isActive = activeFilter === pill.id || (!activeFilter && pill.id === 'all');
-          const count = filterCounts[pill.id as keyof typeof filterCounts];
-          return (
+      {/* Scrollable Tab Bar */}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 flex justify-center">
+        <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit">
+          {tabs.map((tab) => (
             <button
-              key={pill.id}
-              onClick={() => handleFilterClick(pill.id)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors flex items-center gap-1 ${
-                isActive
-                  ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-                  : "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
-              {pill.label}
-              {count > 0 && (
-                <span className={`text-xs ${isActive ? 'text-violet-500 dark:text-violet-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
-                  {count}
-                </span>
+              {tab.label}
+              {tab.count > 0 && (
+                <span className="ml-1 text-xs opacity-50">{tab.count}</span>
               )}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-
-      {/* Filtered Results View */}
-      {showFilteredView && filteredTasks && (
+      {/* Waiting Tab */}
+      {activeTab === 'waiting' && (
         <section>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
-            {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
-          </p>
-          {filteredTasks.length > 0 ? (
+          {waitingTasksAll.length > 0 ? (
             <div className="space-y-2">
-              {filteredTasks.map((task) => (
+              {waitingTasksAll.map((task) => (
                 <TaskRow
                   key={task.id}
                   task={task}
@@ -235,24 +179,102 @@ export default function TasksView({
                   onDefer={onDefer}
                   onPark={onPark}
                   onDelete={onDelete}
-                  badge={
-                    task.waitingOn ? `Waiting: ${task.waitingOn.who}` :
-                    task.deferredUntil ? `Deferred: ${task.deferredUntil}` :
-                    undefined
-                  }
+                  badge={`Waiting: ${task.waitingOn?.who}`}
                 />
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-              No tasks found
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+              No tasks waiting on others
             </div>
           )}
         </section>
       )}
 
-      {/* Default Sectioned View */}
-      {!showFilteredView && (
+      {/* Deferred Tab */}
+      {activeTab === 'deferred' && (
+        <section>
+          {deferredTasksAll.length > 0 ? (
+            <div className="space-y-2">
+              {deferredTasksAll.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isInQueue={isInQueue(task.id)}
+                  project={getProject(task)}
+                  onOpen={() => onOpenTask(task.id)}
+                  onAddToQueue={() => onAddToQueue(task.id)}
+                  onDefer={onDefer}
+                  onPark={onPark}
+                  onDelete={onDelete}
+                  badge={`Until: ${task.deferredUntil}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+              No deferred tasks
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Completed Tab */}
+      {activeTab === 'completed' && (
+        <section>
+          {completedTasksAll.length > 0 ? (
+            <div className="space-y-2">
+              {completedTasksAll.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isInQueue={isInQueue(task.id)}
+                  project={getProject(task)}
+                  onOpen={() => onOpenTask(task.id)}
+                  onAddToQueue={() => onAddToQueue(task.id)}
+                  onDefer={onDefer}
+                  onPark={onPark}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+              No completed tasks
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Archived Tab */}
+      {activeTab === 'archived' && (
+        <section>
+          {archivedTasksAll.length > 0 ? (
+            <div className="space-y-2">
+              {archivedTasksAll.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isInQueue={isInQueue(task.id)}
+                  project={getProject(task)}
+                  onOpen={() => onOpenTask(task.id)}
+                  onAddToQueue={() => onAddToQueue(task.id)}
+                  onDefer={onDefer}
+                  onPark={onPark}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+              No archived tasks
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Staging Tab - Sectioned View */}
+      {activeTab === 'staging' && (
         <>
           {/* Needs Triage Section (Collapsible) */}
           {inboxTasks.length > 0 && (
@@ -386,33 +408,6 @@ export default function TasksView({
         )}
       </section>
 
-      {/* Waiting Section */}
-      {waitingTasks.length > 0 && (
-        <section>
-          <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-            <span>Waiting On</span>
-            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
-              {waitingTasks.length}
-            </span>
-          </h2>
-          <div className="space-y-2">
-            {waitingTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isInQueue={isInQueue(task.id)}
-                project={getProject(task)}
-                onOpen={() => onOpenTask(task.id)}
-                onAddToQueue={() => onAddToQueue(task.id)}
-                onDefer={onDefer}
-                onPark={onPark}
-                onDelete={onDelete}
-                badge={`Waiting: ${task.waitingOn?.who}`}
-              />
-            ))}
-          </div>
-        </section>
-      )}
         </>
       )}
     </div>
