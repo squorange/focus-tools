@@ -70,10 +70,10 @@ export default function RoutineCard({
           {/* Top row: Circle (left) + Streak + Chevron (right) */}
           <div className="flex items-center justify-between">
             {/* Circle - 20px to match other task rows */}
-            {/* Amber ring when past time window (missed slot) */}
+            {/* Small "!" inside when past time window */}
             <button
               onClick={handleCircleClick}
-              className="flex-shrink-0 w-5 h-5 group"
+              className="flex-shrink-0 w-5 h-5 group relative"
             >
               <svg viewBox="0 0 20 20" className="w-full h-full">
                 <circle
@@ -83,12 +83,20 @@ export default function RoutineCard({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
-                  className={`transition-colors ${
-                    isPastWindow
-                      ? "text-amber-400 dark:text-amber-500 group-hover:text-amber-500 dark:group-hover:text-amber-400"
-                      : "text-zinc-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500"
-                  }`}
+                  className="text-zinc-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors"
                 />
+                {/* Small "!" indicator when past time window */}
+                {isPastWindow && (
+                  <text
+                    x="10"
+                    y="14"
+                    textAnchor="middle"
+                    className="fill-amber-500 dark:fill-amber-400"
+                    style={{ fontSize: "10px", fontWeight: 600 }}
+                  >
+                    !
+                  </text>
+                )}
               </svg>
             </button>
 
@@ -109,14 +117,18 @@ export default function RoutineCard({
           {/* Spacer to push pattern to bottom */}
           <div className="flex-1" />
 
-          {/* Bottom row: Pattern + Overdue indicator */}
+          {/* Bottom row: Pattern (amber if past window) + Overdue indicator */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 min-w-0">
+            <div className={`flex items-center gap-1.5 text-xs min-w-0 ${
+              isPastWindow
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-zinc-500 dark:text-zinc-400"
+            }`}>
               <Repeat className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{patternDescription}</span>
             </div>
 
-            {/* Overdue indicator */}
+            {/* Overdue indicator (day-level, not time-window) */}
             {overdueDays > 0 && (
               <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="w-3 h-3" />
