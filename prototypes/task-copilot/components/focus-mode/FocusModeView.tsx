@@ -40,6 +40,8 @@ interface FocusModeViewProps {
   onRejectDeletion: (deletion: DeletionSuggestion) => void;
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
+  // Routine step scope
+  onAcceptWithScope?: (scope: 'instance' | 'template') => void;
 }
 
 // Format time as MM:SS
@@ -104,6 +106,7 @@ export default function FocusModeView({
   onRejectDeletion,
   onAcceptTitle,
   onRejectTitle,
+  onAcceptWithScope,
 }: FocusModeViewProps) {
   // Initialize timer from persisted state to survive refresh
   const [elapsedSeconds, setElapsedSeconds] = useState(() => {
@@ -603,6 +606,8 @@ export default function FocusModeView({
               onRejectDeletion={onRejectDeletion}
               onAcceptTitle={onAcceptTitle}
               onRejectTitle={onRejectTitle}
+              isRoutine={task.isRecurring}
+              onAcceptWithScope={onAcceptWithScope}
             />
           </div>
         )}

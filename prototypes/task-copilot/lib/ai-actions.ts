@@ -126,6 +126,62 @@ export const AI_ACTIONS = {
       query: 'What can you help me with?',
     },
   },
+
+  // Routine-specific actions (TaskDetail when viewing recurring task)
+  routine: {
+    breakdownRoutine: {
+      id: 'breakdownRoutine',
+      label: 'Break down routine',
+      icon: '📋',
+      query: 'Break this routine into steps for today',
+    },
+    addToday: {
+      id: 'addToday',
+      label: 'Add for today',
+      icon: '➕',
+      query: 'Help me add a step just for today',
+    },
+    addToTemplate: {
+      id: 'addToTemplate',
+      label: 'Add to routine',
+      icon: '🔄',
+      query: 'Add a step to the routine template',
+    },
+    habitTips: {
+      id: 'habitTips',
+      label: 'Habit tips',
+      icon: '💡',
+      query: 'Give me tips for this routine',
+    },
+    streakMotivation: {
+      id: 'streakMotivation',
+      label: 'Motivate me',
+      icon: '🔥',
+      query: 'Help me keep my streak',
+    },
+  },
+
+  // Routine-specific focus mode actions
+  routineFocusMode: {
+    breakdown: {
+      id: 'breakdown',
+      label: 'Break down',
+      icon: '📋',
+      query: 'Break this routine step into smaller substeps',
+    },
+    helpMeStart: {
+      id: 'helpMeStart',
+      label: 'Help me start',
+      icon: '👉',
+      query: "What's my first tiny action for this routine step?",
+    },
+    streakReminder: {
+      id: 'streakReminder',
+      label: 'Streak',
+      icon: '🔥',
+      query: 'Remind me about my streak to stay motivated',
+    },
+  },
 } as const;
 
 // ============ Helper Types ============

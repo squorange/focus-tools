@@ -104,6 +104,21 @@ export const STEP_QUICK_ACTIONS: QuickAction[] = [
   },
 ];
 
+// ============ Routine-Specific Quick Actions ============
+// Shown when viewing a recurring task in TaskDetail
+
+export const ROUTINE_QUICK_ACTIONS: QuickAction[] = [
+  { ...AI_ACTIONS.routine.breakdownRoutine, contexts: ['taskDetail'] },
+  { ...AI_ACTIONS.routine.habitTips, contexts: ['taskDetail'] },
+];
+
+// Shown in focus mode when working on a routine step
+export const ROUTINE_FOCUS_QUICK_ACTIONS: QuickAction[] = [
+  { ...AI_ACTIONS.routineFocusMode.breakdown, contexts: ['focusMode'] },
+  { ...AI_ACTIONS.routineFocusMode.helpMeStart, contexts: ['focusMode'] },
+  { ...AI_ACTIONS.routineFocusMode.streakReminder, contexts: ['focusMode'] },
+];
+
 // ============ Quick Actions by Context ============
 // Derived from AI_ACTIONS registry (lib/ai-actions.ts) - single source of truth
 

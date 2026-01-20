@@ -53,7 +53,9 @@ import {
   getActiveOccurrenceDate,
   updateTaskMetadataAfterCompletion,
   calculateStreak,
+  describePattern,
 } from "@/lib/recurring-utils";
+import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 // Old AIDrawer removed - functionality moved to minibar/palette
@@ -417,6 +419,45 @@ export default function Home() {
     // Get active staging context for follow-up questions about pending suggestions
     const activeStaging = getActiveStaging();
 
+    // Build routine context for recurring tasks
+    let routineContext: {
+      isRecurring: boolean;
+      streak: number;
+      bestStreak: number;
+      totalCompletions: number;
+      isOverdue: boolean;
+      overdueDays: number | null;
+      patternDescription: string;
+      scheduledTime: string | null;
+      activeInstanceDate: string | null;
+      instanceStepCount: number;
+      templateStepCount: number;
+    } | null = null;
+
+    if (currentTask?.isRecurring && currentTask.recurrence) {
+      const pattern = currentTask.recurrence as RecurrenceRuleExtended;
+      const activeDate = getActiveOccurrenceDate(currentTask);
+      const instance = activeDate
+        ? currentTask.recurringInstances?.find(i => i.date === activeDate)
+        : null;
+
+      routineContext = {
+        isRecurring: true,
+        streak: currentTask.recurringStreak || 0,
+        bestStreak: currentTask.recurringBestStreak || 0,
+        totalCompletions: currentTask.recurringTotalCompletions || 0,
+        isOverdue: (instance?.overdueDays ?? 0) > 0,
+        overdueDays: instance?.overdueDays ?? null,
+        patternDescription: describePattern(pattern),
+        scheduledTime: pattern.time || null,
+        activeInstanceDate: activeDate,
+        instanceStepCount: instance
+          ? (instance.routineSteps?.length || 0) + (instance.additionalSteps?.length || 0)
+          : 0,
+        templateStepCount: currentTask.steps.length,
+      };
+    }
+
     try {
       const response = await fetch("/api/structure", {
         method: "POST",
@@ -443,6 +484,8 @@ export default function Home() {
           pendingEdits: activeStaging?.edits || null,
           pendingDeletions: activeStaging?.deletions || null,
           pendingAction: activeStaging?.pendingAction || null,
+          // Include routine context for recurring tasks
+          routineContext,
           ...viewContext,  // Include view-specific context
         }),
       });
@@ -3688,6 +3731,131 @@ export default function Home() {
     }
   }, [clearActiveStaging, aiAssistant, lastQuerySubmittedAt, stagingPopulatedAt]);
 
+  // Accept suggestions with scope (for recurring tasks)
+  const handleAcceptWithScope = useCallback((scope: 'instance' | 'template') => {
+    if (!state.activeTaskId) return;
+
+    const staging = getActiveStaging();
+    if (!staging || staging.suggestions.length === 0) return;
+
+    const task = state.tasks.find(t => t.id === state.activeTaskId);
+    if (!task || !task.isRecurring) return;
+
+    const now = Date.now();
+
+    if (scope === 'instance') {
+      // Add steps to instance.additionalSteps
+      const activeDate = getActiveOccurrenceDate(task);
+      if (!activeDate) return;
+
+      const newAdditionalSteps = staging.suggestions.map((suggestion) =>
+        createStep(suggestion.text, {
+          id: suggestion.id,
+          source: 'ai_generated',
+          estimatedMinutes: suggestion.estimatedMinutes || null,
+          estimateSource: suggestion.estimatedMinutes ? 'ai' : null,
+          substeps: suggestion.substeps.map((sub) => ({
+            id: sub.id,
+            text: sub.text,
+            shortLabel: null,
+            completed: false,
+            completedAt: null,
+            skipped: false,
+            source: 'ai_generated' as const,
+          })),
+        })
+      );
+
+      setState((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== state.activeTaskId) return t;
+
+          const instances = t.recurringInstances || [];
+          const instanceIndex = instances.findIndex(i => i.date === activeDate);
+
+          if (instanceIndex >= 0) {
+            // Update existing instance
+            const updatedInstances = [...instances];
+            updatedInstances[instanceIndex] = {
+              ...updatedInstances[instanceIndex],
+              additionalSteps: [
+                ...(updatedInstances[instanceIndex].additionalSteps || []),
+                ...newAdditionalSteps,
+              ],
+            };
+            return {
+              ...t,
+              recurringInstances: updatedInstances,
+              staging: null,
+              aiAssisted: true,
+              updatedAt: now,
+            };
+          } else {
+            // Create new instance with additional steps
+            const newInstance = ensureInstance(t, activeDate);
+            newInstance.additionalSteps = [...(newInstance.additionalSteps || []), ...newAdditionalSteps];
+            return {
+              ...t,
+              recurringInstances: [...instances, newInstance],
+              staging: null,
+              aiAssisted: true,
+              updatedAt: now,
+            };
+          }
+        }),
+      }));
+
+      showToast({ message: `Added ${staging.suggestions.length} step${staging.suggestions.length > 1 ? 's' : ''} to today's instance`, type: 'success' });
+    } else {
+      // Add steps to task.steps (template)
+      const newSteps = staging.suggestions.map((suggestion) =>
+        createStep(suggestion.text, {
+          id: suggestion.id,
+          source: 'ai_generated',
+          estimatedMinutes: suggestion.estimatedMinutes || null,
+          estimateSource: suggestion.estimatedMinutes ? 'ai' : null,
+          substeps: suggestion.substeps.map((sub) => ({
+            id: sub.id,
+            text: sub.text,
+            shortLabel: null,
+            completed: false,
+            completedAt: null,
+            skipped: false,
+            source: 'ai_generated' as const,
+          })),
+        })
+      );
+
+      setState((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === state.activeTaskId
+            ? {
+                ...t,
+                steps: [...t.steps, ...newSteps],
+                staging: null,
+                completionType: 'step_based',
+                aiAssisted: true,
+                updatedAt: now,
+              }
+            : t
+        ),
+      }));
+
+      showToast({ message: `Added ${staging.suggestions.length} step${staging.suggestions.length > 1 ? 's' : ''} to routine template`, type: 'success' });
+    }
+
+    // Clear staging and palette
+    clearActiveStaging();
+    const hasNewQuerySinceStaging = lastQuerySubmittedAt > stagingPopulatedAt;
+    if (!hasNewQuerySinceStaging) {
+      aiAssistant.dismissResponse();
+      aiAssistant.collapse();
+      setPaletteManuallyOpened(false);
+    }
+  }, [state.activeTaskId, state.tasks, getActiveStaging, clearActiveStaging, aiAssistant, lastQuerySubmittedAt, stagingPopulatedAt, showToast]);
+
   // ============================================
   // Computed Values
   // ============================================
@@ -4045,6 +4213,7 @@ export default function Home() {
                 onCompleteRoutine={handleCompleteRoutine}
                 onSkipRoutine={handleSkipRoutine}
                 onMarkRoutineIncomplete={handleMarkRoutineIncomplete}
+                onAcceptWithScope={handleAcceptWithScope}
               />
             )}
 
@@ -4082,6 +4251,7 @@ export default function Home() {
                 onRejectDeletion={handleRejectDeletion}
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
+                onAcceptWithScope={handleAcceptWithScope}
               />
             )}
           </div>

@@ -90,6 +90,8 @@ interface TaskDetailProps {
   onCompleteRoutine?: (taskId: string) => void;
   onSkipRoutine?: (taskId: string) => void;
   onMarkRoutineIncomplete?: (taskId: string) => void;
+  // Routine step scope
+  onAcceptWithScope?: (scope: 'instance' | 'template') => void;
 }
 
 // Get queue item for this task
@@ -150,6 +152,7 @@ export default function TaskDetail({
   onCompleteRoutine,
   onSkipRoutine,
   onMarkRoutineIncomplete,
+  onAcceptWithScope,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -701,6 +704,8 @@ export default function TaskDetail({
             onRejectTitle={onRejectTitle}
             isNewArrival={stagingIsNewArrival}
             onAnimationComplete={onStagingAnimationComplete}
+            isRoutine={task.isRecurring}
+            onAcceptWithScope={onAcceptWithScope}
           />
         </div>
       )}

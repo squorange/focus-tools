@@ -22,6 +22,9 @@ interface StagingAreaProps {
   defaultExpanded?: boolean;
   isNewArrival?: boolean;
   onAnimationComplete?: () => void;
+  // Routine support
+  isRoutine?: boolean;
+  onAcceptWithScope?: (scope: 'instance' | 'template') => void;
 }
 
 export default function StagingArea({
@@ -42,6 +45,8 @@ export default function StagingArea({
   defaultExpanded = true,
   isNewArrival = false,
   onAnimationComplete,
+  isRoutine = false,
+  onAcceptWithScope,
 }: StagingAreaProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isPulsing, setIsPulsing] = useState(false);
@@ -330,19 +335,51 @@ export default function StagingArea({
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-2 border-t border-violet-200 dark:border-violet-700">
-            <button
-              onClick={onAcceptAll}
-              className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-            >
-              Accept all
-            </button>
-            <button
-              onClick={onDismiss}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
-            >
-              Dismiss
-            </button>
+          <div className="pt-2 border-t border-violet-200 dark:border-violet-700">
+            {/* Scope selection for routines */}
+            {isRoutine && onAcceptWithScope && safeSuggestions.length > 0 && (
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => onAcceptWithScope('instance')}
+                  className="flex-1 px-3 py-2 text-sm font-medium
+                             bg-violet-100 dark:bg-violet-900/30
+                             text-violet-700 dark:text-violet-300
+                             hover:bg-violet-200 dark:hover:bg-violet-800/40
+                             rounded-lg transition-colors"
+                >
+                  Add to today only
+                </button>
+                <button
+                  onClick={() => onAcceptWithScope('template')}
+                  className="flex-1 px-3 py-2 text-sm font-medium
+                             bg-blue-100 dark:bg-blue-900/30
+                             text-blue-700 dark:text-blue-300
+                             hover:bg-blue-200 dark:hover:bg-blue-800/40
+                             rounded-lg transition-colors"
+                >
+                  Add to routine
+                </button>
+              </div>
+            )}
+
+            {/* Standard actions */}
+            <div className="flex items-center gap-3">
+              {/* Only show Accept all for non-routines or when no suggestions */}
+              {(!isRoutine || safeSuggestions.length === 0) && (
+                <button
+                  onClick={onAcceptAll}
+                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                >
+                  Accept all
+                </button>
+              )}
+              <button
+                onClick={onDismiss}
+                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       )}
