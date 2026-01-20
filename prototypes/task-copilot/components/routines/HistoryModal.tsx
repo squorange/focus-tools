@@ -299,7 +299,7 @@ export default function HistoryModal({
       </div>
 
       {/* Selected Date Details Panel */}
-      {selectedInstance && canTakeAction(selectedInstance, today) && onUpdateTask && (
+      {selectedInstance && (
         <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
           <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">
             {parseISO(selectedInstance.date).toLocaleDateString("en-US", {
@@ -311,30 +311,84 @@ export default function HistoryModal({
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
             Status: {getStatusLabel(selectedInstance.status)}
           </p>
-          <div className="flex gap-2">
-            {(selectedInstance.status === "missed" ||
-              selectedInstance.status === "overdue" ||
-              selectedInstance.status === "today") && (
-              <button
-                onClick={() => handleMarkComplete(selectedInstance.date)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-              >
-                <Check className="w-4 h-4" />
-                Complete
-              </button>
-            )}
-            {(selectedInstance.status === "missed" ||
-              selectedInstance.status === "overdue" ||
-              selectedInstance.status === "today") && (
-              <button
-                onClick={() => handleMarkSkipped(selectedInstance.date)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
-              >
-                <SkipForward className="w-4 h-4" />
-                Skip
-              </button>
-            )}
-          </div>
+
+          {/* Show completed steps for this day */}
+          {selectedInstance.instance && (
+            <>
+              {/* Routine steps completed */}
+              {selectedInstance.instance.routineSteps.filter(s => s.completed).length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+                    Completed Steps
+                  </p>
+                  <ul className="space-y-1">
+                    {selectedInstance.instance.routineSteps
+                      .filter(s => s.completed)
+                      .map(step => (
+                        <li key={step.id} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
+                          <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                          <span className="truncate">{step.text}</span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              {/* Additional steps completed */}
+              {selectedInstance.instance.additionalSteps?.filter(s => s.completed).length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+                    Additional Steps Completed
+                  </p>
+                  <ul className="space-y-1">
+                    {selectedInstance.instance.additionalSteps
+                      .filter(s => s.completed)
+                      .map(step => (
+                        <li key={step.id} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
+                          <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                          <span className="truncate">{step.text}</span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              {/* No steps completed message */}
+              {selectedInstance.instance.routineSteps.filter(s => s.completed).length === 0 &&
+                (!selectedInstance.instance.additionalSteps || selectedInstance.instance.additionalSteps.filter(s => s.completed).length === 0) &&
+                selectedInstance.status !== "completed" && (
+                <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-3 italic">
+                  No steps completed yet
+                </p>
+              )}
+            </>
+          )}
+
+          {/* Actions for incomplete days */}
+          {canTakeAction(selectedInstance, today) && onUpdateTask && (
+            <div className="flex gap-2">
+              {(selectedInstance.status === "missed" ||
+                selectedInstance.status === "overdue" ||
+                selectedInstance.status === "today") && (
+                <button
+                  onClick={() => handleMarkComplete(selectedInstance.date)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Complete
+                </button>
+              )}
+              {(selectedInstance.status === "missed" ||
+                selectedInstance.status === "overdue" ||
+                selectedInstance.status === "today") && (
+                <button
+                  onClick={() => handleMarkSkipped(selectedInstance.date)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                >
+                  <SkipForward className="w-4 h-4" />
+                  Skip
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

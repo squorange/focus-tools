@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Task } from "@/lib/types";
-import { filterDueToday } from "@/lib/recurring-utils";
+import { filterDueToday, sortByTime } from "@/lib/recurring-utils";
+import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import RoutineCard from "./RoutineCard";
 
 interface RoutinesGalleryProps {
@@ -12,14 +13,44 @@ interface RoutinesGalleryProps {
   onOpenTask: (taskId: string) => void;
 }
 
+// Time window status for a routine's scheduled time
+type TimeWindowStatus = "before" | "active" | "past";
+
+// Check if a routine is within ±1 hour of its target time (2-hour bracket)
+function getTimeWindowStatus(task: Task): TimeWindowStatus {
+  const recurrence = task.recurrence as RecurrenceRuleExtended | null;
+  if (!recurrence?.time) return "before";
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const [targetHours, targetMins] = recurrence.time.split(":").map(Number);
+  const targetMinutes = targetHours * 60 + (targetMins || 0);
+
+  // 1 hour before to 1 hour after target time
+  const windowStart = targetMinutes - 60;
+  const windowEnd = targetMinutes + 60;
+
+  if (currentMinutes < windowStart) {
+    return "before";
+  } else if (currentMinutes <= windowEnd) {
+    return "active"; // Within ±1 hour window
+  } else {
+    return "past"; // Past the window
+  }
+}
+
 export default function RoutinesGallery({
   tasks,
   onCompleteRoutine,
   onSkipRoutine,
   onOpenTask,
 }: RoutinesGalleryProps) {
-  // Get routines due today (includes overdue with rollover)
-  const dueRoutines = filterDueToday(tasks);
+  // Get routines due today (includes overdue with rollover), sorted by scheduled time
+  const dueRoutines = useMemo(() => {
+    const filtered = filterDueToday(tasks);
+    return sortByTime(filtered);
+  }, [tasks]);
 
   // Scroll state for gradient fades
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -87,7 +118,7 @@ export default function RoutinesGallery({
             Desktop: CSS mask-image creates edge fade effect without relying on overflow */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory -mx-4 pl-4 pr-4 scroll-pl-4 lg:-mx-20 lg:pl-20 lg:pr-20 lg:scroll-pl-20"
+          className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory -mx-4 pl-4 pr-4 scroll-pl-4 lg:-mx-20 lg:pl-20 lg:pr-20 lg:scroll-pl-20"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -122,6 +153,7 @@ export default function RoutinesGallery({
                 onComplete={onCompleteRoutine}
                 onSkip={onSkipRoutine}
                 onOpenDetail={onOpenTask}
+                timeWindowStatus={getTimeWindowStatus(task)}
               />
             </div>
           ))}

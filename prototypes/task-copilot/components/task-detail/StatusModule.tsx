@@ -3,7 +3,17 @@
 import { Task } from "@/lib/types";
 import { RecurrenceRuleExtended, RecurringInstance } from "@/lib/recurring-types";
 import { describePattern } from "@/lib/recurring-utils";
-import { Check, ChevronRight, Repeat, Zap } from "lucide-react";
+import { Check, ChevronRight, Repeat, Zap, Calendar } from "lucide-react";
+
+// Format date as "Tuesday, Jan 20" for clear day identification
+function formatInstanceDate(isoDate: string): string {
+  const date = new Date(isoDate + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 interface StatusModuleProps {
   task: Task;
@@ -57,15 +67,13 @@ function LargeProgressRing({
     );
   }
 
-  // Stepless task, not complete - empty circle
+  // Stepless task, not complete - empty circle (no dash inside)
   if (total === 0) {
     return (
       <div
         className="rounded-full border-2 border-zinc-300 dark:border-zinc-600 flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
-      >
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">-</span>
-      </div>
+      />
     );
   }
 
@@ -170,19 +178,31 @@ export default function StatusModule({
           overdue={currentInstance?.overdueDays ? currentInstance.overdueDays > 0 : false}
         />
         <div className="flex-1 min-w-0">
-          {/* Pattern + streak in single row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <Repeat className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-              <span>{patternDescription}</span>
-            </div>
-            {/* Streak with Zap icon */}
+          {/* Top row: Date context + Streak (right-aligned) */}
+          <div className="flex items-start justify-between">
+            {/* Date context - shows which day this instance is for */}
+            {currentInstance?.date && (
+              <span className={`text-sm ${currentInstance.completed
+                ? "text-green-600 dark:text-green-400"
+                : "text-zinc-600 dark:text-zinc-400"
+              }`}>
+                {currentInstance.completed ? "Completed for " : "For "}
+                {formatInstanceDate(currentInstance.date)}
+              </span>
+            )}
+            {/* Streak with Zap icon - monochromatic, no unit */}
             {task.recurringStreak > 0 && (
-              <div className="flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 font-medium">
+              <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-shrink-0 ml-2">
                 <Zap className="w-3.5 h-3.5" />
-                <span>{task.recurringStreak}d</span>
+                <span>{task.recurringStreak}</span>
               </div>
             )}
+          </div>
+
+          {/* Pattern description */}
+          <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+            <Repeat className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+            <span>{patternDescription}</span>
           </div>
 
           {/* Tap to expand completed steps - only if any completed and not instance complete */}

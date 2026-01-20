@@ -11,9 +11,11 @@ interface DailySummaryBannerProps {
   onOpenCompleted: () => void;
 }
 
-// Get total estimated time for items
+// Get total estimated time for items (only if high confidence - 50%+ have estimates)
 function getTotalEstimate(items: FocusQueueItem[], tasks: Task[]): string | null {
   let totalMinutes = 0;
+  let stepsWithEstimate = 0;
+  let totalIncompleteSteps = 0;
 
   for (const item of items) {
     const task = tasks.find((t) => t.id === item.taskId);
@@ -25,13 +27,21 @@ function getTotalEstimate(items: FocusQueueItem[], tasks: Task[]): string | null
         : task.steps.filter((s) => item.selectedStepIds.includes(s.id));
 
     const incompleteSteps = steps.filter((s) => !s.completed);
-    totalMinutes += incompleteSteps.reduce(
-      (sum, s) => sum + (s.estimatedMinutes || 0),
-      0
-    );
+    totalIncompleteSteps += incompleteSteps.length;
+
+    for (const step of incompleteSteps) {
+      if (step.estimatedMinutes && step.estimatedMinutes > 0) {
+        totalMinutes += step.estimatedMinutes;
+        stepsWithEstimate++;
+      }
+    }
   }
 
-  if (totalMinutes === 0) return null;
+  // Only show estimate if 50%+ of incomplete steps have estimates (high confidence)
+  if (totalMinutes === 0 || totalIncompleteSteps === 0) return null;
+  const coverageRatio = stepsWithEstimate / totalIncompleteSteps;
+  if (coverageRatio < 0.5) return null;
+
   if (totalMinutes < 60) return `~${totalMinutes}m`;
   const hours = Math.floor(totalMinutes / 60);
   const mins = totalMinutes % 60;
@@ -72,18 +82,16 @@ export default function DailySummaryBanner({
     return null;
   }
 
-  // Build display string - progress-focused
+  // Build display string - completions focused (no "X of Y" to avoid overwhelm)
   let displayText: string;
   if (allDone) {
     displayText = "All done for today!";
   } else if (doneItems > 0) {
     displayText = timeEstimate
-      ? `${doneItems} of ${totalItems} done  ·  ${timeEstimate}`
-      : `${doneItems} of ${totalItems} done`;
-  } else if (totalItems > 0) {
-    displayText = timeEstimate
-      ? `${totalItems} to do  ·  ${timeEstimate}`
-      : "Tap to view completed";
+      ? `${doneItems} completed  ·  ${timeEstimate} remaining`
+      : `${doneItems} completed`;
+  } else if (timeEstimate) {
+    displayText = `${timeEstimate} remaining`;
   } else {
     displayText = "Tap to view completed";
   }

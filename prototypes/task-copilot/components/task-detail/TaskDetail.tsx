@@ -6,7 +6,7 @@ import { Sparkles, Loader2, Repeat, History, Pause, Play, X } from "lucide-react
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
-import { getTodayISO, ensureInstance, describePattern } from "@/lib/recurring-utils";
+import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
@@ -188,7 +188,8 @@ export default function TaskDetail({
 
   // Recurring task state
   const isRecurring = task.isRecurring && task.recurrence;
-  const activeDate = isRecurring ? getTodayISO() : null;
+  // Use getActiveOccurrenceDate for routines with rollover (returns overdue date if applicable)
+  const activeDate = isRecurring ? (getActiveOccurrenceDate(task) || getTodayISO()) : null;
   const recurrencePattern = task.recurrence as RecurrenceRuleExtended | null;
   const isPaused = recurrencePattern?.pausedAt ? true : false;
   const patternDescription = recurrencePattern ? describePattern(recurrencePattern) : '';

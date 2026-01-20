@@ -1122,10 +1122,10 @@ export function getRoutineMetadataPills(
   const pills: RoutinePill[] = [];
   const today = getTodayISO(dayStartHour);
 
-  // Streak pill
+  // Streak pill - show instance count (no "d" suffix, more meaningful for all patterns)
   if (task.recurringStreak && task.recurringStreak > 0) {
     pills.push({
-      label: `${task.recurringStreak}d streak`,
+      label: `${task.recurringStreak} streak`,
       icon: '🔥',
       color: 'green',
     });

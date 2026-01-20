@@ -50,6 +50,9 @@ import {
   getTodayISO as getRecurringTodayISO,
   ensureInstance,
   isInstanceComplete,
+  getActiveOccurrenceDate,
+  updateTaskMetadataAfterCompletion,
+  calculateStreak,
 } from "@/lib/recurring-utils";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -2175,9 +2178,8 @@ export default function Home() {
     }
   }, []);
 
-  // Complete a routine for today
+  // Complete a routine (uses active occurrence date for overdue support)
   const handleCompleteRoutine = useCallback((taskId: string) => {
-    const today = getRecurringTodayISO();
     let taskTitle = '';
     let newStreak = 0;
     let previousTask: Task | undefined;
@@ -2186,9 +2188,11 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task || !task.isRecurring) return prev;
 
+      // Use active occurrence date (handles overdue rollover)
+      const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
       taskTitle = task.title;
       previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
-      const updatedTask = markInstanceComplete(task, today);
+      const updatedTask = markInstanceComplete(task, activeDate);
       newStreak = updatedTask.recurringStreak;
 
       return {
@@ -2215,9 +2219,8 @@ export default function Home() {
     }]);
   }, []);
 
-  // Skip a routine for today
+  // Skip a routine (uses active occurrence date for overdue support)
   const handleSkipRoutine = useCallback((taskId: string) => {
-    const today = getRecurringTodayISO();
     let taskTitle = '';
     let previousTask: Task | undefined;
 
@@ -2225,9 +2228,11 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task || !task.isRecurring) return prev;
 
+      // Use active occurrence date (handles overdue rollover)
+      const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
       taskTitle = task.title;
       previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
-      const updatedTask = skipInstance(task, today);
+      const updatedTask = skipInstance(task, activeDate);
 
       return {
         ...prev,
@@ -2253,8 +2258,8 @@ export default function Home() {
     }]);
   }, []);
 
+  // Mark routine incomplete (uses active occurrence date for overdue support)
   const handleMarkRoutineIncomplete = useCallback((taskId: string) => {
-    const today = getRecurringTodayISO();
     let taskTitle = '';
     let previousTask: Task | undefined;
 
@@ -2262,9 +2267,11 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task || !task.isRecurring) return prev;
 
+      // Use active occurrence date (handles overdue rollover)
+      const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
       taskTitle = task.title;
       previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
-      const updatedTask = markInstanceIncomplete(task, today);
+      const updatedTask = markInstanceIncomplete(task, activeDate);
 
       return {
         ...prev,
@@ -2678,8 +2685,9 @@ export default function Home() {
 
       // RECURRING TASKS: Modify instance steps, not template
       if (task.isRecurring && task.recurrence) {
-        const today = getRecurringTodayISO();
-        const instance = ensureInstance(task, today);
+        // Use active occurrence date (handles overdue rollover)
+        const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
+        const instance = ensureInstance(task, activeDate);
         const now = Date.now();
 
         // Find and update step in routineSteps or additionalSteps
@@ -2712,6 +2720,9 @@ export default function Home() {
           updatedInstance.routineSteps.every((s) => s.completed) &&
           updatedInstance.additionalSteps.every((s) => s.completed);
 
+        // Was it already complete before this step change?
+        const wasAlreadyComplete = instance.completed;
+
         // If all complete, mark instance complete
         if (allStepsComplete && (updatedInstance.routineSteps.length > 0 || updatedInstance.additionalSteps.length > 0)) {
           updatedInstance.completed = true;
@@ -2723,15 +2734,44 @@ export default function Home() {
 
         // Update task's recurringInstances
         const updatedInstances = task.recurringInstances
-          .filter((i) => i.date !== today)
+          .filter((i) => i.date !== activeDate)
           .concat(updatedInstance);
+
+        // Prepare task updates
+        const taskUpdates: Partial<Task> = {
+          recurringInstances: updatedInstances,
+          updatedAt: now,
+        };
+
+        // If just became complete (wasn't before but is now), update metadata
+        if (updatedInstance.completed && !wasAlreadyComplete) {
+          // Create temp task to calculate streak
+          const tempTask = { ...task, recurringInstances: updatedInstances };
+          const newStreak = calculateStreak(tempTask);
+          taskUpdates.recurringTotalCompletions = (task.recurringTotalCompletions || 0) + 1;
+          taskUpdates.recurringLastCompleted = activeDate;
+          taskUpdates.recurringStreak = newStreak;
+          if (newStreak > (task.recurringBestStreak || 0)) {
+            taskUpdates.recurringBestStreak = newStreak;
+          }
+        }
+        // If just became incomplete (was before but isn't now), recalculate
+        else if (!updatedInstance.completed && wasAlreadyComplete) {
+          const tempTask = { ...task, recurringInstances: updatedInstances };
+          taskUpdates.recurringTotalCompletions = Math.max(0, (task.recurringTotalCompletions || 0) - 1);
+          taskUpdates.recurringStreak = calculateStreak(tempTask);
+          // Recalculate lastCompleted - find most recent completed instance
+          const completedInstances = updatedInstances
+            .filter(i => i.completed)
+            .sort((a, b) => b.date.localeCompare(a.date));
+          taskUpdates.recurringLastCompleted = completedInstances[0]?.date || null;
+        }
 
         const updatedTasks = prev.tasks.map((t) => {
           if (t.id !== taskId) return t;
           return {
             ...t,
-            recurringInstances: updatedInstances,
-            updatedAt: now,
+            ...taskUpdates,
           };
         });
 
@@ -2831,8 +2871,9 @@ export default function Home() {
 
       // RECURRING TASKS: Add to instance's additionalSteps
       if (task.isRecurring && task.recurrence) {
-        const today = getRecurringTodayISO();
-        const instance = ensureInstance(task, today);
+        // Use active occurrence date (handles overdue rollover)
+        const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
+        const instance = ensureInstance(task, activeDate);
 
         const updatedInstance = {
           ...instance,
@@ -2840,7 +2881,7 @@ export default function Home() {
         };
 
         const updatedInstances = task.recurringInstances
-          .filter((i) => i.date !== today)
+          .filter((i) => i.date !== activeDate)
           .concat(updatedInstance);
 
         return {
