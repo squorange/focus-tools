@@ -273,6 +273,12 @@ function TaskCompletionItem({
           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
             {task.taskTitle}
           </span>
+          {/* Routine indicator */}
+          {task.isRoutine && (
+            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+              Routine
+            </span>
+          )}
         </div>
         {/* Focus time on right */}
         {task.focusTimeMinutes > 0 && (
@@ -296,8 +302,8 @@ function TaskCompletionItem({
         </div>
       )}
 
-      {/* Show "Task completed" label if task is fully done with no visible steps */}
-      {task.isTaskCompleted && task.completedSteps.length === 0 && (
+      {/* Show completion type label */}
+      {task.isTaskCompleted && task.completedSteps.length === 0 && !task.isRoutine && (
         <div className="mt-0.5 ml-6 text-xs text-zinc-400 dark:text-zinc-500">
           Task completed
         </div>

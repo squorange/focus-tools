@@ -32,10 +32,10 @@ export default function TabCluster({
       {/* Focus Tab */}
       <button
         onClick={() => onViewChange("focus")}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+        className={`px-4 py-2 text-sm rounded-md transition-colors ${
           isFocusActive
-            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-            : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm font-semibold"
+            : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium"
         }`}
       >
         Focus
@@ -44,10 +44,10 @@ export default function TabCluster({
       {/* Tasks Tab */}
       <button
         onClick={() => onViewChange("tasks")}
-        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
+        className={`px-4 py-2 text-sm rounded-md transition-colors flex items-center gap-1 ${
           isTasksActive
-            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
-            : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm font-semibold"
+            : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 font-medium"
         }`}
       >
         Tasks

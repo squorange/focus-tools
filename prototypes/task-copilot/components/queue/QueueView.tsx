@@ -7,10 +7,11 @@ import {
   deriveStateFromVisual,
   VisualElement,
 } from "@/lib/queue-reorder";
-import { countCompletionsToday } from "@/lib/completions";
 import QueueItem from "./QueueItem";
 import CompletedDrawer from "./CompletedDrawer";
+import DailySummaryBanner from "./DailySummaryBanner";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
+import RoutinesGallery from "@/components/routines/RoutinesGallery";
 
 // Unified slot model: line occupies a slot just like items
 // Visual slots: [top-zone, item0, item1, ..., LINE, itemN, ..., bottom-zone]
@@ -46,6 +47,12 @@ interface QueueViewProps {
   onMoveItemUp: (queueItemId: string) => void;
   onMoveItemDown: (queueItemId: string) => void;
   onGoToInbox: () => void;
+  // Routine handlers
+  onCompleteRoutine: (taskId: string) => void;
+  onSkipRoutine: (taskId: string) => void;
+  // Completed drawer state (lifted to page.tsx for layout push behavior)
+  completedDrawerOpen: boolean;
+  onToggleCompletedDrawer: (open: boolean) => void;
   // Note: "What should I do?" is now handled via minibar contextual prompt
 }
 
@@ -89,11 +96,14 @@ export default function QueueView({
   onMoveItemUp,
   onMoveItemDown,
   onGoToInbox,
+  onCompleteRoutine,
+  onSkipRoutine,
+  completedDrawerOpen,
+  onToggleCompletedDrawer,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
-  const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
   // Focus selection modal state
   const [editingQueueItemId, setEditingQueueItemId] = useState<string | null>(null);
 
@@ -164,12 +174,6 @@ export default function QueueView({
       performVisualReorder(lineIndex, lineIndex + 2); // +2 because we're moving forward
     }
   }, [visualElements, performVisualReorder]);
-
-  // Count all completions today (tasks + steps, across all tasks)
-  const completionCount = useMemo(
-    () => countCompletionsToday(tasks),
-    [tasks]
-  );
 
   // Drag handlers for items
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
@@ -387,32 +391,34 @@ export default function QueueView({
 
   return (
     <div className="flex flex-col">
+      {/* Daily Summary Banner - tap to open completed drawer */}
+      <DailySummaryBanner
+        tasks={tasks}
+        todayItems={todayItems}
+        onOpenCompleted={() => onToggleCompletedDrawer(true)}
+      />
+
+      {/* Routines Gallery - shows due routines at top */}
+      <RoutinesGallery
+        tasks={tasks}
+        onCompleteRoutine={onCompleteRoutine}
+        onSkipRoutine={onSkipRoutine}
+        onOpenTask={onOpenTask}
+      />
+
       {/* Header with today estimate */}
-      <div className="flex items-center justify-between px-1 mb-3">
-        <div className="flex items-baseline gap-2">
-          {todayItems.length > 0 && (
-            <span className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-              {todayItems.length} for today
-            </span>
-          )}
+      {todayItems.length > 0 && (
+        <div className="flex items-baseline gap-2 px-1 mb-3">
+          <span className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+            {todayItems.length} for today
+          </span>
           {todayEstimate && (
             <span className="text-sm text-zinc-400 dark:text-zinc-500">
               {todayEstimate}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {/* "What next?" is now handled via minibar contextual prompt */}
-          {totalItems > 0 && (
-            <button
-              onClick={() => setCompletedDrawerOpen(true)}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-            >
-              {completionCount > 0 ? `${completionCount} completed` : "Completed"}
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Queue Content */}
       <div>
@@ -451,7 +457,7 @@ export default function QueueView({
                 </button>
               )}
               <button
-                onClick={() => setCompletedDrawerOpen(true)}
+                onClick={() => onToggleCompletedDrawer(true)}
                 className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
               >
                 Show completed
@@ -617,7 +623,7 @@ export default function QueueView({
       {/* Completed Drawer */}
       <CompletedDrawer
         isOpen={completedDrawerOpen}
-        onClose={() => setCompletedDrawerOpen(false)}
+        onClose={() => onToggleCompletedDrawer(false)}
         tasks={tasks}
         onNavigateToTask={onOpenTask}
       />

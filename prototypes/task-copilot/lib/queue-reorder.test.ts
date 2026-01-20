@@ -21,7 +21,7 @@ function createMockItem(id: string): FocusQueueItem {
   return {
     id,
     taskId: `task-${id}`,
-    selectionType: "entire_task",
+    selectionType: "all_today",
     selectedStepIds: [],
     horizon: "today",
     scheduledDate: null,

@@ -1,4 +1,5 @@
 import { Task } from './types';
+import { RecurringInstance } from './recurring-types';
 
 // Step completion within a task
 export interface StepCompletion {
@@ -15,6 +16,7 @@ export interface TaskCompletion {
   completedAt: number;           // Task completion time OR latest step completion
   focusTimeMinutes: number;      // task.totalTimeSpent
   completedSteps: StepCompletion[];
+  isRoutine?: boolean;           // Is this a routine completion
 }
 
 // Date-grouped completions
@@ -33,6 +35,7 @@ export interface CompletionsResult {
 /**
  * Get all completions from tasks, grouped by task then by date.
  * Tasks are anchors with their completed steps as children.
+ * Also includes completed routine instances.
  */
 export function getCompletions(tasks: Task[], daysToShow = 7): CompletionsResult {
   const cutoff = Date.now() - (daysToShow * 24 * 60 * 60 * 1000);
@@ -42,6 +45,29 @@ export function getCompletions(tasks: Task[], daysToShow = 7): CompletionsResult
   for (const task of tasks) {
     if (task.deletedAt) continue;
 
+    // Handle recurring tasks - check instance completions
+    if (task.isRecurring && task.recurringInstances) {
+      for (const instance of task.recurringInstances) {
+        if (instance.completed && instance.completedAt) {
+          if (instance.completedAt >= cutoff) {
+            taskCompletions.push({
+              taskId: task.id,
+              taskTitle: task.title,
+              isTaskCompleted: true,
+              completedAt: instance.completedAt,
+              focusTimeMinutes: 0, // Routines don't track focus time per instance
+              completedSteps: [],
+              isRoutine: true,
+            });
+          } else {
+            hasMore = true;
+          }
+        }
+      }
+      continue; // Skip regular completion handling for recurring tasks
+    }
+
+    // Regular (non-recurring) tasks
     const isTaskCompleted = task.completedAt !== null;
     const taskCompletedInWindow = task.completedAt && task.completedAt >= cutoff;
 

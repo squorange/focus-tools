@@ -232,7 +232,7 @@ export function PaletteContent({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.15, delay: 0.05, layout: heightTransition }}
-      className="px-6 pb-6 sm:px-4 sm:pb-4 flex flex-col h-full"
+      className="px-6 pb-6 sm:px-4 sm:pb-4 flex flex-col"
     >
       {/* Target banner - shows when step is targeted (reply arrow style) */}
       {aiTargetContext && !isLoading && !response && (
@@ -263,7 +263,7 @@ export function PaletteContent({
       )}
 
       {/* Content area - scrollable with gradient fades */}
-      <div className="relative flex-1 min-h-0 mb-2">
+      <div className="relative flex-1 min-h-0 mb-4">
         {/* Top gradient fade (visible when scrolled down) */}
         <div
           className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
@@ -273,7 +273,7 @@ export function PaletteContent({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="overflow-y-auto overflow-x-visible max-h-[calc(50vh-180px)] scrollbar-hide"
+          className="overflow-y-auto overflow-x-visible max-h-[calc(50vh-220px)] scrollbar-hide"
         >
           <motion.div
             animate={{
@@ -330,7 +330,7 @@ export function PaletteContent({
                   >
                     {/* Suggestions: Show summary text (actual suggestions are in StagingArea) */}
                     {hasSuggestionsResponse && (
-                      <div className="py-2">
+                      <div className="py-1">
                         <p className="text-base text-zinc-600 dark:text-zinc-400 text-left">
                           {(response.content as SuggestionsContent).message}
                         </p>
@@ -380,7 +380,7 @@ export function PaletteContent({
               transition={{ duration: 0.15 }}
               className="overflow-hidden"
             >
-              <div className="flex items-center justify-start gap-3 pt-2">
+              <div className="flex items-center justify-start gap-3 pt-1">
           {/* SUGGESTIONS: Got it + Ask AI (auto-scroll handles navigation) */}
           {hasSuggestionsResponse && (
             <>

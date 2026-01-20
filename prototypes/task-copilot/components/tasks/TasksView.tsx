@@ -3,12 +3,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Task, FocusQueue, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { filterRecurringTasks } from "@/lib/recurring-utils";
 import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
 import ProgressRing from "@/components/shared/ProgressRing";
+import RoutinesList from "@/components/routines/RoutinesList";
 
 // Tab types for navigation
-type TasksTab = 'staging' | 'waiting' | 'deferred' | 'completed' | 'archived';
+type TasksTab = 'staging' | 'routines' | 'waiting' | 'deferred' | 'completed' | 'archived';
 
 interface TasksViewProps {
   inboxTasks: Task[];
@@ -28,6 +30,9 @@ interface TasksViewProps {
   allTasks?: Task[]; // All tasks for Done/Archived filters
   pendingFilter?: string | null;
   onClearPendingFilter?: () => void;
+  // Controlled tab state for back navigation
+  activeTab?: TasksTab;
+  onTabChange?: (tab: TasksTab) => void;
 }
 
 export default function TasksView({
@@ -47,16 +52,22 @@ export default function TasksView({
   allTasks,
   pendingFilter,
   onClearPendingFilter,
+  activeTab: controlledActiveTab,
+  onTabChange,
 }: TasksViewProps) {
   const [triageCollapsed, setTriageCollapsed] = useState(false);
 
-  // Tab state - default to staging (triage + ready sectioned view)
-  const [activeTab, setActiveTab] = useState<TasksTab>('staging');
+  // Tab state - use controlled state if provided, otherwise internal state
+  const [internalActiveTab, setInternalActiveTab] = useState<TasksTab>('staging');
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const setActiveTab = onTabChange ?? setInternalActiveTab;
 
   // Apply pending filter from Jump To shortcuts (maps to tabs)
   useEffect(() => {
     if (pendingFilter) {
       const tabMap: Record<string, TasksTab> = {
+        'staging': 'staging',
+        'routines': 'routines',
         'waiting': 'waiting',
         'deferred': 'deferred',
         'completed': 'completed',
@@ -107,14 +118,21 @@ export default function TasksView({
     [allTasksList]
   );
 
+  // Recurring tasks (routines)
+  const routinesAll = useMemo(() =>
+    filterRecurringTasks(allTasksList),
+    [allTasksList]
+  );
+
   // Tab definitions with counts
   const tabs = useMemo(() => [
     { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) <= new Date())).length },
+    { id: 'routines' as TasksTab, label: 'Routines', count: routinesAll.length },
     { id: 'waiting' as TasksTab, label: 'Waiting', count: waitingTasksAll.length },
     { id: 'deferred' as TasksTab, label: 'Deferred', count: deferredTasksAll.length },
     { id: 'completed' as TasksTab, label: 'Completed', count: completedTasksAll.length },
     { id: 'archived' as TasksTab, label: 'Archived', count: archivedTasksAll.length },
-  ], [inboxTasks, poolTasks, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
+  ], [inboxTasks, poolTasks, routinesAll, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
 
   // Check if task is already in queue
   const queueTaskIds = new Set(queue.items.map((i) => i.taskId));
@@ -125,7 +143,7 @@ export default function TasksView({
     (t) => t.deferredUntil && new Date(t.deferredUntil) <= new Date()
   );
   const readyTasks = poolTasks.filter(
-    (t) => !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) > new Date()) && !queueTaskIds.has(t.id)
+    (t) => !t.isRecurring && !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) > new Date()) && !queueTaskIds.has(t.id)
   );
 
   // Sort inbox tasks for triage section (top 5)
@@ -142,13 +160,13 @@ export default function TasksView({
   return (
     <div className="space-y-6">
       {/* Scrollable Tab Bar - centers when fits, left-pins + scrolls when overflows */}
-      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 pe-8">
         <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit mx-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
                   : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -156,12 +174,21 @@ export default function TasksView({
             >
               {tab.label}
               {tab.count > 0 && (
-                <span className="ml-1 text-xs opacity-50">{tab.count}</span>
+                <span className="ml-1 opacity-50">{tab.count}</span>
               )}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Routines Tab */}
+      {activeTab === 'routines' && (
+        <RoutinesList
+          tasks={allTasksList}
+          projects={projects}
+          onOpenTask={onOpenTask}
+        />
+      )}
 
       {/* Waiting Tab */}
       {activeTab === 'waiting' && (

@@ -21,7 +21,7 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 | P0 | Inline AI Actions (Steps) | ✅ Complete | Sparkle → Palette with target banner, step-specific quick actions |
 | P0 | Nav/App Restructure | ✅ Complete | Push sidebar, hamburger + plus header, task creation popover |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced proactively |
-| P1 | Recurring tasks | ⬜ Not Started | Critical for routines (AuDHD), daily habits (ADHD) |
+| P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete (data model, gallery). Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem - needs design discussion |
 | P2 | Reflection/journey view | ⬜ Not Started | "What did I accomplish this week?" |
 | P2 | Voice capture | ⬜ Not Started | Web Speech API to reduce capture friction |
@@ -29,6 +29,7 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 | P3 | Nudge system logic | ⬜ Not Started | Types defined in schema, logic not implemented |
 
 **Recently Completed:**
+- [v27] Recurring Tasks Phase 1-2: Data model (schema v9), recurring-types.ts, recurring-utils.ts (pattern matching, streaks, instances), RoutineCard + RoutinesGallery components, complete/skip handlers
 - [v26] Nav Restructure: Push sidebar (collapsible on desktop 280px↔64px, push on mobile), hamburger + plus header, task creation popover (bottom sheet mobile, dropdown desktop), unified Focus Mode header (timer + exit), removed QuickCapture from views
 - [v25.1] Restructuring trigger refinement: Expanded trigger words (simplify, clean up, tidy up, streamline, consolidate, merge/combine/reduce/fewer steps, too many steps), fixed conflicting prompt guidance, added explicit RULE for restructuring triggers
 - [v25] Object-scoped AI: Step-targeted suggestions create substeps (via `targetedStepId` in API), step restructuring prompt guidance, checkbox-area loading indicator when step is AI target
@@ -1378,6 +1379,23 @@ All task rows across the app use unified styling:
 - Hover: `hover:border-zinc-300 dark:hover:border-zinc-600`
 - Title text: `text-zinc-900 dark:text-zinc-100` (no font-medium for consistency)
 - Applied to: Pool TaskRow, InboxItem, SearchView results, ProjectsView tasks, Dashboard TaskRow
+
+**Button Styling System:**
+Consistent button patterns across modals and components:
+
+| Type | Usage | Classes |
+|------|-------|---------|
+| **Primary** | Main action (Save, Done) | `bg-violet-600 hover:bg-violet-700 text-white` |
+| **Secondary** | Alternative action (Cancel, Skip) | `bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300` |
+| **Tertiary/Ghost** | Modal dismiss, subtle actions | `text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800` |
+| **Destructive** | Delete, dangerous actions | `bg-red-600 hover:bg-red-700 text-white` |
+| **Success** | Completion actions | `bg-green-600 hover:bg-green-700 text-white` |
+
+**Modal Patterns:**
+- Desktop modals: X button to close (top-right), centered with `max-w-md/lg`
+- Mobile bottom sheets: "Done" text button (top-right), animated drag handle, `h-[70vh]` + `rounded-t-3xl`
+- Backdrop: `fixed inset-0 z-40 bg-black/40`
+- Modal/sheet: `z-50`
 
 **Queue Item Progress Indicator:**
 - Dynamic ring chart shows step completion progress

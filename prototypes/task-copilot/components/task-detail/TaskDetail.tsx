@@ -1,16 +1,40 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles, Loader2, Repeat, History, Pause, Play, X } from "lucide-react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
+import { getTodayISO, ensureInstance, describePattern } from "@/lib/recurring-utils";
+import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
 import MetadataPill from "@/components/shared/MetadataPill";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import HealthPill from "@/components/shared/HealthPill";
 import ReminderPicker from "@/components/shared/ReminderPicker";
+import HistoryModal from "@/components/routines/HistoryModal";
+import EditTemplateModal from "@/components/task-detail/EditTemplateModal";
+import RecurrenceFields from "@/components/task-detail/RecurrenceFields";
+import StatusModule from "@/components/task-detail/StatusModule";
 import { formatReminder, scheduleReminder, cancelReminder } from "@/lib/notifications";
+
+// Format date for routine section headers: "Today, January 19" or "Tuesday, January 20"
+function formatRoutineDateHeader(dateStr: string): string {
+  const today = getTodayISO();
+  const date = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
+
+  const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' };
+  const formattedDate = date.toLocaleDateString('en-US', options);
+
+  if (dateStr === today) {
+    return `Today, ${formattedDate}`;
+  }
+
+  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+  return `${dayName}, ${formattedDate}`;
+}
 
 interface TaskDetailProps {
   task: Task;
@@ -62,6 +86,10 @@ interface TaskDetailProps {
   isAILoading?: boolean;  // True when AI request is in flight
   onOpenAIPalette?: (taskId: string, stepId: string) => void;
   onClearAITarget?: () => void;
+  // Recurring task actions
+  onCompleteRoutine?: (taskId: string) => void;
+  onSkipRoutine?: (taskId: string) => void;
+  onMarkRoutineIncomplete?: (taskId: string) => void;
 }
 
 // Get queue item for this task
@@ -119,6 +147,9 @@ export default function TaskDetail({
   isAILoading,
   onOpenAIPalette,
   onClearAITarget,
+  onCompleteRoutine,
+  onSkipRoutine,
+  onMarkRoutineIncomplete,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -154,6 +185,26 @@ export default function TaskDetail({
   const isTaskComplete = task.status === 'complete';
   const canMarkComplete = !isTaskComplete;
   const canMarkIncomplete = isTaskComplete;
+
+  // Recurring task state
+  const isRecurring = task.isRecurring && task.recurrence;
+  const activeDate = isRecurring ? getTodayISO() : null;
+  const recurrencePattern = task.recurrence as RecurrenceRuleExtended | null;
+  const isPaused = recurrencePattern?.pausedAt ? true : false;
+  const patternDescription = recurrencePattern ? describePattern(recurrencePattern) : '';
+  const [showRoutinePopover, setShowRoutinePopover] = useState(false);
+  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showPatternModal, setShowPatternModal] = useState(false);
+  const [isPatternHandleHovered, setIsPatternHandleHovered] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
+
+  // Get current instance for recurring tasks (lazy - only called when rendering)
+  const getCurrentInstance = () => {
+    if (!isRecurring || !activeDate) return null;
+    return ensureInstance(task, activeDate);
+  };
+  const currentInstance = isRecurring ? getCurrentInstance() : null;
 
   // Split steps into completed and incomplete for collapsible view
   const completedSteps = task.steps.filter((s) => s.completed);
@@ -314,119 +365,210 @@ export default function TaskDetail({
 
           {/* Queue/Focus actions - Desktop only */}
           <div className="hidden sm:flex items-start gap-2 pt-0.5 flex-shrink-0">
-            {canMarkComplete && (
-              <button
-                onClick={handleMarkTaskComplete}
-                className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
-              >
-                Mark Complete
-              </button>
-            )}
-            {canMarkIncomplete && (
-              <button
-                onClick={handleMarkTaskIncomplete}
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
-              >
-                Mark Incomplete
-              </button>
-            )}
-            {isInQueue ? (
-              <button
-                onClick={() => onStartFocus(queueItem!.id)}
-                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-              >
-                Start Focus
-              </button>
-            ) : (
+            {isRecurring ? (
+              /* Recurring task buttons */
               <>
-                {task.status === "inbox" && (
+                {/* Show Mark Incomplete if instance is completed */}
+                {currentInstance?.completed && onMarkRoutineIncomplete ? (
                   <button
-                    onClick={() => onSendToPool(task.id)}
+                    onClick={() => onMarkRoutineIncomplete(task.id)}
                     className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                   >
-                    Move to Ready
+                    Mark Incomplete
+                  </button>
+                ) : (
+                  /* Show Complete/Skip if not completed and not paused */
+                  <>
+                    {!isPaused && onCompleteRoutine && (
+                      <button
+                        onClick={() => onCompleteRoutine(task.id)}
+                        className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
+                      >
+                        Complete
+                      </button>
+                    )}
+                    {!isPaused && onSkipRoutine && (
+                      <button
+                        onClick={() => onSkipRoutine(task.id)}
+                        className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                      >
+                        Skip
+                      </button>
+                    )}
+                  </>
+                )}
+                <button
+                  onClick={() => setShowHistoryModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  <History className="w-4 h-4" />
+                  History
+                </button>
+              </>
+            ) : (
+              /* Regular task buttons */
+              <>
+                {canMarkComplete && (
+                  <button
+                    onClick={handleMarkTaskComplete}
+                    className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
+                  >
+                    Mark Complete
                   </button>
                 )}
-                {/* Add to Focus with dropdown */}
-                <div className="relative">
-                  <div className="flex">
-                    <button
-                      onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                      className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
-                    >
-                      Add to Focus
-                    </button>
-                    <div className="w-px" />
-                    <button
-                      onClick={() => setShowAddDropdown(!showAddDropdown)}
-                      className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  </div>
-                  {showAddDropdown && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
-                      <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                {canMarkIncomplete && (
+                  <button
+                    onClick={handleMarkTaskIncomplete}
+                    className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  >
+                    Mark Incomplete
+                  </button>
+                )}
+                {isInQueue ? (
+                  <button
+                    onClick={() => onStartFocus(queueItem!.id)}
+                    className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                  >
+                    Start Focus
+                  </button>
+                ) : (
+                  <>
+                    {task.status === "inbox" && (
+                      <button
+                        onClick={() => onSendToPool(task.id)}
+                        className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                      >
+                        Move to Ready
+                      </button>
+                    )}
+                    {/* Add to Focus with dropdown */}
+                    <div className="relative">
+                      <div className="flex">
                         <button
-                          onClick={() => {
-                            onAddToQueue(task.id, true, 'all_today', []);
-                            setShowAddDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                          onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
+                          className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
                         >
-                          Add to Today
+                          Add to Focus
+                        </button>
+                        <div className="w-px" />
+                        <button
+                          onClick={() => setShowAddDropdown(!showAddDropdown)}
+                          className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         </button>
                       </div>
-                    </>
-                  )}
-                </div>
+                      {showAddDropdown && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
+                          <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                            <button
+                              onClick={() => {
+                                onAddToQueue(task.id, true, 'all_today', []);
+                                setShowAddDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                            >
+                              Add to Today
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
         </div>
 
+
         {/* Row 2: Mobile buttons */}
-        <div className="flex sm:hidden items-center gap-2 mt-3">
-          {canMarkComplete && (
-            <button
-              onClick={handleMarkTaskComplete}
-              className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
-            >
-              Mark Complete
-            </button>
-          )}
-          {canMarkIncomplete && (
-            <button
-              onClick={handleMarkTaskIncomplete}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
-            >
-              Mark Incomplete
-            </button>
-          )}
-          {isInQueue ? (
-            <button
-              onClick={() => onStartFocus(queueItem!.id)}
-              className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-            >
-              Start Focus
-            </button>
-          ) : (
+        <div className="flex sm:hidden items-center gap-2 mt-3 flex-wrap">
+          {isRecurring ? (
+            /* Recurring task buttons - mobile */
             <>
-              {task.status === "inbox" && (
+              {/* Show Mark Incomplete if instance is completed */}
+              {currentInstance?.completed && onMarkRoutineIncomplete ? (
                 <button
-                  onClick={() => onSendToPool(task.id)}
+                  onClick={() => onMarkRoutineIncomplete(task.id)}
                   className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
-                  Move to Ready
+                  Mark Incomplete
                 </button>
+              ) : (
+                /* Show Complete/Skip if not completed and not paused */
+                <>
+                  {!isPaused && onCompleteRoutine && (
+                    <button
+                      onClick={() => onCompleteRoutine(task.id)}
+                      className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
+                    >
+                      Complete
+                    </button>
+                  )}
+                  {!isPaused && onSkipRoutine && (
+                    <button
+                      onClick={() => onSkipRoutine(task.id)}
+                      className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                    >
+                      Skip
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                onClick={() => setShowHistoryModal(true)}
+                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <History className="w-4 h-4" />
+                History
+              </button>
+            </>
+          ) : (
+            /* Regular task buttons - mobile */
+            <>
+              {canMarkComplete && (
+                <button
+                  onClick={handleMarkTaskComplete}
+                  className="px-4 py-2 text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800/40 rounded-lg transition-colors"
+                >
+                  Mark Complete
+                </button>
+              )}
+              {canMarkIncomplete && (
+                <button
+                  onClick={handleMarkTaskIncomplete}
+                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                >
+                  Mark Incomplete
+                </button>
+              )}
+              {isInQueue ? (
+                <button
+                  onClick={() => onStartFocus(queueItem!.id)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                >
+                  Start Focus
+                </button>
+              ) : (
+                <>
+                  {task.status === "inbox" && (
+                    <button
+                      onClick={() => onSendToPool(task.id)}
+                      className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                    >
+                      Move to Ready
+                    </button>
+                  )}
+                </>
               )}
             </>
           )}
-          {/* Add to Focus split button (mobile) - only for pool tasks, not inbox (too wide) */}
-          {!isInQueue && task.status === 'pool' && (
+          {/* Add to Focus split button (mobile) - only for pool tasks, not inbox (too wide), not recurring */}
+          {!isRecurring && !isInQueue && task.status === 'pool' && (
             <div className="relative">
               <div className="flex">
                 <button
@@ -463,8 +605,8 @@ export default function TaskDetail({
               )}
             </div>
           )}
-          {/* Add to Focus kebab menu (mobile inbox only) - prevents line wrapping on small viewports */}
-          {!isInQueue && task.status === 'inbox' && (
+          {/* Add to Focus kebab menu (mobile inbox only) - prevents line wrapping on small viewports, not recurring */}
+          {!isRecurring && !isInQueue && task.status === 'inbox' && (
             <div className="relative">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -525,25 +667,18 @@ export default function TaskDetail({
         />
       )}
 
-      {/* Progress bar */}
-      {progress && progress.total > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              {progress.completed} of {progress.total} steps complete
-            </span>
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              {Math.round((progress.completed / progress.total) * 100)}%
-            </span>
-          </div>
-          <div className="h-2 bg-zinc-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-violet-500 rounded-full transition-all duration-300"
-              style={{ width: `${(progress.completed / progress.total) * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Status Module */}
+      <StatusModule
+        task={task}
+        currentInstance={currentInstance}
+        completedCount={progress?.completed ?? 0}
+        totalCount={progress?.total ?? 0}
+        hasCompletedSteps={hasCompletedSteps}
+        completedStepsExpanded={completedStepsExpanded}
+        onToggleCompletedSteps={() => setCompletedStepsExpanded(!completedStepsExpanded)}
+        isInQueue={isInQueue}
+        todayStepIds={todayStepIds}
+      />
 
       {/* Staging Area for AI suggestions */}
       {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
@@ -571,63 +706,143 @@ export default function TaskDetail({
 
       {/* Main content */}
       <div className="flex-1">
-        {/* Steps section */}
+        {/* Steps section - Different structure for recurring vs regular tasks */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-              Steps
-            </h2>
-            {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
-            {isInQueue && task.steps.length > 0 ? (
-              <button
-                onClick={() => setShowFocusModal(true)}
-                className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Focus
-              </button>
-            ) : (
-              <button
-                onClick={onAIBreakdown}
-                className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-                </svg>
-                AI Breakdown
-              </button>
-            )}
-          </div>
+          {isRecurring && currentInstance ? (
+            /* RECURRING TASKS: Two sections - Routine Steps + Additional Steps */
+            <>
+              {/* Routine Steps Section */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                    Routine Steps
+                  </h2>
+                  <button
+                    onClick={() => setShowEditTemplateModal(true)}
+                    className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Template
+                  </button>
+                </div>
 
-          {/* Steps list */}
-          {task.steps.length === 0 ? (
-            <div className="py-8 text-center text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
-              <p className="mb-2">No steps yet</p>
-              <p className="text-sm">Add steps below or use AI to break down this task</p>
-            </div>
+                {currentInstance.routineSteps.length === 0 ? (
+                  <div className="py-4 text-center text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
+                    <p className="text-sm">No routine steps. Add steps via Edit Template.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {currentInstance.routineSteps.map((step, idx) => (
+                      <StepItem
+                        key={step.id}
+                        step={step}
+                        index={idx}
+                        totalSteps={currentInstance.routineSteps.length}
+                        taskId={task.id}
+                        isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                        isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                        onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                        onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                        onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                        onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                        onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                        onDelete={() => onDeleteStep(task.id, step.id)}
+                        onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                        onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                        onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                        onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                        onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                        onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                        onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Steps Section - only show when there are additional steps */}
+              {currentInstance.additionalSteps.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400">
+                      <span>Additional Steps</span>
+                      <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                        {formatRoutineDateHeader(activeDate!)}
+                      </span>
+                    </h2>
+                  </div>
+
+                  <div className="space-y-2">
+                    {currentInstance.additionalSteps.map((step, idx) => (
+                      <StepItem
+                        key={step.id}
+                        step={step}
+                        index={idx}
+                        totalSteps={currentInstance.additionalSteps.length}
+                        taskId={task.id}
+                        isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                        isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                        onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                        onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed)}
+                        onUpdateStep={(text) => onUpdateStep(task.id, step.id, text)}
+                        onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                        onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text)}
+                        onDelete={() => onDeleteStep(task.id, step.id)}
+                        onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                        onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                        onAddSubstep={(text) => onAddSubstep(task.id, step.id, text)}
+                        onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId)}
+                        onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                        onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                        onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* REGULAR TASKS: Single steps section */
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                  Steps
+                </h2>
+                {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
+                {isInQueue && task.steps.length > 0 ? (
+                  <button
+                    onClick={() => setShowFocusModal(true)}
+                    className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Focus
+                  </button>
+                ) : (
+                  <button
+                    onClick={onAIBreakdown}
+                    className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                    </svg>
+                    AI Breakdown
+                  </button>
+                )}
+              </div>
+
+              {/* Steps list */}
+              {task.steps.length === 0 ? (
+                <div className="py-8 text-center text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700">
+                  <p className="mb-2">No steps yet</p>
+                  <p className="text-sm">Add steps below or use AI to break down this task</p>
+                </div>
           ) : (
             <div className="space-y-2">
-              {/* Collapsible completed steps section */}
-              {hasCompletedSteps && hasIncompleteSteps && (
-                <button
-                  onClick={() => setCompletedStepsExpanded(!completedStepsExpanded)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                >
-                  <span className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {completedSteps.length} completed step{completedSteps.length !== 1 ? 's' : ''}
-                  </span>
-                  <svg className={`w-4 h-4 text-green-600 dark:text-green-400 transition-transform ${completedStepsExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              )}
-
-              {/* Show completed steps when expanded OR when all steps are complete */}
+              {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete */}
               {(completedStepsExpanded || allStepsComplete) && completedSteps.map((step) => {
                 const originalIndex = task.steps.findIndex(s => s.id === step.id);
                 return (
@@ -771,6 +986,8 @@ export default function TaskDetail({
               )}
             </div>
           )}
+            </>
+          )}
 
           {/* Add step form */}
           <form onSubmit={handleAddStep} className="mt-3 flex gap-2">
@@ -846,6 +1063,73 @@ export default function TaskDetail({
           {/* Expanded Details */}
           {detailsExpanded && (
             <div className="grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+              {/* Recurring toggle - full width */}
+              <div className="col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-violet-500" />
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Recurring</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (task.isRecurring) {
+                        // Turn off recurring
+                        onUpdateTask(task.id, {
+                          isRecurring: false,
+                          recurrence: null,
+                        });
+                      } else {
+                        // Turn on recurring with default daily pattern
+                        // Auto-transition to pool (skip inbox triage for routines)
+                        onUpdateTask(task.id, {
+                          isRecurring: true,
+                          recurrence: {
+                            frequency: 'daily',
+                            interval: 1,
+                            daysOfWeek: null,
+                            dayOfMonth: null,
+                            weekOfMonth: null,
+                            time: '09:00',
+                            endDate: null,
+                            endAfter: null,
+                            rolloverIfMissed: false,
+                            pausedAt: null,
+                            pausedUntil: null,
+                          },
+                          status: 'pool', // Routines skip triage
+                        });
+                      }
+                    }}
+                    className={`
+                      relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${task.isRecurring
+                        ? 'bg-violet-600'
+                        : 'bg-zinc-200 dark:bg-zinc-700'
+                      }
+                    `}
+                  >
+                    <span
+                      className={`
+                        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                        ${task.isRecurring ? 'translate-x-6' : 'translate-x-1'}
+                      `}
+                    />
+                  </button>
+                </div>
+                {task.isRecurring && patternDescription && (
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    {patternDescription}
+                    {' '}
+                    <button
+                      className="text-violet-600 dark:text-violet-400 hover:underline"
+                      onClick={() => setShowPatternModal(true)}
+                    >
+                      Edit pattern
+                    </button>
+                  </p>
+                )}
+              </div>
+
               {/* Status (+ Health for pool tasks) - 50% */}
               <div>
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
@@ -870,32 +1154,34 @@ export default function TaskDetail({
                 </div>
               </div>
 
-              {/* Priority - 50% */}
-              <div>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
-                <div className="h-8 flex items-center gap-1.5">
-                  {(["high", "medium", "low"] as const).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => onUpdateTask(task.id, { priority: task.priority === p ? null : p })}
-                      className={`
-                        px-1.5 py-0.5 text-xs font-medium rounded-full capitalize transition-colors
-                        ${
-                          task.priority === p
-                            ? p === "high"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : p === "medium"
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
-                        }
-                      `}
-                    >
-                      {p}
-                    </button>
-                  ))}
+              {/* Priority - 50% (hidden for recurring tasks) */}
+              {!isRecurring && (
+                <div>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
+                  <div className="h-8 flex items-center gap-1.5">
+                    {(["high", "medium", "low"] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => onUpdateTask(task.id, { priority: task.priority === p ? null : p })}
+                        className={`
+                          px-1.5 py-0.5 text-xs font-medium rounded-full capitalize transition-colors
+                          ${
+                            task.priority === p
+                              ? p === "high"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                : p === "medium"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                          }
+                        `}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Project - full width */}
               <div className="col-span-2">
@@ -925,54 +1211,56 @@ export default function TaskDetail({
                 </div>
               </div>
 
-              {/* Date Fields - Side by side */}
-              <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
-                {/* Target Date */}
-                <div className="min-w-0 relative">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
-                  <input
-                    type="date"
-                    value={task.targetDate || ""}
-                    onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
-                    className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
-                  {task.targetDate && (
-                    <button
-                      type="button"
-                      onClick={() => onUpdateTask(task.id, { targetDate: null })}
-                      className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                      title="Clear date"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
+              {/* Date Fields - Side by side (hidden for recurring tasks) */}
+              {!isRecurring && (
+                <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
+                  {/* Target Date */}
+                  <div className="min-w-0 relative">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
+                    <input
+                      type="date"
+                      value={task.targetDate || ""}
+                      onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
+                      className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                    {task.targetDate && (
+                      <button
+                        type="button"
+                        onClick={() => onUpdateTask(task.id, { targetDate: null })}
+                        className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                        title="Clear date"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
 
-                {/* Deadline */}
-                <div className="min-w-0 relative">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
-                  <input
-                    type="date"
-                    value={task.deadlineDate || ""}
-                    onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
-                    className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  />
-                  {task.deadlineDate && (
-                    <button
-                      type="button"
-                      onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
-                      className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                      title="Clear date"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
+                  {/* Deadline */}
+                  <div className="min-w-0 relative">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+                    <input
+                      type="date"
+                      value={task.deadlineDate || ""}
+                      onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
+                      className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                    {task.deadlineDate && (
+                      <button
+                        type="button"
+                        onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
+                        className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                        title="Clear date"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Reminder + Waiting On - side by side on desktop */}
               <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
@@ -1056,56 +1344,95 @@ export default function TaskDetail({
 
         {/* Actions section */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-          <div className="flex items-center gap-3">
-            {/* Defer dropdown */}
-            <div className="relative">
+          <div className="flex items-center gap-3 flex-wrap">
+            {isRecurring ? (
+              /* Pause/Resume for recurring tasks */
               <button
-                onClick={() => setShowDeferMenu(!showDeferMenu)}
+                onClick={() => {
+                  if (isPaused) {
+                    // Resume: clear pausedAt
+                    onUpdateTask(task.id, {
+                      recurrence: {
+                        ...recurrencePattern!,
+                        pausedAt: null,
+                        pausedUntil: null,
+                      },
+                    });
+                  } else {
+                    // Pause: set pausedAt to now
+                    onUpdateTask(task.id, {
+                      recurrence: {
+                        ...recurrencePattern!,
+                        pausedAt: Date.now(),
+                      },
+                    });
+                  }
+                }}
                 className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Defer
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                {isPaused ? (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Resume
+                  </>
+                ) : (
+                  <>
+                    <Pause className="w-4 h-4" />
+                    Pause
+                  </>
+                )}
               </button>
-              {showDeferMenu && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowDeferMenu(false)} />
-                  <div className="absolute left-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
-                    <button
-                      onClick={() => {
-                        onDefer(task.id, getDeferDate(1));
-                        setShowDeferMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Tomorrow
-                    </button>
-                    <button
-                      onClick={() => {
-                        onDefer(task.id, getDeferDate(7));
-                        setShowDeferMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Next week
-                    </button>
-                    <button
-                      onClick={() => {
-                        onDefer(task.id, getDeferDate(30));
-                        setShowDeferMenu(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      Next month
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            ) : (
+              /* Defer dropdown for regular tasks */
+              <div className="relative">
+                <button
+                  onClick={() => setShowDeferMenu(!showDeferMenu)}
+                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Defer
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showDeferMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowDeferMenu(false)} />
+                    <div className="absolute left-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(1));
+                          setShowDeferMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Tomorrow
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(7));
+                          setShowDeferMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Next week
+                      </button>
+                      <button
+                        onClick={() => {
+                          onDefer(task.id, getDeferDate(30));
+                          setShowDeferMenu(false);
+                        }}
+                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      >
+                        Next month
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Archive/Unarchive button */}
             <button
@@ -1139,6 +1466,194 @@ export default function TaskDetail({
           </div>
         </div>
       </div>
+
+      {/* History Modal for recurring tasks */}
+      {isRecurring && (
+        <HistoryModal
+          task={task}
+          isOpen={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
+          onUpdateTask={onUpdateTask}
+        />
+      )}
+
+      {/* Edit Template Modal for recurring tasks */}
+      {isRecurring && (
+        <EditTemplateModal
+          task={task}
+          currentInstance={currentInstance}
+          isOpen={showEditTemplateModal}
+          onClose={() => setShowEditTemplateModal(false)}
+          onSave={(newTemplateSteps, promotedIds, demotedIds) => {
+            // newTemplateSteps contains instance steps (with instance IDs)
+            // We need to sync both the template (task.steps) and the current instance
+
+            const updates: Partial<Task> = {};
+
+            // Update the template (task.steps) based on promotions/demotions
+            // For demoted steps: Find and remove from task.steps by matching text
+            // For promoted steps: Add copies with new IDs
+            if (currentInstance) {
+              // Get the text of demoted steps (to match against task.steps)
+              const demotedStepTexts = currentInstance.routineSteps
+                .filter((s) => demotedIds.includes(s.id))
+                .map((s) => s.text);
+
+              // Get promoted steps from additionalSteps
+              const promotedStepsToAdd = currentInstance.additionalSteps
+                .filter((s) => promotedIds.includes(s.id))
+                .map((s) => createStep(s.text, { source: s.source }));
+
+              // Update template: remove demoted, add promoted
+              const filteredTemplateSteps = task.steps.filter(
+                (s) => !demotedStepTexts.includes(s.text)
+              );
+              updates.steps = [...filteredTemplateSteps, ...promotedStepsToAdd];
+            }
+
+            // Update recurringInstances to reflect promoted/demoted steps
+            if (activeDate && task.recurringInstances) {
+              const updatedInstances = task.recurringInstances.map((inst) => {
+                if (inst.date !== activeDate) return inst;
+
+                // Get promoted steps (were in additionalSteps, now template)
+                const promotedSteps = inst.additionalSteps
+                  .filter((s) => promotedIds.includes(s.id))
+                  .map((s) => ({ ...s }));
+
+                // Remove promoted steps from additionalSteps (they're now in routineSteps)
+                const filteredAdditional = inst.additionalSteps.filter(
+                  (s) => !promotedIds.includes(s.id)
+                );
+
+                // Get demoted steps (were in routineSteps, now additional)
+                const demotedSteps = inst.routineSteps
+                  .filter((s) => demotedIds.includes(s.id))
+                  .map((s) => ({ ...s }));
+
+                // Remove demoted steps from routineSteps (they're now in additionalSteps)
+                const filteredRoutine = inst.routineSteps.filter(
+                  (s) => !demotedIds.includes(s.id)
+                );
+
+                return {
+                  ...inst,
+                  // Add promoted steps to routineSteps
+                  routineSteps: [...filteredRoutine, ...promotedSteps],
+                  // Add demoted steps to additionalSteps
+                  additionalSteps: [...filteredAdditional, ...demotedSteps],
+                };
+              });
+              updates.recurringInstances = updatedInstances;
+            }
+
+            onUpdateTask(task.id, updates);
+            setShowEditTemplateModal(false);
+          }}
+        />
+      )}
+
+      {/* Pattern Configuration Modal - Desktop: centered modal, Mobile: bottom sheet */}
+      {showPatternModal && task.recurrence && (
+        <>
+          {/* Desktop: Centered modal */}
+          <div className="hidden lg:block">
+            {/* Backdrop - z-[60] to overlay sidebar (z-50) */}
+            <div
+              className="fixed inset-0 bg-black/40 z-[60]"
+              onClick={() => setShowPatternModal(false)}
+            />
+            {/* Modal - z-[70] above backdrop */}
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl shadow-2xl z-[70] flex flex-col max-h-[85vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                  Edit Pattern
+                </h2>
+                <button
+                  onClick={() => setShowPatternModal(false)}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto p-4">
+                <RecurrenceFields
+                  rule={task.recurrence}
+                  onChange={(newRule) => {
+                    onUpdateTask(task.id, { recurrence: newRule });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Bottom sheet */}
+          <div className="lg:hidden">
+            {/* Backdrop - z-[60] to overlay sidebar (z-50) */}
+            <div
+              className="fixed inset-0 z-[60] bg-black/40"
+              onClick={() => setShowPatternModal(false)}
+            />
+
+            {/* Sheet - z-[70] above backdrop */}
+            <div
+              className={`
+                fixed inset-x-0 bottom-0 z-[70] h-[70vh] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col
+                transition-transform duration-300 ease-in-out
+                ${showPatternModal ? "translate-y-0" : "translate-y-full"}
+              `}
+            >
+              {/* Animated drag handle */}
+              <button
+                onClick={() => setShowPatternModal(false)}
+                onMouseEnter={() => setIsPatternHandleHovered(true)}
+                onMouseLeave={() => setIsPatternHandleHovered(false)}
+                className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
+                aria-label="Close"
+              >
+                <motion.div className="relative w-10 h-1 flex">
+                  <motion.div
+                    className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
+                    animate={{ rotate: isPatternHandleHovered && !prefersReducedMotion ? 15 : 0 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                  />
+                  <motion.div
+                    className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
+                    animate={{ rotate: isPatternHandleHovered && !prefersReducedMotion ? -15 : 0 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+                  />
+                </motion.div>
+              </button>
+
+              {/* Mobile header */}
+              <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  Edit Pattern
+                </h2>
+                <button
+                  onClick={() => setShowPatternModal(false)}
+                  className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-auto p-4">
+                <RecurrenceFields
+                  rule={task.recurrence}
+                  onChange={(newRule) => {
+                    onUpdateTask(task.id, { recurrence: newRule });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

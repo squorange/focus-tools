@@ -43,6 +43,14 @@ import {
 } from "@/lib/utils";
 import { filterInbox, filterPool } from "@/lib/utils";
 import { getTodayItems, getStepsInScope } from "@/lib/queue";
+import {
+  markInstanceComplete,
+  skipInstance,
+  markInstanceIncomplete,
+  getTodayISO as getRecurringTodayISO,
+  ensureInstance,
+  isInstanceComplete,
+} from "@/lib/recurring-utils";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 // Old AIDrawer removed - functionality moved to minibar/palette
@@ -114,6 +122,7 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [taskCreationOpen, setTaskCreationOpen] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
+  const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
 
   // Search state (simplified - sidebar mode swaps based on focus/query)
   const [searchInputFocused, setSearchInputFocused] = useState(false);
@@ -123,6 +132,8 @@ export default function Home() {
   const [frozenRecentTaskIds, setFrozenRecentTaskIds] = useState<string[] | null>(null);
   // Pending filter (for navigation from search shortcuts to TasksView)
   const [pendingFilter, setPendingFilter] = useState<string | null>(null);
+  // Track active tab in TasksView for back navigation
+  const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'waiting' | 'deferred' | 'completed' | 'archived'>('staging');
 
   // Callback for auto-selecting new project after creation (from TaskCreationPopover)
   const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
@@ -1879,7 +1890,10 @@ export default function Home() {
       type: 'success',
       action: {
         label: 'Show',
-        onClick: () => handleViewChange('tasks'),
+        onClick: () => {
+          setPendingFilter('staging');
+          handleViewChange('tasks');
+        },
       },
     });
   }, [showToast, handleViewChange]);
@@ -2161,6 +2175,121 @@ export default function Home() {
     }
   }, []);
 
+  // Complete a routine for today
+  const handleCompleteRoutine = useCallback((taskId: string) => {
+    const today = getRecurringTodayISO();
+    let taskTitle = '';
+    let newStreak = 0;
+    let previousTask: Task | undefined;
+
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task || !task.isRecurring) return prev;
+
+      taskTitle = task.title;
+      previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
+      const updatedTask = markInstanceComplete(task, today);
+      newStreak = updatedTask.recurringStreak;
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
+      };
+    });
+
+    // Show toast with streak info and undo
+    const toastId = generateId();
+    setToasts((prev) => [...prev, {
+      id: toastId,
+      message: `Completed! ${newStreak > 1 ? `${newStreak}d streak` : 'Streak started'}`,
+      type: 'success',
+      action: previousTask ? {
+        label: 'Undo',
+        onClick: () => {
+          setState((prev) => ({
+            ...prev,
+            tasks: prev.tasks.map((t) => (t.id === taskId ? previousTask! : t)),
+          }));
+        },
+      } : undefined,
+    }]);
+  }, []);
+
+  // Skip a routine for today
+  const handleSkipRoutine = useCallback((taskId: string) => {
+    const today = getRecurringTodayISO();
+    let taskTitle = '';
+    let previousTask: Task | undefined;
+
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task || !task.isRecurring) return prev;
+
+      taskTitle = task.title;
+      previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
+      const updatedTask = skipInstance(task, today);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
+      };
+    });
+
+    // Show toast with undo
+    const toastId = generateId();
+    setToasts((prev) => [...prev, {
+      id: toastId,
+      message: `Skipped "${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}"`,
+      type: 'info',
+      action: previousTask ? {
+        label: 'Undo',
+        onClick: () => {
+          setState((prev) => ({
+            ...prev,
+            tasks: prev.tasks.map((t) => (t.id === taskId ? previousTask! : t)),
+          }));
+        },
+      } : undefined,
+    }]);
+  }, []);
+
+  const handleMarkRoutineIncomplete = useCallback((taskId: string) => {
+    const today = getRecurringTodayISO();
+    let taskTitle = '';
+    let previousTask: Task | undefined;
+
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task || !task.isRecurring) return prev;
+
+      taskTitle = task.title;
+      previousTask = { ...task, recurringInstances: [...task.recurringInstances] };
+      const updatedTask = markInstanceIncomplete(task, today);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
+      };
+    });
+
+    // Show toast with undo
+    const toastId = generateId();
+    setToasts((prev) => [...prev, {
+      id: toastId,
+      message: `Marked incomplete`,
+      type: 'info',
+      action: previousTask ? {
+        label: 'Undo',
+        onClick: () => {
+          setState((prev) => ({
+            ...prev,
+            tasks: prev.tasks.map((t) => (t.id === taskId ? previousTask! : t)),
+          }));
+        },
+      } : undefined,
+    }]);
+  }, []);
+
   // Move queue item to a new position
   const handleMoveQueueItem = useCallback((queueItemId: string, newIndex: number) => {
     setState((prev) => {
@@ -2396,6 +2525,25 @@ export default function Home() {
     setState((prev) => ({ ...prev, currentView: 'projects' as const }));
   }, [state.currentView]);
 
+  // Completed drawer toggle with mutual exclusivity (only 1 right drawer at a time)
+  const handleToggleCompletedDrawer = useCallback((open: boolean) => {
+    if (open) {
+      // Opening completed drawer - close AI drawer if open
+      if (aiAssistant.state.mode === 'drawer') {
+        aiAssistant.closeDrawer();
+      }
+    }
+    setCompletedDrawerOpen(open);
+  }, [aiAssistant]);
+
+  // AI drawer open with mutual exclusivity (close completed drawer first)
+  const handleOpenAIDrawer = useCallback(() => {
+    if (completedDrawerOpen) {
+      setCompletedDrawerOpen(false);
+    }
+    aiAssistant.openDrawer();
+  }, [completedDrawerOpen, aiAssistant]);
+
   // Data export/import
   const handleExportData = useCallback(() => {
     const jsonString = exportData();
@@ -2528,6 +2676,76 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task) return prev;
 
+      // RECURRING TASKS: Modify instance steps, not template
+      if (task.isRecurring && task.recurrence) {
+        const today = getRecurringTodayISO();
+        const instance = ensureInstance(task, today);
+        const now = Date.now();
+
+        // Find and update step in routineSteps or additionalSteps
+        let foundInRoutine = false;
+        const updatedRoutineSteps = instance.routineSteps.map((s) => {
+          if (s.id === stepId) {
+            foundInRoutine = true;
+            return { ...s, completed, completedAt: completed ? now : null };
+          }
+          return s;
+        });
+
+        const updatedAdditionalSteps = foundInRoutine
+          ? instance.additionalSteps
+          : instance.additionalSteps.map((s) =>
+              s.id === stepId
+                ? { ...s, completed, completedAt: completed ? now : null }
+                : s
+            );
+
+        // Update instance
+        const updatedInstance = {
+          ...instance,
+          routineSteps: updatedRoutineSteps,
+          additionalSteps: updatedAdditionalSteps,
+        };
+
+        // Check if all instance steps are complete
+        const allStepsComplete =
+          updatedInstance.routineSteps.every((s) => s.completed) &&
+          updatedInstance.additionalSteps.every((s) => s.completed);
+
+        // If all complete, mark instance complete
+        if (allStepsComplete && (updatedInstance.routineSteps.length > 0 || updatedInstance.additionalSteps.length > 0)) {
+          updatedInstance.completed = true;
+          updatedInstance.completedAt = now;
+        } else {
+          updatedInstance.completed = false;
+          updatedInstance.completedAt = null;
+        }
+
+        // Update task's recurringInstances
+        const updatedInstances = task.recurringInstances
+          .filter((i) => i.date !== today)
+          .concat(updatedInstance);
+
+        const updatedTasks = prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          return {
+            ...t,
+            recurringInstances: updatedInstances,
+            updatedAt: now,
+          };
+        });
+
+        if (completed) {
+          logStepCompleted(taskId, stepId, updatedTasks);
+        }
+
+        return {
+          ...prev,
+          tasks: updatedTasks,
+        };
+      }
+
+      // REGULAR TASKS: Original logic
       const updatedTasks = prev.tasks.map((t) => {
         if (t.id !== taskId) return t;
         return {
@@ -2604,18 +2822,50 @@ export default function Home() {
   }, []);
 
   const handleAddStep = useCallback((taskId: string, text: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
-        const newStep = createStep(text, { source: 'manual' });
-        return {
-          ...t,
-          steps: [...t.steps, newStep],
-          updatedAt: Date.now(),
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const newStep = createStep(text, { source: 'manual' });
+      const now = Date.now();
+
+      // RECURRING TASKS: Add to instance's additionalSteps
+      if (task.isRecurring && task.recurrence) {
+        const today = getRecurringTodayISO();
+        const instance = ensureInstance(task, today);
+
+        const updatedInstance = {
+          ...instance,
+          additionalSteps: [...instance.additionalSteps, newStep],
         };
-      }),
-    }));
+
+        const updatedInstances = task.recurringInstances
+          .filter((i) => i.date !== today)
+          .concat(updatedInstance);
+
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, recurringInstances: updatedInstances, updatedAt: now }
+              : t
+          ),
+        };
+      }
+
+      // REGULAR TASKS: Add to task.steps
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => {
+          if (t.id !== taskId) return t;
+          return {
+            ...t,
+            steps: [...t.steps, newStep],
+            updatedAt: now,
+          };
+        }),
+      };
+    });
   }, []);
 
   const handleDeleteStep = useCallback((taskId: string, stepId: string) => {
@@ -3541,11 +3791,12 @@ export default function Home() {
         />
       )}
 
-      {/* Main Column - pushes based on sidebar state */}
+      {/* Main Column - pushes based on sidebar state and right drawer state */}
       <div
         className={`
           flex-1 flex flex-col min-w-0 transition-all duration-300
           ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
+          ${aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : completedDrawerOpen ? 'lg:mr-[400px]' : ''}
           ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] pointer-events-none lg:translate-x-0 lg:pointer-events-auto' : ''}
         `}
       >
@@ -3587,11 +3838,11 @@ export default function Home() {
           />
         )}
 
-        {/* Main Content - shifts left when drawer open on desktop */}
+        {/* Main Content */}
         <main
           className={`flex-1 transition-all duration-300 ${
-            aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : ''
-          } ${sidebarOpen ? 'overflow-hidden touch-none lg:overflow-y-auto lg:touch-auto' : 'overflow-y-auto'}`}
+            sidebarOpen ? 'overflow-hidden touch-none lg:overflow-y-auto lg:touch-auto' : 'overflow-y-auto'
+          }`}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
@@ -3612,6 +3863,10 @@ export default function Home() {
                 onMoveItemUp={handleMoveQueueItemUp}
                 onMoveItemDown={handleMoveQueueItemDown}
                 onGoToInbox={handleGoToInbox}
+                onCompleteRoutine={handleCompleteRoutine}
+                onSkipRoutine={handleSkipRoutine}
+                completedDrawerOpen={completedDrawerOpen}
+                onToggleCompletedDrawer={handleToggleCompletedDrawer}
               />
             )}
 
@@ -3634,6 +3889,9 @@ export default function Home() {
                 // Filter pills - pendingFilter from Jump To shortcuts
                 pendingFilter={pendingFilter}
                 onClearPendingFilter={handleClearPendingFilter}
+                // Controlled tab state for back navigation
+                activeTab={activeTasksTab}
+                onTabChange={setActiveTasksTab}
               />
             )}
 
@@ -3711,6 +3969,9 @@ export default function Home() {
                 isAILoading={aiAssistant.state.isLoading}
                 onOpenAIPalette={handleOpenAIPalette}
                 onClearAITarget={clearAITargetContext}
+                onCompleteRoutine={handleCompleteRoutine}
+                onSkipRoutine={handleSkipRoutine}
+                onMarkRoutineIncomplete={handleMarkRoutineIncomplete}
               />
             )}
 
@@ -3773,16 +4034,27 @@ export default function Home() {
         onDelete={handleDeleteProject}
       />
 
-      {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {/* Toast Notifications - centered within main content area */}
+      <div className={`
+        fixed bottom-24 sm:bottom-20 lg:bottom-24 left-0 right-0 z-50 flex justify-center pointer-events-none
+        transition-all duration-300
+        ${sidebarCollapsed ? 'lg:left-16' : 'lg:left-[320px]'}
+        ${completedDrawerOpen ? 'lg:right-[400px]' : 'lg:right-0'}
+      `}>
+        <div className="pointer-events-auto">
+          <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        </div>
+      </div>
 
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
       {/* Only show when not in drawer mode (drawer handled separately) */}
       {aiAssistant.state.mode !== 'drawer' && (
         <div className={`
-          fixed bottom-6 left-6 right-6 z-40
-          sm:bottom-4 sm:w-auto sm:left-1/2 sm:right-auto sm:-translate-x-1/2
-          transition-transform duration-200
+          fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end
+          sm:bottom-4
+          transition-all duration-300
+          ${sidebarCollapsed ? 'lg:left-20' : 'lg:left-[336px]'}
+          ${completedDrawerOpen ? 'lg:right-[416px]' : 'lg:right-6'}
           ${sidebarOpen ? 'max-lg:translate-y-[100vh]' : ''}
         `}>
           <AIAssistantOverlay
@@ -3815,7 +4087,7 @@ export default function Home() {
             onRequestRecommendation={handleRequestRecommendation}
             onStartRecommendedFocus={handleStartRecommendedFocus}
             onSkipRecommendation={handleSkipRecommendation}
-            onOpenDrawer={aiAssistant.openDrawer}
+            onOpenDrawer={handleOpenAIDrawer}
             aiTargetContext={aiTargetContext}
             onClearAITarget={clearAITargetContext}
           />

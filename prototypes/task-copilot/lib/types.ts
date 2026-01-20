@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 // ============================================
 // Task Structure Types
@@ -139,8 +139,15 @@ export interface Task {
   // External Integrations (future)
   externalLinks: ExternalLink[];
 
-  // Recurrence (future)
+  // Recurrence
+  isRecurring: boolean;
   recurrence: RecurrenceRule | null;
+  recurringStreak: number;
+  recurringBestStreak: number;
+  recurringInstances: RecurringInstance[];
+  recurringTotalCompletions: number;
+  recurringLastCompleted: string | null;   // ISO date
+  recurringNextDue: string | null;         // ISO date
 
   // Intelligence Fields
   estimationAccuracy: number | null;
@@ -200,12 +207,40 @@ export interface ExternalLink {
 }
 
 export interface RecurrenceRule {
+  // Pattern Configuration
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  interval: number;
-  daysOfWeek: number[] | null;
-  dayOfMonth: number | null;
-  endDate: string | null;
-  endAfter: number | null;
+  interval: number;                    // Every N (1=every, 2=every other, etc.)
+
+  // Frequency-Specific Fields
+  daysOfWeek: number[] | null;         // [0-6] where 0=Sun, 6=Sat
+  weekOfMonth: number | null;          // 1-5 for "first Mon", "third Thu"
+  dayOfMonth: number | null;           // 1-31 for monthly on specific date
+
+  // Scheduling
+  time: string | null;                 // "08:00" in 24-hour format
+
+  // End Conditions
+  endDate: string | null;              // ISO date, routine stops after
+  endAfter: number | null;             // Stop after N occurrences
+
+  // Behavior
+  rolloverIfMissed: boolean;           // Keep visible vs auto-skip
+
+  // State
+  pausedAt: number | null;             // Unix timestamp when paused
+  pausedUntil: string | null;          // ISO date to auto-resume
+}
+
+export interface RecurringInstance {
+  date: string;                        // "2025-01-17" ISO format
+  routineSteps: Step[];                // Snapshot of template steps
+  additionalSteps: Step[];             // Instance-specific additions
+  completed: boolean;                  // Overall completion
+  completedAt: number | null;          // Unix timestamp
+  skipped: boolean;                    // Explicitly skipped
+  skippedAt: number | null;            // Unix timestamp
+  notes: string | null;                // Per-instance notes
+  overdueDays: number | null;          // If rollover enabled
 }
 
 export interface StuckResolution {
@@ -797,7 +832,16 @@ export function createTask(title: string, options?: Partial<Task>): Task {
 
     attachments: [],
     externalLinks: [],
+
+    // Recurring fields
+    isRecurring: false,
     recurrence: null,
+    recurringStreak: 0,
+    recurringBestStreak: 0,
+    recurringInstances: [],
+    recurringTotalCompletions: 0,
+    recurringLastCompleted: null,
+    recurringNextDue: null,
 
     estimationAccuracy: null,
     firstFocusedAt: null,

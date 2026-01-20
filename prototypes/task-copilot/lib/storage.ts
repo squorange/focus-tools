@@ -221,6 +221,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV8(state);
   }
 
+  // Version 8 → 9: Add recurring task fields
+  if (version < 9) {
+    state = migrateToV9(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -274,7 +279,14 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         source: 'manual',
         attachments: [],
         externalLinks: [],
+        isRecurring: false,
         recurrence: null,
+        recurringStreak: 0,
+        recurringBestStreak: 0,
+        recurringInstances: [],
+        recurringTotalCompletions: 0,
+        recurringLastCompleted: null,
+        recurringNextDue: null,
         estimationAccuracy: null,
         firstFocusedAt: null,
         timesStuck: 0,
@@ -597,6 +609,42 @@ function migrateToV8(state: Partial<AppState> & Record<string, unknown>): Partia
 }
 
 /**
+ * Migrate from v8 to v9 (Add recurring task fields)
+ */
+function migrateToV9(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const tasks = ((state.tasks as Task[]) || []).map((task) => {
+    // Migrate existing recurrence field to add new properties
+    const existingRecurrence = task.recurrence;
+    const migratedRecurrence = existingRecurrence ? {
+      ...existingRecurrence,
+      weekOfMonth: existingRecurrence.weekOfMonth ?? null,
+      time: existingRecurrence.time ?? null,
+      rolloverIfMissed: existingRecurrence.rolloverIfMissed ?? true,
+      pausedAt: existingRecurrence.pausedAt ?? null,
+      pausedUntil: existingRecurrence.pausedUntil ?? null,
+    } : null;
+
+    return {
+      ...task,
+      isRecurring: task.isRecurring ?? false,
+      recurrence: migratedRecurrence,
+      recurringStreak: task.recurringStreak ?? 0,
+      recurringBestStreak: task.recurringBestStreak ?? 0,
+      recurringInstances: task.recurringInstances ?? [],
+      recurringTotalCompletions: task.recurringTotalCompletions ?? 0,
+      recurringLastCompleted: task.recurringLastCompleted ?? null,
+      recurringNextDue: task.recurringNextDue ?? null,
+    };
+  });
+
+  return {
+    ...state,
+    schemaVersion: 9,
+    tasks,
+  };
+}
+
+/**
  * Migrate legacy step format to new format
  */
 function migrateSteps(legacySteps: unknown[]): Step[] {
@@ -668,6 +716,15 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     staging: task.staging ?? null,
     // Reminder (v8)
     reminder: task.reminder ?? null,
+    // Recurring fields (v9)
+    isRecurring: task.isRecurring ?? false,
+    recurrence: task.recurrence ?? null,
+    recurringStreak: task.recurringStreak ?? 0,
+    recurringBestStreak: task.recurringBestStreak ?? 0,
+    recurringInstances: task.recurringInstances ?? [],
+    recurringTotalCompletions: task.recurringTotalCompletions ?? 0,
+    recurringLastCompleted: task.recurringLastCompleted ?? null,
+    recurringNextDue: task.recurringNextDue ?? null,
     // Ensure steps have Model E fields
     steps: task.steps.map((step) => ({
       ...step,

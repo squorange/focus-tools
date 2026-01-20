@@ -55,8 +55,11 @@ export default function TaskCreationPopover({
       setProjectId(null);
       setShowProjectDropdown(false);
       setDropdownPosition(null);
-      // Delay focus to allow animation
-      setTimeout(() => inputRef.current?.focus(), 100);
+      // Focus immediately - delay can break keyboard trigger on mobile
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     }
   }, [isOpen]);
 
@@ -310,6 +313,8 @@ export default function TaskCreationPopover({
               placeholder="What needs to be done?"
               className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
               autoComplete="off"
+              autoFocus
+              enterKeyHint="done"
             />
           </div>
 
@@ -388,6 +393,7 @@ export default function TaskCreationPopover({
             placeholder="What needs to be done?"
             className="w-full px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-900 border-0 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
             autoComplete="off"
+            autoFocus
           />
         </div>
 
