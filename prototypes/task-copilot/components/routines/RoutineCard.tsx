@@ -3,7 +3,7 @@
 import React from "react";
 import { Task } from "@/lib/types";
 import { describePatternCompact, getTodayISO, getActiveOccurrenceDate, ensureInstance } from "@/lib/recurring-utils";
-import { AlertTriangle, Check, Repeat, Zap } from "lucide-react";
+import { AlertTriangle, Repeat, Zap } from "lucide-react";
 
 type TimeWindowStatus = "before" | "active" | "past";
 
@@ -80,46 +80,53 @@ export default function RoutineCard({
         <div className="flex flex-col h-full p-3">
           {/* Top row: Circle with progress ring (left) + Streak (right) */}
           <div className="flex items-center justify-between">
-            {/* Progress ring - 20px to match other task rows */}
+            {/* Progress ring - 20px, matches ProgressRing component exactly */}
             <button
               onClick={handleCircleClick}
               className="flex-shrink-0 w-5 h-5 group relative"
             >
               {isInstanceComplete ? (
-                // Completed: solid green circle with checkmark
+                // Completed: solid green circle with checkmark (matches ProgressRing)
                 <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                 </div>
               ) : (
-                // Progress ring
-                <svg viewBox="0 0 20 20" className="w-full h-full transform -rotate-90">
+                // Progress ring - exact same styling as ProgressRing component
+                // size=20, strokeWidth=2, radius=9, circumference=2*PI*9
+                <svg width={20} height={20} className="transform -rotate-90 flex-shrink-0">
                   {/* Background circle */}
                   <circle
-                    cx="10"
-                    cy="10"
-                    r="8"
+                    cx={10}
+                    cy={10}
+                    r={9}
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.5"
-                    className="text-zinc-300 dark:text-zinc-600"
+                    strokeWidth={2}
+                    className="text-zinc-200 dark:text-zinc-700"
                   />
                   {/* Progress arc */}
                   {totalSteps > 0 && completedSteps > 0 && (
                     <circle
-                      cx="10"
-                      cy="10"
-                      r="8"
+                      cx={10}
+                      cy={10}
+                      r={9}
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeDasharray={2 * Math.PI * 8}
-                      strokeDashoffset={2 * Math.PI * 8 * (1 - completedSteps / totalSteps)}
+                      strokeWidth={2}
+                      strokeDasharray={2 * Math.PI * 9}
+                      strokeDashoffset={2 * Math.PI * 9 * (1 - completedSteps / totalSteps)}
                       strokeLinecap="round"
-                      className="text-violet-500 group-hover:text-violet-600 transition-colors"
+                      className="text-violet-500"
                     />
                   )}
-                  {/* Small "!" indicator when past time window and no progress */}
-                  {isPastWindow && completedSteps === 0 && (
+                  {/* Small "!" indicator when past time window (even with partial progress) */}
+                  {isPastWindow && (
                     <text
                       x="10"
                       y="14"
