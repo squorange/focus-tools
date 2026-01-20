@@ -2953,6 +2953,38 @@ export default function Home() {
       ...prev,
       tasks: prev.tasks.map((t) => {
         if (t.id !== taskId) return t;
+
+        // Handle recurring tasks - update instance
+        if (t.isRecurring && t.recurrence) {
+          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
+          const instance = ensureInstance(t, activeDate);
+
+          // Update step in routineSteps or additionalSteps
+          const updatedRoutineSteps = instance.routineSteps.map((s) =>
+            s.id === stepId ? { ...s, text: text.trim() } : s
+          );
+          const updatedAdditionalSteps = instance.additionalSteps.map((s) =>
+            s.id === stepId ? { ...s, text: text.trim() } : s
+          );
+
+          const updatedInstance = {
+            ...instance,
+            routineSteps: updatedRoutineSteps,
+            additionalSteps: updatedAdditionalSteps,
+          };
+
+          const updatedInstances = t.recurringInstances
+            .filter((i) => i.date !== activeDate)
+            .concat(updatedInstance);
+
+          return {
+            ...t,
+            recurringInstances: updatedInstances,
+            updatedAt: Date.now(),
+          };
+        }
+
+        // Regular tasks - existing logic
         return {
           ...t,
           steps: t.steps.map((s) =>
