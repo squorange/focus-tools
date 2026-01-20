@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Task } from "@/lib/types";
-import { describePatternCompact, getTodayISO } from "@/lib/recurring-utils";
-import { AlertTriangle, Repeat, Zap } from "lucide-react";
+import { describePatternCompact, getTodayISO, getActiveOccurrenceDate, ensureInstance } from "@/lib/recurring-utils";
+import { AlertTriangle, Check, Repeat, Zap } from "lucide-react";
 
 type TimeWindowStatus = "before" | "active" | "past";
 
@@ -31,6 +31,17 @@ export default function RoutineCard({
     const diffMs = new Date(today).getTime() - new Date(nextDue).getTime();
     overdueDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }
+
+  // Get current instance for step progress
+  const activeDate = getActiveOccurrenceDate(task) || today;
+  const instance = ensureInstance(task, activeDate);
+
+  // Count steps from both routineSteps and additionalSteps
+  const totalSteps = instance.routineSteps.length + instance.additionalSteps.length;
+  const completedSteps =
+    instance.routineSteps.filter(s => s.completed).length +
+    instance.additionalSteps.filter(s => s.completed).length;
+  const isInstanceComplete = instance.completed;
 
   const patternDescription = describePatternCompact(task.recurrence);
   const streak = task.recurringStreak;
@@ -67,37 +78,61 @@ export default function RoutineCard({
         `}
       >
         <div className="flex flex-col h-full p-3">
-          {/* Top row: Circle (left) + Streak + Chevron (right) */}
+          {/* Top row: Circle with progress ring (left) + Streak (right) */}
           <div className="flex items-center justify-between">
-            {/* Circle - 20px to match other task rows */}
-            {/* Small "!" inside when past time window */}
+            {/* Progress ring - 20px to match other task rows */}
             <button
               onClick={handleCircleClick}
               className="flex-shrink-0 w-5 h-5 group relative"
             >
-              <svg viewBox="0 0 20 20" className="w-full h-full">
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="text-zinc-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors"
-                />
-                {/* Small "!" indicator when past time window - monochrome with circle */}
-                {isPastWindow && (
-                  <text
-                    x="10"
-                    y="14"
-                    textAnchor="middle"
-                    className="fill-zinc-400 dark:fill-zinc-500"
-                    style={{ fontSize: "10px", fontWeight: 600 }}
-                  >
-                    !
-                  </text>
-                )}
-              </svg>
+              {isInstanceComplete ? (
+                // Completed: solid green circle with checkmark
+                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+              ) : (
+                // Progress ring
+                <svg viewBox="0 0 20 20" className="w-full h-full transform -rotate-90">
+                  {/* Background circle */}
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    className="text-zinc-300 dark:text-zinc-600"
+                  />
+                  {/* Progress arc */}
+                  {totalSteps > 0 && completedSteps > 0 && (
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="8"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeDasharray={2 * Math.PI * 8}
+                      strokeDashoffset={2 * Math.PI * 8 * (1 - completedSteps / totalSteps)}
+                      strokeLinecap="round"
+                      className="text-violet-500 group-hover:text-violet-600 transition-colors"
+                    />
+                  )}
+                  {/* Small "!" indicator when past time window and no progress */}
+                  {isPastWindow && completedSteps === 0 && (
+                    <text
+                      x="10"
+                      y="14"
+                      textAnchor="middle"
+                      className="fill-zinc-400 dark:fill-zinc-500"
+                      style={{ fontSize: "10px", fontWeight: 600 }}
+                      transform="rotate(90 10 10)"
+                    >
+                      !
+                    </text>
+                  )}
+                </svg>
+              )}
             </button>
 
             {/* Streak with Zap icon - monochromatic, no unit */}
