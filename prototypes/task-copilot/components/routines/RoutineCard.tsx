@@ -85,13 +85,13 @@ export default function RoutineCard({
                   strokeWidth="1.5"
                   className="text-zinc-300 dark:text-zinc-600 group-hover:text-violet-400 dark:group-hover:text-violet-500 transition-colors"
                 />
-                {/* Small "!" indicator when past time window */}
+                {/* Small "!" indicator when past time window - monochrome with circle */}
                 {isPastWindow && (
                   <text
                     x="10"
                     y="14"
                     textAnchor="middle"
-                    className="fill-amber-500 dark:fill-amber-400"
+                    className="fill-zinc-400 dark:fill-zinc-500"
                     style={{ fontSize: "10px", fontWeight: 600 }}
                   >
                     !
