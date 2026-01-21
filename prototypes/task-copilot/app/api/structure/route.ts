@@ -179,6 +179,43 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Validate and sanitize estimatedMinutes - ensures it's a valid positive number
+// Handles cases where AI returns strings like "~30 min" or invalid values
+function sanitizeEstimatedMinutes(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+
+  // If it's already a valid number
+  if (typeof value === 'number' && !isNaN(value) && value > 0) {
+    return Math.round(value);
+  }
+
+  // If it's a string, try to extract the number
+  if (typeof value === 'string') {
+    // Match patterns like "30", "~30", "30 min", "~30 min", "1h 30m"
+    const hourMatch = value.match(/(\d+)\s*(?:hr?s?|hours?)/i);
+    const minMatch = value.match(/(\d+)\s*(?:min|mins?|minutes?|m)?$/i);
+
+    let minutes = 0;
+    if (hourMatch) {
+      minutes += parseInt(hourMatch[1]) * 60;
+    }
+    if (minMatch && !hourMatch) {
+      // Only use minMatch if we didn't find hours (to avoid double-counting "1h 30m")
+      minutes = parseInt(minMatch[1]);
+    } else if (minMatch && hourMatch) {
+      // Add minutes to hours
+      const minPart = value.match(/(\d+)\s*(?:min|mins?|minutes?|m)$/i);
+      if (minPart) {
+        minutes += parseInt(minPart[1]);
+      }
+    }
+
+    return minutes > 0 ? minutes : null;
+  }
+
+  return null;
+}
+
 // Extract embedded time estimates from step text and clean up
 // Fallback for when AI incorrectly embeds times like "Buy groceries ~15 min"
 function extractEmbeddedTime(text: string): { cleanText: string; minutes: number | null } {
@@ -348,7 +385,7 @@ function processToolResult(
     case "replace_task_steps": {
       const data = input as ReplaceStepsInput;
       // Clean step text and extract any embedded times
-      const cleanedSteps = data.steps.map(cleanStepText);
+      const cleanedSteps = (data.steps ?? []).map(cleanStepText);
       return {
         action: "replace",
         taskTitle: data.taskTitle || null,
@@ -368,8 +405,8 @@ function processToolResult(
           completed: false,
           completedAt: null,
           effort: null,
-          estimatedMinutes: s.estimatedMinutes || null,
-          estimateSource: s.estimatedMinutes ? "ai" as const : null,
+          estimatedMinutes: sanitizeEstimatedMinutes(s.estimatedMinutes),
+          estimateSource: sanitizeEstimatedMinutes(s.estimatedMinutes) ? "ai" as const : null,
           timeSpent: 0,
           firstFocusedAt: null,
           estimationAccuracy: null,
@@ -390,7 +427,7 @@ function processToolResult(
     case "suggest_additions": {
       const data = input as SuggestAdditionsInput;
       // Clean suggestion text and extract any embedded times
-      const cleanedSuggestions = data.suggestions.map((s) => {
+      const cleanedSuggestions = (data.suggestions ?? []).map((s) => {
         const cleaned = cleanStepText(s);
         return {
           ...cleaned,
@@ -411,7 +448,7 @@ function processToolResult(
           })),
           parentStepId: s.parentStepId,
           insertAfterStepId: s.insertAfterStepId,
-          estimatedMinutes: s.estimatedMinutes,
+          estimatedMinutes: sanitizeEstimatedMinutes(s.estimatedMinutes) ?? undefined,
         })),
         edits: null,
         deletions: null,
@@ -426,12 +463,13 @@ function processToolResult(
         taskTitle: null,
         steps: null,
         suggestions: null,
-        edits: data.edits.map((e) => ({
+        edits: (data.edits ?? []).map((e) => ({
           targetId: e.targetId,
           targetType: e.targetType,
           parentId: e.parentId,
           originalText: e.originalText,
           newText: e.newText,
+          estimatedMinutes: sanitizeEstimatedMinutes(e.estimatedMinutes) ?? undefined,
         })),
         deletions: null,
         message: data.message,
@@ -446,7 +484,7 @@ function processToolResult(
         steps: null,
         suggestions: null,
         edits: null,
-        deletions: data.deletions.map((d) => ({
+        deletions: (data.deletions ?? []).map((d) => ({
           targetId: d.targetId,
           targetType: d.targetType,
           parentId: d.parentId,
@@ -491,7 +529,7 @@ function processToolResult(
         action: "suggest",
         taskTitle: null,
         steps: null,
-        suggestions: data.substeps.map((sub) => ({
+        suggestions: (data.substeps ?? []).map((sub) => ({
           id: sub.id,
           text: sub.text,
           substeps: [],
