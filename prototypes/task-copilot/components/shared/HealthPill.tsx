@@ -16,7 +16,7 @@ export default function HealthPill({
 }: HealthPillProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLSpanElement>(null);
 
   const info = getHealthStatusInfo(health.status);
 
@@ -28,8 +28,8 @@ export default function HealthPill({
       if (
         tooltipRef.current &&
         !tooltipRef.current.contains(e.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
       ) {
         setShowTooltip(false);
       }
@@ -57,13 +57,22 @@ export default function HealthPill({
       >
         {info.label}
         {showInfo && (
-          <button
-            ref={buttonRef}
+          <span
+            ref={triggerRef}
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation();
               setShowTooltip(!showTooltip);
             }}
-            className="opacity-60 hover:opacity-100 transition-opacity"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowTooltip(!showTooltip);
+              }
+            }}
+            className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
             aria-label="Show health details"
           >
             <svg
@@ -79,7 +88,7 @@ export default function HealthPill({
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-          </button>
+          </span>
         )}
       </span>
 

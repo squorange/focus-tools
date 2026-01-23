@@ -57,17 +57,22 @@ export default function HistoryModal({
   const [isHandleHovered, setIsHandleHovered] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
-  const today = getTodayISO();
+  // Day boundary hour - routines after midnight but before this hour count as previous day
+  const dayStartHour = 5;
+
+  const today = getTodayISO(dayStartHour);
 
   // Generate instances for the current month view
   const monthInstances = useMemo(() => {
     if (!task.isRecurring || !task.recurrence) return [];
 
     const { year, month } = currentMonth;
-    const startDate = new Date(year, month, 1).toISOString().split("T")[0];
-    const endDate = new Date(year, month + 1, 0).toISOString().split("T")[0];
+    // Use local date formatting to avoid UTC timezone issues
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
 
-    return generateInstancesForRange(task, startDate, endDate);
+    return generateInstancesForRange(task, startDate, endDate, dayStartHour);
   }, [task, currentMonth]);
 
   // Build calendar grid data
@@ -162,7 +167,7 @@ export default function HistoryModal({
   const handleMarkComplete = (date: string) => {
     if (!onUpdateTask) return;
 
-    const updatedTask = markInstanceComplete(task, date);
+    const updatedTask = markInstanceComplete(task, date, dayStartHour);
     onUpdateTask(task.id, {
       recurringInstances: updatedTask.recurringInstances,
       recurringStreak: updatedTask.recurringStreak,
@@ -178,7 +183,7 @@ export default function HistoryModal({
   const handleMarkSkipped = (date: string) => {
     if (!onUpdateTask) return;
 
-    const updatedTask = skipInstance(task, date);
+    const updatedTask = skipInstance(task, date, dayStartHour);
     onUpdateTask(task.id, {
       recurringInstances: updatedTask.recurringInstances,
       recurringNextDue: updatedTask.recurringNextDue,

@@ -17,7 +17,7 @@ interface TasksViewProps {
   poolTasks: Task[];
   queue: FocusQueue;
   projects: Project[];
-  onOpenTask: (taskId: string) => void;
+  onOpenTask: (taskId: string, mode?: 'executing' | 'managing') => void;
   onSendToPool: (taskId: string) => void;
   onAddToQueue: (taskId: string, forToday?: boolean) => void;
   onDefer: (taskId: string, until: string) => void;
@@ -160,24 +160,26 @@ export default function TasksView({
   return (
     <div className="space-y-6">
       {/* Scrollable Tab Bar - centers when fits, left-pins + scrolls when overflows */}
-      <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 pe-8">
-        <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg w-fit mx-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-              }`}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className="ml-1 opacity-50">{tab.count}</span>
-              )}
-            </button>
-          ))}
+      <div className="overflow-x-auto scrollbar-hide -mx-4 pl-4">
+        <div className="inline-flex pr-4">
+          <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="ml-1 opacity-50">{tab.count}</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -255,12 +257,9 @@ export default function TasksView({
                 <TaskRow
                   key={task.id}
                   task={task}
-                  isInQueue={isInQueue(task.id)}
+                  isInQueue={false}
                   project={getProject(task)}
                   onOpen={() => onOpenTask(task.id)}
-                  onAddToQueue={() => onAddToQueue(task.id)}
-                  onDefer={onDefer}
-                  onPark={onPark}
                   onDelete={onDelete}
                 />
               ))}
@@ -454,7 +453,7 @@ interface TaskRowProps {
   isInQueue: boolean;
   project?: Project | null;
   onOpen: () => void;
-  onAddToQueue: () => void;
+  onAddToQueue?: () => void;
   onDefer?: (taskId: string, until: string) => void;
   onPark?: (taskId: string) => void;
   onDelete?: (taskId: string) => void;
@@ -567,7 +566,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
           </div>
         </button>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {isInQueue ? (
+          {onAddToQueue && (isInQueue ? (
             <span className="text-xs text-green-600 dark:text-green-400">In Focus</span>
           ) : (
             <button
@@ -576,7 +575,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
             >
               → Focus
             </button>
-          )}
+          ))}
           {(onDelete || onDefer || onPark) && (
             <div className="relative">
               <button
@@ -613,7 +612,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
             </span>
           </button>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {isInQueue ? (
+            {onAddToQueue && (isInQueue ? (
               <span className="text-xs text-green-600 dark:text-green-400 px-1">In Focus</span>
             ) : (
               <button
@@ -622,7 +621,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
               >
                 → Focus
               </button>
-            )}
+            ))}
             {(onDelete || onDefer || onPark) && (
               <div className="relative">
                 <button

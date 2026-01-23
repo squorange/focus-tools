@@ -144,7 +144,9 @@ Use insertAfterStepId to specify WHERE to insert a new step (omit to append at e
 - "Reword step N" or "change step N to..."
 - "Simplify" or "make clearer"
 - "Update step N"
+- "Estimate times" or "add time estimates" - use estimatedMinutes field, keep text UNCHANGED
 
+For time estimates: set estimatedMinutes field, use newText = originalText (unchanged).
 Skip completed items unless user specifically asks to edit them.`,
     input_schema: {
       type: "object" as const,
@@ -154,17 +156,21 @@ Skip completed items unless user specifically asks to edit them.`,
           items: {
             type: "object",
             properties: {
-              targetId: { type: "string", description: "The step/substep ID to edit" },
+              targetId: { type: "string", description: "The step/substep display ID (e.g., '1', '2', '1a', '1b')" },
               targetType: {
                 type: "string",
                 enum: ["step", "substep"],
               },
               parentId: {
                 type: "string",
-                description: "For substeps only: the parent step ID",
+                description: "For substeps only: the parent step display ID (e.g., '1')",
               },
               originalText: { type: "string", description: "Current text" },
-              newText: { type: "string", description: "Improved text" },
+              newText: { type: "string", description: "Improved text (or same as original for estimate-only edits)" },
+              estimatedMinutes: {
+                type: "number",
+                description: "Time estimate in minutes. Use: 1, 2, 5, 10, 15, 20, 30, 45, 60, 90, 120",
+              },
             },
             required: ["targetId", "targetType", "originalText", "newText"],
           },
@@ -502,6 +508,7 @@ export interface EditStepsInput {
     parentId?: string;
     originalText: string;
     newText: string;
+    estimatedMinutes?: number;
   }>;
   message: string;
 }

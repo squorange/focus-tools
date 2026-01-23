@@ -1,5 +1,12 @@
 import { Task } from './types';
 import { RecurringInstance } from './recurring-types';
+import { getTodayISO } from './utils';
+
+// Helper to convert timestamp to local date string (YYYY-MM-DD)
+function timestampToLocalDate(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 // Step completion within a task
 export interface StepCompletion {
@@ -129,17 +136,19 @@ export function getCompletions(tasks: Task[], daysToShow = 7): CompletionsResult
   // Sort by completedAt descending
   taskCompletions.sort((a, b) => b.completedAt - a.completedAt);
 
-  // Group by date
+  // Group by date (using local timezone)
   const grouped = new Map<string, TaskCompletion[]>();
   for (const tc of taskCompletions) {
-    const dateKey = new Date(tc.completedAt).toISOString().split('T')[0];
+    const dateKey = timestampToLocalDate(tc.completedAt);
     if (!grouped.has(dateKey)) grouped.set(dateKey, []);
     grouped.get(dateKey)!.push(tc);
   }
 
-  // Format display dates
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // Format display dates (using local timezone)
+  const today = getTodayISO();
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`;
 
   const groups = Array.from(grouped.entries())
     .sort((a, b) => b[0].localeCompare(a[0]))
@@ -162,7 +171,7 @@ export function getCompletions(tasks: Task[], daysToShow = 7): CompletionsResult
  * Count completions for today (unique tasks with any completion activity).
  */
 export function countCompletionsToday(tasks: Task[]): number {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayISO();
   let count = 0;
 
   for (const task of tasks) {
@@ -170,9 +179,9 @@ export function countCompletionsToday(tasks: Task[]): number {
 
     let hasCompletionToday = false;
 
-    // Check task completion
+    // Check task completion (using local timezone)
     if (task.completedAt) {
-      const completedDate = new Date(task.completedAt).toISOString().split('T')[0];
+      const completedDate = timestampToLocalDate(task.completedAt);
       if (completedDate === today) {
         hasCompletionToday = true;
       }
@@ -182,7 +191,7 @@ export function countCompletionsToday(tasks: Task[]): number {
     if (!hasCompletionToday) {
       for (const step of task.steps) {
         if (step.completedAt) {
-          const completedDate = new Date(step.completedAt).toISOString().split('T')[0];
+          const completedDate = timestampToLocalDate(step.completedAt);
           if (completedDate === today) {
             hasCompletionToday = true;
             break;

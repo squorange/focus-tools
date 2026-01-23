@@ -25,6 +25,10 @@ interface StagingAreaProps {
   // Routine support
   isRoutine?: boolean;
   onAcceptWithScope?: (scope: 'instance' | 'template') => void;
+  // Mode for recurring tasks - in managing mode, hide scope buttons
+  mode?: 'executing' | 'managing';
+  // Target step context for substep suggestions
+  targetStep?: { id: string; text: string; stepNumber: string } | null;
 }
 
 export default function StagingArea({
@@ -47,6 +51,8 @@ export default function StagingArea({
   onAnimationComplete,
   isRoutine = false,
   onAcceptWithScope,
+  mode,
+  targetStep,
 }: StagingAreaProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isPulsing, setIsPulsing] = useState(false);
@@ -90,11 +96,16 @@ export default function StagingArea({
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between gap-2 p-4 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg">💡</span>
           <span className="font-medium text-violet-800 dark:text-violet-300">
             Suggested Changes
           </span>
+          {targetStep && (
+            <span className="text-sm text-violet-600 dark:text-violet-400">
+              → Step {targetStep.stepNumber}: {targetStep.text.length > 25 ? targetStep.text.slice(0, 25) + '...' : targetStep.text}
+            </span>
+          )}
           <span className="text-sm text-violet-600 dark:text-violet-400">
             ({totalItems} {totalItems === 1 ? "item" : "items"})
           </span>
@@ -172,10 +183,12 @@ export default function StagingArea({
                     EDIT
                   </span>
 
-                  {/* Step/substep indicator */}
-                  <span className="w-6 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
-                    {edit.targetId}.
-                  </span>
+                  {/* Step/substep indicator - only show if it's a valid display ID format */}
+                  {/^(\d+[a-z]?|\d+)$/.test(edit.targetId) && (
+                    <span className="w-6 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                      {edit.targetId}.
+                    </span>
+                  )}
 
                   {/* Content: old → new */}
                   <div className="flex-1 min-w-0">
@@ -184,6 +197,12 @@ export default function StagingArea({
                     </p>
                     <p className="text-neutral-700 dark:text-neutral-200 mt-1">
                       {edit.newText}
+                      {/* Display time estimate if provided */}
+                      {edit.estimatedMinutes !== undefined && edit.estimatedMinutes > 0 && (
+                        <span className="ml-2 text-xs text-violet-500 dark:text-violet-400">
+                          ~{formatDuration(edit.estimatedMinutes)}
+                        </span>
+                      )}
                     </p>
                   </div>
 
@@ -293,8 +312,10 @@ export default function StagingArea({
                       {suggestion.text}
                     </span>
 
-                    {/* Estimate badge */}
-                    {suggestion.estimatedMinutes && (
+                    {/* Estimate badge - validate estimatedMinutes is a valid number */}
+                    {typeof suggestion.estimatedMinutes === 'number' &&
+                     !isNaN(suggestion.estimatedMinutes) &&
+                     suggestion.estimatedMinutes > 0 && (
                       <span className="ml-2 inline-flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                         <span>~{formatDuration(suggestion.estimatedMinutes)}</span>
                         <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
@@ -336,43 +357,13 @@ export default function StagingArea({
 
           {/* Actions */}
           <div className="pt-2 border-t border-violet-200 dark:border-violet-700">
-            {/* Scope selection for routines */}
-            {isRoutine && onAcceptWithScope && safeSuggestions.length > 0 && (
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => onAcceptWithScope('instance')}
-                  className="flex-1 px-3 py-2 text-sm font-medium
-                             bg-violet-100 dark:bg-violet-900/30
-                             text-violet-700 dark:text-violet-300
-                             hover:bg-violet-200 dark:hover:bg-violet-800/40
-                             rounded-lg transition-colors"
-                >
-                  Add to today only
-                </button>
-                <button
-                  onClick={() => onAcceptWithScope('template')}
-                  className="flex-1 px-3 py-2 text-sm font-medium
-                             bg-blue-100 dark:bg-blue-900/30
-                             text-blue-700 dark:text-blue-300
-                             hover:bg-blue-200 dark:hover:bg-blue-800/40
-                             rounded-lg transition-colors"
-                >
-                  Add to routine
-                </button>
-              </div>
-            )}
-
-            {/* Standard actions */}
             <div className="flex items-center gap-3">
-              {/* Only show Accept all for non-routines or when no suggestions */}
-              {(!isRoutine || safeSuggestions.length === 0) && (
-                <button
-                  onClick={onAcceptAll}
-                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-                >
-                  Accept all
-                </button>
-              )}
+              <button
+                onClick={onAcceptAll}
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              >
+                Accept all
+              </button>
               <button
                 onClick={onDismiss}
                 className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"

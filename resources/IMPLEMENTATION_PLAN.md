@@ -101,7 +101,7 @@ if (queueItem && queueItem.selectionType === 'specific_steps') {
 }
 ```
 
-**Concern:** Need to define exact UX - should we auto-move, ask user, or just update visual state?
+**Decision:** Auto-move to Upcoming + show success toast informing user (e.g., "Today's steps done! Task moved to Upcoming")
 
 ---
 
@@ -286,10 +286,7 @@ Phase 7 (can start after Phase 4)
 
 ## Open Questions
 
-1. **Phase 3 UX:** When Today steps are complete but Upcoming remain, should we:
-   - Auto-move queue item to Upcoming?
-   - Show a prompt asking what to do?
-   - Keep as-is but change visual state?
+1. **Phase 3 UX:** ✅ Decided - Auto-move to Upcoming + success toast
 
 2. **Phase 7 Labels:** For Edit Template modal scopes:
    - "Template" vs "Routine" for permanent changes?

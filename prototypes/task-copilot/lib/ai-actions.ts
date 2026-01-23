@@ -59,7 +59,7 @@ export const AI_ACTIONS = {
       id: 'estimate',
       label: 'Estimate',
       icon: '⏱',
-      query: 'How long will this take?',
+      query: 'Add time estimates to each step. Use the edit_steps tool to add estimatedMinutes for each step. Keep step text unchanged.',
     },
   },
 

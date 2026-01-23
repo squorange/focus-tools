@@ -3,7 +3,7 @@
 import React from "react";
 import { Task } from "@/lib/types";
 import { describePatternCompact, getTodayISO, getActiveOccurrenceDate, ensureInstance } from "@/lib/recurring-utils";
-import { AlertTriangle, Repeat, Zap } from "lucide-react";
+import { Repeat, Zap } from "lucide-react";
 
 type TimeWindowStatus = "before" | "active" | "past";
 
@@ -68,11 +68,9 @@ export default function RoutineCard({
       <div
         className={`
           w-full h-[110px] rounded-xl border transition-all
-          ${overdueDays > 0
-            ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
-            : isActiveWindow
-              ? "border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/20"
-              : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+          ${isActiveWindow
+            ? "border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/20"
+            : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
           }
           hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-sm
         `}
@@ -170,13 +168,7 @@ export default function RoutineCard({
               <span className="truncate">{patternDescription}</span>
             </div>
 
-            {/* Overdue indicator (day-level, not time-window) */}
-            {overdueDays > 0 && (
-              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="w-3 h-3" />
-                <span>{overdueDays}d</span>
-              </div>
-            )}
+            {/* Removed aggressive overdue indicator - using subtle "!" in ring and amber time text instead */}
           </div>
         </div>
       </div>

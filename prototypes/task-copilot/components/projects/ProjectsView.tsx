@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Task, Project, FocusQueue } from "@/lib/types";
 import MetadataPill from "@/components/shared/MetadataPill";
+import { getTodayISO } from "@/lib/utils";
+import { dateMatchesPattern, getNextOccurrence, getActiveOccurrenceDate } from "@/lib/recurring-utils";
+import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 
 interface ProjectsViewProps {
   tasks: Task[];
@@ -14,13 +17,67 @@ interface ProjectsViewProps {
   onAddToQueue: (taskId: string) => void;
 }
 
-// Group tasks by status
+// Group tasks by status (separating recurring tasks)
 function groupByStatus(taskList: Task[]) {
   return {
-    inbox: taskList.filter(t => t.status === 'inbox'),
-    pool: taskList.filter(t => t.status === 'pool'),
+    recurring: taskList.filter(t => t.isRecurring && t.status !== 'complete'),
+    inbox: taskList.filter(t => !t.isRecurring && t.status === 'inbox'),
+    pool: taskList.filter(t => !t.isRecurring && t.status === 'pool'),
     complete: taskList.filter(t => t.status === 'complete'),
   };
+}
+
+// Format date relative to today
+function formatDateLabel(dateStr: string, today: string): string {
+  const todayDate = new Date(today + 'T00:00:00');
+  const date = new Date(dateStr + 'T00:00:00');
+  const diffDays = Math.round((date.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays === -1) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+// Format the next due date for recurring tasks with dual-mode logic
+function formatNextDueDate(task: Task): { text: string; isPastDue: boolean } {
+  if (!task.isRecurring || !task.recurrence) {
+    return { text: '', isPastDue: false };
+  }
+
+  const today = getTodayISO();
+  const pattern = task.recurrence as RecurrenceRuleExtended;
+  const startDate = pattern.startDate ||
+    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : today);
+
+  const isDueToday = dateMatchesPattern(today, pattern, startDate);
+  const todayInstance = task.recurringInstances?.find(i => i.date === today);
+  const todayComplete = todayInstance?.completed ?? false;
+
+  if (pattern.rolloverIfMissed) {
+    // KEEP VISIBLE mode
+    if (isDueToday && !todayComplete) return { text: 'Today', isPastDue: false };
+    if (isDueToday && todayComplete) {
+      const next = getNextOccurrence(pattern, today, startDate);
+      return next ? { text: formatDateLabel(next, today), isPastDue: false } : { text: '', isPastDue: false };
+    }
+    // Check for overdue past instance
+    const activeDate = getActiveOccurrenceDate(task);
+    if (activeDate && activeDate < today) {
+      const inst = task.recurringInstances?.find(i => i.date === activeDate);
+      if (!inst?.completed && !inst?.skipped) {
+        return { text: formatDateLabel(activeDate, today), isPastDue: true };
+      }
+    }
+    // Past instance completed, show next
+    const next = getNextOccurrence(pattern, today, startDate);
+    return next ? { text: formatDateLabel(next, today), isPastDue: false } : { text: '', isPastDue: false };
+  } else {
+    // SKIP mode
+    if (isDueToday && !todayComplete) return { text: 'Today', isPastDue: false };
+    const next = getNextOccurrence(pattern, today, startDate);
+    return next ? { text: formatDateLabel(next, today), isPastDue: false } : { text: '', isPastDue: false };
+  }
 }
 
 // Helper component for task groups
@@ -30,9 +87,10 @@ interface TaskGroupProps {
   onOpenTask: (taskId: string) => void;
   onAddToQueue: (taskId: string) => void;
   isInQueue: (taskId: string) => boolean;
+  isRecurringSection?: boolean;
 }
 
-function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue }: TaskGroupProps) {
+function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurringSection = false }: TaskGroupProps) {
   return (
     <div className="px-4 py-2">
       <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
@@ -50,20 +108,39 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue }: TaskGr
             >
               {task.title || "Untitled"}
             </button>
-            {isInQueue(task.id) ? (
-              <span className="text-xs text-green-600 dark:text-green-400">
-                In Focus
-              </span>
-            ) : task.status !== 'complete' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToQueue(task.id);
-                }}
-                className="text-xs px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
-              >
-                Focus
-              </button>
+            {/* Recurring tasks: show Next/Past Due date instead of Focus button */}
+            {isRecurringSection ? (
+              (() => {
+                const { text, isPastDue } = formatNextDueDate(task);
+                return text ? (
+                  <span className={`text-xs whitespace-nowrap ${
+                    isPastDue
+                      ? 'text-red-500 dark:text-red-400 font-medium'
+                      : 'text-zinc-500 dark:text-zinc-400'
+                  }`}>
+                    {isPastDue ? `Past Due: ${text}` : `Next: ${text}`}
+                  </span>
+                ) : null;
+              })()
+            ) : (
+              /* Non-recurring tasks: show Focus button or In Focus status */
+              <>
+                {isInQueue(task.id) ? (
+                  <span className="text-xs text-green-600 dark:text-green-400">
+                    In Focus
+                  </span>
+                ) : task.status !== 'complete' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddToQueue(task.id);
+                    }}
+                    className="text-xs px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
+                  >
+                    Focus
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={() => onOpenTask(task.id)}
@@ -145,6 +222,7 @@ export default function ProjectsView({
             const isExpanded = expandedProjects.has(project.id);
             const taskCount = projectTasks.length;
             const completedCount = grouped.complete.length;
+            const recurringCount = grouped.recurring.length;
             const inProgressCount = grouped.inbox.length + grouped.pool.length;
 
             return (
@@ -179,6 +257,9 @@ export default function ProjectsView({
                       {inProgressCount > 0 && (
                         <MetadataPill>{inProgressCount} active</MetadataPill>
                       )}
+                      {recurringCount > 0 && (
+                        <MetadataPill>{recurringCount} recurring</MetadataPill>
+                      )}
                       {completedCount > 0 && (
                         <MetadataPill>{completedCount} done</MetadataPill>
                       )}
@@ -199,6 +280,17 @@ export default function ProjectsView({
                 {/* Project tasks (when expanded) */}
                 {isExpanded && taskCount > 0 && (
                   <div className="divide-y divide-zinc-100 dark:divide-zinc-700">
+                    {/* Recurring tasks (first) */}
+                    {grouped.recurring.length > 0 && (
+                      <TaskGroup
+                        label="Recurring"
+                        tasks={grouped.recurring}
+                        onOpenTask={onOpenTask}
+                        onAddToQueue={onAddToQueue}
+                        isInQueue={isInQueue}
+                        isRecurringSection
+                      />
+                    )}
                     {/* Inbox tasks */}
                     {grouped.inbox.length > 0 && (
                       <TaskGroup

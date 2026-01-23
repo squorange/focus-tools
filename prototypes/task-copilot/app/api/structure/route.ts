@@ -121,6 +121,8 @@ interface ExtendedStructureRequest extends StructureRequest {
     instanceStepCount: number;
     templateStepCount: number;
   } | null;
+  // Recurring task mode (executing = today's instance, managing = template)
+  recurringMode?: 'executing' | 'managing';
   // Task detail mode (full task context for AI assistance)
   taskDetailMode?: boolean;
   taskDetailContext?: {
@@ -258,7 +260,7 @@ function cleanStepText<T extends { text: string; estimatedMinutes?: number | nul
 export async function POST(request: NextRequest) {
   try {
     const body: ExtendedStructureRequest = await request.json();
-    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, targetedStepId, taskDetailMode, taskDetailContext, routineContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
+    const { userMessage, currentList, taskTitle, taskDescription, conversationHistory, taskNotes, focusMode, currentStep, queueMode, queueContext, tasksViewMode, tasksViewContext, targetedStepId, taskDetailMode, taskDetailContext, routineContext, recurringMode, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction } = body;
 
     // Determine which prompt and tools to use
     const isFocusMode = Boolean(focusMode);
@@ -286,8 +288,8 @@ export async function POST(request: NextRequest) {
       : isTasksViewMode
         ? buildTasksViewContextMessage(userMessage, tasksViewContext)
         : isTaskDetailMode
-          ? buildTaskDetailContextMessage(userMessage, taskTitle, taskDescription, taskNotes, taskDetailContext, targetedStepId, routineContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction)
-          : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, routineContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
+          ? buildTaskDetailContextMessage(userMessage, taskTitle, taskDescription, taskNotes, taskDetailContext, targetedStepId, routineContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction, recurringMode)
+          : buildContextMessage(userMessage, currentList, taskTitle, taskDescription, taskNotes, focusMode, currentStep, routineContext, pendingSuggestions, pendingEdits, pendingDeletions, pendingAction, recurringMode);
     console.log("[AI Debug] Context message:", contextMessage);
     console.log("[AI Debug] Focus mode:", isFocusMode);
     console.log("[AI Debug] Queue mode:", isQueueMode);
@@ -673,13 +675,25 @@ function buildStagingContext(
 
 // Build routine context for recurring tasks
 function buildRoutineContext(
-  routineContext?: ExtendedStructureRequest["routineContext"]
+  routineContext?: ExtendedStructureRequest["routineContext"],
+  recurringMode?: 'executing' | 'managing'
 ): string {
   if (!routineContext || !routineContext.isRecurring) return "";
+
+  const mode = recurringMode || 'executing';
 
   let context = "\n=== ROUTINE CONTEXT ===\n";
   context += `This is a RECURRING TASK (routine).\n`;
   context += `Pattern: ${routineContext.patternDescription}\n`;
+
+  // Mode-specific guidance
+  if (mode === 'managing') {
+    context += `\nMode: TEMPLATE EDITING - Changes apply to ALL future occurrences.\n`;
+    context += `IMPORTANT: When breaking down a step, add SUBSTEPS to the targeted step (set parentStepId).\n`;
+    context += `Do NOT add new top-level steps when breaking down - add substeps instead.\n`;
+  } else {
+    context += `\nMode: TODAY'S INSTANCE - Changes apply only to this occurrence.\n`;
+  }
 
   if (routineContext.scheduledTime) {
     context += `Scheduled time: ${routineContext.scheduledTime}\n`;
@@ -736,7 +750,8 @@ function buildContextMessage(
   pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
   pendingEdits?: ExtendedStructureRequest["pendingEdits"],
   pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
-  pendingAction?: ExtendedStructureRequest["pendingAction"]
+  pendingAction?: ExtendedStructureRequest["pendingAction"],
+  recurringMode?: 'executing' | 'managing'
 ): string {
   let context = "";
 
@@ -789,7 +804,7 @@ function buildContextMessage(
     }
 
     // Add routine context for recurring tasks
-    context += buildRoutineContext(routineContext);
+    context += buildRoutineContext(routineContext, recurringMode);
 
     // Add pending staging context if available
     context += buildStagingContext(pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);
@@ -1007,7 +1022,8 @@ function buildTaskDetailContextMessage(
   pendingSuggestions?: ExtendedStructureRequest["pendingSuggestions"],
   pendingEdits?: ExtendedStructureRequest["pendingEdits"],
   pendingDeletions?: ExtendedStructureRequest["pendingDeletions"],
-  pendingAction?: ExtendedStructureRequest["pendingAction"]
+  pendingAction?: ExtendedStructureRequest["pendingAction"],
+  recurringMode?: 'executing' | 'managing'
 ): string {
   const today = new Date().toISOString().split("T")[0];
   let context = `=== TASK DETAIL CONTEXT ===\n`;
@@ -1130,7 +1146,7 @@ function buildTaskDetailContextMessage(
   }
 
   // Add routine context for recurring tasks
-  context += buildRoutineContext(routineContext);
+  context += buildRoutineContext(routineContext, recurringMode);
 
   // Add pending staging context if available
   context += buildStagingContext(pendingSuggestions, pendingEdits, pendingDeletions, pendingAction);

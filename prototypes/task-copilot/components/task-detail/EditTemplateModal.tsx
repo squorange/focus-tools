@@ -164,13 +164,9 @@ export default function EditTemplateModal({
                     )}
                   </div>
 
-                  {/* Step text */}
+                  {/* Step text - no completion styling since this is template editing */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${
-                      state.step.completed
-                        ? "text-zinc-400 dark:text-zinc-500 line-through"
-                        : "text-zinc-900 dark:text-zinc-100"
-                    }`}>
+                    <p className="text-sm text-zinc-900 dark:text-zinc-100">
                       {state.step.text}
                     </p>
                     {/* Change indicator */}

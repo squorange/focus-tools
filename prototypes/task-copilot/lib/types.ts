@@ -49,6 +49,11 @@ export interface Step {
   skipped: boolean;
   source: 'manual' | 'ai_generated' | 'ai_suggested';
   wasEdited: boolean;
+
+  // Origin tracking for recurring tasks (executing mode)
+  // Shows where the step originally came from in the unified step list
+  // Cleared when step is edited to indicate user modification
+  origin?: 'template' | 'ai' | 'manual' | null;
 }
 
 // Model E: Task status - Pool instead of Active
@@ -603,6 +608,7 @@ export interface EditSuggestion {
   parentId?: string;          // For substeps, the parent step ID
   originalText: string;       // Current text (for display)
   newText: string;            // Proposed change
+  estimatedMinutes?: number;  // Time estimate in minutes (for estimate-only edits)
 }
 
 // Per-task or global staging state for AI suggestions
@@ -700,6 +706,10 @@ export interface AppState {
   currentView: ViewType;
   activeTaskId: string | null;
 
+  // Task detail mode: 'executing' = work on instance, 'managing' = edit template
+  // Only meaningful for recurring tasks; one-off tasks use 'executing' by default
+  taskDetailMode: 'executing' | 'managing';
+
   // Focus mode
   focusMode: FocusModeState;
   currentSessionId: string | null;
@@ -755,6 +765,7 @@ export function createStep(text: string = '', options?: Partial<Step>): Step {
     skipped: false,
     source: 'manual',
     wasEdited: false,
+    origin: null,
     ...options,
   };
 }
@@ -926,6 +937,7 @@ export function createInitialAppState(): AppState {
     // Model E: default view is focus (home)
     currentView: 'focus',
     activeTaskId: null,
+    taskDetailMode: 'executing',  // Default to executing mode
 
     focusMode: {
       active: false,

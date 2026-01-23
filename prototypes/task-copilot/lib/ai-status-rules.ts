@@ -428,10 +428,10 @@ const ROUTINE_TASK_DETAIL_RULES: StatusRule[] = [
     getText: ctx => `${ctx.currentRoutine!.streak} streak`
   },
   {
-    id: 'routine-scheduled',
+    id: 'routine-start-streak',
     priority: 45,
-    condition: ctx => ctx.currentRoutine?.scheduledTime !== null,
-    getText: ctx => ctx.currentRoutine!.patternDescription
+    condition: ctx => ctx.currentRoutine !== null && (ctx.currentRoutine.streak ?? 0) === 0,
+    getText: () => 'Start your streak today'
   },
 ];
 

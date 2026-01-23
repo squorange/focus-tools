@@ -14,12 +14,12 @@ import {
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import MetadataPill from "@/components/shared/MetadataPill";
 import ProgressRing from "@/components/shared/ProgressRing";
-import { Pause, Repeat, ChevronRight } from "lucide-react";
+import { Pause, Repeat, ChevronRight, Zap } from "lucide-react";
 
 interface RoutinesListProps {
   tasks: Task[];
   projects: Project[];
-  onOpenTask: (taskId: string) => void;
+  onOpenTask: (taskId: string, mode?: 'executing' | 'managing') => void;
 }
 
 // Frequency group order and labels
@@ -148,7 +148,7 @@ export default function RoutinesList({
                   key={task.id}
                   task={task}
                   project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id)}
+                  onOpen={() => onOpenTask(task.id, 'managing')}
                 />
               ))}
             </div>
@@ -171,7 +171,7 @@ export default function RoutinesList({
                 key={task.id}
                 task={task}
                 project={getProject(task)}
-                onOpen={() => onOpenTask(task.id)}
+                onOpen={() => onOpenTask(task.id, 'managing')}
                 isPaused
               />
             ))}
@@ -233,8 +233,16 @@ function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
           {task.title}
         </span>
 
-        {/* Chevron */}
-        <ChevronRight className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
+        {/* Streak + Chevron (upper right) */}
+        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+          {(task.recurringStreak ?? 0) > 0 && (
+            <div className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              <Zap className="w-3.5 h-3.5" />
+              <span>{task.recurringStreak}</span>
+            </div>
+          )}
+          <ChevronRight className="w-4 h-4 text-zinc-400" />
+        </div>
       </div>
 
       {/* Row 2: Metadata pills */}

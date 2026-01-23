@@ -774,6 +774,7 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     analytics: partial.analytics ?? initial.analytics,
     currentView: (partial.currentView as AppState['currentView']) ?? initial.currentView,
     activeTaskId: partial.activeTaskId ?? initial.activeTaskId,
+    taskDetailMode: (partial.taskDetailMode as AppState['taskDetailMode']) ?? initial.taskDetailMode,
     focusMode: {
       active: focusMode.active ?? false,
       queueItemId: focusMode.queueItemId ?? null,

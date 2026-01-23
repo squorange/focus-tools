@@ -26,6 +26,9 @@ interface StatusModuleProps {
   // For today-aware one-off tasks
   isInQueue?: boolean;
   todayStepIds?: string[];
+  // Mode switching for recurring tasks
+  mode?: 'executing' | 'managing';
+  onToggleMode?: () => void;
 }
 
 // 48px progress ring for the status module - fraction only, no label inside
@@ -127,6 +130,8 @@ export default function StatusModule({
   onToggleCompletedSteps,
   isInQueue = false,
   todayStepIds = [],
+  mode,
+  onToggleMode,
 }: StatusModuleProps) {
   const isRecurring = task.isRecurring && task.recurrence;
   const recurrencePattern = task.recurrence as RecurrenceRuleExtended | null;
@@ -215,6 +220,7 @@ export default function StatusModule({
               Show {instanceCompleted} completed
             </button>
           )}
+
         </div>
       </div>
     );

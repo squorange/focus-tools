@@ -18,6 +18,7 @@ import {
 /**
  * Get today's date as ISO string, respecting day-start hour
  * E.g., at 2am with dayStartHour=5, returns yesterday's date
+ * Uses local timezone to avoid UTC offset issues
  */
 export function getTodayISO(dayStartHour: number = 5): string {
   const now = new Date();
@@ -25,7 +26,10 @@ export function getTodayISO(dayStartHour: number = 5): string {
   if (now.getHours() < dayStartHour) {
     now.setDate(now.getDate() - 1);
   }
-  return now.toISOString().split('T')[0];
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -293,6 +297,15 @@ export function getPreviousOccurrence(
 }
 
 /**
+ * Get the effective start date for pattern matching, with fallback chain:
+ * pattern.startDate → task.createdAt → today
+ */
+function getEffectiveStartDate(task: Task, pattern: RecurrenceRuleExtended, dayStartHour: number = 5): string {
+  return pattern.startDate ||
+    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
+}
+
+/**
  * Get the active occurrence date for a task
  * Returns today if due today, or next due date if not
  */
@@ -304,9 +317,7 @@ export function getActiveOccurrenceDate(
 
   const today = getTodayISO(dayStartHour);
   const pattern = task.recurrence as RecurrenceRuleExtended;
-  const startDate = pattern.startDate || task.createdAt
-    ? new Date(task.createdAt).toISOString().split('T')[0]
-    : today;
+  const startDate = getEffectiveStartDate(task, pattern, dayStartHour);
 
   // Check if paused
   if (pattern.pausedAt) {
@@ -348,6 +359,7 @@ export function cloneSteps(steps: Step[]): Step[] {
     id: generateId(),
     completed: false,
     completedAt: null,
+    origin: 'template' as const, // Mark as originating from template
     substeps: step.substeps.map((sub) => ({
       ...sub,
       id: generateId(),
@@ -376,6 +388,8 @@ export function createInstance(task: Task, date: string): RecurringInstance {
 
 /**
  * Get or create instance for a date
+ * Also handles stale instances: if instance has no routineSteps but template has steps,
+ * re-initialize routineSteps (happens when instance was created before steps were added)
  */
 export function ensureInstance(task: Task, date: string): RecurringInstance {
   if (!task.recurringInstances) {
@@ -386,6 +400,12 @@ export function ensureInstance(task: Task, date: string): RecurringInstance {
   if (!instance) {
     instance = createInstance(task, date);
     task.recurringInstances.push(instance);
+  } else {
+    // Check for stale instance: no routineSteps but template has steps
+    // Only refresh if instance is not completed/skipped (user hasn't interacted with it)
+    if (instance.routineSteps.length === 0 && task.steps.length > 0 && !instance.completed && !instance.skipped) {
+      instance.routineSteps = cloneSteps(task.steps);
+    }
   }
 
   return instance;
@@ -498,7 +518,8 @@ export function skipInstance(
   // Update next due (skip doesn't break streak)
   if (newTask.recurrence) {
     const pattern = newTask.recurrence as RecurrenceRuleExtended;
-    const startDate = pattern.startDate || getTodayISO(dayStartHour);
+    const startDate = pattern.startDate ||
+      (newTask.createdAt ? new Date(newTask.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
     newTask.recurringNextDue = getNextOccurrence(pattern, date, startDate);
   }
 
@@ -586,7 +607,8 @@ export function updateTaskMetadataAfterCompletion(
   // Update next due
   if (task.recurrence) {
     const pattern = task.recurrence as RecurrenceRuleExtended;
-    const startDate = pattern.startDate || getTodayISO(dayStartHour);
+    const startDate = pattern.startDate ||
+      (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
     task.recurringNextDue = getNextOccurrence(pattern, date, startDate);
   }
 
@@ -606,41 +628,43 @@ export function calculateStreak(task: Task, dayStartHour: number = 5): number {
   }
 
   const pattern = task.recurrence as RecurrenceRuleExtended;
-  const startDate = pattern.startDate || getTodayISO(dayStartHour);
+  // Use pattern.startDate, or task.createdAt, or today as fallback
+  const startDate = pattern.startDate ||
+    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
   const today = getTodayISO(dayStartHour);
 
   let streak = 0;
-  let checkDate = today;
+  let checkDate: string | null = today;
 
   // If today matches pattern, check if completed
   if (dateMatchesPattern(today, pattern, startDate)) {
     const todayInstance = task.recurringInstances.find((i) => i.date === today);
     if (todayInstance?.completed) {
       streak = 1;
-      checkDate = getPreviousOccurrence(today, pattern, startDate) || '';
+      checkDate = getPreviousOccurrence(today, pattern, startDate);
     } else if (todayInstance?.skipped) {
       // Skipped doesn't break streak, move to previous
-      checkDate = getPreviousOccurrence(today, pattern, startDate) || '';
+      checkDate = getPreviousOccurrence(today, pattern, startDate);
     } else {
       // Today not done, start checking from previous occurrence
-      checkDate = getPreviousOccurrence(today, pattern, startDate) || '';
+      checkDate = getPreviousOccurrence(today, pattern, startDate);
     }
   } else {
     // Today not an occurrence day, start from most recent
-    checkDate = getPreviousOccurrence(today, pattern, startDate) || '';
+    checkDate = getPreviousOccurrence(today, pattern, startDate);
   }
 
   // Count consecutive completions backward
   const maxIterations = 1000;
-  for (let i = 0; i < maxIterations && checkDate && checkDate >= startDate; i++) {
-    const instance = task.recurringInstances.find((i) => i.date === checkDate);
+  for (let i = 0; i < maxIterations && checkDate !== null && checkDate >= startDate; i++) {
+    const inst = task.recurringInstances.find((instance) => instance.date === checkDate);
 
-    if (instance?.completed) {
+    if (inst?.completed) {
       streak++;
-      checkDate = getPreviousOccurrence(checkDate, pattern, startDate) || '';
-    } else if (instance?.skipped) {
+      checkDate = getPreviousOccurrence(checkDate, pattern, startDate);
+    } else if (inst?.skipped) {
       // Skipped doesn't break streak
-      checkDate = getPreviousOccurrence(checkDate, pattern, startDate) || '';
+      checkDate = getPreviousOccurrence(checkDate, pattern, startDate);
     } else {
       // Missed - streak broken
       break;
@@ -666,7 +690,11 @@ export function generateInstancesForRange(
   if (!task.isRecurring || !task.recurrence) return [];
 
   const pattern = task.recurrence as RecurrenceRuleExtended;
-  const patternStart = pattern.startDate || getTodayISO(dayStartHour);
+  // Fix: use task.createdAt as fallback for startDate so past dates can match pattern
+  // Previously defaulted to today, which caused history calendar to miss past completions
+  const patternStart = pattern.startDate
+    || (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : null)
+    || startDate; // Fallback to range start if no creation date
   const today = getTodayISO(dayStartHour);
   const instances: TaskInstance[] = [];
 
@@ -773,7 +801,7 @@ export function filterDueToday(tasks: Task[], dayStartHour: number = 5): Task[] 
       }
     }
 
-    const startDate = pattern.startDate || today;
+    const startDate = getEffectiveStartDate(task, pattern, dayStartHour);
 
     // Check if due today
     if (dateMatchesPattern(today, pattern, startDate)) {
@@ -817,7 +845,7 @@ export function filterRoutinesForToday(tasks: Task[], dayStartHour: number = 5):
       }
     }
 
-    const startDate = pattern.startDate || today;
+    const startDate = getEffectiveStartDate(task, pattern, dayStartHour);
 
     // Check if due today (include completed/skipped)
     if (dateMatchesPattern(today, pattern, startDate)) {
@@ -963,7 +991,8 @@ export function describePattern(
   pattern: RecurrenceRule | RecurrenceRuleExtended
 ): string {
   const extended = pattern as RecurrenceRuleExtended;
-  const time = extended.time ? ` at ${extended.time}` : '';
+  // Use 12-hour format for time display (e.g., "8:45p" instead of "20:45")
+  const time = extended.time ? ` at ${formatTimeCompact(extended.time)}` : '';
 
   switch (pattern.frequency) {
     case 'daily':
@@ -1121,15 +1150,6 @@ export function getRoutineMetadataPills(
 ): RoutinePill[] {
   const pills: RoutinePill[] = [];
   const today = getTodayISO(dayStartHour);
-
-  // Streak pill - show instance count (no "d" suffix, more meaningful for all patterns)
-  if (task.recurringStreak && task.recurringStreak > 0) {
-    pills.push({
-      label: `${task.recurringStreak} streak`,
-      icon: '🔥',
-      color: 'green',
-    });
-  }
 
   // Last completed pill
   if (task.recurringLastCompleted) {
