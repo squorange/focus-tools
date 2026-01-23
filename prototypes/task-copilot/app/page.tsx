@@ -42,7 +42,7 @@ import {
   getTodayISO,
 } from "@/lib/utils";
 import { filterInbox, filterPool } from "@/lib/utils";
-import { getTodayItems, getStepsInScope } from "@/lib/queue";
+import { getTodayItems, getStepsInScope, isQueueItemStale } from "@/lib/queue";
 import {
   markInstanceComplete,
   skipInstance,
@@ -141,6 +141,9 @@ export default function Home() {
   const [pendingFilter, setPendingFilter] = useState<string | null>(null);
   // Track active tab in TasksView for back navigation
   const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'waiting' | 'deferred' | 'completed' | 'archived'>('staging');
+
+  // Ref for main content scroll-to-top on tab re-tap
+  const mainRef = useRef<HTMLDivElement>(null);
 
   // Callback for auto-selecting new project after creation (from TaskCreationPopover)
   const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
@@ -1350,16 +1353,58 @@ export default function Home() {
   }, [state.currentView, sidebarOpen, previousView]);
 
   // ============================================
+  // Stale queue item nudge
+  // ============================================
+
+  useEffect(() => {
+    if (state.currentView !== 'focus') return;
+
+    const todayItems = state.focusQueue.items
+      .filter((i) => !i.completed && i.order < state.focusQueue.todayLineIndex);
+
+    const staleItem = todayItems.find((i) => isQueueItemStale(i));
+    if (!staleItem) return;
+
+    const task = state.tasks.find((t) => t.id === staleItem.taskId);
+    if (!task) return;
+
+    const days = Math.floor((Date.now() - staleItem.lastInteractedAt) / (1000 * 60 * 60 * 24));
+    const title = task.title.slice(0, 20) + (task.title.length > 20 ? '...' : '');
+
+    aiAssistant.setNudge({
+      type: 'nudge',
+      text: `"${title}" untouched for ${days} days`,
+      icon: '👀',
+      action: {
+        label: 'Review',
+        onClick: () => handleOpenTask(task.id),
+      },
+    });
+  }, [state.currentView, state.focusQueue.items, state.tasks]);
+
+  // ============================================
   // Navigation
   // ============================================
 
   const handleViewChange = useCallback((view: ViewType) => {
-    setState((prev) => ({
-      ...prev,
-      currentView: view,
-      // Clear active task when navigating to main views
-      activeTaskId: ['focus', 'tasks', 'inbox', 'search'].includes(view) ? null : prev.activeTaskId,
-    }));
+    aiAssistant.clearNudge();
+    setState((prev) => {
+      if (prev.currentView === view) {
+        // Same tab tapped again — scroll to top
+        mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        if (view === 'tasks') {
+          setActiveTasksTab('staging');
+        }
+        return prev;
+      }
+
+      return {
+        ...prev,
+        currentView: view,
+        // Clear active task when navigating to main views
+        activeTaskId: ['focus', 'tasks', 'inbox', 'search'].includes(view) ? null : prev.activeTaskId,
+      };
+    });
   }, []);
 
   // ============================================
@@ -2693,6 +2738,12 @@ export default function Home() {
         ...prev,
         currentView: 'focusMode' as const,
         activeTaskId: task.id,
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.map((i) =>
+            i.id === queueItemId ? { ...i, lastInteractedAt: Date.now() } : i
+          ),
+        },
         focusMode: {
           ...prev.focusMode,
           active: true,
@@ -3102,6 +3153,12 @@ export default function Home() {
       return {
         ...prev,
         tasks: updatedTasks,
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.map((i) =>
+            i.taskId === taskId ? { ...i, lastInteractedAt: Date.now() } : i
+          ),
+        },
         focusMode: { ...prev.focusMode, currentStepId: nextStepId },
       };
     });
@@ -4829,6 +4886,7 @@ export default function Home() {
 
         {/* Main Content */}
         <main
+          ref={mainRef}
           className={`flex-1 transition-all duration-300 ${
             sidebarOpen ? 'overflow-hidden touch-none lg:overflow-y-auto lg:touch-auto' : 'overflow-y-auto'
           }`}
