@@ -37,6 +37,14 @@ interface PaletteContentProps {
   // Inline AI target context (for step/task targeting)
   aiTargetContext?: AITargetContext | null;
   onClearAITarget?: () => void;
+  // Awareness nudge (stale queue items)
+  awareness?: {
+    items: { id: string; taskId: string; title: string; days: number }[];
+    currentIndex: number;
+    onReview: (taskId: string) => void;
+    onDismiss: (itemId: string) => void;
+    onNext: () => void;
+  } | null;
 }
 
 export function PaletteContent({
@@ -59,6 +67,7 @@ export function PaletteContent({
   onOpenDrawer,
   aiTargetContext,
   onClearAITarget,
+  awareness,
 }: PaletteContentProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -261,6 +270,57 @@ export function PaletteContent({
           )}
         </div>
       )}
+
+      {/* Awareness banner - stale item nudge (hidden when step targeted) */}
+      {awareness && !aiTargetContext && !isLoading && !response && (() => {
+        const current = awareness.items[awareness.currentIndex];
+        if (!current) return null;
+        const total = awareness.items.length;
+
+        return (
+          <div className="flex items-center justify-between px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex-shrink-0 text-sm">👀</span>
+              <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
+                &ldquo;{current.title}&rdquo; — {current.days}d untouched
+              </span>
+              {total > 1 && (
+                <span className="flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                  {awareness.currentIndex + 1}/{total}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); awareness.onReview(current.taskId); }}
+                className="px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 rounded transition-colors"
+              >
+                Review
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); awareness.onDismiss(current.id); }}
+                className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded transition-colors"
+              >
+                Dismiss
+              </button>
+              {total > 1 && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); awareness.onNext(); }}
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  aria-label="Next item"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Content area - scrollable with gradient fades */}
       <div className="relative flex-1 min-h-0 mb-4">

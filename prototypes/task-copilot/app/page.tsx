@@ -145,6 +145,10 @@ export default function Home() {
   // Ref for main content scroll-to-top on tab re-tap
   const mainRef = useRef<HTMLDivElement>(null);
 
+  // Stale queue item nudge state (session-level)
+  const [dismissedStaleIds, setDismissedStaleIds] = useState<Set<string>>(new Set());
+  const [staleIndex, setStaleIndex] = useState(0);
+
   // Callback for auto-selecting new project after creation (from TaskCreationPopover)
   const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
 
@@ -818,6 +822,7 @@ export default function Home() {
     enabled:
       aiAssistant.state.mode === 'collapsed' &&
       !aiAssistant.state.isLoading &&
+      aiAssistant.state.collapsedContent.type !== 'nudge' &&
       (aiAssistant.state.collapsedContent.type === 'idle' ||
        aiAssistant.state.collapsedContent.type === 'status'),
   });
@@ -1353,34 +1358,65 @@ export default function Home() {
   }, [state.currentView, sidebarOpen, previousView]);
 
   // ============================================
-  // Stale queue item nudge
+  // Stale queue item nudge (sequential awareness model)
   // ============================================
 
-  useEffect(() => {
-    if (state.currentView !== 'focus') return;
-
+  const activeStaleItems = useMemo(() => {
     const todayItems = state.focusQueue.items
       .filter((i) => !i.completed && i.order < state.focusQueue.todayLineIndex);
+    return todayItems
+      .filter((i) => isQueueItemStale(i) && !dismissedStaleIds.has(i.id))
+      .map((i) => {
+        const task = state.tasks.find((t) => t.id === i.taskId);
+        const days = Math.floor((Date.now() - i.lastInteractedAt) / (1000 * 60 * 60 * 24));
+        return { item: i, task, days };
+      })
+      .filter((x): x is { item: typeof x.item; task: NonNullable<typeof x.task>; days: number } => x.task != null);
+  }, [state.focusQueue.items, state.focusQueue.todayLineIndex, state.tasks, dismissedStaleIds]);
 
-    const staleItem = todayItems.find((i) => isQueueItemStale(i));
-    if (!staleItem) return;
+  // Clamp staleIndex when list shrinks
+  useEffect(() => {
+    if (staleIndex >= activeStaleItems.length && activeStaleItems.length > 0) {
+      setStaleIndex(activeStaleItems.length - 1);
+    } else if (activeStaleItems.length === 0) {
+      setStaleIndex(0);
+    }
+  }, [activeStaleItems.length, staleIndex]);
 
-    const task = state.tasks.find((t) => t.id === staleItem.taskId);
-    if (!task) return;
+  // Set/clear nudge based on stale items
+  useEffect(() => {
+    if (state.currentView !== 'focus' || activeStaleItems.length === 0) {
+      if (aiAssistant.state.collapsedContent.type === 'nudge') {
+        aiAssistant.clearNudge();
+      }
+      return;
+    }
 
-    const days = Math.floor((Date.now() - staleItem.lastInteractedAt) / (1000 * 60 * 60 * 24));
+    const currentIdx = Math.min(staleIndex, activeStaleItems.length - 1);
+    const { task, days } = activeStaleItems[currentIdx];
     const title = task.title.slice(0, 20) + (task.title.length > 20 ? '...' : '');
+    const countSuffix = activeStaleItems.length > 1
+      ? ` (${currentIdx + 1}/${activeStaleItems.length})`
+      : '';
 
     aiAssistant.setNudge({
       type: 'nudge',
-      text: `"${title}" untouched for ${days} days`,
+      text: `"${title}" untouched ${days}d${countSuffix}`,
       icon: '👀',
       action: {
         label: 'Review',
         onClick: () => handleOpenTask(task.id),
       },
     });
-  }, [state.currentView, state.focusQueue.items, state.tasks]);
+  }, [state.currentView, activeStaleItems, staleIndex]);
+
+  const handleDismissStaleItem = useCallback((itemId: string) => {
+    setDismissedStaleIds((prev) => { const next = new Set(prev); next.add(itemId); return next; });
+  }, []);
+
+  const handleNextStaleItem = useCallback(() => {
+    setStaleIndex((prev) => (prev + 1) % Math.max(activeStaleItems.length, 1));
+  }, [activeStaleItems.length]);
 
   // ============================================
   // Navigation
@@ -4669,6 +4705,21 @@ export default function Home() {
   const poolTasks = filterPool(state.tasks);
   const queueItems = getTodayItems(state.focusQueue);
 
+  const awarenessData = activeStaleItems.length > 0 && state.currentView === 'focus'
+    ? {
+        items: activeStaleItems.map(({ item, task, days }) => ({
+          id: item.id,
+          taskId: task.id,
+          title: task.title,
+          days,
+        })),
+        currentIndex: Math.min(staleIndex, activeStaleItems.length - 1),
+        onReview: (taskId: string) => handleOpenTask(taskId),
+        onDismiss: handleDismissStaleItem,
+        onNext: handleNextStaleItem,
+      }
+    : null;
+
   const counts = {
     inbox: inboxTasks.length,
     pool: poolTasks.length,
@@ -5142,6 +5193,7 @@ export default function Home() {
             onOpenDrawer={handleOpenAIDrawer}
             aiTargetContext={aiTargetContext}
             onClearAITarget={clearAITargetContext}
+            awareness={awarenessData}
           />
         </div>
       )}

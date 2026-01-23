@@ -45,6 +45,14 @@ interface AIAssistantOverlayProps {
   // Inline AI target context (for step/task targeting)
   aiTargetContext?: AITargetContext | null;
   onClearAITarget?: () => void;
+  // Awareness nudge (stale queue items)
+  awareness?: {
+    items: { id: string; taskId: string; title: string; days: number }[];
+    currentIndex: number;
+    onReview: (taskId: string) => void;
+    onDismiss: (itemId: string) => void;
+    onNext: () => void;
+  } | null;
 }
 
 export function AIAssistantOverlay({
@@ -72,6 +80,7 @@ export function AIAssistantOverlay({
   onOpenDrawer,
   aiTargetContext,
   onClearAITarget,
+  awareness,
 }: AIAssistantOverlayProps) {
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
@@ -193,6 +202,7 @@ export function AIAssistantOverlay({
             onOpenDrawer={onOpenDrawer}
             aiTargetContext={aiTargetContext}
             onClearAITarget={onClearAITarget}
+            awareness={awareness}
           />
         )}
       </AnimatePresence>
