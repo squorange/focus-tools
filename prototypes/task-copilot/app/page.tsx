@@ -2873,6 +2873,9 @@ export default function Home() {
   // ============================================
 
   const handleStepComplete = useCallback((taskId: string, stepId: string, completed: boolean) => {
+    let movedToUpcoming = false;
+    let movedTaskTitle = '';
+
     setState((prev) => {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task) return prev;
@@ -3073,6 +3076,9 @@ export default function Home() {
               todayStepIds.every((id) => updatedTask.steps.find((s) => s.id === id)?.completed);
 
             if (todayAllDone) {
+              movedToUpcoming = true;
+              movedTaskTitle = updatedTask.title || 'Task';
+
               // Move to upcoming: remove from today, insert after today line
               const newItems = activeItems.filter((i) => i.id !== queueItem.id);
               const newTodayLine = prev.focusQueue.todayLineIndex - 1;
@@ -3099,6 +3105,15 @@ export default function Home() {
         focusMode: { ...prev.focusMode, currentStepId: nextStepId },
       };
     });
+
+    if (movedToUpcoming) {
+      const title = movedTaskTitle.slice(0, 25) + (movedTaskTitle.length > 25 ? '...' : '');
+      setToasts((prev) => [...prev, {
+        id: generateId(),
+        message: `Today's steps done! "${title}" moved to Upcoming`,
+        type: 'success',
+      }]);
+    }
   }, []);
 
   const handleAddStep = useCallback((taskId: string, text: string, mode?: 'executing' | 'managing') => {
