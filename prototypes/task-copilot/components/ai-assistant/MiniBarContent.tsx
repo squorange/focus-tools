@@ -45,7 +45,7 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.1 }}
-      className={`h-12 px-6 sm:px-4 flex items-center gap-3 cursor-pointer ${isPrompt ? '!pr-[9px]' : ''}`}
+      className={`h-12 px-6 sm:px-4 flex items-center gap-3 cursor-pointer ${isPrompt || isNudge ? '!pr-[9px]' : ''}`}
       onClick={handleClick}
     >
       {/* Icon - Lucide Sparkles for AI boundary */}
@@ -118,13 +118,18 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
             {content.prompt.pillIcon} {content.prompt.pillLabel}
           </motion.button>
         ) : content.action ? (
-          // Custom action button
+          // Nudge action pill - matches prompt pill styling
           <motion.button
             key="action"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex-shrink-0 px-3 py-1 text-xs font-medium bg-violet-600 text-white rounded-full"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="flex-shrink-0 px-3 py-1.5 text-sm rounded-full
+              bg-zinc-100 dark:bg-zinc-800
+              text-zinc-700 dark:text-zinc-300
+              hover:bg-zinc-200 dark:hover:bg-zinc-700
+              transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               content.action?.onClick();
