@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Task, SelectionType } from "@/lib/types";
+import BottomSheet from "@/components/shared/BottomSheet";
 
 interface FocusSelectionModalProps {
   isOpen: boolean;
@@ -23,9 +24,20 @@ export default function FocusSelectionModal({
   mode,
 }: FocusSelectionModalProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isMobileView, setIsMobileView] = useState(false);
 
   // Get incomplete steps
   const incompleteSteps = task.steps.filter((s) => !s.completed);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(typeof window !== "undefined" && window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -47,26 +59,33 @@ export default function FocusSelectionModal({
   const todayCount = selectedIds.size;
   const upcomingCount = incompleteSteps.filter((s) => !selectedIds.has(s.id)).length;
 
-  const handleToggle = (stepId: string) => {
+  const handleSetToday = (stepId: string) => {
     const step = task.steps.find((s) => s.id === stepId);
     if (step?.completed) return;
 
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(stepId)) {
-        next.delete(stepId);
-      } else {
-        next.add(stepId);
-      }
+      next.add(stepId);
       return next;
     });
   };
 
-  const handleSelectAll = () => {
+  const handleSetUpcoming = (stepId: string) => {
+    const step = task.steps.find((s) => s.id === stepId);
+    if (step?.completed) return;
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(stepId);
+      return next;
+    });
+  };
+
+  const handleAllToday = () => {
     setSelectedIds(new Set(incompleteSteps.map((s) => s.id)));
   };
 
-  const handleClearAll = () => {
+  const handleAllUpcoming = () => {
     setSelectedIds(new Set());
   };
 
@@ -94,6 +113,170 @@ export default function FocusSelectionModal({
     return null;
   }
 
+  // Toggle handler for segmented control
+  const handleToggle = (stepId: string) => {
+    const step = task.steps.find((s) => s.id === stepId);
+    if (step?.completed) return;
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) {
+        next.delete(stepId);
+      } else {
+        next.add(stepId);
+      }
+      return next;
+    });
+  };
+
+  // Shared content components
+  const Header = ({ showCloseButton = true }: { showCloseButton?: boolean }) => (
+    <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
+      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+        Edit Focus
+      </h2>
+      {showCloseButton && (
+        <button
+          onClick={onClose}
+          className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+
+  const BulkActions = () => (
+    <div className="flex gap-2 px-4 pt-2 pb-3 border-b border-zinc-200 dark:border-zinc-700 shrink-0">
+      <button
+        onClick={handleAllToday}
+        className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300
+                   bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
+                   rounded-lg transition-colors"
+      >
+        All for Today
+      </button>
+      <button
+        onClick={handleAllUpcoming}
+        className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300
+                   bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
+                   rounded-lg transition-colors"
+      >
+        All for Upcoming
+      </button>
+    </div>
+  );
+
+  const StepList = () => (
+    <div className="flex-1 overflow-y-auto px-4 py-3">
+      {task.steps.map((step, index) => {
+        const isSelected = selectedIds.has(step.id);
+        const isCompleted = step.completed;
+
+        return (
+          <div
+            key={step.id}
+            className={`flex items-center gap-3 py-3 ${
+              index < task.steps.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-700/50' : ''
+            } ${isCompleted ? 'opacity-50' : ''}`}
+          >
+            {/* Step text */}
+            <span
+              className={`flex-1 text-sm ${
+                isCompleted
+                  ? "text-zinc-400 dark:text-zinc-500 line-through"
+                  : "text-zinc-900 dark:text-zinc-100"
+              }`}
+            >
+              {index + 1}. {step.text}
+            </span>
+
+            {/* Segmented Controller - entire control is tappable to toggle */}
+            {!isCompleted && (
+              <div
+                onClick={() => handleToggle(step.id)}
+                className="flex shrink-0 bg-zinc-100 dark:bg-zinc-700 rounded-lg p-0.5 cursor-pointer"
+              >
+                <span
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    isSelected
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  }`}
+                >
+                  Today
+                </span>
+                <span
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    !isSelected
+                      ? "bg-white dark:bg-zinc-600 text-zinc-700 dark:text-zinc-200 shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400"
+                  }`}
+                >
+                  Upcoming
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const Footer = () => (
+    <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
+      {/* Single row: Summary left, buttons right */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+          {todayCount} today · {upcomingCount} upcoming
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400
+                       hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="px-4 py-1.5 text-sm font-medium text-white bg-violet-600
+                       hover:bg-violet-700 rounded-lg transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Mobile: Use BottomSheet
+  if (isMobileView) {
+    return (
+      <BottomSheet isOpen={isOpen} onClose={onClose} height="85vh">
+        <div className="flex flex-col h-full">
+          <Header showCloseButton={false} />
+          <BulkActions />
+          <StepList />
+          <Footer />
+        </div>
+      </BottomSheet>
+    );
+  }
+
+  // Desktop: Centered modal
   return (
     <>
       {/* Backdrop */}
@@ -105,158 +288,10 @@ export default function FocusSelectionModal({
           className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 shrink-0">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Edit Focus
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Bulk actions */}
-          <div className="flex items-center gap-2 px-6 py-3 border-b border-zinc-100 dark:border-zinc-700/50 shrink-0">
-            <button
-              onClick={handleSelectAll}
-              className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400
-                         bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30
-                         rounded-lg transition-colors"
-            >
-              Select all
-            </button>
-            <button
-              onClick={handleClearAll}
-              className="px-3 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400
-                         bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
-                         rounded-lg transition-colors"
-            >
-              Clear all
-            </button>
-            <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
-              Checked = Today
-            </span>
-          </div>
-
-          {/* Step list */}
-          <div className="flex-1 overflow-y-auto px-2 py-2">
-            {task.steps.map((step, index) => {
-              const isSelected = selectedIds.has(step.id);
-              const isCompleted = step.completed;
-
-              return (
-                <button
-                  key={step.id}
-                  onClick={() => handleToggle(step.id)}
-                  disabled={isCompleted}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 text-left transition-colors
-                    ${
-                      isCompleted
-                        ? "opacity-50 cursor-not-allowed"
-                        : isSelected
-                        ? "bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30"
-                        : "bg-zinc-50 dark:bg-zinc-800/80 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                    }`}
-                >
-                  {/* Checkbox */}
-                  <div
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors
-                      ${
-                        isCompleted
-                          ? "bg-zinc-200 dark:bg-zinc-600 border-zinc-300 dark:border-zinc-500"
-                          : isSelected
-                          ? "bg-violet-500 border-violet-500"
-                          : "border-zinc-300 dark:border-zinc-600"
-                      }`}
-                  >
-                    {(isSelected || isCompleted) && (
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-
-                  {/* Step text */}
-                  <span
-                    className={`flex-1 text-sm ${
-                      isCompleted
-                        ? "text-zinc-400 dark:text-zinc-500 line-through"
-                        : "text-zinc-900 dark:text-zinc-100"
-                    }`}
-                  >
-                    {index + 1}. {step.text}
-                  </span>
-
-                  {/* Today/Upcoming indicator */}
-                  {!isCompleted && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                        isSelected
-                          ? "text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40"
-                          : "text-zinc-500 dark:text-zinc-400 bg-zinc-200 dark:bg-zinc-700"
-                      }`}
-                    >
-                      {isSelected ? "Today" : "Upcoming"}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
-            {/* Summary */}
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
-              {todayCount} step{todayCount !== 1 ? "s" : ""} for Today
-              {upcomingCount > 0 && (
-                <> · {upcomingCount} for Upcoming</>
-              )}
-            </p>
-
-            {/* Buttons */}
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400
-                           hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-violet-600
-                           hover:bg-violet-700 rounded-lg transition-colors"
-              >
-                Save
-              </button>
-            </div>
-          </div>
+          <Header />
+          <BulkActions />
+          <StepList />
+          <Footer />
         </div>
       </div>
     </>

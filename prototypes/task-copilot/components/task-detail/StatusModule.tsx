@@ -2,34 +2,8 @@
 
 import { Task } from "@/lib/types";
 import { RecurrenceRuleExtended, RecurringInstance } from "@/lib/recurring-types";
-import { describePattern } from "@/lib/recurring-utils";
-import { Check, ChevronRight, Repeat, Zap, Calendar } from "lucide-react";
-
-// Format date as "Tuesday, Jan 20" for clear day identification
-function formatInstanceDate(isoDate: string): string {
-  const date = new Date(isoDate + "T00:00:00");
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-interface StatusModuleProps {
-  task: Task;
-  currentInstance: RecurringInstance | null;
-  completedCount: number;
-  totalCount: number;
-  hasCompletedSteps: boolean;
-  completedStepsExpanded: boolean;
-  onToggleCompletedSteps: () => void;
-  // For today-aware one-off tasks
-  isInQueue?: boolean;
-  todayStepIds?: string[];
-  // Mode switching for recurring tasks
-  mode?: 'executing' | 'managing';
-  onToggleMode?: () => void;
-}
+import { describePattern, getTodayISO, dateMatchesPattern } from "@/lib/recurring-utils";
+import { Check, ChevronRight, Repeat, SkipForward, Zap } from "lucide-react";
 
 // 48px progress ring for the status module - fraction only, no label inside
 function LargeProgressRing({
@@ -120,6 +94,24 @@ function LargeProgressRing({
   );
 }
 
+interface StatusModuleProps {
+  task: Task;
+  currentInstance: RecurringInstance | null;
+  completedCount: number;
+  totalCount: number;
+  hasCompletedSteps: boolean;
+  completedStepsExpanded: boolean;
+  onToggleCompletedSteps: () => void;
+  // For today-aware one-off tasks
+  isInQueue?: boolean;
+  todayStepIds?: string[];
+  // Mode switching for recurring tasks
+  mode?: 'executing' | 'managing';
+  onToggleMode?: () => void;
+}
+
+// StatusModule now returns INLINE content (no outer container)
+// The container is provided by TaskDetail.tsx for unified styling
 export default function StatusModule({
   task,
   currentInstance,
@@ -148,7 +140,7 @@ export default function StatusModule({
       return null; // Don't show status module for incomplete stepless tasks
     }
     return (
-      <div className="flex items-center gap-4 px-4 py-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl mb-6">
+      <div className="flex items-center gap-4">
         <LargeProgressRing
           completed={0}
           total={0}
@@ -165,17 +157,38 @@ export default function StatusModule({
 
   // For recurring tasks - ALWAYS show (daily commitment, absence is informative)
   if (isRecurring) {
-    // Count includes both routineSteps AND additionalSteps
-    const routineCompleted = currentInstance?.routineSteps.filter(s => s.completed).length ?? 0;
-    const additionalCompleted = currentInstance?.additionalSteps?.filter(s => s.completed).length ?? 0;
-    const instanceCompleted = routineCompleted + additionalCompleted;
+    // MANAGING MODE: Simplified display - just pattern + streak (no chart)
+    if (mode === 'managing') {
+      return (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-sm text-zinc-500">
+            <Repeat className="w-3 h-3 text-violet-500" />
+            <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
+          </div>
+          {task.recurringStreak > 0 && (
+            <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+              <Zap className="w-3.5 h-3.5" />
+              <span>{task.recurringStreak}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
 
-    const routineTotal = currentInstance?.routineSteps.length ?? 0;
-    const additionalTotal = currentInstance?.additionalSteps?.length ?? 0;
-    const instanceTotal = routineTotal + additionalTotal;
+    // EXECUTING MODE: Full display with chart
+    const instanceCompleted = currentInstance?.steps.filter(s => s.completed).length ?? 0;
+    const instanceTotal = currentInstance?.steps.length ?? 0;
+
+    // Check if today was skipped
+    const today = getTodayISO();
+    const pattern = recurrencePattern;
+    const startDate = pattern?.startDate || (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : today);
+    const todayMatchesPattern = pattern ? dateMatchesPattern(today, pattern, startDate) : false;
+    const todayInstance = task.recurringInstances?.find(i => i.date === today);
+    const wasSkippedToday = todayMatchesPattern && todayInstance?.skipped;
 
     return (
-      <div className="flex items-center gap-4 px-4 py-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl mb-6">
+      <div className="flex items-start gap-4">
         <LargeProgressRing
           completed={instanceCompleted}
           total={instanceTotal}
@@ -183,19 +196,45 @@ export default function StatusModule({
           overdue={currentInstance?.overdueDays ? currentInstance.overdueDays > 0 : false}
         />
         <div className="flex-1 min-w-0">
-          {/* Top row: Date context + Streak (right-aligned) */}
           <div className="flex items-start justify-between">
-            {/* Date context - shows which day this instance is for */}
-            {currentInstance?.date && (
-              <span className={`text-sm ${currentInstance.completed
-                ? "text-green-600 dark:text-green-400"
-                : "text-zinc-600 dark:text-zinc-400"
-              }`}>
-                {currentInstance.completed ? "Completed for " : "For "}
-                {formatInstanceDate(currentInstance.date)}
-              </span>
-            )}
-            {/* Streak with Zap icon - monochromatic, no unit */}
+            <div className="space-y-0.5">
+              {/* Step count OR Skipped message - all use leading-5 for consistent height */}
+              {wasSkippedToday ? (
+                <span className="inline-flex items-center gap-1.5 text-sm leading-5 text-amber-600 dark:text-amber-400">
+                  <SkipForward className="w-3 h-3" />
+                  Skipped today
+                </span>
+              ) : instanceTotal === 0 ? (
+                currentInstance?.completed ? (
+                  <span className="text-sm leading-5 text-green-600 dark:text-green-400">Completed</span>
+                ) : (
+                  <span className="text-sm leading-5 text-zinc-500 dark:text-zinc-400">No steps</span>
+                )
+              ) : (
+                <span className={`text-sm leading-5 ${currentInstance?.completed
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-zinc-600 dark:text-zinc-400"
+                }`}>
+                  {instanceCompleted} of {instanceTotal} steps{currentInstance?.completed && " complete"}
+                </span>
+              )}
+              {/* Pattern - stacked under step count/skipped */}
+              <div className="flex items-center gap-1.5 text-sm text-zinc-500">
+                <Repeat className="w-3 h-3 text-violet-500" />
+                <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
+              </div>
+              {/* Toggle - stacked under pattern */}
+              {hasCompletedSteps && instanceCompleted > 0 && !(currentInstance?.completed ?? false) && (
+                <button
+                  onClick={onToggleCompletedSteps}
+                  className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
+                  {completedStepsExpanded ? "Hide completed" : `Show ${instanceCompleted} completed`}
+                </button>
+              )}
+            </div>
+            {/* Streak - right-aligned */}
             {task.recurringStreak > 0 && (
               <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-shrink-0 ml-2">
                 <Zap className="w-3.5 h-3.5" />
@@ -203,24 +242,6 @@ export default function StatusModule({
               </div>
             )}
           </div>
-
-          {/* Pattern description */}
-          <div className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-500 mt-1">
-            <Repeat className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-            <span>{patternDescription}</span>
-          </div>
-
-          {/* Tap to expand completed steps - only if any completed and not instance complete */}
-          {hasCompletedSteps && instanceCompleted > 0 && !(currentInstance?.completed ?? false) && (
-            <button
-              onClick={onToggleCompletedSteps}
-              className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1.5 transition-colors"
-            >
-              <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
-              Show {instanceCompleted} completed
-            </button>
-          )}
-
         </div>
       </div>
     );
@@ -239,36 +260,37 @@ export default function StatusModule({
   const todayTotalCount = hasTodaySteps ? todayStepIds.length : 0;
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl mb-6">
+    <div className="flex items-start gap-4">
       <LargeProgressRing
         completed={completedCount}
         total={totalCount}
         isComplete={isComplete}
       />
       <div className="flex-1 min-w-0">
-        {/* Step count - today-aware for queued tasks */}
-        <div className="text-sm text-zinc-600 dark:text-zinc-400">
-          {hasTodaySteps ? (
-            <>
-              {todayCompletedCount} of {todayTotalCount} for today
-            </>
-          ) : (
-            <>
-              {completedCount} of {totalCount} steps{isComplete && " complete"}
-            </>
+        <div className="space-y-0.5">
+          {/* Step count - today-aware for queued tasks */}
+          <div className="text-sm text-zinc-600 dark:text-zinc-400">
+            {hasTodaySteps ? (
+              <>
+                {todayCompletedCount} of {todayTotalCount} for today
+              </>
+            ) : (
+              <>
+                {completedCount} of {totalCount} steps{isComplete && " complete"}
+              </>
+            )}
+          </div>
+          {/* Toggle - stacked under step count */}
+          {hasCompletedSteps && completedCount > 0 && !isComplete && (
+            <button
+              onClick={onToggleCompletedSteps}
+              className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+            >
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
+              {completedStepsExpanded ? "Hide completed" : `Show ${completedCount} completed`}
+            </button>
           )}
         </div>
-
-        {/* Tap to expand completed steps */}
-        {hasCompletedSteps && completedCount > 0 && !isComplete && (
-          <button
-            onClick={onToggleCompletedSteps}
-            className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 mt-1 transition-colors"
-          >
-            <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
-            Show {completedCount} completed
-          </button>
-        )}
       </div>
     </div>
   );

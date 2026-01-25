@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Repeat, History, Pause, Play, X, MoreVertical } from "lucide-react";
+import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
@@ -92,6 +92,7 @@ interface TaskDetailProps {
   onCompleteRoutine?: (taskId: string) => void;
   onSkipRoutine?: (taskId: string) => void;
   onMarkRoutineIncomplete?: (taskId: string) => void;
+  onUnskipRoutine?: (taskId: string) => void;
   // Routine step scope
   onAcceptWithScope?: (scope: 'instance' | 'template') => void;
   // Mode toggling
@@ -158,6 +159,7 @@ export default function TaskDetail({
   onCompleteRoutine,
   onSkipRoutine,
   onMarkRoutineIncomplete,
+  onUnskipRoutine,
   onAcceptWithScope,
   onToggleMode,
   onResetFromTemplate,
@@ -209,7 +211,6 @@ export default function TaskDetail({
   const [showRoutinePopover, setShowRoutinePopover] = useState(false);
   const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [showPatternModal, setShowPatternModal] = useState(false);
   const [isPatternHandleHovered, setIsPatternHandleHovered] = useState(false);
   const prefersReducedMotion = useReducedMotion();
@@ -228,7 +229,7 @@ export default function TaskDetail({
 
     // Get current steps based on mode
     const currentSteps = mode === 'executing' && isRecurring && currentInstance
-      ? [...(currentInstance.routineSteps || []), ...(currentInstance.additionalSteps || [])]
+      ? currentInstance.steps
       : task.steps;
 
     const stepIndex = currentSteps.findIndex(s => s.id === parentId);
@@ -259,16 +260,25 @@ export default function TaskDetail({
   const todaySteps = incompleteSteps.filter(s => todayStepIds.includes(s.id));
   const upcomingSteps = incompleteSteps.filter(s => !todayStepIds.includes(s.id));
 
+  // Determine if StatusModule will render content (matches StatusModule's return null logic)
+  const showStatusModule = task.status !== 'inbox';
+  const statusWillRender = showStatusModule && (
+    // Recurring always shows
+    isRecurring ||
+    // One-off with steps and some progress shows
+    (progress && progress.completed > 0) ||
+    // Completed stepless shows
+    (progress === null && task.status === 'complete')
+  );
+
   // Build details summary for collapsed view
   const getDetailsSummary = () => {
     const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'healthy' | 'due' | 'overdue' | 'project'; color?: string; icon?: 'bell'; health?: ReturnType<typeof computeHealthStatus> }[] = [];
 
-    // RECURRING TASKS: Only show reminder info
+    // RECURRING TASKS: Only show reminder info if set
     if (isRecurring) {
       if (task.reminder) {
         pills.push({ label: formatReminder(task.reminder, task.targetDate, task.deadlineDate), variant: 'default', icon: 'bell' });
-      } else {
-        pills.push({ label: 'No reminder', variant: 'default' });
       }
       return pills;
     }
@@ -426,8 +436,16 @@ export default function TaskDetail({
                       >
                         Mark Incomplete
                       </button>
+                    ) : currentInstance?.skipped && onUnskipRoutine ? (
+                      /* Show Unskip if skipped */
+                      <button
+                        onClick={() => onUnskipRoutine(task.id)}
+                        className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 rounded-lg transition-colors"
+                      >
+                        Unskip
+                      </button>
                     ) : (
-                      /* Show Complete/Skip if not completed and not paused */
+                      /* Show Complete/Skip if not completed and not skipped */
                       <>
                         {!isPaused && onCompleteRoutine && (
                           <button
@@ -542,7 +560,7 @@ export default function TaskDetail({
           {isRecurring ? (
             /* Recurring task buttons - mobile */
             <>
-              {/* Only show Complete/Skip/Mark Incomplete in executing mode */}
+              {/* Only show Complete/Skip/Mark Incomplete/Unskip in executing mode */}
               {mode !== 'managing' && (
                 <>
                   {/* Show Mark Incomplete if instance is completed */}
@@ -553,8 +571,16 @@ export default function TaskDetail({
                     >
                       Mark Incomplete
                     </button>
+                  ) : currentInstance?.skipped && onUnskipRoutine ? (
+                    /* Show Unskip if skipped */
+                    <button
+                      onClick={() => onUnskipRoutine(task.id)}
+                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 rounded-lg transition-colors"
+                    >
+                      Unskip
+                    </button>
                   ) : (
-                    /* Show Complete/Skip if not completed and not paused */
+                    /* Show Complete/Skip if not completed and not skipped */
                     <>
                       {!isPaused && onCompleteRoutine && (
                         <button
@@ -724,393 +750,88 @@ export default function TaskDetail({
         />
       )}
 
-      {/* Template Banner - shown in managing mode for recurring tasks */}
-      {isRecurring && mode === 'managing' && onToggleMode && (
-        <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg mb-6">
+      {/* Template/Instance Banner - shown for recurring tasks in both modes */}
+      {isRecurring && onToggleMode && (
+        <div className={`flex items-center justify-between px-4 py-3 rounded-lg mb-6 ${
+          mode === 'managing'
+            ? 'bg-violet-100 dark:bg-violet-900/30 border border-violet-300 dark:border-violet-700'
+            : 'bg-violet-50 dark:bg-violet-900/20 border border-violet-200/60 dark:border-violet-800/60'
+        }`}>
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-              Editing Template
-            </span>
+            {mode === 'managing' ? (
+              <>
+                <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                  Editing template
+                </span>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                For {activeDate ? formatRoutineDateHeader(activeDate) : 'today'}
+              </span>
+            )}
           </div>
           <button
             onClick={onToggleMode}
-            className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline transition-colors"
+            className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:underline transition-colors"
           >
-            Show Current →
+            {mode === 'managing' ? 'Show current →' : 'Edit template →'}
           </button>
         </div>
       )}
 
-      {/* Status Module - shown in executing mode or for non-recurring tasks */}
-      {(!isRecurring || mode === 'executing') && (
-        <StatusModule
-          task={task}
-          currentInstance={currentInstance}
-          completedCount={progress?.completed ?? 0}
-          totalCount={progress?.total ?? 0}
-          hasCompletedSteps={hasCompletedSteps}
-          completedStepsExpanded={completedStepsExpanded}
-          onToggleCompletedSteps={() => setCompletedStepsExpanded(!completedStepsExpanded)}
-          isInQueue={isInQueue}
-          todayStepIds={todayStepIds}
-          mode={mode}
-          onToggleMode={isRecurring ? onToggleMode : undefined}
-        />
-      )}
+      {/* Details Section - Unified container with Status + Details */}
+      <div className="mb-6">
+        {/* Section Header */}
+        <button
+          onClick={() => setDetailsExpanded(!detailsExpanded)}
+          className="w-full flex items-center justify-between mb-2 group"
+        >
+          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+            Details
+          </h2>
+          <svg
+            className={`w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-transform ${detailsExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
 
-      {/* Staging Area for AI suggestions */}
-      {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
-        <div id="staging-area" className="mb-6 scroll-mt-4">
-          <StagingArea
-            suggestions={suggestions}
-            edits={edits}
-            deletions={deletions}
-            suggestedTitle={suggestedTitle}
-            currentTitle={task.title}
-            onAcceptOne={onAcceptOne}
-            onAcceptAll={onAcceptAll}
-            onDismiss={onDismiss}
-            onAcceptEdit={onAcceptEdit}
-            onRejectEdit={onRejectEdit}
-            onAcceptDeletion={onAcceptDeletion}
-            onRejectDeletion={onRejectDeletion}
-            onAcceptTitle={onAcceptTitle}
-            onRejectTitle={onRejectTitle}
-            isNewArrival={stagingIsNewArrival}
-            onAnimationComplete={onStagingAnimationComplete}
-            isRoutine={task.isRecurring}
-            onAcceptWithScope={onAcceptWithScope}
-            mode={mode}
-            targetStep={targetStepForStaging}
-          />
-        </div>
-      )}
-
-      {/* Main content */}
-      <div className="flex-1">
-        {/* Steps section - Different structure for recurring vs regular tasks */}
-        <div className="mb-6">
-          {isRecurring && currentInstance && mode === 'executing' ? (
-            /* RECURRING TASKS IN EXECUTING MODE: Unified steps list */
-            (() => {
-              // Merge routineSteps + additionalSteps into unified list
-              const unifiedSteps = [...currentInstance.routineSteps, ...currentInstance.additionalSteps];
-              return (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-                      Steps
-                    </h2>
-                    {/* Edit Template + kebab menu - right aligned in executing mode */}
-                    {onToggleMode && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={onToggleMode}
-                          className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-                        >
-                          Edit Template
-                        </button>
-                        {onResetFromTemplate && (
-                          <div className="relative">
-                            <button
-                              onClick={() => setShowTemplateMenu(!showTemplateMenu)}
-                              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                            {showTemplateMenu && (
-                              <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
-                                <button
-                                  onClick={() => { onResetFromTemplate(); setShowTemplateMenu(false); }}
-                                  className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                                >
-                                  Reset from Template
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                      {unifiedSteps.map((step, idx) => (
-                        <StepItem
-                          key={step.id}
-                          step={step}
-                          index={idx}
-                          totalSteps={unifiedSteps.length}
-                          taskId={task.id}
-                          mode={mode}
-                          isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                          isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                          onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                          onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                          onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                          onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                          onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                          onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                          onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                          onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                          onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                          onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                          onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                          onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                          onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                        />
-                      ))}
-                    </div>
-                </div>
-              );
-            })()
-          ) : (
-            /* REGULAR TASKS or RECURRING TASKS IN MANAGING MODE: Single steps section */
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-                  {isRecurring && mode === 'managing' ? (
-                    <>
-                      Routine Steps
-                      <span className="ml-2 text-xs font-normal text-zinc-400 dark:text-zinc-500">
-                        (repeat each occurrence)
-                      </span>
-                    </>
-                  ) : 'Steps'}
-                </h2>
-                <div className="flex items-center gap-3">
-                  {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
-                  {isInQueue && task.steps.length > 0 ? (
-                    <button
-                      onClick={() => setShowFocusModal(true)}
-                      className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit Focus
-                    </button>
-                  ) : (
-                    <button
-                      onClick={onAIBreakdown}
-                      className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
-                      </svg>
-                      AI Breakdown
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Steps list */}
-              <div className="space-y-2">
-              {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete */}
-              {(completedStepsExpanded || allStepsComplete) && completedSteps.map((step) => {
-                const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                return (
-                  <StepItem
-                    key={step.id}
-                    step={step}
-                    index={originalIndex}
-                    totalSteps={task.steps.length}
-                    taskId={task.id}
-                    mode={mode}
-                    isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                    isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                    hideCheckbox={mode === 'managing'}
-                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                    onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
-                    onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                  />
-                );
-              })}
-
-              {/* Incomplete steps - with Today/Upcoming sections when in queue */}
-              {isInQueue ? (
-                <>
-                  {/* TODAY section */}
-                  {todaySteps.length > 0 && (
-                    <>
-                      <div className="mt-2 mb-1 pl-1">
-                        <span className="px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 rounded">
-                          Today
-                        </span>
-                      </div>
-                      {todaySteps.map((step) => {
-                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                        return (
-                          <StepItem
-                            key={step.id}
-                            step={step}
-                            index={originalIndex}
-                            totalSteps={task.steps.length}
-                            taskId={task.id}
-                            mode={mode}
-                            isToday
-                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                            hideCheckbox={mode === 'managing'}
-                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                            onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                            onStartFocus={() => onStartFocus(queueItem!.id)}
-                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                          />
-                        );
-                      })}
-                    </>
-                  )}
-
-                  {/* UPCOMING section */}
-                  {upcomingSteps.length > 0 && (
-                    <>
-                      <div className="mt-4 mb-1 pl-1">
-                        <span className="px-2 py-0.5 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded">
-                          Upcoming
-                        </span>
-                      </div>
-                      {upcomingSteps.map((step) => {
-                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                        return (
-                          <StepItem
-                            key={step.id}
-                            step={step}
-                            index={originalIndex}
-                            totalSteps={task.steps.length}
-                            taskId={task.id}
-                            mode={mode}
-                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                            hideCheckbox={mode === 'managing'}
-                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                            onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                            onStartFocus={() => onStartFocus(queueItem!.id)}
-                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                          />
-                        );
-                      })}
-                    </>
-                  )}
-                </>
-              ) : (
-                /* Not in queue - show all incomplete steps without sections */
-                incompleteSteps.map((step) => {
-                  const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                  return (
-                    <StepItem
-                      key={step.id}
-                      step={step}
-                      index={originalIndex}
-                      totalSteps={task.steps.length}
-                      taskId={task.id}
-                      mode={mode}
-                      isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                      isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                      hideCheckbox={mode === 'managing'}
-                      onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                      onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                      onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                      onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                      onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                      onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                      onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                      onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                      onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                      onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                      onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                      onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                      onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                    />
-                  );
-                })
-              )}
-            </div>
-            </>
-          )}
-
-          {/* Add step form */}
-          <form onSubmit={handleAddStep} className="mt-3 flex gap-2">
-            <input
-              type="text"
-              value={newStepText}
-              onChange={(e) => setNewStepText(e.target.value)}
-              placeholder="Add a step..."
-              className="flex-1 px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+        {/* Unified Status/Details Container */}
+        <div className="px-4 py-3 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl">
+          {/* Status Module - shown for non-inbox, non-managing tasks when it will render content */}
+          {showStatusModule && (
+            <StatusModule
+              task={task}
+              currentInstance={currentInstance}
+              completedCount={progress?.completed ?? 0}
+              totalCount={progress?.total ?? 0}
+              hasCompletedSteps={hasCompletedSteps}
+              completedStepsExpanded={completedStepsExpanded}
+              onToggleCompletedSteps={() => setCompletedStepsExpanded(!completedStepsExpanded)}
+              isInQueue={isInQueue}
+              todayStepIds={todayStepIds}
+              mode={mode}
+              onToggleMode={isRecurring ? onToggleMode : undefined}
             />
-            {newStepText.trim() && (
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+          )}
+          {/* Collapsible Details Content - now inside the unified container */}
+          {!detailsExpanded ? (
+            /* Collapsed Summary - Pills */
+            <>
+              {statusWillRender && detailsSummary.length > 0 && (
+                <div className="my-3 border-t border-zinc-300/50 dark:border-zinc-700/50" />
+              )}
+              <div
+                onClick={() => setDetailsExpanded(true)}
+                className="flex flex-wrap gap-1.5 items-center cursor-pointer hover:opacity-80 transition-opacity"
               >
-                Add
-              </button>
-            )}
-          </form>
-        </div>
-
-        {/* Metadata section - Collapsible */}
-        <div className="pb-4">
-          {/* Collapsible Header */}
-          <button
-            onClick={() => setDetailsExpanded(!detailsExpanded)}
-            className="w-full flex items-center justify-between mb-3 group"
-          >
-            <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
-              Details
-            </h2>
-            <svg
-              className={`w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-transform ${detailsExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* Collapsed Summary */}
-          {!detailsExpanded && (
-            <div
-              onClick={() => setDetailsExpanded(true)}
-              className="flex flex-wrap gap-1.5 items-center cursor-pointer px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
-            >
-              {detailsSummary.length > 0 ? (
-                detailsSummary.map((pill, idx) => (
+                {detailsSummary.map((pill, idx) => (
                   pill.health ? (
                     <HealthPill key={idx} health={pill.health} size="sm" showInfo={true} />
                   ) : (
@@ -1127,128 +848,151 @@ export default function TaskDetail({
                       {pill.label}
                     </MetadataPill>
                   )
-                ))
-              ) : (
-                <span className="text-sm text-zinc-400 dark:text-zinc-500">No details set</span>
-              )}
-            </div>
-          )}
-
-          {/* Expanded Details */}
-          {detailsExpanded && (
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Expanded Details - Input Fields */
             <>
-            {/* Info banner for read-only details in executing mode */}
-            {isReadOnlyDetails && onToggleMode && (
-              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center justify-between">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Routine settings are edited in the template.
-                </p>
-                <button onClick={onToggleMode} className="text-sm text-violet-600 dark:text-violet-400 hover:underline font-medium whitespace-nowrap ml-4">
-                  Edit template →
-                </button>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+              {statusWillRender && (
+                <div className="my-3 border-t border-zinc-300/50 dark:border-zinc-700/50" />
+              )}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
               {/* LINE 1: Project - full width */}
-              <div className={`col-span-2 ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
+              <div className="col-span-2">
                 <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</span>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={task.projectId || ""}
-                    onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
-                    className="flex-1 h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    <option value="">No project</option>
-                    {projects.filter(p => p.status === 'active').map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => onOpenProjectModal()}
-                    className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-                    title="Create project"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* LINE 2: Recurring toggle - full width */}
-              <div className={`col-span-2 ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
-                <div className="flex items-center justify-between">
+                {isReadOnlyDetails ? (
+                  /* Read-only: static display with lock icon */
+                  <>
+                    <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                      <span>{projects.find(p => p.id === task.projectId)?.name || 'No project'}</span>
+                      <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    </div>
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">Edit routine template to change settings</span>
+                  </>
+                ) : (
+                  /* Editable: select with add button */
                   <div className="flex items-center gap-2">
-                    <Repeat className="w-4 h-4 text-violet-500" />
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Recurring</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (task.isRecurring) {
-                        // Turn off recurring
-                        onUpdateTask(task.id, {
-                          isRecurring: false,
-                          recurrence: null,
-                        });
-                      } else {
-                        // Turn on recurring with default daily pattern
-                        // Auto-transition to pool (skip inbox triage for routines)
-                        // Initialize recurringNextDue to today for immediate visibility
-                        onUpdateTask(task.id, {
-                          isRecurring: true,
-                          recurrence: {
-                            frequency: 'daily',
-                            interval: 1,
-                            daysOfWeek: null,
-                            dayOfMonth: null,
-                            weekOfMonth: null,
-                            time: '09:00',
-                            endDate: null,
-                            endAfter: null,
-                            rolloverIfMissed: false,
-                            pausedAt: null,
-                            pausedUntil: null,
-                          },
-                          recurringNextDue: getTodayISO(), // Initialize first due date
-                          status: 'pool', // Routines skip triage
-                        });
-                      }
-                    }}
-                    className={`
-                      relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                      ${task.isRecurring
-                        ? 'bg-violet-600'
-                        : 'bg-zinc-200 dark:bg-zinc-700'
-                      }
-                    `}
-                  >
-                    <span
-                      className={`
-                        inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                        ${task.isRecurring ? 'translate-x-6' : 'translate-x-1'}
-                      `}
-                    />
-                  </button>
-                </div>
-                {task.isRecurring && patternDescription && (
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {patternDescription}
-                    {' '}
+                    <div className="relative flex-1">
+                      <select
+                        value={task.projectId || ""}
+                        onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
+                        className="w-full h-8 px-2 py-1 pr-8 text-sm appearance-none bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-zinc-700 dark:text-zinc-300"
+                      >
+                        <option value="">No project</option>
+                        {projects.filter(p => p.status === 'active').map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                      <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                     <button
-                      className="text-violet-600 dark:text-violet-400 hover:underline"
-                      onClick={() => setShowPatternModal(true)}
+                      onClick={() => onOpenProjectModal()}
+                      className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                      title="Create project"
                     >
-                      Edit pattern
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
                     </button>
-                  </p>
+                  </div>
                 )}
               </div>
 
+              {/* LINE 2: Recurring toggle - own row with larger label - HIDE in executing mode */}
+              {!(isRecurring && mode === 'executing') && (
+                <div className={`col-span-2 pt-3 mt-1 ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Recurring</span>
+                    <button
+                      onClick={() => {
+                        if (task.isRecurring) {
+                          // Turn off recurring
+                          onUpdateTask(task.id, {
+                            isRecurring: false,
+                            recurrence: null,
+                          });
+                        } else {
+                          // Turn on recurring with default daily pattern
+                          // Auto-transition to pool (skip inbox triage for routines)
+                          // Initialize recurringNextDue to today for immediate visibility
+                          onUpdateTask(task.id, {
+                            isRecurring: true,
+                            recurrence: {
+                              frequency: 'daily',
+                              interval: 1,
+                              daysOfWeek: null,
+                              dayOfMonth: null,
+                              weekOfMonth: null,
+                              time: '09:00',
+                              endDate: null,
+                              endAfter: null,
+                              rolloverIfMissed: false,
+                              pausedAt: null,
+                              pausedUntil: null,
+                              maxOverdueDays: null,
+                            },
+                            recurringNextDue: getTodayISO(), // Initialize first due date
+                            status: 'pool', // Routines skip triage
+                          });
+                          // Switch to managing mode so user can configure pattern
+                          if (onToggleMode && mode !== 'managing') {
+                            setTimeout(() => onToggleMode(), 0);
+                          }
+                        }
+                      }}
+                      className={`
+                        relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                        ${task.isRecurring
+                          ? 'bg-violet-600'
+                          : 'bg-zinc-200 dark:bg-zinc-700'
+                        }
+                      `}
+                    >
+                      <span
+                        className={`
+                          inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                          ${task.isRecurring ? 'translate-x-6' : 'translate-x-1'}
+                        `}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Pattern field row - separate row with label, only when recurring is ON - HIDE in executing mode */}
+              {!(isRecurring && mode === 'executing') && (
+                <div className={`col-span-2 transition-all duration-200 ${
+                  task.isRecurring
+                    ? 'opacity-100 max-h-20'
+                    : 'opacity-0 max-h-0 overflow-hidden'
+                } ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Pattern</span>
+                  <button
+                    onClick={() => setShowPatternModal(true)}
+                    className="w-full h-8 px-3 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 flex items-center justify-between transition-colors"
+                  >
+                    <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+                      <Repeat className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                      <span>
+                        {patternDescription || 'Set pattern'}
+                        {task.recurrence?.rolloverIfMissed && (
+                          <span className="text-zinc-500 dark:text-zinc-400"> · Persists</span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="text-violet-600 dark:text-violet-400 font-medium">Edit</span>
+                  </button>
+                </div>
+              )}
+
               {/* RECURRING TASKS: Only show Reminder */}
               {isRecurring ? (
-                <div className="col-span-2">
+                <div className="col-span-2 pb-1">
                   <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
                   <div className="relative">
                     <button
@@ -1456,15 +1200,307 @@ export default function TaskDetail({
                   </div>
                 </>
               )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
 
+      {/* Staging Area for AI suggestions */}
+      {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
+        <div id="staging-area" className="mb-6 scroll-mt-4">
+          <StagingArea
+            suggestions={suggestions}
+            edits={edits}
+            deletions={deletions}
+            suggestedTitle={suggestedTitle}
+            currentTitle={task.title}
+            onAcceptOne={onAcceptOne}
+            onAcceptAll={onAcceptAll}
+            onDismiss={onDismiss}
+            onAcceptEdit={onAcceptEdit}
+            onRejectEdit={onRejectEdit}
+            onAcceptDeletion={onAcceptDeletion}
+            onRejectDeletion={onRejectDeletion}
+            onAcceptTitle={onAcceptTitle}
+            onRejectTitle={onRejectTitle}
+            isNewArrival={stagingIsNewArrival}
+            onAnimationComplete={onStagingAnimationComplete}
+            isRoutine={task.isRecurring}
+            onAcceptWithScope={onAcceptWithScope}
+            mode={mode}
+            targetStep={targetStepForStaging}
+          />
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="flex-1">
+        {/* Steps section - Different structure for recurring vs regular tasks */}
+        <div className="mb-6">
+          {isRecurring && currentInstance && mode === 'executing' ? (
+            /* RECURRING TASKS IN EXECUTING MODE: Unified steps list */
+            (() => {
+              const unifiedSteps = currentInstance.steps;
+              return (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                      Steps
+                    </h2>
+                    {/* Reset from Template - direct button in executing mode */}
+                    {onResetFromTemplate && (
+                      <button
+                        onClick={onResetFromTemplate}
+                        className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
+                      >
+                        Reset from Template
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                      {unifiedSteps.map((step, idx) => (
+                        <StepItem
+                          key={step.id}
+                          step={step}
+                          index={idx}
+                          totalSteps={unifiedSteps.length}
+                          taskId={task.id}
+                          mode={mode}
+                          isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                          isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                          onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                          onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                          onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                          onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                          onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                          onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                          onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                          onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                          onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                          onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                          onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                          onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                          onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                        />
+                      ))}
+                    </div>
+                </div>
+              );
+            })()
+          ) : (
+            /* REGULAR TASKS or RECURRING TASKS IN MANAGING MODE: Single steps section */
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                  {isRecurring && mode === 'managing' ? 'Recurring Steps' : 'Steps'}
+                </h2>
+                <div className="flex items-center gap-3">
+                  {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
+                  {isInQueue && task.steps.length > 0 ? (
+                    <button
+                      onClick={() => setShowFocusModal(true)}
+                      className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Focus
+                    </button>
+                  ) : (
+                    <button
+                      onClick={onAIBreakdown}
+                      className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />
+                      </svg>
+                      AI Breakdown
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Steps list */}
+              <div className="space-y-2">
+              {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete */}
+              {(completedStepsExpanded || allStepsComplete) && completedSteps.map((step) => {
+                const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                return (
+                  <StepItem
+                    key={step.id}
+                    step={step}
+                    index={originalIndex}
+                    totalSteps={task.steps.length}
+                    taskId={task.id}
+                    mode={mode}
+                    isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                    isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                    hideCheckbox={mode === 'managing'}
+                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                    onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
+                    onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                  />
+                );
+              })}
+
+              {/* Incomplete steps - with Today/Upcoming sections when in queue */}
+              {isInQueue ? (
+                <>
+                  {/* TODAY section */}
+                  {todaySteps.length > 0 && (
+                    <>
+                      <div className="mt-2 mb-1 pl-1">
+                        <span className="px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 rounded">
+                          Today
+                        </span>
+                      </div>
+                      {todaySteps.map((step) => {
+                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                        return (
+                          <StepItem
+                            key={step.id}
+                            step={step}
+                            index={originalIndex}
+                            totalSteps={task.steps.length}
+                            taskId={task.id}
+                            mode={mode}
+                            isToday
+                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                            hideCheckbox={mode === 'managing'}
+                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                            onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                            onStartFocus={() => onStartFocus(queueItem!.id)}
+                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* UPCOMING section */}
+                  {upcomingSteps.length > 0 && (
+                    <>
+                      <div className="mt-4 mb-1 pl-1">
+                        <span className="px-2 py-0.5 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded">
+                          Upcoming
+                        </span>
+                      </div>
+                      {upcomingSteps.map((step) => {
+                        const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                        return (
+                          <StepItem
+                            key={step.id}
+                            step={step}
+                            index={originalIndex}
+                            totalSteps={task.steps.length}
+                            taskId={task.id}
+                            mode={mode}
+                            isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                            isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                            hideCheckbox={mode === 'managing'}
+                            onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                            onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                            onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                            onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                            onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                            onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                            onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                            onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                            onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                            onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                            onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                            onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                            onStartFocus={() => onStartFocus(queueItem!.id)}
+                            onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+                </>
+              ) : (
+                /* Not in queue - show all incomplete steps without sections */
+                incompleteSteps.map((step) => {
+                  const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                  return (
+                    <StepItem
+                      key={step.id}
+                      step={step}
+                      index={originalIndex}
+                      totalSteps={task.steps.length}
+                      taskId={task.id}
+                      mode={mode}
+                      isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                      isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                      hideCheckbox={mode === 'managing'}
+                      onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                      onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                      onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                      onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                      onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                      onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                      onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                      onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                      onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                      onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                      onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                      onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                      onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                    />
+                  );
+                })
+              )}
             </div>
             </>
           )}
+
+          {/* Add step form */}
+          <form onSubmit={handleAddStep} className="mt-3 flex gap-2">
+            <input
+              type="text"
+              value={newStepText}
+              onChange={(e) => setNewStepText(e.target.value)}
+              placeholder="Add a step..."
+              className="flex-1 px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            />
+            {newStepText.trim() && (
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              >
+                Add
+              </button>
+            )}
+          </form>
         </div>
 
         {/* Notes section */}
         <div className="mt-6">
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-2">
             Notes
           </h2>
           <NotesModule
@@ -1628,12 +1664,12 @@ export default function TaskDetail({
             // For promoted steps: Add copies with new IDs
             if (currentInstance) {
               // Get the text of demoted steps (to match against task.steps)
-              const demotedStepTexts = currentInstance.routineSteps
+              const demotedStepTexts = currentInstance.steps
                 .filter((s) => demotedIds.includes(s.id))
                 .map((s) => s.text);
 
-              // Get promoted steps from additionalSteps
-              const promotedStepsToAdd = currentInstance.additionalSteps
+              // Get promoted steps (non-template origin → add to template)
+              const promotedStepsToAdd = currentInstance.steps
                 .filter((s) => promotedIds.includes(s.id))
                 .map((s) => createStep(s.text, { source: s.source }));
 
@@ -1644,37 +1680,24 @@ export default function TaskDetail({
               updates.steps = [...filteredTemplateSteps, ...promotedStepsToAdd];
             }
 
-            // Update recurringInstances to reflect promoted/demoted steps
+            // Update recurringInstances to reflect promoted/demoted origin changes
             if (activeDate && task.recurringInstances) {
               const updatedInstances = task.recurringInstances.map((inst) => {
                 if (inst.date !== activeDate) return inst;
 
-                // Get promoted steps (were in additionalSteps, now template)
-                const promotedSteps = inst.additionalSteps
-                  .filter((s) => promotedIds.includes(s.id))
-                  .map((s) => ({ ...s }));
-
-                // Remove promoted steps from additionalSteps (they're now in routineSteps)
-                const filteredAdditional = inst.additionalSteps.filter(
-                  (s) => !promotedIds.includes(s.id)
-                );
-
-                // Get demoted steps (were in routineSteps, now additional)
-                const demotedSteps = inst.routineSteps
-                  .filter((s) => demotedIds.includes(s.id))
-                  .map((s) => ({ ...s }));
-
-                // Remove demoted steps from routineSteps (they're now in additionalSteps)
-                const filteredRoutine = inst.routineSteps.filter(
-                  (s) => !demotedIds.includes(s.id)
-                );
-
                 return {
                   ...inst,
-                  // Add promoted steps to routineSteps
-                  routineSteps: [...filteredRoutine, ...promotedSteps],
-                  // Add demoted steps to additionalSteps
-                  additionalSteps: [...filteredAdditional, ...demotedSteps],
+                  steps: inst.steps.map((s) => {
+                    if (promotedIds.includes(s.id)) {
+                      // Promoted: mark as template origin
+                      return { ...s, origin: 'template' as const };
+                    }
+                    if (demotedIds.includes(s.id)) {
+                      // Demoted: mark as manual origin
+                      return { ...s, origin: 'manual' as const };
+                    }
+                    return s;
+                  }),
                 };
               });
               updates.recurringInstances = updatedInstances;
@@ -1904,20 +1927,25 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
       {/* Step text */}
       <div className="flex-1 min-w-0">
         {editingStep ? (
-          <input
-            type="text"
+          <textarea
             value={stepText}
-            onChange={(e) => setStepText(e.target.value)}
+            onChange={(e) => setStepText(e.target.value.replace(/\n/g, ' '))}
             onBlur={handleStepSave}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleStepSave();
+              if (e.key === "Enter") { e.preventDefault(); handleStepSave(); }
               if (e.key === "Escape") {
                 setStepText(step.text);
                 setEditingStep(false);
               }
             }}
-            className="w-full min-h-[1.5rem] text-sm bg-transparent border-b border-violet-500 focus:outline-none text-zinc-900 dark:text-zinc-100 px-1 -mx-1"
-            autoFocus
+            onInput={(e) => {
+              const el = e.target as HTMLTextAreaElement;
+              el.style.height = 'auto';
+              el.style.height = el.scrollHeight + 'px';
+            }}
+            rows={1}
+            className="w-full text-sm bg-transparent border-b border-violet-500 focus:outline-none text-zinc-900 dark:text-zinc-100 px-1 -mx-1 resize-none overflow-hidden"
+            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; el.focus(); } }}
           />
         ) : (
           <span
@@ -2137,17 +2165,22 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 </button>
               )}
               {editingSubstepId === substep.id ? (
-                <input
-                  type="text"
+                <textarea
                   value={substepText}
-                  onChange={(e) => setSubstepText(e.target.value)}
+                  onChange={(e) => setSubstepText(e.target.value.replace(/\n/g, ' '))}
                   onBlur={() => handleSubstepSave(substep.id)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSubstepSave(substep.id);
+                    if (e.key === "Enter") { e.preventDefault(); handleSubstepSave(substep.id); }
                     if (e.key === "Escape") setEditingSubstepId(null);
                   }}
-                  className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400"
-                  autoFocus
+                  onInput={(e) => {
+                    const el = e.target as HTMLTextAreaElement;
+                    el.style.height = 'auto';
+                    el.style.height = el.scrollHeight + 'px';
+                  }}
+                  rows={1}
+                  className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400 resize-none overflow-hidden"
+                  ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; el.focus(); } }}
                 />
               ) : (
                 <span
