@@ -933,3 +933,24 @@ export function getMatchLocationLabel(location: MatchLocation): string {
   };
   return labels[location];
 }
+
+// ============================================
+// Step ID Resolution
+// ============================================
+
+/**
+ * Resolves a display ID (like "1", "2", "3") to the actual step UUID.
+ * Display IDs are 1-based indices shown to users and AI.
+ * Returns null if the display ID cannot be resolved.
+ */
+export function resolveDisplayIdToUUID(displayId: string, steps: Step[]): string | null {
+  // Handle sentinel for "insert at beginning"
+  if (displayId === '0') return '0';
+
+  // Try to parse as a 1-based index
+  const index = parseInt(displayId, 10) - 1;
+  if (isNaN(index) || index < 0 || index >= steps.length) {
+    return null;
+  }
+  return steps[index].id;
+}

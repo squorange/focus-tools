@@ -36,7 +36,11 @@ import {
   snoozeNotification,
   cancelNotificationsForCompletedTask,
   getAllActiveAlerts,
+  scheduleStartPoke,
+  cancelStartPoke,
+  removeNotificationsForTask,
 } from "@/lib/notification-utils";
+import { StartPokeSettings } from "@/lib/notification-types";
 import { getStartPokeStatus } from "@/lib/start-poke-utils";
 import {
   logTaskCreated,
@@ -53,7 +57,7 @@ import {
   computeComplexity,
   getTodayISO,
 } from "@/lib/utils";
-import { filterInbox, filterPool } from "@/lib/utils";
+import { filterInbox, filterPool, resolveDisplayIdToUUID } from "@/lib/utils";
 import { getTodayItems, getStepsInScope, isQueueItemStale } from "@/lib/queue";
 import {
   markInstanceComplete,
@@ -97,7 +101,7 @@ import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, Col
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
-import { initializeReminders, initializeStartPokes } from "@/lib/notifications";
+import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA } from "@/lib/notifications";
 
 // ============================================
 // Initial States
@@ -218,6 +222,43 @@ export default function Home() {
   const clearActiveStaging = useCallback(() => {
     updateActiveStaging(() => null);
   }, [updateActiveStaging]);
+
+  // ============================================
+  // Notification Scheduling Helpers
+  // ============================================
+
+  // Build StartPokeSettings from UserSettings
+  const getPokeSettings = useCallback((): StartPokeSettings => ({
+    startPokeEnabled: state.userSettings.startPokeEnabled,
+    startPokeDefault: state.userSettings.startPokeDefault,
+    startPokeBufferMinutes: state.userSettings.startPokeBufferMinutes,
+    startPokeBufferPercentage: state.userSettings.startPokeBufferPercentage,
+  }), [state.userSettings]);
+
+  // Schedule or reschedule a start poke notification for a task
+  const scheduleNotificationForTask = useCallback((task: Task) => {
+    const settings = getPokeSettings();
+
+    setNotifications((prev) => {
+      const { notifications: updated, created } = scheduleStartPoke(task, settings, prev);
+
+      // If a notification was created, also schedule PWA notification
+      if (created) {
+        scheduleStartPokePWA(task, state.userSettings, created.id);
+      }
+
+      return updated;
+    });
+  }, [getPokeSettings, state.userSettings]);
+
+  // Cancel all notifications for a task (when deleted)
+  const cancelNotificationForTask = useCallback((taskId: string) => {
+    // Cancel in-app notification
+    setNotifications((prev) => removeNotificationsForTask(taskId, prev));
+
+    // Cancel PWA notification
+    cancelStartPokePWA(taskId);
+  }, []);
 
   // Helper to map current view to AI context
   const getAIContext = (): AIAssistantContext => {
@@ -913,22 +954,19 @@ export default function Home() {
   }, [aiAssistant.state.mode, contextualPrompts.resetPrompt]);
 
   // Lock body scroll when sidebar is open (iOS Safari fix)
+  // Note: Avoid position:fixed on body as it causes layout shifts with safe-area-insets
   useEffect(() => {
     if (sidebarOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
+      // Simple overflow hidden approach - doesn't shift content
+      document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
+      // Prevent touch scrolling on iOS
+      document.body.style.touchAction = 'none';
 
       return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
+        document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
+        document.body.style.touchAction = '';
       };
     }
   }, [sidebarOpen]);
@@ -1108,6 +1146,26 @@ export default function Home() {
       saveNotifications(notifications);
     }
   }, [notifications, hasHydrated]);
+
+  // Schedule notifications for all eligible queued tasks on initial load
+  // This ensures notifications are created for tasks that were added before this feature existed
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    // Get all tasks currently in the focus queue
+    const queuedTaskIds = state.focusQueue.items
+      .filter(i => !i.completed)
+      .map(i => i.taskId);
+
+    // Schedule notifications for eligible tasks
+    state.tasks
+      .filter(t => queuedTaskIds.includes(t.id) && t.status !== 'complete' && !t.deletedAt)
+      .forEach(task => {
+        scheduleNotificationForTask(task);
+      });
+    // Only run once after hydration - dependencies intentionally limited
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydrated]);
 
   // Check for notifications that need to fire (periodically + on app focus)
   // UI updates automatically via startPokeAlertData when notifications are fired
@@ -1554,16 +1612,17 @@ export default function Home() {
       const task = state.tasks.find((t) => t.id === activePoke.taskId);
       if (task) {
         const status = getStartPokeStatus(task, state.userSettings);
-        // Format anchor time for display
-        const anchorTime = status.anchorTime;
-        const anchorTimeStr = anchorTime
-          ? new Date(anchorTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+        // Format poke time (when to start) for display - no emoji since icon already shows it
+        const pokeTime = status.nudgeTime;
+        const pokeTimeStr = pokeTime
+          ? new Date(pokeTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
           : '';
+        const taskTitle = task.title.length > 25 ? task.title.slice(0, 25) + '...' : task.title;
         aiAssistant.setCollapsedContent({
           type: 'start_poke',
-          text: anchorTimeStr
-            ? `👉🏽 Start "${task.title}" by ${anchorTimeStr}`
-            : `👉🏽 Start "${task.title}"`,
+          text: pokeTimeStr
+            ? `Start "${taskTitle}" at ${pokeTimeStr}`
+            : `Start "${taskTitle}"`,
           startPokeAlert: {
             taskId: task.id,
             taskTitle: task.title,
@@ -1737,6 +1796,15 @@ export default function Home() {
     setNotifications((prev) => markNotificationAcknowledged(notificationId, prev));
   }, []);
 
+  const handleSnoozeNotification = useCallback((notificationId: string, minutes: number) => {
+    setNotifications((prev) => snoozeNotification(notificationId, prev, minutes));
+  }, []);
+
+  const handleCancelNotification = useCallback((notificationId: string) => {
+    // Remove the notification entirely (for upcoming/scheduled notifications)
+    setNotifications((prev) => prev.filter(n => n.id !== notificationId));
+  }, []);
+
   const handleOpenNotificationSettings = useCallback(() => {
     setPreviousView(state.currentView);
     setState((prev) => ({
@@ -1894,9 +1962,37 @@ export default function Home() {
         type: 'success',
       }]);
     }
-  }, []);
+
+    // Handle notification scheduling based on update type
+    // Fields that affect start poke calculation
+    const notificationFields = [
+      'estimatedDurationMinutes', 'estimatedMinutes',
+      'deadlineDate', 'deadlineTime',
+      'targetDate', 'targetTime',
+      'startPokeOverride',
+      'recurrence',
+    ];
+
+    // If task is being completed, cancel notifications
+    if (updates.status === 'complete') {
+      cancelNotificationForTask(taskId);
+    } else if (Object.keys(updates).some(key => notificationFields.includes(key))) {
+      // Reschedule notification if relevant fields changed
+      setState((prev) => {
+        const updatedTask = prev.tasks.find(t => t.id === taskId);
+        if (updatedTask && updatedTask.status !== 'complete') {
+          // Schedule asynchronously to avoid nested setState issues
+          setTimeout(() => scheduleNotificationForTask(updatedTask), 0);
+        }
+        return prev;
+      });
+    }
+  }, [cancelNotificationForTask, scheduleNotificationForTask]);
 
   const handleDeleteTask = useCallback((taskId: string) => {
+    // Cancel any pending notifications for this task
+    cancelNotificationForTask(taskId);
+
     let deletedTask: Task | undefined;
     let removedQueueItemId: string | undefined;
     setState((prev) => {
@@ -1954,7 +2050,7 @@ export default function Home() {
         },
       }]);
     }
-  }, []);
+  }, [cancelNotificationForTask]);
 
   // Send task to pool (triage complete)
   const handleSendToPool = useCallback((taskId: string) => {
@@ -2444,7 +2540,12 @@ export default function Home() {
         },
       }]);
     }
-  }, []);
+
+    // Schedule start poke notification for the added task
+    if (addedTask) {
+      scheduleNotificationForTask(addedTask);
+    }
+  }, [scheduleNotificationForTask]);
 
   // Update step selection for an existing queue item
   // Also moves task between Today/Upcoming based on selection:
@@ -3043,6 +3144,32 @@ export default function Home() {
       };
     });
   }, []);
+
+  // Handle "Start" action from notification
+  const handleNotificationStart = useCallback((notification: Notification) => {
+    // Acknowledge the notification
+    setNotifications((prev) => markNotificationAcknowledged(notification.id, prev));
+
+    // Navigate to task if it exists
+    if (notification.taskId) {
+      const task = state.tasks.find(t => t.id === notification.taskId);
+      if (task) {
+        setPreviousView(state.currentView);
+        setState((prev) => ({
+          ...prev,
+          currentView: 'taskDetail',
+          activeTaskId: notification.taskId,
+        }));
+
+        // If task is in queue, start focus mode
+        const queueItem = state.focusQueue.items.find((item) => item.taskId === notification.taskId);
+        if (queueItem) {
+          // Defer focus start slightly to let navigation complete
+          setTimeout(() => handleStartFocus(queueItem.id), 100);
+        }
+      }
+    }
+  }, [state.tasks, state.focusQueue.items, state.currentView, handleStartFocus]);
 
   // Start focus session for recurring task (no queue item needed)
   const handleStartRecurringFocus = useCallback((taskId: string) => {
@@ -3963,8 +4090,9 @@ export default function Home() {
         // Insert at beginning
         newSteps = [newStep, ...task.steps];
       } else if (insertAfter) {
-        // Insert after the specified step
-        const insertIndex = task.steps.findIndex((s) => s.id === insertAfter);
+        // Resolve display ID to UUID (AI provides "1", "2", etc.)
+        const resolvedUUID = insertAfter === '0' ? '0' : resolveDisplayIdToUUID(insertAfter, task.steps) || insertAfter;
+        const insertIndex = task.steps.findIndex((s) => s.id === resolvedUUID);
         if (insertIndex >= 0) {
           newSteps = [
             ...task.steps.slice(0, insertIndex + 1),
@@ -3972,7 +4100,7 @@ export default function Home() {
             ...task.steps.slice(insertIndex + 1),
           ];
         } else {
-          // Fallback to append if step not found
+          console.warn(`[Accept Suggestion] Could not find step "${insertAfter}" (resolved: ${resolvedUUID}). Appending.`);
           newSteps = [...task.steps, newStep];
         }
       } else {
@@ -4357,9 +4485,233 @@ export default function Home() {
         };
       });
     } else {
-      // Normal suggest flow - add steps one by one
-      staging.suggestions.forEach((suggestion) => {
-        handleAcceptSuggestion(suggestion);
+      // Normal suggest flow - ATOMIC: resolve all positions against original array, then apply once
+      setState((prev) => {
+        const task = prev.tasks.find((t) => t.id === state.activeTaskId);
+        if (!task) return prev;
+
+        // Check if this is a recurring task in executing mode
+        const isRecurringExecuting = task.isRecurring && task.recurrence && state.taskDetailMode === 'executing';
+
+        if (isRecurringExecuting) {
+          // Handle recurring task - add to instance steps atomically
+          const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
+          let instances = [...(task.recurringInstances || [])];
+          let instanceIndex = instances.findIndex(i => i.date === activeDate);
+
+          if (instanceIndex === -1) {
+            const newInstance = createInstance(task, activeDate);
+            instances.push(newInstance);
+            instanceIndex = instances.length - 1;
+          }
+
+          const instance = instances[instanceIndex];
+          const originalSteps = [...instance.steps];
+
+          // Process all suggestions: resolve positions against ORIGINAL array
+          const insertions: Array<{
+            suggestion: SuggestedStep;
+            insertAfterIndex: number; // -1 = prepend, >= 0 = after that index, null = append
+          }> = [];
+
+          for (const suggestion of staging.suggestions) {
+            // Skip substep additions (handled separately)
+            if (suggestion.parentStepId) {
+              // Add as substep to parent step
+              const parentIdx = originalSteps.findIndex(s => s.id === suggestion.parentStepId);
+              if (parentIdx >= 0) {
+                // Will be handled in substep processing
+                insertions.push({ suggestion, insertAfterIndex: -2 }); // marker for substep
+              }
+              continue;
+            }
+
+            const insertAfter = suggestion.insertAfterStepId;
+            if (insertAfter === '0') {
+              insertions.push({ suggestion, insertAfterIndex: -1 }); // prepend
+            } else if (insertAfter) {
+              const resolvedUUID = resolveDisplayIdToUUID(insertAfter, originalSteps) || insertAfter;
+              const idx = originalSteps.findIndex(s => s.id === resolvedUUID);
+              insertions.push({ suggestion, insertAfterIndex: idx >= 0 ? idx : originalSteps.length - 1 });
+            } else {
+              insertions.push({ suggestion, insertAfterIndex: originalSteps.length - 1 }); // append
+            }
+          }
+
+          // Build final steps array with all insertions
+          let finalSteps = [...originalSteps];
+
+          // Handle substep additions first
+          for (const { suggestion, insertAfterIndex } of insertions) {
+            if (insertAfterIndex === -2 && suggestion.parentStepId) {
+              const parentIdx = finalSteps.findIndex(s => s.id === suggestion.parentStepId);
+              if (parentIdx >= 0) {
+                finalSteps[parentIdx] = {
+                  ...finalSteps[parentIdx],
+                  substeps: [...finalSteps[parentIdx].substeps, {
+                    id: suggestion.id,
+                    text: suggestion.text,
+                    shortLabel: null,
+                    completed: false,
+                    completedAt: null,
+                    skipped: false,
+                    source: 'ai_suggested' as const,
+                  }],
+                };
+              }
+            }
+          }
+
+          // Group insertions by their target position, sorted by position descending
+          // (so we insert from end to start, preserving indices)
+          const stepInsertions = insertions
+            .filter(i => i.insertAfterIndex !== -2)
+            .sort((a, b) => b.insertAfterIndex - a.insertAfterIndex);
+
+          for (const { suggestion, insertAfterIndex } of stepInsertions) {
+            const newStep = createStep(suggestion.text, {
+              id: suggestion.id,
+              source: 'ai_suggested',
+              origin: 'ai',
+              estimatedMinutes: suggestion.estimatedMinutes || null,
+              estimateSource: suggestion.estimatedMinutes ? 'ai' : null,
+              substeps: suggestion.substeps.map((sub) => ({
+                id: sub.id,
+                text: sub.text,
+                shortLabel: null,
+                completed: false,
+                completedAt: null,
+                skipped: false,
+                source: 'ai_suggested' as const,
+              })),
+            });
+
+            if (insertAfterIndex === -1) {
+              finalSteps = [newStep, ...finalSteps];
+            } else {
+              finalSteps = [
+                ...finalSteps.slice(0, insertAfterIndex + 1),
+                newStep,
+                ...finalSteps.slice(insertAfterIndex + 1),
+              ];
+            }
+          }
+
+          instances[instanceIndex] = { ...instance, steps: finalSteps };
+
+          return {
+            ...prev,
+            tasks: prev.tasks.map((t) =>
+              t.id === state.activeTaskId
+                ? { ...t, recurringInstances: instances, staging: null, aiAssisted: true, updatedAt: Date.now() }
+                : t
+            ),
+          };
+        }
+
+        // NON-RECURRING: Add to task.steps (template) atomically
+        const originalSteps = [...task.steps];
+
+        // Process all suggestions: resolve positions against ORIGINAL array
+        const insertions: Array<{
+          suggestion: SuggestedStep;
+          insertAfterIndex: number;
+        }> = [];
+
+        for (const suggestion of staging.suggestions) {
+          // Skip substep additions (handled separately)
+          if (suggestion.parentStepId) {
+            const parentIdx = originalSteps.findIndex(s => s.id === suggestion.parentStepId);
+            if (parentIdx >= 0) {
+              insertions.push({ suggestion, insertAfterIndex: -2 }); // marker for substep
+            }
+            continue;
+          }
+
+          const insertAfter = suggestion.insertAfterStepId;
+          if (insertAfter === '0') {
+            insertions.push({ suggestion, insertAfterIndex: -1 }); // prepend
+          } else if (insertAfter) {
+            const resolvedUUID = resolveDisplayIdToUUID(insertAfter, originalSteps) || insertAfter;
+            const idx = originalSteps.findIndex(s => s.id === resolvedUUID);
+            insertions.push({ suggestion, insertAfterIndex: idx >= 0 ? idx : originalSteps.length - 1 });
+          } else {
+            insertions.push({ suggestion, insertAfterIndex: originalSteps.length - 1 }); // append
+          }
+        }
+
+        // Build final steps array with all insertions
+        let finalSteps = [...originalSteps];
+
+        // Handle substep additions first
+        for (const { suggestion, insertAfterIndex } of insertions) {
+          if (insertAfterIndex === -2 && suggestion.parentStepId) {
+            const parentIdx = finalSteps.findIndex(s => s.id === suggestion.parentStepId);
+            if (parentIdx >= 0) {
+              finalSteps[parentIdx] = {
+                ...finalSteps[parentIdx],
+                substeps: [...finalSteps[parentIdx].substeps, {
+                  id: suggestion.id,
+                  text: suggestion.text,
+                  shortLabel: null,
+                  completed: false,
+                  completedAt: null,
+                  skipped: false,
+                  source: 'ai_suggested' as const,
+                }],
+              };
+            }
+          }
+        }
+
+        // Group insertions by their target position, sorted by position descending
+        const stepInsertions = insertions
+          .filter(i => i.insertAfterIndex !== -2)
+          .sort((a, b) => b.insertAfterIndex - a.insertAfterIndex);
+
+        for (const { suggestion, insertAfterIndex } of stepInsertions) {
+          const newStep = createStep(suggestion.text, {
+            id: suggestion.id,
+            source: 'ai_suggested',
+            estimatedMinutes: suggestion.estimatedMinutes || null,
+            estimateSource: suggestion.estimatedMinutes ? 'ai' : null,
+            substeps: suggestion.substeps.map((sub) => ({
+              id: sub.id,
+              text: sub.text,
+              shortLabel: null,
+              completed: false,
+              completedAt: null,
+              skipped: false,
+              source: 'ai_suggested' as const,
+            })),
+          });
+
+          if (insertAfterIndex === -1) {
+            finalSteps = [newStep, ...finalSteps];
+          } else {
+            finalSteps = [
+              ...finalSteps.slice(0, insertAfterIndex + 1),
+              newStep,
+              ...finalSteps.slice(insertAfterIndex + 1),
+            ];
+          }
+        }
+
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === state.activeTaskId
+              ? {
+                  ...t,
+                  steps: finalSteps,
+                  staging: null,
+                  completionType: 'step_based' as const,
+                  aiAssisted: true,
+                  updatedAt: Date.now(),
+                }
+              : t
+          ),
+        };
       });
     }
 
@@ -4831,7 +5183,7 @@ export default function Home() {
       {/* Main Column - pushes based on sidebar state and right drawer state */}
       <div
         className={`
-          flex-1 flex flex-col min-w-0 transition-all duration-300 pb-[env(safe-area-inset-bottom)]
+          flex-1 flex flex-col min-w-0 transition-all duration-300
           ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
           ${aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : completedDrawerOpen ? 'lg:mr-[400px]' : ''}
           ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] pointer-events-none lg:translate-x-0 lg:pointer-events-auto' : ''}
@@ -4879,14 +5231,17 @@ export default function Home() {
         <main
           ref={mainRef}
           className={`flex-1 transition-all duration-300 ${
-            sidebarOpen ? 'overflow-hidden touch-none lg:overflow-y-auto lg:touch-auto' : 'overflow-y-auto'
+            sidebarOpen ? 'overflow-y-auto pointer-events-none lg:pointer-events-auto' : 'overflow-y-auto'
           }`}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
-          {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet; when sidebar open use minimal padding */}
+          {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet */}
           {/* Focus mode: full width, no padding (has its own layout). Other views: max-w-4xl centered with padding */}
-          <div className={`${state.currentView === 'focusMode' ? 'h-full' : `max-w-4xl mx-auto px-4 py-6 ${sidebarOpen ? 'pb-24' : aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}`}>
+          <div className={`${state.currentView === 'focusMode' ? 'h-full' : `max-w-4xl mx-auto px-4 py-6 ${
+              aiAssistant.state.mode !== 'collapsed'
+                ? 'lg:pb-24 pb-[calc(52vh+env(safe-area-inset-bottom))]'
+                : 'pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-24'}`}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
@@ -4963,6 +5318,9 @@ export default function Home() {
                 notifications={notifications}
                 onNotificationTap={handleNotificationTap}
                 onDismiss={handleDismissNotification}
+                onStart={handleNotificationStart}
+                onSnooze={handleSnoozeNotification}
+                onCancel={handleCancelNotification}
               />
             )}
 

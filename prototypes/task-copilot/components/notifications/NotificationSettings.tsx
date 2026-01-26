@@ -45,7 +45,7 @@ export default function SettingsView({
     { value: 10, label: '10 minutes' },
     { value: 15, label: '15 minutes' },
     { value: 30, label: '30 minutes' },
-    { value: 'percentage', label: '15% of duration' },
+    { value: 'percentage', label: '15% of duration (min 5m)' },
   ];
 
   // Get current scope label
@@ -207,9 +207,9 @@ export default function SettingsView({
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowScopePicker(false)}
           />
-          <div className="relative bg-white dark:bg-zinc-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Poke scope</span>
+          <div className="relative bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0">
+              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Poke scope</span>
               <button
                 onClick={() => setShowScopePicker(false)}
                 className="text-sm font-medium text-violet-600 dark:text-violet-400"
@@ -217,7 +217,7 @@ export default function SettingsView({
                 Done
               </button>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-1">
               {scopeOptions.map((option) => (
                 <button
                   key={option.value}
@@ -248,9 +248,9 @@ export default function SettingsView({
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowBufferPicker(false)}
           />
-          <div className="relative bg-white dark:bg-zinc-800 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Buffer time</span>
+          <div className="relative bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0">
+              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Buffer time</span>
               <button
                 onClick={() => setShowBufferPicker(false)}
                 className="text-sm font-medium text-violet-600 dark:text-violet-400"
@@ -258,7 +258,7 @@ export default function SettingsView({
                 Done
               </button>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
               {bufferOptions.map((option) => {
                 const isSelected = option.value === 'percentage'
                   ? userSettings.startPokeBufferPercentage
@@ -291,7 +291,7 @@ export default function SettingsView({
                 );
               })}
             </div>
-            <p className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-700">
+            <p className="px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
               Buffer is extra time before the deadline to account for transitions.
             </p>
           </div>

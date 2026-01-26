@@ -345,16 +345,18 @@ export function PaletteContent({
 
         if (current.type === 'poke') {
           const poke = current.data;
-          const dueTime = new Date(poke.anchorTime);
-          const dueTimeStr = dueTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          // Calculate poke time (start time) from anchor time
+          const pokeTime = poke.anchorTime - (poke.durationMinutes + poke.bufferMinutes) * 60 * 1000;
+          const pokeTimeStr = new Date(pokeTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          const dueTimeStr = new Date(poke.anchorTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
           return (
             <div className="px-3 py-2 mb-2 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
-              {/* Title row: pointing emoji + task title + due time + count */}
+              {/* Title row: pointing emoji + task title + poke time + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">👉🏽</span>
                 <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
-                  &ldquo;{poke.taskTitle}&rdquo; — Due {dueTimeStr}
+                  Start &ldquo;{poke.taskTitle}&rdquo; at {pokeTimeStr}
                 </span>
                 {hasMultiple && (
                   <button
@@ -366,19 +368,19 @@ export function PaletteContent({
                   </button>
                 )}
               </div>
-              {/* Duration breakdown */}
+              {/* Duration + due time */}
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
-                ~{poke.durationMinutes} min + {poke.bufferMinutes} min buffer
+                ~{poke.durationMinutes} min → due {dueTimeStr}
               </div>
-              {/* Actions row - compact filled buttons */}
+              {/* Actions row - compact filled buttons (all gray) */}
               <div className="flex items-center gap-1.5 mt-2 ml-6">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onStartPokeAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-violet-100 dark:bg-violet-900/40
-                    text-violet-700 dark:text-violet-300
-                    hover:bg-violet-200 dark:hover:bg-violet-800/50
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
                     transition-colors"
                 >
                   Start

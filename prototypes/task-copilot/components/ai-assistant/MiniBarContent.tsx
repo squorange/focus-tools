@@ -149,9 +149,9 @@ export function MiniBarContent({
                 onStartPokeAction();
               }}
               className="flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full
-                bg-violet-100 dark:bg-violet-900/40
-                text-violet-700 dark:text-violet-300
-                hover:bg-violet-200 dark:hover:bg-violet-800/50
+                bg-zinc-100 dark:bg-zinc-800
+                text-zinc-700 dark:text-zinc-300
+                hover:bg-zinc-200 dark:hover:bg-zinc-700
                 transition-colors"
             >
               Start

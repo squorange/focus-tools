@@ -7,6 +7,10 @@ interface NotificationCardProps {
   notification: Notification;
   onTap: () => void;
   onDismiss?: () => void;
+  onStart?: () => void;
+  onSnooze?: (minutes: number) => void;
+  onCancel?: () => void;
+  section?: 'active' | 'upcoming' | 'past';
 }
 
 // Icon component based on notification icon type
@@ -88,61 +92,119 @@ export default function NotificationCard({
   notification,
   onTap,
   onDismiss,
+  onStart,
+  onSnooze,
+  onCancel,
+  section = 'active',
 }: NotificationCardProps) {
   const colors = getColorClasses(notification.type);
   const isUnread = notification.firedAt !== null && notification.acknowledgedAt === null;
   const isFired = notification.firedAt !== null;
+  const isStartPoke = notification.type === 'start_poke';
+
+  // Format: "Start at X" for pokes, regular title for others
+  const timeStr = formatNotificationTime(notification.scheduledAt);
+  const displayTitle = isStartPoke
+    ? `Start "${notification.body}" at ${timeStr}`
+    : notification.title;
 
   return (
-    <button
+    <div
       onClick={onTap}
       className={`
-        w-full text-left p-3 rounded-lg border transition-colors
+        w-full text-left p-3 rounded-lg border transition-colors cursor-pointer
         ${colors.bg} ${colors.border}
         hover:border-zinc-300 dark:hover:border-zinc-600
-        ${isUnread ? 'ring-2 ring-violet-500/20' : ''}
       `}
     >
       <div className="flex gap-3">
-        {/* Icon */}
-        <div className={`flex-shrink-0 mt-0.5 w-8 h-8 rounded-full flex items-center justify-center ${colors.bg}`}>
-          <NotificationIconComponent icon={notification.icon} type={notification.type} />
+        {/* Icon - emoji for pokes, icon for others */}
+        <div className={`flex-shrink-0 mt-0.5 ${isStartPoke ? '' : `w-8 h-8 rounded-full flex items-center justify-center ${colors.bg}`}`}>
+          {isStartPoke ? (
+            <span className="text-lg leading-none" role="img" aria-label="Start poke">👉🏽</span>
+          ) : (
+            <NotificationIconComponent icon={notification.icon} type={notification.type} />
+          )}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className={`text-sm font-medium ${colors.text}`}>
-              {notification.title}
+              {displayTitle}
             </span>
             {isUnread && (
               <span className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />
             )}
           </div>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
-            {notification.body}
-          </p>
+          {!isStartPoke && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+              {notification.body}
+            </p>
+          )}
           <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
-            {isFired ? 'Fired' : 'Scheduled'}: {formatNotificationTime(notification.scheduledAt)}
+            {isFired ? 'Fired' : 'Scheduled'}: {timeStr}
           </span>
-        </div>
 
-        {/* Dismiss button (optional) */}
-        {onDismiss && isUnread && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDismiss();
-            }}
-            className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-            title="Dismiss"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-        )}
+          {/* Action buttons based on section */}
+          {(section === 'active' || section === 'upcoming') && (
+            <div className="flex items-center gap-1.5 mt-2">
+              {onStart && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onStart(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Start
+                </button>
+              )}
+              {section === 'active' && onSnooze && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onSnooze(5); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Snooze 5m
+                </button>
+              )}
+              {section === 'active' && onDismiss && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Dismiss
+                </button>
+              )}
+              {section === 'upcoming' && onCancel && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </button>
+    </div>
   );
 }

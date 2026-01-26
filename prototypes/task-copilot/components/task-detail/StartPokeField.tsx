@@ -141,7 +141,9 @@ export default function StartPokeField({
             <div className="flex items-start gap-1.5 text-amber-600 dark:text-amber-400">
               <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
               <span className="text-xs">
-                Add a target time or deadline to enable notification
+                {task.isRecurring
+                  ? 'Set a scheduled time in the recurrence pattern to enable notification'
+                  : 'Add a target time or deadline to enable notification'}
               </span>
             </div>
           )}
@@ -153,17 +155,25 @@ export default function StartPokeField({
             </span>
           )}
 
-          {/* State 3: Fully calculated */}
+          {/* State 3: Fully calculated - show pill with poke time */}
           {status.nudgeTime !== null && status.durationMinutes !== null && status.bufferMinutes !== null && status.anchorTime !== null && (
             <>
-              {/* Primary line: notification time */}
-              <span className="text-xs text-zinc-700 dark:text-zinc-300">
-                You'll be poked at {formatPokeTime(status.nudgeTime)}
-              </span>
+              {/* Primary: Pill with emoji + start time */}
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+                    bg-violet-100 dark:bg-violet-900/30
+                    text-violet-700 dark:text-violet-300
+                    text-xs font-medium"
+                >
+                  <span role="img" aria-label="Start poke">👉🏽</span>
+                  Start at {formatPokeTime(status.nudgeTime)}
+                </span>
+              </div>
 
               {/* Secondary line: calculation breakdown */}
               <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                {formatDurationForPoke(status.durationMinutes)} task + {formatDurationForPoke(status.bufferMinutes)} buffer → {formatAnchorTime(status.anchorTime, true)}
+                {formatDurationForPoke(status.durationMinutes)} + {formatDurationForPoke(status.bufferMinutes)} buffer → due {formatAnchorTime(status.anchorTime, true)}
               </span>
 
               {/* Link to adjust estimate (optional) */}

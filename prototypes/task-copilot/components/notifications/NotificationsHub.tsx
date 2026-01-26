@@ -2,34 +2,33 @@
 
 import { Bell } from "lucide-react";
 import { Notification } from "@/lib/notification-types";
-import { groupNotificationsByDate, getUnacknowledged, getUpcoming } from "@/lib/notification-utils";
+import { groupNotificationsByDate, getUpcoming } from "@/lib/notification-utils";
 import NotificationCard from "./NotificationCard";
 
 interface NotificationsHubProps {
   notifications: Notification[];
   onNotificationTap: (notification: Notification) => void;
   onDismiss: (notificationId: string) => void;
+  onStart?: (notification: Notification) => void;
+  onSnooze?: (notificationId: string, minutes: number) => void;
+  onCancel?: (notificationId: string) => void;
 }
 
 export default function NotificationsHub({
   notifications,
   onNotificationTap,
   onDismiss,
+  onStart,
+  onSnooze,
+  onCancel,
 }: NotificationsHubProps) {
   const groups = groupNotificationsByDate(notifications);
-  const unacknowledgedCount = getUnacknowledged(notifications).length;
   const upcomingNotifications = getUpcoming(notifications);
 
-  // Separate into upcoming and past
-  const now = Date.now();
-  const upcomingGroups = groups.filter(g => {
-    const groupDate = new Date(g.date).getTime();
-    return groupDate >= new Date().setHours(0, 0, 0, 0);
-  });
-  const pastGroups = groups.filter(g => {
-    const groupDate = new Date(g.date).getTime();
-    return groupDate < new Date().setHours(0, 0, 0, 0);
-  });
+  // Active: fired but not acknowledged (needs attention)
+  const activeNotifications = notifications.filter(
+    n => n.firedAt !== null && n.acknowledgedAt === null
+  );
 
   const isEmpty = notifications.length === 0;
 
@@ -51,10 +50,36 @@ export default function NotificationsHub({
 
   return (
     <div className="space-y-6">
+      {/* Active section: fired but not acknowledged */}
+      {activeNotifications.length > 0 && (
+        <div>
+          <h2 className="text-base font-medium text-violet-600 dark:text-violet-400 mb-3">
+            Active
+          </h2>
+          <div className="space-y-2">
+            {activeNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className="ring-2 ring-violet-500/50 rounded-lg"
+              >
+                <NotificationCard
+                  notification={notification}
+                  section="active"
+                  onTap={() => onNotificationTap(notification)}
+                  onStart={onStart ? () => onStart(notification) : undefined}
+                  onSnooze={onSnooze ? (mins) => onSnooze(notification.id, mins) : undefined}
+                  onDismiss={() => onDismiss(notification.id)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Upcoming section */}
       {upcomingNotifications.length > 0 && (
         <div>
-          <h2 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
             Upcoming
           </h2>
           <div className="space-y-2">
@@ -62,37 +87,38 @@ export default function NotificationsHub({
               <NotificationCard
                 key={notification.id}
                 notification={notification}
+                section="upcoming"
                 onTap={() => onNotificationTap(notification)}
-                onDismiss={() => onDismiss(notification.id)}
+                onStart={onStart ? () => onStart(notification) : undefined}
+                onCancel={onCancel ? () => onCancel(notification.id) : undefined}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* Past notifications by date */}
+      {/* Past notifications by date (excluding active ones) */}
       {groups
-        .filter(g => g.notifications.some(n => n.firedAt !== null))
+        .filter(g => g.notifications.some(n => n.firedAt !== null && n.acknowledgedAt !== null))
         .map((group) => {
-          const firedNotifications = group.notifications.filter(n => n.firedAt !== null);
-          if (firedNotifications.length === 0) return null;
+          // Only show acknowledged (dismissed) notifications in past section
+          const acknowledgedNotifications = group.notifications.filter(
+            n => n.firedAt !== null && n.acknowledgedAt !== null
+          );
+          if (acknowledgedNotifications.length === 0) return null;
 
           return (
             <div key={group.date}>
-              <h2 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+              <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
                 {group.label}
               </h2>
               <div className="space-y-2">
-                {firedNotifications.map((notification) => (
+                {acknowledgedNotifications.map((notification) => (
                   <NotificationCard
                     key={notification.id}
                     notification={notification}
+                    section="past"
                     onTap={() => onNotificationTap(notification)}
-                    onDismiss={
-                      notification.acknowledgedAt === null
-                        ? () => onDismiss(notification.id)
-                        : undefined
-                    }
                   />
                 ))}
               </div>

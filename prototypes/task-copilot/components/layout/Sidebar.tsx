@@ -367,7 +367,7 @@ export default function Sidebar({
         }}
       >
         {/* Safe area padding for iOS */}
-        <div className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] h-full flex flex-col">
+        <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
           {/* Header with drawer toggle (desktop only) - matches main header styling */}
           <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 border-b border-zinc-200 dark:border-transparent bg-white dark:bg-[#0c0c0c]">
             {/* Drawer toggle - always in upper-left, easy tap target */}
@@ -448,7 +448,7 @@ export default function Sidebar({
           </div>
 
           {/* Navigation / Search Content */}
-          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          <nav className={`flex-1 overflow-y-auto p-3 space-y-1 ${isSearchActive ? 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]' : ''}`}>
             {/* Search Mode: Empty State (Jump To + Recent) OR Results */}
             {isSearchActive && !isCollapsed ? (
               <>
@@ -579,7 +579,7 @@ export default function Sidebar({
 
           {/* Settings + Data management at bottom - only show when not in search mode */}
           {!isSearchActive && (
-            <div className="flex-shrink-0 p-3 border-t border-zinc-200 dark:border-zinc-700 space-y-1">
+            <div className="flex-shrink-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-zinc-200 dark:border-zinc-700 space-y-1">
               <NavItem
                 icon={<Settings size={20} />}
                 label="Settings"

@@ -24,6 +24,8 @@ import {
   StartPokeSettings,
   DurationSource,
 } from './notification-types';
+import { getNextOccurrenceFromToday, getTodayISO, timestampToLocalDate } from './recurring-utils';
+import { RecurrenceRuleExtended } from './recurring-types';
 
 // Default times for dates without specific times
 const DEFAULT_TARGET_HOUR = 9;    // 9 AM for target dates
@@ -54,9 +56,22 @@ export function getAnchorTime(task: Task): number | null {
     );
   }
 
-  // For recurring tasks, try the next due date
-  if (task.isRecurring && task.recurringNextDue && task.recurrence?.time) {
-    return dateToTimestamp(task.recurringNextDue, task.recurrence.time, DEFAULT_TARGET_HOUR);
+  // For recurring tasks, calculate actual next occurrence
+  if (task.isRecurring && task.recurrence?.time) {
+    // Get actual next occurrence based on pattern (not just stored recurringNextDue)
+    const today = getTodayISO();
+    const pattern = task.recurrence as RecurrenceRuleExtended;
+    const startDate = pattern.startDate
+      || (task.createdAt ? timestampToLocalDate(task.createdAt) : today);
+    let anchorDate = task.recurringNextDue;
+
+    // If recurringNextDue is missing, past, or doesn't match pattern, recalculate
+    if (!anchorDate || anchorDate < today) {
+      // Find next valid occurrence from today (inclusive)
+      anchorDate = getNextOccurrenceFromToday(pattern, startDate, today) || today;
+    }
+
+    return dateToTimestamp(anchorDate, pattern.time!, DEFAULT_TARGET_HOUR);
   }
 
   return null;
@@ -125,8 +140,10 @@ export function calculateBuffer(
   settings: StartPokeSettings
 ): number {
   if (settings.startPokeBufferPercentage) {
-    // 15% of duration, minimum 5 minutes
-    return Math.max(5, Math.round(durationMinutes * 0.15));
+    // 15% of duration, rounded to nearest 5 minutes, minimum 5 minutes
+    const rawBuffer = durationMinutes * 0.15;
+    const roundedToFive = Math.round(rawBuffer / 5) * 5;
+    return Math.max(5, roundedToFive);
   }
 
   return settings.startPokeBufferMinutes;

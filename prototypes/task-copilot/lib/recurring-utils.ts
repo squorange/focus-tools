@@ -272,6 +272,26 @@ export function getNextOccurrence(
 }
 
 /**
+ * Get the next occurrence date from today (inclusive if today matches pattern)
+ * Used for calculating anchor time in start poke notifications.
+ */
+export function getNextOccurrenceFromToday(
+  pattern: RecurrenceRule | RecurrenceRuleExtended,
+  startDate: string,
+  fromDate?: string
+): string | null {
+  const today = fromDate || getTodayISO();
+
+  // Check if today matches the pattern (inclusive)
+  if (dateMatchesPattern(today, pattern, startDate)) {
+    return today;
+  }
+
+  // Otherwise find the next occurrence after today
+  return getNextOccurrence(pattern, today, startDate);
+}
+
+/**
  * Get the previous occurrence date from a given date
  */
 export function getPreviousOccurrence(
