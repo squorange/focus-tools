@@ -17,24 +17,24 @@ export default function NotesModule({
   defaultExpanded = false,
   placeholder = "Add note...",
 }: NotesModuleProps) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded || !collapsible);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [userExpanded, setUserExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-focus and move cursor to end when user explicitly expands (not on initial load)
   useEffect(() => {
-    if (isExpanded && userExpanded && textareaRef.current) {
+    if (collapsible && isExpanded && userExpanded && textareaRef.current) {
       textareaRef.current.focus();
       textareaRef.current.setSelectionRange(
         textareaRef.current.value.length,
         textareaRef.current.value.length
       );
     }
-  }, [isExpanded, userExpanded]);
+  }, [collapsible, isExpanded, userExpanded]);
 
   // Auto-resize textarea to fit content
   useEffect(() => {
-    if (isExpanded && textareaRef.current) {
+    if (textareaRef.current) {
       // Reset height to auto to get the correct scrollHeight
       textareaRef.current.style.height = "auto";
       // Set height to scrollHeight, with minimum of 3 rows (~72px)
@@ -42,7 +42,7 @@ export default function NotesModule({
       const newHeight = Math.max(textareaRef.current.scrollHeight, minHeight);
       textareaRef.current.style.height = `${newHeight}px`;
     }
-  }, [isExpanded, notes]);
+  }, [notes]);
 
   // Get preview text for collapsed state
   const getPreview = () => {
@@ -59,7 +59,7 @@ export default function NotesModule({
   };
 
   const handleExpand = () => {
-    if (collapsible && !isExpanded) {
+    if (!isExpanded) {
       setUserExpanded(true);
       setIsExpanded(true);
     }
@@ -67,12 +67,30 @@ export default function NotesModule({
 
   const handleCollapse = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (collapsible) {
-      setIsExpanded(false);
-    }
+    setIsExpanded(false);
   };
 
-  // Single container with animated expand/collapse
+  // Non-collapsible: just render a simple auto-growing textarea
+  if (!collapsible) {
+    return (
+      <div className="w-full">
+        <textarea
+          ref={textareaRef}
+          value={notes}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full text-sm bg-transparent border border-neutral-200 dark:border-neutral-700
+                     rounded-lg px-3 py-2 outline-none resize-none
+                     text-neutral-600 dark:text-neutral-300
+                     placeholder-neutral-400 dark:placeholder-neutral-500
+                     focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          style={{ minHeight: "72px" }}
+        />
+      </div>
+    );
+  }
+
+  // Collapsible: expand/collapse with smooth animation
   return (
     <div
       className="w-full bg-neutral-50 dark:bg-neutral-800/50
@@ -80,38 +98,39 @@ export default function NotesModule({
                  overflow-hidden"
     >
       {/* Collapsed view - clickable header */}
-      <button
-        onClick={handleExpand}
-        className={`w-full flex items-center justify-between px-4 py-3
-                   hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors
-                   text-left ${isExpanded && collapsible ? 'hidden' : ''}`}
-        disabled={!collapsible || isExpanded}
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className={`text-sm truncate ${notes ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400 dark:text-neutral-500"}`}>
-            {getPreview()}
-          </span>
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+        !isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}>
+        <div className="overflow-hidden">
+          <button
+            onClick={handleExpand}
+            className="w-full flex items-center justify-between px-4 py-3
+                       hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors
+                       text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className={`text-sm truncate ${notes ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400 dark:text-neutral-500"}`}>
+                {getPreview()}
+              </span>
+            </div>
+            <svg
+              className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
         </div>
-        <svg
-          className={`w-4 h-4 text-neutral-400 flex-shrink-0 ml-2 transition-transform duration-200 ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+      </div>
 
       {/* Expanded view - with grid-rows animation */}
       <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
         isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
       }`}>
         <div className="overflow-hidden">
-          <div className={`px-4 py-3 transition-opacity duration-200 ${
-            isExpanded ? 'opacity-100' : 'opacity-0'
-          }`}>
+          <div className="px-4 py-3">
             <div className="flex items-start gap-2">
               <textarea
                 ref={textareaRef}
@@ -124,23 +143,21 @@ export default function NotesModule({
                            focus:ring-0"
                 style={{ minHeight: "72px" }}
               />
-              {collapsible && (
-                <button
-                  onClick={handleCollapse}
-                  className="flex-shrink-0 p-1 -mr-1 -mt-0.5
-                             text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300
-                             transition-colors"
+              <button
+                onClick={handleCollapse}
+                className="flex-shrink-0 p-1 -mr-1 -mt-0.5
+                           text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300
+                           transition-colors"
+              >
+                <svg
+                  className="w-4 h-4 rotate-180"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  <svg
-                    className="w-4 h-4 rotate-180 transition-transform duration-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              )}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
