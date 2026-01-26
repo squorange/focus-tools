@@ -154,13 +154,13 @@ export default function CompletedDrawer({
         </div>
       </div>
 
-      {/* Desktop backdrop (subtle) */}
-      {isOpen && (
-        <div
-          className="hidden lg:block fixed inset-0 z-30"
-          onClick={onClose}
-        />
-      )}
+      {/* Desktop backdrop (subtle) - always rendered for transition */}
+      <div
+        className={`hidden lg:block fixed inset-0 z-30 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
 
       {/* Mobile: Bottom sheet */}
       <div className="lg:hidden">

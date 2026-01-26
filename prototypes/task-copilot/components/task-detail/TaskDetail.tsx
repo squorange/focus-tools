@@ -899,9 +899,11 @@ export default function TaskDetail({
             />
           )}
           {/* Collapsible Details Content - now inside the unified container */}
-          {!detailsExpanded ? (
-            /* Collapsed Summary - Pills */
-            <>
+          {/* Collapsed Summary - Pills with fade transition */}
+          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+            !detailsExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          }`}>
+            <div className="overflow-hidden">
               {statusWillRender && detailsSummary.length > 0 && (
                 <div className="my-3 border-t border-zinc-300/50 dark:border-zinc-700/50" />
               )}
@@ -928,10 +930,13 @@ export default function TaskDetail({
                   )
                 ))}
               </div>
-            </>
-          ) : (
-            /* Expanded Details - Input Fields */
-            <>
+            </div>
+          </div>
+          {/* Expanded Details - Input Fields with grid-rows animation */}
+          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+            detailsExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+          }`}>
+            <div className="overflow-hidden">
               {statusWillRender && (
                 <div className="my-3 border-t border-zinc-300/50 dark:border-zinc-700/50" />
               )}
@@ -1538,8 +1543,8 @@ export default function TaskDetail({
                 </>
               )}
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1589,7 +1594,7 @@ export default function TaskDetail({
                     {onResetFromTemplate && (
                       <button
                         onClick={onResetFromTemplate}
-                        className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors"
+                        className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:underline transition-colors"
                       >
                         Reset from Template
                       </button>
@@ -1661,37 +1666,43 @@ export default function TaskDetail({
 
               {/* Steps list */}
               <div className="space-y-2">
-              {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete */}
-              {(completedStepsExpanded || allStepsComplete) && completedSteps.map((step) => {
-                const originalIndex = task.steps.findIndex(s => s.id === step.id);
-                return (
-                  <StepItem
-                    key={step.id}
-                    step={step}
-                    index={originalIndex}
-                    totalSteps={task.steps.length}
-                    taskId={task.id}
-                    mode={mode}
-                    isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
-                    isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
-                    hideCheckbox={mode === 'managing'}
-                    onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
-                    onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
-                    onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
-                    onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
-                    onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
-                    onDelete={() => onDeleteStep(task.id, step.id, mode)}
-                    onMoveUp={() => onMoveStepUp(task.id, step.id)}
-                    onMoveDown={() => onMoveStepDown(task.id, step.id)}
-                    onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
-                    onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
-                    onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
-                    onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
-                    onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
-                    onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
-                  />
-                );
-              })}
+              {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete - with grid-rows animation */}
+              <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                (completedStepsExpanded || allStepsComplete) && completedSteps.length > 0 ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              }`}>
+                <div className="overflow-hidden space-y-2">
+                  {completedSteps.map((step) => {
+                    const originalIndex = task.steps.findIndex(s => s.id === step.id);
+                    return (
+                      <StepItem
+                        key={step.id}
+                        step={step}
+                        index={originalIndex}
+                        totalSteps={task.steps.length}
+                        taskId={task.id}
+                        mode={mode}
+                        isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
+                        isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                        hideCheckbox={mode === 'managing'}
+                        onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
+                        onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
+                        onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
+                        onUpdateEstimate={(minutes) => onUpdateStepEstimate(task.id, step.id, minutes)}
+                        onUpdateSubstep={(substepId, text) => onUpdateSubstep(task.id, step.id, substepId, text, mode)}
+                        onDelete={() => onDeleteStep(task.id, step.id, mode)}
+                        onMoveUp={() => onMoveStepUp(task.id, step.id)}
+                        onMoveDown={() => onMoveStepDown(task.id, step.id)}
+                        onAddSubstep={(text) => onAddSubstep(task.id, step.id, text, mode)}
+                        onDeleteSubstep={(substepId) => onDeleteSubstep(task.id, step.id, substepId, mode)}
+                        onMoveSubstepUp={(substepId) => onMoveSubstepUp(task.id, step.id, substepId)}
+                        onMoveSubstepDown={(substepId) => onMoveSubstepDown(task.id, step.id, substepId)}
+                        onStartFocus={queueItem ? () => onStartFocus(queueItem.id) : undefined}
+                        onOpenAIPalette={onOpenAIPalette ? () => onOpenAIPalette(task.id, step.id) : undefined}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* Incomplete steps - with Today/Upcoming sections when in queue */}
               {isInQueue ? (

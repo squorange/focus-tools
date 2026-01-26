@@ -122,9 +122,12 @@ export default function StagingArea({
         </svg>
       </button>
 
-      {/* Collapsible Content */}
-      {isExpanded && (
-        <div className="px-4 pb-4">
+      {/* Collapsible Content - with grid-rows animation */}
+      <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+        isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}>
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4">
           {/* Title suggestion */}
           {hasTitleSuggestion && (
             <div className="mb-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg border border-violet-300 dark:border-violet-600">
@@ -373,7 +376,8 @@ export default function StagingArea({
             </div>
           </div>
         </div>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
