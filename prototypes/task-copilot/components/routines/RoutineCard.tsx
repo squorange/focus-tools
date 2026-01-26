@@ -36,11 +36,9 @@ export default function RoutineCard({
   const activeDate = getActiveOccurrenceDate(task) || today;
   const instance = ensureInstance(task, activeDate);
 
-  // Count steps from both routineSteps and additionalSteps
-  const totalSteps = instance.routineSteps.length + instance.additionalSteps.length;
-  const completedSteps =
-    instance.routineSteps.filter(s => s.completed).length +
-    instance.additionalSteps.filter(s => s.completed).length;
+  // Count steps
+  const totalSteps = instance.steps.length;
+  const completedSteps = instance.steps.filter(s => s.completed).length;
   const isInstanceComplete = instance.completed;
 
   const patternDescription = describePatternCompact(task.recurrence);

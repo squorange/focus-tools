@@ -19,7 +19,7 @@
  */
 
 import { Task, Step, Substep, RecurringInstance } from './types';
-import { getTodayISO, ensureInstance, getActiveOccurrenceDate } from './recurring-utils';
+import { getTodayISO, ensureInstance, createInstance, getActiveOccurrenceDate } from './recurring-utils';
 
 // ============================================
 // Types
@@ -29,7 +29,7 @@ export type Mode = 'executing' | 'managing';
 
 export interface StepLocation {
   found: boolean;
-  arrayType: 'steps' | 'routineSteps' | 'additionalSteps';
+  isInstance: boolean;  // true = instance.steps, false = task.steps
   index: number;
   step: Step | null;
 }
@@ -47,7 +47,7 @@ export interface SubstepLocation extends StepLocation {
  * Get the steps to display based on mode and task type.
  *
  * - One-off tasks: always return task.steps
- * - Recurring + executing: return instance.routineSteps + instance.additionalSteps
+ * - Recurring + executing: return instance.steps
  * - Recurring + managing: return task.steps (template)
  */
 export function getDisplaySteps(
@@ -70,7 +70,7 @@ export function getDisplaySteps(
   const instance = task.recurringInstances?.find(i => i.date === date);
 
   if (instance) {
-    return [...(instance.routineSteps || []), ...(instance.additionalSteps || [])];
+    return instance.steps;
   }
 
   // No instance yet, fall back to template
@@ -79,7 +79,6 @@ export function getDisplaySteps(
 
 /**
  * Find a step by its display ID (1-based index like "1", "2", "3")
- * Returns location info including which array it's in.
  */
 export function findStepByDisplayId(
   task: Task,
@@ -90,55 +89,30 @@ export function findStepByDisplayId(
   const index = parseInt(displayId, 10) - 1;
 
   if (isNaN(index) || index < 0) {
-    return { found: false, arrayType: 'steps', index: -1, step: null };
+    return { found: false, isInstance: false, index: -1, step: null };
   }
 
-  // One-off tasks
-  if (!task.isRecurring || !task.recurrence) {
+  // One-off tasks or managing mode: use task.steps
+  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
     if (index < task.steps.length) {
-      return { found: true, arrayType: 'steps', index, step: task.steps[index] };
+      return { found: true, isInstance: false, index, step: task.steps[index] };
     }
-    return { found: false, arrayType: 'steps', index: -1, step: null };
+    return { found: false, isInstance: false, index: -1, step: null };
   }
 
-  // Recurring in managing mode: template
-  if (mode === 'managing') {
-    if (index < task.steps.length) {
-      return { found: true, arrayType: 'steps', index, step: task.steps[index] };
-    }
-    return { found: false, arrayType: 'steps', index: -1, step: null };
-  }
-
-  // Recurring in executing mode: instance
+  // Recurring in executing mode: use instance.steps
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
   const instance = task.recurringInstances?.find(i => i.date === date);
 
   if (!instance) {
-    return { found: false, arrayType: 'routineSteps', index: -1, step: null };
+    return { found: false, isInstance: true, index: -1, step: null };
   }
 
-  const routineCount = (instance.routineSteps || []).length;
-
-  if (index < routineCount) {
-    return {
-      found: true,
-      arrayType: 'routineSteps',
-      index,
-      step: instance.routineSteps[index],
-    };
+  if (index < instance.steps.length) {
+    return { found: true, isInstance: true, index, step: instance.steps[index] };
   }
 
-  const additionalIndex = index - routineCount;
-  if (additionalIndex < (instance.additionalSteps || []).length) {
-    return {
-      found: true,
-      arrayType: 'additionalSteps',
-      index: additionalIndex,
-      step: instance.additionalSteps[additionalIndex],
-    };
-  }
-
-  return { found: false, arrayType: 'additionalSteps', index: -1, step: null };
+  return { found: false, isInstance: true, index: -1, step: null };
 }
 
 /**
@@ -150,55 +124,29 @@ export function findStepByUUID(
   mode: Mode,
   activeDate?: string
 ): StepLocation {
-  // One-off tasks
-  if (!task.isRecurring || !task.recurrence) {
+  // One-off tasks or managing mode: use task.steps
+  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
     const index = task.steps.findIndex(s => s.id === stepId);
     if (index !== -1) {
-      return { found: true, arrayType: 'steps', index, step: task.steps[index] };
+      return { found: true, isInstance: false, index, step: task.steps[index] };
     }
-    return { found: false, arrayType: 'steps', index: -1, step: null };
+    return { found: false, isInstance: false, index: -1, step: null };
   }
 
-  // Recurring in managing mode: template
-  if (mode === 'managing') {
-    const index = task.steps.findIndex(s => s.id === stepId);
-    if (index !== -1) {
-      return { found: true, arrayType: 'steps', index, step: task.steps[index] };
-    }
-    return { found: false, arrayType: 'steps', index: -1, step: null };
-  }
-
-  // Recurring in executing mode: instance
+  // Recurring in executing mode: use instance.steps
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
   const instance = task.recurringInstances?.find(i => i.date === date);
 
   if (!instance) {
-    return { found: false, arrayType: 'routineSteps', index: -1, step: null };
+    return { found: false, isInstance: true, index: -1, step: null };
   }
 
-  // Check routineSteps
-  const routineIndex = (instance.routineSteps || []).findIndex(s => s.id === stepId);
-  if (routineIndex !== -1) {
-    return {
-      found: true,
-      arrayType: 'routineSteps',
-      index: routineIndex,
-      step: instance.routineSteps[routineIndex],
-    };
+  const index = instance.steps.findIndex(s => s.id === stepId);
+  if (index !== -1) {
+    return { found: true, isInstance: true, index, step: instance.steps[index] };
   }
 
-  // Check additionalSteps
-  const additionalIndex = (instance.additionalSteps || []).findIndex(s => s.id === stepId);
-  if (additionalIndex !== -1) {
-    return {
-      found: true,
-      arrayType: 'additionalSteps',
-      index: additionalIndex,
-      step: instance.additionalSteps[additionalIndex],
-    };
-  }
-
-  return { found: false, arrayType: 'routineSteps', index: -1, step: null };
+  return { found: false, isInstance: true, index: -1, step: null };
 }
 
 // ============================================
@@ -234,6 +182,7 @@ export function completeStep(
 
 /**
  * Update step text.
+ * In executing mode for recurring tasks, also clears origin to indicate user modification.
  */
 export function updateStepText(
   task: Task,
@@ -248,10 +197,12 @@ export function updateStepText(
     return task;
   }
 
+  const isRecurringExecuting = task.isRecurring && task.recurrence && mode === 'executing';
   const updateStep = (step: Step): Step => ({
     ...step,
     text: text.trim(),
     wasEdited: true,
+    ...(isRecurringExecuting ? { origin: null } : {}),
   });
 
   return updateStepAtLocation(task, location, updateStep, mode, activeDate);
@@ -311,8 +262,8 @@ export function addStep(
   afterIndex?: number,
   activeDate?: string
 ): Task {
-  // One-off tasks
-  if (!task.isRecurring || !task.recurrence) {
+  // One-off tasks or managing mode: add to task.steps
+  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
     const newSteps = [...task.steps];
     if (afterIndex !== undefined && afterIndex >= 0 && afterIndex < newSteps.length) {
       newSteps.splice(afterIndex + 1, 0, newStep);
@@ -322,26 +273,21 @@ export function addStep(
     return { ...task, steps: newSteps, updatedAt: Date.now() };
   }
 
-  // Recurring in managing mode: add to template
-  if (mode === 'managing') {
-    const newSteps = [...task.steps];
-    if (afterIndex !== undefined && afterIndex >= 0 && afterIndex < newSteps.length) {
-      newSteps.splice(afterIndex + 1, 0, newStep);
-    } else {
-      newSteps.push(newStep);
-    }
-    return { ...task, steps: newSteps, updatedAt: Date.now() };
-  }
-
-  // Recurring in executing mode: add to instance additionalSteps
+  // Recurring in executing mode: add to instance.steps
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
-  const instance = ensureInstance(task, date);
+  let instance = task.recurringInstances?.find(i => i.date === date);
 
-  const newAdditionalSteps = [...(instance.additionalSteps || []), newStep];
+  if (!instance) {
+    instance = createInstance(task, date);
+  }
+
+  // Add step with origin marker
+  const stepWithOrigin = { ...newStep, origin: newStep.origin || ('manual' as const) };
+  const updatedSteps = [...instance.steps, stepWithOrigin];
 
   const updatedInstance: RecurringInstance = {
     ...instance,
-    additionalSteps: newAdditionalSteps,
+    steps: updatedSteps,
   };
 
   const updatedInstances = (task.recurringInstances || [])
@@ -526,7 +472,7 @@ export function moveSubstep(
 
 /**
  * Update a step at a given location.
- * Handles routing to correct array based on location.
+ * Routes to task.steps or instance.steps based on location.isInstance.
  */
 function updateStepAtLocation(
   task: Task,
@@ -537,8 +483,8 @@ function updateStepAtLocation(
 ): Task {
   const now = Date.now();
 
-  // One-off tasks or managing mode: update task.steps
-  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
+  // task.steps (one-off, or managing mode)
+  if (!location.isInstance) {
     return {
       ...task,
       steps: task.steps.map((s, idx) =>
@@ -548,7 +494,7 @@ function updateStepAtLocation(
     };
   }
 
-  // Recurring in executing mode: update instance
+  // instance.steps (recurring in executing mode)
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
   const instance = task.recurringInstances?.find(i => i.date === date);
 
@@ -556,23 +502,12 @@ function updateStepAtLocation(
     return task;
   }
 
-  let updatedInstance: RecurringInstance;
-
-  if (location.arrayType === 'routineSteps') {
-    updatedInstance = {
-      ...instance,
-      routineSteps: (instance.routineSteps || []).map((s, idx) =>
-        idx === location.index ? updateFn(s) : s
-      ),
-    };
-  } else {
-    updatedInstance = {
-      ...instance,
-      additionalSteps: (instance.additionalSteps || []).map((s, idx) =>
-        idx === location.index ? updateFn(s) : s
-      ),
-    };
-  }
+  const updatedInstance: RecurringInstance = {
+    ...instance,
+    steps: instance.steps.map((s, idx) =>
+      idx === location.index ? updateFn(s) : s
+    ),
+  };
 
   const updatedInstances = (task.recurringInstances || [])
     .filter(i => i.date !== date)
@@ -596,8 +531,8 @@ function deleteStepAtLocation(
 ): Task {
   const now = Date.now();
 
-  // One-off tasks or managing mode: delete from task.steps
-  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
+  // task.steps
+  if (!location.isInstance) {
     return {
       ...task,
       steps: task.steps.filter((_, idx) => idx !== location.index),
@@ -605,7 +540,7 @@ function deleteStepAtLocation(
     };
   }
 
-  // Recurring in executing mode: delete from instance
+  // instance.steps
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
   const instance = task.recurringInstances?.find(i => i.date === date);
 
@@ -613,19 +548,10 @@ function deleteStepAtLocation(
     return task;
   }
 
-  let updatedInstance: RecurringInstance;
-
-  if (location.arrayType === 'routineSteps') {
-    updatedInstance = {
-      ...instance,
-      routineSteps: (instance.routineSteps || []).filter((_, idx) => idx !== location.index),
-    };
-  } else {
-    updatedInstance = {
-      ...instance,
-      additionalSteps: (instance.additionalSteps || []).filter((_, idx) => idx !== location.index),
-    };
-  }
+  const updatedInstance: RecurringInstance = {
+    ...instance,
+    steps: instance.steps.filter((_, idx) => idx !== location.index),
+  };
 
   const updatedInstances = (task.recurringInstances || [])
     .filter(i => i.date !== date)
@@ -661,8 +587,8 @@ function moveStepAtLocation(
     return newArr;
   };
 
-  // One-off tasks or managing mode: move in task.steps
-  if (!task.isRecurring || !task.recurrence || mode === 'managing') {
+  // task.steps
+  if (!location.isInstance) {
     return {
       ...task,
       steps: moveInArray(task.steps, location.index),
@@ -670,7 +596,7 @@ function moveStepAtLocation(
     };
   }
 
-  // Recurring in executing mode: move in instance array
+  // instance.steps
   const date = activeDate || getActiveOccurrenceDate(task) || getTodayISO();
   const instance = task.recurringInstances?.find(i => i.date === date);
 
@@ -678,19 +604,10 @@ function moveStepAtLocation(
     return task;
   }
 
-  let updatedInstance: RecurringInstance;
-
-  if (location.arrayType === 'routineSteps') {
-    updatedInstance = {
-      ...instance,
-      routineSteps: moveInArray(instance.routineSteps || [], location.index),
-    };
-  } else {
-    updatedInstance = {
-      ...instance,
-      additionalSteps: moveInArray(instance.additionalSteps || [], location.index),
-    };
-  }
+  const updatedInstance: RecurringInstance = {
+    ...instance,
+    steps: moveInArray(instance.steps, location.index),
+  };
 
   const updatedInstances = (task.recurringInstances || [])
     .filter(i => i.date !== date)

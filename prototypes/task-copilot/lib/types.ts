@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 // ============================================
 // Task Structure Types
@@ -230,6 +230,7 @@ export interface RecurrenceRule {
 
   // Behavior
   rolloverIfMissed: boolean;           // Keep visible vs auto-skip
+  maxOverdueDays: number | null;       // null = unlimited rollover, N = auto-skip after N days
 
   // State
   pausedAt: number | null;             // Unix timestamp when paused
@@ -238,8 +239,7 @@ export interface RecurrenceRule {
 
 export interface RecurringInstance {
   date: string;                        // "2025-01-17" ISO format
-  routineSteps: Step[];                // Snapshot of template steps
-  additionalSteps: Step[];             // Instance-specific additions
+  steps: Step[];                       // Unified steps (origin field distinguishes source)
   completed: boolean;                  // Overall completion
   completedAt: number | null;          // Unix timestamp
   skipped: boolean;                    // Explicitly skipped

@@ -320,10 +320,10 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
           />
           <div>
             <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Keep visible until completed
+              Persist if missed
             </span>
             <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-              If missed, routine stays in gallery until you complete or skip it
+              Stays visible until completed or skipped
             </span>
           </div>
         </label>

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Project } from "@/lib/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import BottomSheet from "@/components/shared/BottomSheet";
 
 interface ProjectModalProps {
   isOpen: boolean;
@@ -33,8 +32,6 @@ export default function ProjectModal({
   const [color, setColor] = useState<string | null>(project?.color ?? null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [isHandleHovered, setIsHandleHovered] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   // Mobile detection
   useEffect(() => {
@@ -160,79 +157,47 @@ export default function ProjectModal({
   // Mobile: Bottom sheet
   if (isMobileView) {
     return (
-      <>
-        {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/50 z-[80]" onClick={onClose} />
-
-        {/* Bottom Sheet */}
-        <div
-          className="fixed inset-x-0 bottom-0 z-[80] bg-white dark:bg-zinc-800 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-200"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Animated drag handle - tap to close */}
+      <BottomSheet isOpen={true} onClose={onClose} height="auto" zIndex={80}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pb-3">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            {project ? "Edit Project" : "New Project"}
+          </h2>
           <button
             onClick={onClose}
-            onMouseEnter={() => setIsHandleHovered(true)}
-            onMouseLeave={() => setIsHandleHovered(false)}
-            className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
-            aria-label="Close"
+            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
           >
-            <motion.div className="relative w-10 h-1 flex">
-              <motion.div
-                className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-              />
-              <motion.div
-                className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-              />
-            </motion.div>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+        </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-3">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              {project ? "Edit Project" : "New Project"}
-            </h2>
+        {/* Content */}
+        <div className="px-4 pb-3">
+          {renderContent()}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-4 pb-4">
+          <div>{renderDeleteButton()}</div>
+          <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+              className="px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!name.trim()}
+              className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+            >
+              {project ? "Save" : "Create"}
             </button>
           </div>
-
-          {/* Content */}
-          <div className="px-4 pb-3">
-            {renderContent()}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between px-4 pb-4">
-            <div>{renderDeleteButton()}</div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onClose}
-                className="px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!name.trim()}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                {project ? "Save" : "Create"}
-              </button>
-            </div>
-          </div>
         </div>
-      </>
+      </BottomSheet>
     );
   }
 

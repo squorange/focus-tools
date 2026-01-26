@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 import { Task } from "@/lib/types";
 import { TaskInstance, InstanceStatus } from "@/lib/recurring-types";
 import {
@@ -24,7 +23,7 @@ import {
   Trophy,
   Hash,
 } from "lucide-react";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import BottomSheet from "@/components/shared/BottomSheet";
 
 interface HistoryModalProps {
   task: Task;
@@ -54,8 +53,6 @@ export default function HistoryModal({
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
-  const [isHandleHovered, setIsHandleHovered] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   // Day boundary hour - routines after midnight but before this hour count as previous day
   const dayStartHour = 5;
@@ -320,32 +317,13 @@ export default function HistoryModal({
           {/* Show completed steps for this day */}
           {selectedInstance.instance && (
             <>
-              {/* Routine steps completed */}
-              {selectedInstance.instance.routineSteps.filter(s => s.completed).length > 0 && (
+              {selectedInstance.instance.steps.filter(s => s.completed).length > 0 && (
                 <div className="mb-3">
                   <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
                     Completed Steps
                   </p>
                   <ul className="space-y-1">
-                    {selectedInstance.instance.routineSteps
-                      .filter(s => s.completed)
-                      .map(step => (
-                        <li key={step.id} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
-                          <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                          <span className="truncate">{step.text}</span>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-              {/* Additional steps completed */}
-              {selectedInstance.instance.additionalSteps?.filter(s => s.completed).length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Additional Steps Completed
-                  </p>
-                  <ul className="space-y-1">
-                    {selectedInstance.instance.additionalSteps
+                    {selectedInstance.instance.steps
                       .filter(s => s.completed)
                       .map(step => (
                         <li key={step.id} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
@@ -357,8 +335,7 @@ export default function HistoryModal({
                 </div>
               )}
               {/* No steps completed message */}
-              {selectedInstance.instance.routineSteps.filter(s => s.completed).length === 0 &&
-                (!selectedInstance.instance.additionalSteps || selectedInstance.instance.additionalSteps.filter(s => s.completed).length === 0) &&
+              {selectedInstance.instance.steps.filter(s => s.completed).length === 0 &&
                 selectedInstance.status !== "completed" && (
                 <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-3 italic">
                   No steps completed yet
@@ -458,44 +435,7 @@ export default function HistoryModal({
 
       {/* Mobile: Bottom sheet */}
       <div className="lg:hidden">
-        {/* Backdrop - z-[60] to overlay sidebar (z-50) */}
-        {isOpen && (
-          <div
-            className="fixed inset-0 z-[60] bg-black/20"
-            onClick={onClose}
-          />
-        )}
-
-        {/* Sheet - z-[70] above backdrop */}
-        <div
-          className={`
-            fixed inset-x-0 bottom-0 z-[70] h-[70vh] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col
-            transition-transform duration-300 ease-in-out
-            ${isOpen ? "translate-y-0" : "translate-y-full"}
-          `}
-        >
-          {/* Animated drag handle */}
-          <button
-            onClick={onClose}
-            onMouseEnter={() => setIsHandleHovered(true)}
-            onMouseLeave={() => setIsHandleHovered(false)}
-            className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
-            aria-label="Close"
-          >
-            <motion.div className="relative w-10 h-1 flex">
-              <motion.div
-                className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-              />
-              <motion.div
-                className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-              />
-            </motion.div>
-          </button>
-
+        <BottomSheet isOpen={isOpen} onClose={onClose} height="70vh" zIndex={70}>
           {/* Mobile header */}
           <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
@@ -535,7 +475,7 @@ export default function HistoryModal({
           <div className="flex-1 overflow-y-auto min-h-0 p-4">
             {renderContent()}
           </div>
-        </div>
+        </BottomSheet>
       </div>
     </>
   );

@@ -53,23 +53,16 @@ export default function DailySummaryBanner({
   todayItems,
   onOpenCompleted,
 }: DailySummaryBannerProps) {
-  // Count completions today (tasks + steps)
+  // Count completions today (tasks + steps + recurring instances)
   const completionCount = countCompletionsToday(tasks);
 
   // Get ALL routines applicable for today (including completed/skipped)
   // This fixes the bug where completing a routine decreased total instead of increasing done
   const allRoutinesToday = filterRoutinesForToday(tasks);
-  const today = new Date().toISOString().split("T")[0];
-
-  // Count completed routines today
-  const completedRoutines = allRoutinesToday.filter((task) => {
-    const todayInstance = task.recurringInstances?.find((i) => i.date === today);
-    return todayInstance?.completed;
-  }).length;
 
   // Calculate total items for today (queue items + ALL applicable routines)
   const totalItems = todayItems.length + allRoutinesToday.length;
-  const doneItems = completionCount + completedRoutines;
+  const doneItems = completionCount;
 
   // Time estimate for today's queue items
   const timeEstimate = getTotalEstimate(todayItems, tasks);

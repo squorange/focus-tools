@@ -7,8 +7,19 @@ Task Co-Pilot is a working prototype for an AI-powered task breakdown assistant,
 **Location:** `~/Projects/focus-tools/prototypes/task-copilot`
 **Stack:** Next.js 14, React 18, Tailwind CSS, Anthropic Claude API
 **Status:** Model E Complete — Multi-task workflow fully functional
+**Production URL:** https://task-copilot.vercel.app
 
 **Last Updated:** January 2026
+
+### Deployment
+
+**IMPORTANT:** Always deploy from the `prototypes/task-copilot` directory, NOT the repo root.
+
+```bash
+cd ~/Projects/focus-tools/prototypes/task-copilot && npx vercel --prod --yes
+```
+
+The repo root has a separate `.vercel` project config (`focus-tools-one`) which is NOT the correct deployment target. The user's iPhone PWA data (localStorage) is tied to `task-copilot.vercel.app`.
 
 ---
 

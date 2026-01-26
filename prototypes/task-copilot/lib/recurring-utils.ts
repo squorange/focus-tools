@@ -375,8 +375,7 @@ export function cloneSteps(steps: Step[]): Step[] {
 export function createInstance(task: Task, date: string): RecurringInstance {
   return {
     date,
-    routineSteps: cloneSteps(task.steps),
-    additionalSteps: [],
+    steps: cloneSteps(task.steps),
     completed: false,
     completedAt: null,
     skipped: false,
@@ -387,9 +386,9 @@ export function createInstance(task: Task, date: string): RecurringInstance {
 }
 
 /**
- * Get or create instance for a date
- * Also handles stale instances: if instance has no routineSteps but template has steps,
- * re-initialize routineSteps (happens when instance was created before steps were added)
+ * Get or create instance for a date (MUTATING - legacy, use ensureInstancePure instead)
+ * Also handles stale instances: if instance has no steps but template has steps,
+ * re-initialize steps (happens when instance was created before steps were added)
  */
 export function ensureInstance(task: Task, date: string): RecurringInstance {
   if (!task.recurringInstances) {
@@ -401,14 +400,42 @@ export function ensureInstance(task: Task, date: string): RecurringInstance {
     instance = createInstance(task, date);
     task.recurringInstances.push(instance);
   } else {
-    // Check for stale instance: no routineSteps but template has steps
+    // Check for stale instance: no steps but template has steps
     // Only refresh if instance is not completed/skipped (user hasn't interacted with it)
-    if (instance.routineSteps.length === 0 && task.steps.length > 0 && !instance.completed && !instance.skipped) {
-      instance.routineSteps = cloneSteps(task.steps);
+    if (instance.steps.length === 0 && task.steps.length > 0 && !instance.completed && !instance.skipped) {
+      instance.steps = cloneSteps(task.steps);
     }
   }
 
   return instance;
+}
+
+/**
+ * Get or create instance for a date (PURE - returns new task, never mutates)
+ */
+export function ensureInstancePure(task: Task, date: string): { task: Task; instance: RecurringInstance } {
+  const instances = [...(task.recurringInstances || [])];
+  let instance = instances.find(i => i.date === date);
+
+  if (!instance) {
+    instance = createInstance(task, date);
+    return {
+      task: { ...task, recurringInstances: [...instances, instance] },
+      instance,
+    };
+  }
+
+  // Check for stale instance: no steps but template has steps
+  if (instance.steps.length === 0 && task.steps.length > 0 && !instance.completed && !instance.skipped) {
+    instance = { ...instance, steps: cloneSteps(task.steps) };
+    const updatedInstances = instances.map(i => i.date === date ? instance! : i);
+    return {
+      task: { ...task, recurringInstances: updatedInstances },
+      instance,
+    };
+  }
+
+  return { task, instance };
 }
 
 /**
@@ -438,14 +465,7 @@ export function calculateOverdueDays(
  * Check if an instance is complete (all steps done)
  */
 export function isInstanceComplete(instance: RecurringInstance): boolean {
-  const routineComplete =
-    instance.routineSteps.length === 0 ||
-    instance.routineSteps.every((s) => s.completed);
-  const additionalComplete =
-    instance.additionalSteps.length === 0 ||
-    instance.additionalSteps.every((s) => s.completed);
-
-  return routineComplete && additionalComplete;
+  return instance.steps.length === 0 || instance.steps.every((s) => s.completed);
 }
 
 /**
@@ -462,19 +482,14 @@ export function markInstanceComplete(
     ...task,
     recurringInstances: task.recurringInstances.map(i => ({
       ...i,
-      routineSteps: i.routineSteps.map(s => ({ ...s })),
-      additionalSteps: i.additionalSteps.map(s => ({ ...s })),
+      steps: i.steps.map(s => ({ ...s })),
     })),
   };
 
   const instance = ensureInstance(newTask, date);
 
   // Mark all steps complete
-  instance.routineSteps.forEach((s) => {
-    s.completed = true;
-    s.completedAt = s.completedAt || Date.now();
-  });
-  instance.additionalSteps.forEach((s) => {
+  instance.steps.forEach((s) => {
     s.completed = true;
     s.completedAt = s.completedAt || Date.now();
   });
@@ -503,8 +518,7 @@ export function skipInstance(
     ...task,
     recurringInstances: task.recurringInstances.map(i => ({
       ...i,
-      routineSteps: i.routineSteps.map(s => ({ ...s })),
-      additionalSteps: i.additionalSteps.map(s => ({ ...s })),
+      steps: i.steps.map(s => ({ ...s })),
     })),
   };
 
@@ -542,8 +556,7 @@ export function markInstanceIncomplete(
     ...task,
     recurringInstances: task.recurringInstances.map(i => ({
       ...i,
-      routineSteps: i.routineSteps.map(s => ({ ...s })),
-      additionalSteps: i.additionalSteps.map(s => ({ ...s })),
+      steps: i.steps.map(s => ({ ...s })),
     })),
   };
 
@@ -553,11 +566,7 @@ export function markInstanceIncomplete(
   }
 
   // Reset completion status
-  instance.routineSteps.forEach((s) => {
-    s.completed = false;
-    s.completedAt = null;
-  });
-  instance.additionalSteps.forEach((s) => {
+  instance.steps.forEach((s) => {
     s.completed = false;
     s.completedAt = null;
   });
@@ -613,6 +622,61 @@ export function updateTaskMetadataAfterCompletion(
   }
 
   task.updatedAt = Date.now();
+}
+
+/**
+ * Pure function: After a step is completed/uncompleted in a recurring instance,
+ * check if the instance completion state changed and update task metadata accordingly.
+ * Returns a new task object (never mutates).
+ */
+export function updateRecurringInstanceMeta(task: Task, activeDate: string): Task {
+  const instance = task.recurringInstances?.find(i => i.date === activeDate);
+  if (!instance) return task;
+
+  const allComplete = instance.steps.length > 0 && instance.steps.every(s => s.completed);
+  const wasComplete = instance.completed;
+
+  // No state change needed
+  if (allComplete === wasComplete) return task;
+
+  const now = Date.now();
+  const updatedInstance: RecurringInstance = {
+    ...instance,
+    completed: allComplete,
+    completedAt: allComplete ? now : null,
+  };
+
+  const updatedInstances = (task.recurringInstances || [])
+    .filter(i => i.date !== activeDate)
+    .concat(updatedInstance);
+
+  let updatedTask: Task = { ...task, recurringInstances: updatedInstances, updatedAt: now };
+
+  if (allComplete && !wasComplete) {
+    // Just became complete
+    const streak = calculateStreak(updatedTask);
+    updatedTask = {
+      ...updatedTask,
+      recurringTotalCompletions: (task.recurringTotalCompletions || 0) + 1,
+      recurringLastCompleted: activeDate,
+      recurringStreak: streak,
+      recurringBestStreak: Math.max(streak, task.recurringBestStreak || 0),
+    };
+  } else if (!allComplete && wasComplete) {
+    // Just became incomplete
+    const streak = calculateStreak(updatedTask);
+    const completedInstances = updatedInstances
+      .filter(i => i.completed)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    updatedTask = {
+      ...updatedTask,
+      recurringTotalCompletions: Math.max(0, (task.recurringTotalCompletions || 0) - 1),
+      recurringStreak: streak,
+      recurringLastCompleted: completedInstances[0]?.date || null,
+    };
+  }
+
+  return updatedTask;
 }
 
 // ============================================

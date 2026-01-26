@@ -101,7 +101,7 @@ Use insertAfterStepId to specify WHERE to insert a new step (omit to append at e
               text: { type: "string" },
               estimatedMinutes: {
                 type: "number",
-                description: "Optional. Only if 75%+ confident.",
+                description: "Time estimate in minutes. Include when 75%+ confident; omit if unsure.",
               },
               parentStepId: {
                 type: "string",
@@ -169,7 +169,7 @@ Skip completed items unless user specifically asks to edit them.`,
               newText: { type: "string", description: "Improved text (or same as original for estimate-only edits)" },
               estimatedMinutes: {
                 type: "number",
-                description: "Time estimate in minutes. Use: 1, 2, 5, 10, 15, 20, 30, 45, 60, 90, 120",
+                description: "Time estimate in minutes. Include when confident; for 'best guess' requests, always include. Use: 1, 2, 5, 10, 15, 20, 30, 45, 60, 90, 120",
               },
             },
             required: ["targetId", "targetType", "originalText", "newText"],

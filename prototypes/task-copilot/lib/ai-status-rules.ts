@@ -63,6 +63,7 @@ export interface StatusContext {
   // Inbox metrics
   inboxCount: number;
   oldestInboxDays: number;
+  oldestInboxTitle: string;
 
   // Pool metrics
   poolCount: number;
@@ -323,7 +324,12 @@ const INBOX_RULES: StatusRule[] = [
     id: 'old-items',
     priority: 80,
     condition: ctx => ctx.oldestInboxDays >= 5,
-    getText: ctx => `Oldest: ${ctx.oldestInboxDays} days ago`
+    getText: ctx => {
+      const title = ctx.oldestInboxTitle.length > 18
+        ? ctx.oldestInboxTitle.slice(0, 18) + '…'
+        : ctx.oldestInboxTitle;
+      return `"${title}" — ${ctx.oldestInboxDays}d in inbox`;
+    }
   },
   {
     id: 'has-items',
@@ -571,12 +577,17 @@ export function buildStatusContext(
   // Inbox metrics
   const inboxTasks = state.tasks.filter(t => t.status === 'inbox' && !t.deletedAt);
   const inboxCount = inboxTasks.length;
-  const oldestInboxDays = inboxTasks.length > 0
-    ? Math.max(...inboxTasks.map(t => daysBetween(
-        new Date(t.createdAt).toISOString().split('T')[0],
-        today
-      )))
+  const oldestInboxTask = inboxTasks.length > 0
+    ? inboxTasks.reduce((oldest, t) => {
+        const days = daysBetween(new Date(t.createdAt).toISOString().split('T')[0], today);
+        const oldestDays = daysBetween(new Date(oldest.createdAt).toISOString().split('T')[0], today);
+        return days > oldestDays ? t : oldest;
+      })
+    : null;
+  const oldestInboxDays = oldestInboxTask
+    ? daysBetween(new Date(oldestInboxTask.createdAt).toISOString().split('T')[0], today)
     : 0;
+  const oldestInboxTitle = oldestInboxTask?.title ?? '';
 
   // Pool metrics
   const poolTasks = state.tasks.filter(t =>
@@ -700,6 +711,7 @@ export function buildStatusContext(
     substepsTotal,
     inboxCount,
     oldestInboxDays,
+    oldestInboxTitle,
     poolCount,
     resurfacedCount,
     // Routine metrics

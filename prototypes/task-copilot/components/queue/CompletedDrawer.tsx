@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { motion } from "framer-motion";
 import { Task } from "@/lib/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { getCompletions, formatMinutes, TaskCompletion } from "@/lib/completions";
+import BottomSheet from "@/components/shared/BottomSheet";
 
 interface CompletedDrawerProps {
   isOpen: boolean;
@@ -20,8 +19,6 @@ export default function CompletedDrawer({
   onNavigateToTask,
 }: CompletedDrawerProps) {
   const [daysToShow, setDaysToShow] = useState(7);
-  const [isHandleHovered, setIsHandleHovered] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
 
   const { groups: completionGroups, hasMore } = useMemo(
     () => getCompletions(tasks, daysToShow),
@@ -165,77 +162,43 @@ export default function CompletedDrawer({
         />
       )}
 
-      {/* Mobile: Bottom sheet - z-50 to be above AI floating bar */}
-      <div
-        className={`
-          lg:hidden fixed inset-x-0 bottom-0 z-50 h-[50vh] bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col
-          transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-y-0" : "translate-y-full"}
-        `}
-      >
-        {/* Animated drag handle - tap to close */}
-        <button
-          onClick={onClose}
-          onMouseEnter={() => setIsHandleHovered(true)}
-          onMouseLeave={() => setIsHandleHovered(false)}
-          className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0"
-          aria-label="Close"
-        >
-          <motion.div className="relative w-10 h-1 flex">
-            <motion.div
-              className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
-              animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-            />
-            <motion.div
-              className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
-              animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-            />
-          </motion.div>
-        </button>
-
-        {/* Mobile header row */}
-        <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-green-600 dark:text-green-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+      {/* Mobile: Bottom sheet */}
+      <div className="lg:hidden">
+        <BottomSheet isOpen={isOpen} onClose={onClose} height="50vh">
+          {/* Mobile header row */}
+          <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-green-600 dark:text-green-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                Completed
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-              Completed
-            </span>
+              Done
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-          >
-            Done
-          </button>
-        </div>
 
-        {/* Mobile content - with min-h-0 for proper scroll */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          {renderContent()}
-        </div>
+          {/* Mobile content */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {renderContent()}
+          </div>
+        </BottomSheet>
       </div>
-
-      {/* Mobile backdrop - z-40 to cover AI floating bar */}
-      {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/20"
-          onClick={onClose}
-        />
-      )}
     </>
   );
 }

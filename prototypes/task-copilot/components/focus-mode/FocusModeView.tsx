@@ -178,7 +178,7 @@ export default function FocusModeView({
   };
 
   return (
-    <div className="h-full flex flex-col -mx-4 -mt-6">
+    <div className="h-full flex flex-col">
       {/* Focus Mode Header - matches app header styling */}
       <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-[#0c0c0c] border-b border-zinc-200 dark:border-transparent px-4 lg:px-6">
         <div className="h-14 flex items-center justify-between">

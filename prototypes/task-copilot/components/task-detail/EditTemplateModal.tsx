@@ -29,27 +29,18 @@ export default function EditTemplateModal({
   const [stepStates, setStepStates] = useState<StepState[]>([]);
 
   // Initialize step states when modal opens
-  // Use instance steps (routineSteps + additionalSteps) to maintain correct IDs
+  // Use instance steps with origin field to determine template vs instance-only
   useEffect(() => {
     if (isOpen) {
       const states: StepState[] = [];
 
-      // Use instance's routineSteps (have instance-specific IDs that match what we'll look up later)
       if (currentInstance) {
-        currentInstance.routineSteps.forEach((step) => {
+        currentInstance.steps.forEach((step) => {
+          const isFromTemplate = step.origin === 'template' || !step.origin;
           states.push({
             step,
-            isTemplate: true,
-            originalIsTemplate: true,
-          });
-        });
-
-        // Add additional steps from current instance
-        currentInstance.additionalSteps.forEach((step) => {
-          states.push({
-            step,
-            isTemplate: false,
-            originalIsTemplate: false,
+            isTemplate: isFromTemplate,
+            originalIsTemplate: isFromTemplate,
           });
         });
       } else {
@@ -80,7 +71,7 @@ export default function EditTemplateModal({
 
   // Count changes
   const templateSteps = stepStates.filter((s) => s.isTemplate);
-  const additionalSteps = stepStates.filter((s) => !s.isTemplate);
+  const instanceOnlySteps = stepStates.filter((s) => !s.isTemplate);
   const promoted = stepStates.filter((s) => s.isTemplate && !s.originalIsTemplate);
   const demoted = stepStates.filter((s) => !s.isTemplate && s.originalIsTemplate);
   const hasChanges = promoted.length > 0 || demoted.length > 0;
@@ -201,7 +192,7 @@ export default function EditTemplateModal({
           {/* Summary */}
           <div className="flex items-center justify-between mb-3 text-sm text-zinc-500 dark:text-zinc-400">
             <span>
-              {templateSteps.length} template · {additionalSteps.length} instance-only
+              {templateSteps.length} template · {instanceOnlySteps.length} instance-only
             </span>
             {hasChanges && (
               <span className="text-violet-600 dark:text-violet-400 font-medium">

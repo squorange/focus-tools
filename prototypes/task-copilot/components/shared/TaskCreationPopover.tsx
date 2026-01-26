@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion } from "framer-motion";
 import { Project } from "@/lib/types";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { ChevronDown, FolderOpen, Plus } from "lucide-react";
+import BottomSheet from "@/components/shared/BottomSheet";
 
 interface TaskCreationPopoverProps {
   isOpen: boolean;
@@ -42,11 +41,9 @@ export default function TaskCreationPopover({
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [isHandleHovered, setIsHandleHovered] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const projectButtonRef = useRef<HTMLButtonElement>(null);
-  const prefersReducedMotion = useReducedMotion();
 
   // Reset and focus on open
   useEffect(() => {
@@ -268,106 +265,75 @@ export default function TaskCreationPopover({
   if (isMobileView) {
     return (
       <>
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/30 z-50"
-          onClick={onClose}
-        />
-
-        {/* Bottom Sheet */}
-        <div
-          ref={popoverRef}
-          className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-zinc-800 rounded-t-2xl shadow-xl animate-in slide-in-from-bottom duration-200"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        >
-          {/* Animated drag handle - tap to close */}
-          <button
-            onClick={onClose}
-            onMouseEnter={() => setIsHandleHovered(true)}
-            onMouseLeave={() => setIsHandleHovered(false)}
-            className="w-full pt-4 pb-3 flex justify-center cursor-pointer bg-transparent border-0"
-            aria-label="Close"
-          >
-            <motion.div className="relative w-10 h-1 flex">
-              <motion.div
-                className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
+        <BottomSheet isOpen={true} onClose={onClose} height="auto">
+          <div ref={popoverRef}>
+            {/* Title input */}
+            <div className="px-4 pb-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="What needs to be done?"
+                className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                autoComplete="off"
+                autoFocus
+                enterKeyHint="done"
               />
-              <motion.div
-                className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
-                animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-              />
-            </motion.div>
-          </button>
+            </div>
 
-          {/* Title input */}
-          <div className="px-4 pb-3">
-            <input
-              ref={inputRef}
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="What needs to be done?"
-              className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              autoComplete="off"
-              autoFocus
-              enterKeyHint="done"
-            />
-          </div>
+            {/* Project selector - subtle inline */}
+            <div className="px-4 pt-4 pb-3">
+              <button
+                ref={projectButtonRef}
+                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+              >
+                {selectedProject ? (
+                  <>
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: selectedProject.color || '#9ca3af' }}
+                    />
+                    <span>{selectedProject.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <FolderOpen size={14} className="text-zinc-400" />
+                    <span>Add to project</span>
+                  </>
+                )}
+                <ChevronDown
+                  size={14}
+                  className={`text-zinc-400 transition-transform ${
+                    showProjectDropdown ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </div>
 
-          {/* Project selector - subtle inline */}
-          <div className="px-4 pt-4 pb-3">
-            <button
-              ref={projectButtonRef}
-              onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-              className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
-            >
-              {selectedProject ? (
-                <>
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: selectedProject.color || '#9ca3af' }}
-                  />
-                  <span>{selectedProject.name}</span>
-                </>
-              ) : (
-                <>
-                  <FolderOpen size={14} className="text-zinc-400" />
-                  <span>Add to project</span>
-                </>
-              )}
-              <ChevronDown
-                size={14}
-                className={`text-zinc-400 transition-transform ${
-                  showProjectDropdown ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            {/* Action buttons */}
+            <div className="flex items-center justify-between px-4 pb-4">
+              {/* Secondary: Show details */}
+              <button
+                onClick={handleAddAndOpen}
+                disabled={!title.trim()}
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Show details
+              </button>
+              {/* Primary: Add */}
+              <button
+                onClick={handleQuickAdd}
+                disabled={!title.trim()}
+                className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                Add
+              </button>
+            </div>
           </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-between px-4 pb-4">
-            {/* Secondary: Show details */}
-            <button
-              onClick={handleAddAndOpen}
-              disabled={!title.trim()}
-              className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Show details
-            </button>
-            {/* Primary: Add */}
-            <button
-              onClick={handleQuickAdd}
-              disabled={!title.trim()}
-              className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            >
-              Add
-            </button>
-          </div>
-        </div>
+        </BottomSheet>
 
         {/* Portal dropdown for project selection */}
         {renderPortalDropdown()}

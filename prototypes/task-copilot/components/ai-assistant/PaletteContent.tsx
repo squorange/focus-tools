@@ -278,19 +278,21 @@ export function PaletteContent({
         const total = awareness.items.length;
 
         return (
-          <div className="flex items-center justify-between px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex-shrink-0 text-sm">👀</span>
-              <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
+          <div className="px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+            {/* Title row: emoji + full title (wraps) + count */}
+            <div className="flex items-start gap-2">
+              <span className="flex-shrink-0 text-sm mt-0.5">👀</span>
+              <span className="text-sm text-zinc-700 dark:text-zinc-300">
                 &ldquo;{current.title}&rdquo; — {current.days}d untouched
               </span>
               {total > 1 && (
-                <span className="flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                   {awareness.currentIndex + 1}/{total}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Actions row */}
+            <div className="flex items-center gap-1 mt-1.5 ml-6">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); awareness.onReview(current.taskId); }}

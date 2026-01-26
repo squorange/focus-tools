@@ -93,6 +93,7 @@ interface TaskDetailProps {
   onSkipRoutine?: (taskId: string) => void;
   onMarkRoutineIncomplete?: (taskId: string) => void;
   onUnskipRoutine?: (taskId: string) => void;
+  onStartRecurringFocus?: (taskId: string) => void;
   // Routine step scope
   onAcceptWithScope?: (scope: 'instance' | 'template') => void;
   // Mode toggling
@@ -160,6 +161,7 @@ export default function TaskDetail({
   onSkipRoutine,
   onMarkRoutineIncomplete,
   onUnskipRoutine,
+  onStartRecurringFocus,
   onAcceptWithScope,
   onToggleMode,
   onResetFromTemplate,
@@ -445,8 +447,17 @@ export default function TaskDetail({
                         Unskip
                       </button>
                     ) : (
-                      /* Show Complete/Skip if not completed and not skipped */
+                      /* Show Focus/Complete/Skip if not completed and not skipped */
                       <>
+                        {/* Focus button first - primary action for engagement */}
+                        {!isPaused && onStartRecurringFocus && (
+                          <button
+                            onClick={() => onStartRecurringFocus(task.id)}
+                            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                          >
+                            Focus
+                          </button>
+                        )}
                         {!isPaused && onCompleteRoutine && (
                           <button
                             onClick={() => onCompleteRoutine(task.id)}
@@ -472,7 +483,7 @@ export default function TaskDetail({
                   className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
                 >
                   <History className="w-4 h-4" />
-                  History
+                  <span className="hidden lg:inline">History</span>
                 </button>
               </>
             ) : (
@@ -499,7 +510,7 @@ export default function TaskDetail({
                     onClick={() => onStartFocus(queueItem!.id)}
                     className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
                   >
-                    Start Focus
+                    Focus
                   </button>
                 ) : (
                   <>
@@ -580,8 +591,17 @@ export default function TaskDetail({
                       Unskip
                     </button>
                   ) : (
-                    /* Show Complete/Skip if not completed and not skipped */
+                    /* Show Focus/Complete/Skip if not completed and not skipped */
                     <>
+                      {/* Focus button first - primary action for engagement */}
+                      {!isPaused && onStartRecurringFocus && (
+                        <button
+                          onClick={() => onStartRecurringFocus(task.id)}
+                          className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                        >
+                          Focus
+                        </button>
+                      )}
                       {!isPaused && onCompleteRoutine && (
                         <button
                           onClick={() => onCompleteRoutine(task.id)}
@@ -602,12 +622,13 @@ export default function TaskDetail({
                   )}
                 </>
               )}
+              {/* History button - icon only on mobile */}
               <button
                 onClick={() => setShowHistoryModal(true)}
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
+                className="p-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                title="History"
               >
                 <History className="w-4 h-4" />
-                History
               </button>
             </>
           ) : (
@@ -634,7 +655,7 @@ export default function TaskDetail({
                   onClick={() => onStartFocus(queueItem!.id)}
                   className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
                 >
-                  Start Focus
+                  Focus
                 </button>
               ) : (
                 <>

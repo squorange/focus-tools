@@ -13,9 +13,7 @@ import {
   Upload,
   Flag,
   Clock,
-  CalendarClock,
   CheckCircle,
-  Archive,
   ChevronRight,
   XCircle,
   X,
@@ -354,7 +352,7 @@ export default function Sidebar({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         className={`
-          fixed top-0 left-0 h-full z-50 bg-white dark:bg-zinc-900
+          fixed top-0 left-0 bottom-0 z-50 bg-white dark:bg-zinc-900
           border-r border-zinc-200 dark:border-zinc-800
           transition-all duration-300 ease-in-out
           lg:translate-x-0
@@ -372,7 +370,7 @@ export default function Sidebar({
         }}
       >
         {/* Safe area padding for iOS */}
-        <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
+        <div className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] h-full flex flex-col">
           {/* Header with drawer toggle (desktop only) - matches main header styling */}
           <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 border-b border-zinc-200 dark:border-transparent bg-white dark:bg-[#0c0c0c]">
             {/* Drawer toggle - always in upper-left, easy tap target */}
@@ -504,27 +502,15 @@ export default function Sidebar({
                         />
                         <JumpToRow
                           icon={<Clock size={18} />}
-                          label="Waiting"
-                          count={filterCounts.waiting}
-                          onClick={() => onJumpToFilter("waiting")}
-                        />
-                        <JumpToRow
-                          icon={<CalendarClock size={18} />}
-                          label="Deferred"
-                          count={filterCounts.deferred}
-                          onClick={() => onJumpToFilter("deferred")}
+                          label="On Hold"
+                          count={filterCounts.waiting + filterCounts.deferred}
+                          onClick={() => onJumpToFilter("on_hold")}
                         />
                         <JumpToRow
                           icon={<CheckCircle size={18} />}
-                          label="Completed"
-                          count={filterCounts.completed}
-                          onClick={() => onJumpToFilter("completed")}
-                        />
-                        <JumpToRow
-                          icon={<Archive size={18} />}
-                          label="Archived"
-                          count={filterCounts.archived}
-                          onClick={() => onJumpToFilter("archived")}
+                          label="Done"
+                          count={filterCounts.completed + filterCounts.archived}
+                          onClick={() => onJumpToFilter("done")}
                         />
                       </>
                     )}

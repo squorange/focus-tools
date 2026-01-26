@@ -31,7 +31,13 @@ export default function ReminderPicker({
     if (reminder?.type === "absolute" && reminder.absoluteTime) {
       return new Date(reminder.absoluteTime).toISOString().split("T")[0];
     }
-    // Default to tomorrow
+    // Default: targetDate > deadlineDate > tomorrow
+    if (targetDate && new Date(targetDate) > new Date()) {
+      return targetDate;
+    }
+    if (deadlineDate && new Date(deadlineDate) > new Date()) {
+      return deadlineDate;
+    }
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];

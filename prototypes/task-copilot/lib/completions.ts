@@ -169,6 +169,7 @@ export function getCompletions(tasks: Task[], daysToShow = 7): CompletionsResult
 
 /**
  * Count completions for today (unique tasks with any completion activity).
+ * For recurring tasks, counts each completed instance for today.
  */
 export function countCompletionsToday(tasks: Task[]): number {
   const today = getTodayISO();
@@ -177,6 +178,20 @@ export function countCompletionsToday(tasks: Task[]): number {
   for (const task of tasks) {
     if (task.deletedAt) continue;
 
+    // Handle recurring tasks - count completed instances for today
+    if (task.isRecurring && task.recurringInstances) {
+      for (const instance of task.recurringInstances) {
+        if (instance.completed && instance.completedAt) {
+          const completedDate = timestampToLocalDate(instance.completedAt);
+          if (completedDate === today) {
+            count++;
+          }
+        }
+      }
+      continue; // Skip regular task handling for recurring tasks
+    }
+
+    // Regular tasks
     let hasCompletionToday = false;
 
     // Check task completion (using local timezone)

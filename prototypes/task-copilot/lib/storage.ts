@@ -11,7 +11,9 @@ import {
   Nudge,
   SnoozedNudge,
   StagingState,
+  RecurringInstance,
 } from './types';
+import { pruneOldInstances } from './recurring-utils';
 
 // ============================================
 // Storage Keys
@@ -109,9 +111,18 @@ export function saveState(state: AppState): void {
   if (typeof window === 'undefined') return;
 
   try {
+    // Prune recurring instances to prevent unbounded localStorage growth
+    const prunedTasks = state.tasks.map(t => {
+      if (t.isRecurring && (t.recurringInstances?.length || 0) > 90) {
+        return { ...t, recurringInstances: pruneOldInstances(t.recurringInstances, 90) };
+      }
+      return t;
+    });
+
     // Save main state (without events and sessions to prevent size issues)
     const stateToSave = {
       ...state,
+      tasks: prunedTasks,
       events: [], // Events stored separately
       focusSessions: [], // Sessions stored separately
       nudges: [], // Nudges stored separately
@@ -224,6 +235,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
   // Version 8 → 9: Add recurring task fields
   if (version < 9) {
     state = migrateToV9(state);
+  }
+
+  // Version 9 → 10: Flatten recurring instance steps (routineSteps + additionalSteps → steps)
+  if (version < 10) {
+    state = migrateToV10(state);
   }
 
   // Ensure all required fields exist
@@ -640,6 +656,44 @@ function migrateToV9(state: Partial<AppState> & Record<string, unknown>): Partia
   return {
     ...state,
     schemaVersion: 9,
+    tasks,
+  };
+}
+
+/**
+ * Migrate from v9 to v10 (Flatten recurring instance steps: routineSteps + additionalSteps → steps)
+ */
+function migrateToV10(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  const tasks = ((state.tasks as Task[]) || []).map((task) => {
+    if (!task.recurringInstances || task.recurringInstances.length === 0) {
+      return task;
+    }
+
+    const migratedInstances = (task.recurringInstances as unknown as Record<string, unknown>[]).map((inst) => {
+      // If already migrated (has steps array), skip
+      if (Array.isArray(inst.steps)) {
+        return inst as unknown as RecurringInstance;
+      }
+
+      const routineSteps = (inst.routineSteps as Step[]) || [];
+      const additionalSteps = (inst.additionalSteps as Step[]) || [];
+
+      const unifiedSteps: Step[] = [
+        ...routineSteps.map(s => ({ ...s, origin: s.origin || ('template' as const) })),
+        ...additionalSteps.map(s => ({ ...s, origin: s.origin || ('manual' as const) })),
+      ];
+
+      // Remove old fields, add new steps field
+      const { routineSteps: _r, additionalSteps: _a, ...rest } = inst;
+      return { ...rest, steps: unifiedSteps } as unknown as RecurringInstance;
+    });
+
+    return { ...task, recurringInstances: migratedInstances };
+  });
+
+  return {
+    ...state,
+    schemaVersion: 10,
     tasks,
   };
 }

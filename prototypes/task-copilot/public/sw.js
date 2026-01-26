@@ -1,5 +1,7 @@
 // Focus Tools Service Worker
-const CACHE_NAME = 'focus-tools-v2';
+// IMPORTANT: Increment this version when deploying significant changes
+// to force old cached content to be invalidated
+const CACHE_NAME = 'focus-tools-v6';
 const SCHEDULED_REMINDERS_KEY = 'task-copilot-scheduled-reminders';
 
 // Assets to cache on install
@@ -47,13 +49,27 @@ self.addEventListener('fetch', (event) => {
   // Skip API requests (always go to network)
   if (event.request.url.includes('/api/')) return;
 
+  // For navigation requests (HTML pages), always try network first and don't cache
+  // This ensures users always get the latest HTML which references correct JS bundles
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // Only fall back to cached root page if truly offline
+          return caches.match('/');
+        })
+    );
+    return;
+  }
+
+  // For other assets (JS, CSS, images), use network-first with caching
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         // Clone the response before caching
         const responseClone = response.clone();
 
-        // Cache successful responses
+        // Cache successful responses for static assets only
         if (response.status === 200) {
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
@@ -67,11 +83,6 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
-          }
-
-          // If no cache and offline, return offline page for navigation
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
           }
 
           return new Response('Offline', { status: 503 });

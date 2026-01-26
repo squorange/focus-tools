@@ -54,9 +54,11 @@ import {
   isInstanceComplete,
   getActiveOccurrenceDate,
   updateTaskMetadataAfterCompletion,
+  updateRecurringInstanceMeta,
   calculateStreak,
   describePattern,
 } from "@/lib/recurring-utils";
+import * as stepUtils from "@/lib/step-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
@@ -140,7 +142,7 @@ export default function Home() {
   // Pending filter (for navigation from search shortcuts to TasksView)
   const [pendingFilter, setPendingFilter] = useState<string | null>(null);
   // Track active tab in TasksView for back navigation
-  const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'waiting' | 'deferred' | 'completed' | 'archived'>('staging');
+  const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'on_hold' | 'done'>('staging');
 
   // Ref for main content scroll-to-top on tab re-tap
   const mainRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,10 @@ export default function Home() {
   // Stale queue item nudge state (session-level)
   const [dismissedStaleIds, setDismissedStaleIds] = useState<Set<string>>(new Set());
   const [staleIndex, setStaleIndex] = useState(0);
+
+  // Old inbox item nudge state (session-level, Tasks view)
+  const [dismissedOldInboxIds, setDismissedOldInboxIds] = useState<Set<string>>(new Set());
+  const [oldInboxIndex, setOldInboxIndex] = useState(0);
 
   // Callback for auto-selecting new project after creation (from TaskCreationPopover)
   const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
@@ -410,10 +416,9 @@ export default function Home() {
               const activeDate = getActiveOccurrenceDate(currentTask) || getRecurringTodayISO();
               const instance = currentTask.recurringInstances?.find(i => i.date === activeDate);
               if (instance) {
-                const allSteps = [...(instance.routineSteps || []), ...(instance.additionalSteps || [])];
                 return {
-                  completedSteps: allSteps.filter(s => s.completed).length,
-                  totalSteps: allSteps.length,
+                  completedSteps: instance.steps.filter(s => s.completed).length,
+                  totalSteps: instance.steps.length,
                 };
               }
             }
@@ -430,7 +435,7 @@ export default function Home() {
               const activeDate = getActiveOccurrenceDate(currentTask) || getRecurringTodayISO();
               const instance = currentTask.recurringInstances?.find(i => i.date === activeDate);
               if (instance) {
-                stepsToSend = [...(instance.routineSteps || []), ...(instance.additionalSteps || [])];
+                stepsToSend = instance.steps;
               }
             }
             return stepsToSend.map((step, index) => ({
@@ -485,9 +490,7 @@ export default function Home() {
         patternDescription: describePattern(pattern),
         scheduledTime: pattern.time || null,
         activeInstanceDate: activeDate,
-        instanceStepCount: instance
-          ? (instance.routineSteps?.length || 0) + (instance.additionalSteps?.length || 0)
-          : 0,
+        instanceStepCount: instance?.steps?.length || 0,
         templateStepCount: currentTask.steps.length,
       };
     }
@@ -505,7 +508,7 @@ export default function Home() {
               const activeDate = getActiveOccurrenceDate(currentTask) || getRecurringTodayISO();
               const instance = currentTask.recurringInstances?.find(i => i.date === activeDate);
               if (instance) {
-                return [...(instance.routineSteps || []), ...(instance.additionalSteps || [])];
+                return instance.steps;
               }
             }
             return currentTask.steps || [];
@@ -1313,7 +1316,9 @@ export default function Home() {
     // Only track swipes that start near screen edges
     const touch = e.touches[0];
     const isLeftEdge = touch.clientX < EDGE_THRESHOLD;
-    const isRightEdge = touch.clientX > window.innerWidth - EDGE_THRESHOLD;
+    // Only register right-edge swipes on Focus view (Focus→Tasks)
+    // Avoids conflicting with iOS Safari's forward navigation gesture on other views
+    const isRightEdge = state.currentView === 'focus' && touch.clientX > window.innerWidth - EDGE_THRESHOLD;
 
     if (isLeftEdge || isRightEdge) {
       swipeStartRef.current = {
@@ -1322,7 +1327,7 @@ export default function Home() {
         time: Date.now(),
       };
     }
-  }, []);
+  }, [state.currentView]);
 
   const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
     if (!swipeStartRef.current) return;
@@ -1374,6 +1379,18 @@ export default function Home() {
       .filter((x): x is { item: typeof x.item; task: NonNullable<typeof x.task>; days: number } => x.task != null);
   }, [state.focusQueue.items, state.focusQueue.todayLineIndex, state.tasks, dismissedStaleIds]);
 
+  const activeOldInboxItems = useMemo(() => {
+    const inboxTasks = state.tasks.filter(t => t.status === 'inbox' && !t.deletedAt);
+    const OLD_DAYS_THRESHOLD = 5;
+    return inboxTasks
+      .map(t => {
+        const days = Math.floor((Date.now() - t.createdAt) / (1000 * 60 * 60 * 24));
+        return { task: t, days };
+      })
+      .filter(x => x.days >= OLD_DAYS_THRESHOLD && !dismissedOldInboxIds.has(x.task.id))
+      .sort((a, b) => b.days - a.days); // oldest first
+  }, [state.tasks, dismissedOldInboxIds]);
+
   // Clamp staleIndex when list shrinks
   useEffect(() => {
     if (staleIndex >= activeStaleItems.length && activeStaleItems.length > 0) {
@@ -1383,32 +1400,62 @@ export default function Home() {
     }
   }, [activeStaleItems.length, staleIndex]);
 
-  // Set/clear nudge based on stale items
+  // Clamp oldInboxIndex when list shrinks
   useEffect(() => {
-    if (state.currentView !== 'focus' || activeStaleItems.length === 0) {
-      if (aiAssistant.state.collapsedContent.type === 'nudge') {
-        aiAssistant.clearNudge();
-      }
+    if (oldInboxIndex >= activeOldInboxItems.length && activeOldInboxItems.length > 0) {
+      setOldInboxIndex(activeOldInboxItems.length - 1);
+    } else if (activeOldInboxItems.length === 0) {
+      setOldInboxIndex(0);
+    }
+  }, [activeOldInboxItems.length, oldInboxIndex]);
+
+  // Set/clear nudge based on view-specific stale/old items
+  useEffect(() => {
+    // Focus view: stale queue items
+    if (state.currentView === 'focus' && activeStaleItems.length > 0) {
+      const currentIdx = Math.min(staleIndex, activeStaleItems.length - 1);
+      const { task, days } = activeStaleItems[currentIdx];
+      const title = task.title.slice(0, 20) + (task.title.length > 20 ? '...' : '');
+      const countSuffix = activeStaleItems.length > 1
+        ? ` (${currentIdx + 1}/${activeStaleItems.length})`
+        : '';
+      aiAssistant.setNudge({
+        type: 'nudge',
+        text: `"${title}" untouched ${days}d${countSuffix}`,
+        icon: '👀',
+        action: {
+          label: 'Review',
+          onClick: () => handleOpenTask(task.id),
+        },
+      });
       return;
     }
 
-    const currentIdx = Math.min(staleIndex, activeStaleItems.length - 1);
-    const { task, days } = activeStaleItems[currentIdx];
-    const title = task.title.slice(0, 20) + (task.title.length > 20 ? '...' : '');
-    const countSuffix = activeStaleItems.length > 1
-      ? ` (${currentIdx + 1}/${activeStaleItems.length})`
-      : '';
+    // Tasks view: old inbox items
+    if (state.currentView === 'tasks' && activeOldInboxItems.length > 0) {
+      const currentIdx = Math.min(oldInboxIndex, activeOldInboxItems.length - 1);
+      const { task, days } = activeOldInboxItems[currentIdx];
+      const title = task.title.slice(0, 20) + (task.title.length > 20 ? '...' : '');
+      const countSuffix = activeOldInboxItems.length > 1
+        ? ` (${currentIdx + 1}/${activeOldInboxItems.length})`
+        : '';
+      aiAssistant.setNudge({
+        type: 'nudge',
+        text: `"${title}" ${days}d in inbox${countSuffix}`,
+        icon: '📥',
+        action: {
+          label: 'Review',
+          onClick: () => handleOpenTask(task.id),
+        },
+      });
+      return;
+    }
 
-    aiAssistant.setNudge({
-      type: 'nudge',
-      text: `"${title}" untouched ${days}d${countSuffix}`,
-      icon: '👀',
-      action: {
-        label: 'Review',
-        onClick: () => handleOpenTask(task.id),
-      },
-    });
-  }, [state.currentView, activeStaleItems, staleIndex]);
+    // No nudge applicable — clear if one is showing
+    if (aiAssistant.state.collapsedContent.type === 'nudge') {
+      aiAssistant.clearNudge();
+    }
+  }, [state.currentView, activeStaleItems, staleIndex, activeOldInboxItems, oldInboxIndex]);
 
   const handleDismissStaleItem = useCallback((itemId: string) => {
     setDismissedStaleIds((prev) => { const next = new Set(prev); next.add(itemId); return next; });
@@ -1417,6 +1464,14 @@ export default function Home() {
   const handleNextStaleItem = useCallback(() => {
     setStaleIndex((prev) => (prev + 1) % Math.max(activeStaleItems.length, 1));
   }, [activeStaleItems.length]);
+
+  const handleDismissOldInboxItem = useCallback((taskId: string) => {
+    setDismissedOldInboxIds((prev) => { const next = new Set(prev); next.add(taskId); return next; });
+  }, []);
+
+  const handleNextOldInboxItem = useCallback(() => {
+    setOldInboxIndex((prev) => (prev + 1) % Math.max(activeOldInboxItems.length, 1));
+  }, [activeOldInboxItems.length]);
 
   // ============================================
   // Navigation
@@ -1464,8 +1519,7 @@ export default function Home() {
       const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
       const instance = task.recurringInstances?.find(i => i.date === activeDate);
       if (instance) {
-        step = instance.routineSteps?.find(s => s.id === stepId)
-          || instance.additionalSteps?.find(s => s.id === stepId);
+        step = instance.steps?.find(s => s.id === stepId);
       }
     }
     // Fall back to template steps for non-recurring tasks
@@ -2489,7 +2543,7 @@ export default function Home() {
 
   // Reset current routine instance from template (re-clone steps)
   const handleResetFromTemplate = useCallback((taskId: string) => {
-    let previousInstanceData: { routineSteps: any[]; additionalSteps: any[]; completed: boolean; completedAt: number | null } | null = null;
+    let previousInstanceData: { steps: any[]; completed: boolean; completedAt: number | null } | null = null;
 
     setState((prev) => {
       const task = prev.tasks.find((t) => t.id === taskId);
@@ -2501,8 +2555,7 @@ export default function Home() {
 
       // Save old instance data for undo
       previousInstanceData = {
-        routineSteps: [...instance.routineSteps],
-        additionalSteps: [...instance.additionalSteps],
+        steps: [...instance.steps],
         completed: instance.completed,
         completedAt: instance.completedAt,
       };
@@ -2513,8 +2566,7 @@ export default function Home() {
       // Update instance
       const updatedInstance = {
         ...instance,
-        routineSteps: freshSteps,
-        additionalSteps: [],
+        steps: freshSteps,
         completed: false,
         completedAt: null,
       };
@@ -2636,12 +2688,24 @@ export default function Home() {
         newTodayLineIndex = prev.focusQueue.todayLineIndex + 1;
       }
 
+      // Sync selectionType when item crosses the Today/Upcoming line
+      const syncedReordered = reordered.map(i => {
+        if (i.id !== queueItemId) return i;
+        if (!wasAboveLine && nowAboveLine && i.selectionType !== 'all_today') {
+          return { ...i, selectionType: 'all_today' as const, selectedStepIds: [] };
+        }
+        if (wasAboveLine && !nowAboveLine && i.selectionType !== 'all_upcoming') {
+          return { ...i, selectionType: 'all_upcoming' as const, selectedStepIds: [] };
+        }
+        return i;
+      });
+
       return {
         ...prev,
         focusQueue: {
           ...prev.focusQueue,
-          items: [...reordered, ...completedItems],
-          todayLineIndex: Math.min(newTodayLineIndex, reordered.length),
+          items: [...syncedReordered, ...completedItems],
+          todayLineIndex: Math.min(newTodayLineIndex, syncedReordered.length),
         },
       };
     });
@@ -2675,12 +2739,24 @@ export default function Home() {
         newTodayLineIndex = prev.focusQueue.todayLineIndex + 1;
       }
 
+      // Sync selectionType when item crosses the Today/Upcoming line
+      const syncedReordered = reordered.map(i => {
+        if (i.id !== queueItemId) return i;
+        if (!wasAboveLine && nowAboveLine && i.selectionType !== 'all_today') {
+          return { ...i, selectionType: 'all_today' as const, selectedStepIds: [] };
+        }
+        if (wasAboveLine && !nowAboveLine && i.selectionType !== 'all_upcoming') {
+          return { ...i, selectionType: 'all_upcoming' as const, selectedStepIds: [] };
+        }
+        return i;
+      });
+
       return {
         ...prev,
         focusQueue: {
           ...prev.focusQueue,
-          items: [...reordered, ...completedItems],
-          todayLineIndex: Math.min(newTodayLineIndex, reordered.length),
+          items: [...syncedReordered, ...completedItems],
+          todayLineIndex: Math.min(newTodayLineIndex, syncedReordered.length),
         },
       };
     });
@@ -2716,8 +2792,8 @@ export default function Home() {
       const reorderedActive = newItems.map((item, idx) => {
         const isInTodaySection = idx < newTodayLineIndex;
 
-        // If item moved to Today section but has all_upcoming, promote to all_today
-        if (isInTodaySection && item.selectionType === 'all_upcoming') {
+        // If item moved to Today section but has all_upcoming or specific_steps, promote to all_today
+        if (isInTodaySection && (item.selectionType === 'all_upcoming' || item.selectionType === 'specific_steps')) {
           return {
             ...item,
             order: idx,
@@ -2784,6 +2860,41 @@ export default function Home() {
           ...prev.focusMode,
           active: true,
           queueItemId,
+          taskId: task.id,
+          currentStepId: firstIncomplete?.id || null,
+          startTime: Date.now(),
+          paused: false,
+          pausedTime: 0,
+          pauseStartTime: null,
+        },
+      };
+    });
+  }, []);
+
+  // Start focus session for recurring task (no queue item needed)
+  const handleStartRecurringFocus = useCallback((taskId: string) => {
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task || !task.isRecurring) return prev;
+
+      // Get current instance steps
+      const activeDate = getActiveOccurrenceDate(task) || getTodayISO();
+      const instance = ensureInstance(task, activeDate);
+
+      // Find first incomplete step in the instance
+      const firstIncomplete = instance.steps.find((s) => !s.completed);
+
+      // Save current view for back navigation
+      setPreviousView(prev.currentView);
+
+      return {
+        ...prev,
+        currentView: 'focusMode' as const,
+        activeTaskId: task.id,
+        focusMode: {
+          ...prev.focusMode,
+          active: true,
+          queueItemId: null, // No queue item for recurring tasks
           taskId: task.id,
           currentStepId: firstIncomplete?.id || null,
           startTime: Date.now(),
@@ -2967,106 +3078,19 @@ export default function Home() {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task) return prev;
 
-      // RECURRING TASKS: Modify instance steps, not template
+      // RECURRING TASKS: Use step-utils + metadata helper
       if (task.isRecurring && task.recurrence) {
-        // Use active occurrence date (handles overdue rollover)
         const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
-        const instance = ensureInstance(task, activeDate);
-        const now = Date.now();
+        let updatedTask = stepUtils.completeStep(task, stepId, completed, 'executing', activeDate);
+        updatedTask = updateRecurringInstanceMeta(updatedTask, activeDate);
 
-        // Find and update step in routineSteps or additionalSteps
-        let foundInRoutine = false;
-        const updatedRoutineSteps = instance.routineSteps.map((s) => {
-          if (s.id === stepId) {
-            foundInRoutine = true;
-            return { ...s, completed, completedAt: completed ? now : null };
-          }
-          return s;
-        });
-
-        const updatedAdditionalSteps = foundInRoutine
-          ? instance.additionalSteps
-          : instance.additionalSteps.map((s) =>
-              s.id === stepId
-                ? { ...s, completed, completedAt: completed ? now : null }
-                : s
-            );
-
-        // Update instance
-        const updatedInstance = {
-          ...instance,
-          routineSteps: updatedRoutineSteps,
-          additionalSteps: updatedAdditionalSteps,
-        };
-
-        // Check if all instance steps are complete
-        const allStepsComplete =
-          updatedInstance.routineSteps.every((s) => s.completed) &&
-          updatedInstance.additionalSteps.every((s) => s.completed);
-
-        // Was it already complete before this step change?
-        const wasAlreadyComplete = instance.completed;
-
-        // If all complete, mark instance complete
-        if (allStepsComplete && (updatedInstance.routineSteps.length > 0 || updatedInstance.additionalSteps.length > 0)) {
-          updatedInstance.completed = true;
-          updatedInstance.completedAt = now;
-        } else {
-          updatedInstance.completed = false;
-          updatedInstance.completedAt = null;
-        }
-
-        // Update task's recurringInstances
-        const updatedInstances = task.recurringInstances
-          .filter((i) => i.date !== activeDate)
-          .concat(updatedInstance);
-
-        // Prepare task updates
-        const taskUpdates: Partial<Task> = {
-          recurringInstances: updatedInstances,
-          updatedAt: now,
-        };
-
-        // If just became complete (wasn't before but is now), update metadata
-        if (updatedInstance.completed && !wasAlreadyComplete) {
-          // Create temp task to calculate streak
-          const tempTask = { ...task, recurringInstances: updatedInstances };
-          const newStreak = calculateStreak(tempTask);
-          taskUpdates.recurringTotalCompletions = (task.recurringTotalCompletions || 0) + 1;
-          taskUpdates.recurringLastCompleted = activeDate;
-          taskUpdates.recurringStreak = newStreak;
-          if (newStreak > (task.recurringBestStreak || 0)) {
-            taskUpdates.recurringBestStreak = newStreak;
-          }
-        }
-        // If just became incomplete (was before but isn't now), recalculate
-        else if (!updatedInstance.completed && wasAlreadyComplete) {
-          const tempTask = { ...task, recurringInstances: updatedInstances };
-          taskUpdates.recurringTotalCompletions = Math.max(0, (task.recurringTotalCompletions || 0) - 1);
-          taskUpdates.recurringStreak = calculateStreak(tempTask);
-          // Recalculate lastCompleted - find most recent completed instance
-          const completedInstances = updatedInstances
-            .filter(i => i.completed)
-            .sort((a, b) => b.date.localeCompare(a.date));
-          taskUpdates.recurringLastCompleted = completedInstances[0]?.date || null;
-        }
-
-        const updatedTasks = prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          return {
-            ...t,
-            ...taskUpdates,
-          };
-        });
+        const updatedTasks = prev.tasks.map((t) => t.id === taskId ? updatedTask : t);
 
         if (completed) {
           logStepCompleted(taskId, stepId, updatedTasks);
         }
 
-        return {
-          ...prev,
-          tasks: updatedTasks,
-        };
+        return { ...prev, tasks: updatedTasks };
       }
 
       // REGULAR TASKS: Original logic
@@ -3215,355 +3239,129 @@ export default function Home() {
       if (!task) return prev;
 
       const newStep = createStep(text, { source: 'manual', origin: 'manual' });
-      const now = Date.now();
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.addStep(task, newStep, effectiveMode, undefined, activeDate);
 
-      // RECURRING TASKS
-      if (task.isRecurring && task.recurrence) {
-        // Managing mode: Add to template (task.steps)
-        if (mode === 'managing') {
-          return {
-            ...prev,
-            tasks: prev.tasks.map((t) =>
-              t.id === taskId
-                ? { ...t, steps: [...t.steps, newStep], updatedAt: now }
-                : t
-            ),
-          };
-        }
-
-        // Executing mode: Add to instance's additionalSteps
-        const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
-        const instance = ensureInstance(task, activeDate);
-
-        const updatedInstance = {
-          ...instance,
-          additionalSteps: [...instance.additionalSteps, newStep],
-        };
-
-        const updatedInstances = task.recurringInstances
-          .filter((i) => i.date !== activeDate)
-          .concat(updatedInstance);
-
-        return {
-          ...prev,
-          tasks: prev.tasks.map((t) =>
-            t.id === taskId
-              ? { ...t, recurringInstances: updatedInstances, updatedAt: now }
-              : t
-          ),
-        };
-      }
-
-      // REGULAR TASKS: Add to task.steps
       return {
         ...prev,
-        tasks: prev.tasks.map((t) => {
-          if (t.id !== taskId) return t;
-          return {
-            ...t,
-            steps: [...t.steps, newStep],
-            updatedAt: now,
-          };
-        }),
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
       };
     });
   }, []);
 
   const handleDeleteStep = useCallback((taskId: string, stepId: string, mode?: 'executing' | 'managing') => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks in executing mode - delete from instance
-        if (t.isRecurring && t.recurrence && mode !== 'managing') {
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const existingInstance = t.recurringInstances?.find(i => i.date === activeDate);
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.deleteStep(task, stepId, effectiveMode, activeDate);
 
-          if (existingInstance) {
-            const updatedInstance = {
-              ...existingInstance,
-              routineSteps: existingInstance.routineSteps.filter(s => s.id !== stepId),
-              additionalSteps: existingInstance.additionalSteps.filter(s => s.id !== stepId),
-            };
-
-            return {
-              ...t,
-              recurringInstances: (t.recurringInstances || [])
-                .filter(i => i.date !== activeDate)
-                .concat(updatedInstance),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Regular tasks or managing mode - delete from template
-        return {
-          ...t,
-          steps: t.steps.filter((s) => s.id !== stepId),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleSubstepComplete = useCallback((taskId: string, stepId: string, substepId: string, completed: boolean, mode?: 'executing' | 'managing') => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks in executing mode - update instance
-        if (t.isRecurring && t.recurrence && mode !== 'managing') {
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const existingInstance = t.recurringInstances?.find(i => i.date === activeDate);
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.completeSubstep(task, stepId, substepId, completed, effectiveMode, activeDate);
 
-          if (existingInstance) {
-            // Update substep in routineSteps or additionalSteps
-            const updateSubsteps = (steps: Step[]) =>
-              steps.map((s) => {
-                if (s.id !== stepId) return s;
-                return {
-                  ...s,
-                  substeps: s.substeps.map((sub) =>
-                    sub.id === substepId
-                      ? { ...sub, completed, completedAt: completed ? Date.now() : null }
-                      : sub
-                  ),
-                };
-              });
-
-            const updatedInstance = {
-              ...existingInstance,
-              routineSteps: updateSubsteps(existingInstance.routineSteps),
-              additionalSteps: updateSubsteps(existingInstance.additionalSteps),
-            };
-
-            return {
-              ...t,
-              recurringInstances: (t.recurringInstances || [])
-                .filter(i => i.date !== activeDate)
-                .concat(updatedInstance),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Regular tasks or managing mode - update template
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            return {
-              ...s,
-              substeps: s.substeps.map((sub) =>
-                sub.id === substepId
-                  ? { ...sub, completed, completedAt: completed ? Date.now() : null }
-                  : sub
-              ),
-            };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleUpdateStep = useCallback((taskId: string, stepId: string, text: string, mode?: 'executing' | 'managing') => {
     if (!text.trim()) return;
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks
-        if (t.isRecurring && t.recurrence) {
-          // Managing mode: Update template (task.steps)
-          if (mode === 'managing') {
-            return {
-              ...t,
-              steps: t.steps.map((s) =>
-                s.id === stepId ? { ...s, text: text.trim(), wasEdited: true } : s
-              ),
-              updatedAt: Date.now(),
-            };
-          }
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.updateStepText(task, stepId, text, effectiveMode, activeDate);
 
-          // Executing mode: Update instance, clear origin to show user modified
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const instance = ensureInstance(t, activeDate);
-
-          // Update step in routineSteps or additionalSteps, clear origin
-          const updatedRoutineSteps = instance.routineSteps.map((s) =>
-            s.id === stepId ? { ...s, text: text.trim(), origin: null, wasEdited: true } : s
-          );
-          const updatedAdditionalSteps = instance.additionalSteps.map((s) =>
-            s.id === stepId ? { ...s, text: text.trim(), origin: null, wasEdited: true } : s
-          );
-
-          const updatedInstance = {
-            ...instance,
-            routineSteps: updatedRoutineSteps,
-            additionalSteps: updatedAdditionalSteps,
-          };
-
-          const updatedInstances = t.recurringInstances
-            .filter((i) => i.date !== activeDate)
-            .concat(updatedInstance);
-
-          return {
-            ...t,
-            recurringInstances: updatedInstances,
-            updatedAt: Date.now(),
-          };
-        }
-
-        // Regular tasks - existing logic
-        return {
-          ...t,
-          steps: t.steps.map((s) =>
-            s.id === stepId ? { ...s, text: text.trim(), wasEdited: true } : s
-          ),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleUpdateStepEstimate = useCallback((taskId: string, stepId: string, minutes: number | null) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks - update instance
-        if (t.isRecurring && t.recurrence) {
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const existingInstance = t.recurringInstances?.find(i => i.date === activeDate);
+      const mode = (task.isRecurring && prev.taskDetailMode === 'executing') ? 'executing' : 'managing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.updateStepEstimate(task, stepId, minutes, 'user', mode, activeDate);
 
-          if (existingInstance) {
-            const updatedRoutineSteps = existingInstance.routineSteps.map(s =>
-              s.id === stepId ? { ...s, estimatedMinutes: minutes, estimateSource: 'user' as const } : s
-            );
-            const updatedAdditionalSteps = existingInstance.additionalSteps.map(s =>
-              s.id === stepId ? { ...s, estimatedMinutes: minutes, estimateSource: 'user' as const } : s
-            );
-
-            return {
-              ...t,
-              recurringInstances: (t.recurringInstances || [])
-                .filter(i => i.date !== activeDate)
-                .concat({
-                  ...existingInstance,
-                  routineSteps: updatedRoutineSteps,
-                  additionalSteps: updatedAdditionalSteps,
-                }),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Regular tasks - existing logic
-        return {
-          ...t,
-          steps: t.steps.map((s) =>
-            s.id === stepId ? { ...s, estimatedMinutes: minutes, estimateSource: 'user' as const } : s
-          ),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleUpdateSubstep = useCallback((taskId: string, stepId: string, substepId: string, text: string, mode?: 'executing' | 'managing') => {
     if (!text.trim()) return;
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Recurring task handling - write to instance in executing mode
-        if (t.isRecurring && t.recurrence && mode === 'executing') {
-          const activeDate = getActiveOccurrenceDate(t) || getTodayISO();
-          const updatedInstances = (t.recurringInstances || []).map((inst) => {
-            if (inst.date !== activeDate) return inst;
-            // Find step in routineSteps or additionalSteps
-            const inRoutine = inst.routineSteps.some((s) => s.id === stepId);
-            if (inRoutine) {
-              return {
-                ...inst,
-                routineSteps: inst.routineSteps.map((s) => {
-                  if (s.id !== stepId) return s;
-                  return {
-                    ...s,
-                    substeps: s.substeps.map((sub) =>
-                      sub.id === substepId ? { ...sub, text: text.trim() } : sub
-                    ),
-                  };
-                }),
-              };
-            }
-            // Check additionalSteps
-            return {
-              ...inst,
-              additionalSteps: inst.additionalSteps.map((s) => {
-                if (s.id !== stepId) return s;
-                return {
-                  ...s,
-                  substeps: s.substeps.map((sub) =>
-                    sub.id === substepId ? { ...sub, text: text.trim() } : sub
-                  ),
-                };
-              }),
-            };
-          });
-          return { ...t, recurringInstances: updatedInstances, updatedAt: Date.now() };
-        }
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.updateSubstepText(task, stepId, substepId, text, effectiveMode, activeDate);
 
-        // Non-recurring or managing mode: update template
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            return {
-              ...s,
-              substeps: s.substeps.map((sub) =>
-                sub.id === substepId ? { ...sub, text: text.trim() } : sub
-              ),
-            };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleMoveStepUp = useCallback((taskId: string, stepId: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
-        const index = t.steps.findIndex((s) => s.id === stepId);
-        if (index <= 0) return t;
-        const newSteps = [...t.steps];
-        [newSteps[index - 1], newSteps[index]] = [newSteps[index], newSteps[index - 1]];
-        return { ...t, steps: newSteps, updatedAt: Date.now() };
-      }),
-    }));
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const mode = (prev.taskDetailMode as stepUtils.Mode) || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.moveStep(task, stepId, 'up', mode, activeDate);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleMoveStepDown = useCallback((taskId: string, stepId: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
-        const index = t.steps.findIndex((s) => s.id === stepId);
-        if (index === -1 || index >= t.steps.length - 1) return t;
-        const newSteps = [...t.steps];
-        [newSteps[index], newSteps[index + 1]] = [newSteps[index + 1], newSteps[index]];
-        return { ...t, steps: newSteps, updatedAt: Date.now() };
-      }),
-    }));
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const mode = (prev.taskDetailMode as stepUtils.Mode) || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.moveStep(task, stepId, 'down', mode, activeDate);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleAddSubstep = useCallback((taskId: string, stepId: string, text: string, mode?: 'executing' | 'managing') => {
@@ -3578,141 +3376,67 @@ export default function Home() {
       source: 'manual' as const,
     };
 
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks in executing mode - update instance
-        if (t.isRecurring && t.recurrence && mode !== 'managing') {
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const existingInstance = t.recurringInstances?.find(i => i.date === activeDate);
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.addSubstep(task, stepId, newSubstep, effectiveMode, activeDate);
 
-          if (existingInstance) {
-            // Add substep to step in routineSteps or additionalSteps
-            const addSubstepToSteps = (steps: Step[]) =>
-              steps.map((s) => {
-                if (s.id !== stepId) return s;
-                return { ...s, substeps: [...s.substeps, newSubstep] };
-              });
-
-            const updatedInstance = {
-              ...existingInstance,
-              routineSteps: addSubstepToSteps(existingInstance.routineSteps),
-              additionalSteps: addSubstepToSteps(existingInstance.additionalSteps),
-            };
-
-            return {
-              ...t,
-              recurringInstances: (t.recurringInstances || [])
-                .filter(i => i.date !== activeDate)
-                .concat(updatedInstance),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Regular tasks or managing mode - update template
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            return { ...s, substeps: [...s.substeps, newSubstep] };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleDeleteSubstep = useCallback((taskId: string, stepId: string, substepId: string, mode?: 'executing' | 'managing') => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
 
-        // Handle recurring tasks in executing mode - update instance
-        if (t.isRecurring && t.recurrence && mode !== 'managing') {
-          const activeDate = getActiveOccurrenceDate(t) || getRecurringTodayISO();
-          const existingInstance = t.recurringInstances?.find(i => i.date === activeDate);
+      const effectiveMode = mode || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.deleteSubstep(task, stepId, substepId, effectiveMode, activeDate);
 
-          if (existingInstance) {
-            // Delete substep from step in routineSteps or additionalSteps
-            const deleteSubstepFromSteps = (steps: Step[]) =>
-              steps.map((s) => {
-                if (s.id !== stepId) return s;
-                return { ...s, substeps: s.substeps.filter((sub) => sub.id !== substepId) };
-              });
-
-            const updatedInstance = {
-              ...existingInstance,
-              routineSteps: deleteSubstepFromSteps(existingInstance.routineSteps),
-              additionalSteps: deleteSubstepFromSteps(existingInstance.additionalSteps),
-            };
-
-            return {
-              ...t,
-              recurringInstances: (t.recurringInstances || [])
-                .filter(i => i.date !== activeDate)
-                .concat(updatedInstance),
-              updatedAt: Date.now(),
-            };
-          }
-        }
-
-        // Regular tasks or managing mode - update template
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            return { ...s, substeps: s.substeps.filter((sub) => sub.id !== substepId) };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleMoveSubstepUp = useCallback((taskId: string, stepId: string, substepId: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            const index = s.substeps.findIndex((sub) => sub.id === substepId);
-            if (index <= 0) return s;
-            const newSubsteps = [...s.substeps];
-            [newSubsteps[index - 1], newSubsteps[index]] = [newSubsteps[index], newSubsteps[index - 1]];
-            return { ...s, substeps: newSubsteps };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const mode = (prev.taskDetailMode as stepUtils.Mode) || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.moveSubstep(task, stepId, substepId, 'up', mode, activeDate);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   const handleMoveSubstepDown = useCallback((taskId: string, stepId: string, substepId: string) => {
-    setState((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => {
-        if (t.id !== taskId) return t;
-        return {
-          ...t,
-          steps: t.steps.map((s) => {
-            if (s.id !== stepId) return s;
-            const index = s.substeps.findIndex((sub) => sub.id === substepId);
-            if (index === -1 || index >= s.substeps.length - 1) return s;
-            const newSubsteps = [...s.substeps];
-            [newSubsteps[index], newSubsteps[index + 1]] = [newSubsteps[index + 1], newSubsteps[index]];
-            return { ...s, substeps: newSubsteps };
-          }),
-          updatedAt: Date.now(),
-        };
-      }),
-    }));
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === taskId);
+      if (!task) return prev;
+
+      const mode = (prev.taskDetailMode as stepUtils.Mode) || 'executing';
+      const activeDate = task.isRecurring ? (getActiveOccurrenceDate(task) || getRecurringTodayISO()) : undefined;
+      const updatedTask = stepUtils.moveSubstep(task, stepId, substepId, 'down', mode, activeDate);
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) => t.id === taskId ? updatedTask : t),
+      };
+    });
   }, []);
 
   // ============================================
@@ -3921,14 +3645,14 @@ export default function Home() {
       const isRecurringExecuting = task.isRecurring && task.recurrence && state.taskDetailMode === 'executing';
 
       if (isRecurringExecuting) {
-        // Add to instance.additionalSteps (or modify instance.routineSteps substeps)
+        // Add to instance.steps
         const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
         let instances = [...(task.recurringInstances || [])];
         let instanceIndex = instances.findIndex(i => i.date === activeDate);
 
         // Ensure instance exists
         if (instanceIndex === -1) {
-          const newInstance = ensureInstance(task, activeDate);
+          const newInstance = createInstance(task, activeDate);
           instances.push(newInstance);
           instanceIndex = instances.length - 1;
         }
@@ -3937,43 +3661,25 @@ export default function Home() {
 
         // Check if this should be added as a substep to an existing step
         if (suggestion.parentStepId) {
-          // Find parent in routineSteps or additionalSteps
-          const routineStepIndex = (instance.routineSteps || []).findIndex(s => s.id === suggestion.parentStepId);
-          const additionalStepIndex = (instance.additionalSteps || []).findIndex(s => s.id === suggestion.parentStepId);
+          const parentStepIndex = instance.steps.findIndex(s => s.id === suggestion.parentStepId);
 
-          const newSubstep = {
-            id: suggestion.id,
-            text: suggestion.text,
-            shortLabel: null,
-            completed: false,
-            completedAt: null,
-            skipped: false,
-            source: 'ai_suggested' as const,
-          };
+          if (parentStepIndex >= 0) {
+            const newSubstep = {
+              id: suggestion.id,
+              text: suggestion.text,
+              shortLabel: null,
+              completed: false,
+              completedAt: null,
+              skipped: false,
+              source: 'ai_suggested' as const,
+            };
 
-          if (routineStepIndex >= 0) {
-            const updatedRoutineSteps = [...(instance.routineSteps || [])];
-            updatedRoutineSteps[routineStepIndex] = {
-              ...updatedRoutineSteps[routineStepIndex],
-              substeps: [...updatedRoutineSteps[routineStepIndex].substeps, newSubstep],
+            const updatedSteps = [...instance.steps];
+            updatedSteps[parentStepIndex] = {
+              ...updatedSteps[parentStepIndex],
+              substeps: [...updatedSteps[parentStepIndex].substeps, newSubstep],
             };
-            instances[instanceIndex] = { ...instance, routineSteps: updatedRoutineSteps };
-
-            return {
-              ...prev,
-              tasks: prev.tasks.map((t) =>
-                t.id === state.activeTaskId
-                  ? { ...t, recurringInstances: instances, staging: updatedStaging, updatedAt: Date.now() }
-                  : t
-              ),
-            };
-          } else if (additionalStepIndex >= 0) {
-            const updatedAdditionalSteps = [...(instance.additionalSteps || [])];
-            updatedAdditionalSteps[additionalStepIndex] = {
-              ...updatedAdditionalSteps[additionalStepIndex],
-              substeps: [...updatedAdditionalSteps[additionalStepIndex].substeps, newSubstep],
-            };
-            instances[instanceIndex] = { ...instance, additionalSteps: updatedAdditionalSteps };
+            instances[instanceIndex] = { ...instance, steps: updatedSteps };
 
             return {
               ...prev,
@@ -3987,7 +3693,7 @@ export default function Home() {
           // Parent step not found - fall through to add as top-level step
         }
 
-        // Add as new step to additionalSteps
+        // Add as new step to instance.steps
         const newStep = createStep(suggestion.text, {
           id: suggestion.id,
           source: 'ai_suggested',
@@ -4007,7 +3713,7 @@ export default function Home() {
 
         instances[instanceIndex] = {
           ...instance,
-          additionalSteps: [...(instance.additionalSteps || []), newStep],
+          steps: [...instance.steps, newStep],
         };
 
         return {
@@ -4203,33 +3909,24 @@ export default function Home() {
         ? { ...task.staging, edits: task.staging.edits.filter((e) => e.targetId !== edit.targetId) }
         : null;
 
-      // RECURRING TASKS: Update instance steps, not template
-      if (task.isRecurring && task.recurrence) {
+      // RECURRING TASKS in executing mode: Update instance steps, not template
+      if (task.isRecurring && task.recurrence && state.taskDetailMode === 'executing') {
         const activeDate = getActiveOccurrenceDate(task) || getRecurringTodayISO();
-        const instance = ensureInstance(task, activeDate);
-        const allInstanceSteps = [...(instance.routineSteps || []), ...(instance.additionalSteps || [])];
-        const routineCount = (instance.routineSteps || []).length;
+        let instance = task.recurringInstances?.find(i => i.date === activeDate);
+        if (!instance) {
+          instance = createInstance(task, activeDate);
+        }
 
         // Parse step index from display ID
         const stepIndex = parseInt(edit.targetId, 10) - 1;
 
-        let updatedRoutineSteps = [...(instance.routineSteps || [])];
-        let updatedAdditionalSteps = [...(instance.additionalSteps || [])];
+        let updatedInstanceSteps = [...instance.steps];
 
         if (edit.targetType === 'step') {
-          if (stepIndex >= 0 && stepIndex < allInstanceSteps.length) {
-            if (stepIndex < routineCount) {
-              // Step is in routineSteps
-              updatedRoutineSteps = updatedRoutineSteps.map((s, idx) =>
-                idx === stepIndex ? applyEditToStep(s) : s
-              );
-            } else {
-              // Step is in additionalSteps
-              const additionalIdx = stepIndex - routineCount;
-              updatedAdditionalSteps = updatedAdditionalSteps.map((s, idx) =>
-                idx === additionalIdx ? applyEditToStep(s) : s
-              );
-            }
+          if (stepIndex >= 0 && stepIndex < updatedInstanceSteps.length) {
+            updatedInstanceSteps = updatedInstanceSteps.map((s, idx) =>
+              idx === stepIndex ? applyEditToStep(s) : s
+            );
           }
         } else {
           // Substep edit for recurring task
@@ -4239,22 +3936,9 @@ export default function Home() {
             const substepLetter = match[2];
             const substepIndex = substepLetter.charCodeAt(0) - 'a'.charCodeAt(0);
 
-            if (parentIndex < routineCount) {
-              updatedRoutineSteps = updatedRoutineSteps.map((s, sIdx) => {
+            if (parentIndex >= 0 && parentIndex < updatedInstanceSteps.length) {
+              updatedInstanceSteps = updatedInstanceSteps.map((s, sIdx) => {
                 if (sIdx === parentIndex && substepIndex >= 0 && substepIndex < s.substeps.length) {
-                  return {
-                    ...s,
-                    substeps: s.substeps.map((sub, subIdx) =>
-                      subIdx === substepIndex ? applyEditToSubstep(sub) : sub
-                    ),
-                  };
-                }
-                return s;
-              });
-            } else {
-              const additionalParentIdx = parentIndex - routineCount;
-              updatedAdditionalSteps = updatedAdditionalSteps.map((s, sIdx) => {
-                if (sIdx === additionalParentIdx && substepIndex >= 0 && substepIndex < s.substeps.length) {
                   return {
                     ...s,
                     substeps: s.substeps.map((sub, subIdx) =>
@@ -4270,8 +3954,7 @@ export default function Home() {
 
         const updatedInstance = {
           ...instance,
-          routineSteps: updatedRoutineSteps,
-          additionalSteps: updatedAdditionalSteps,
+          steps: updatedInstanceSteps,
         };
 
         const updatedInstances = (task.recurringInstances || [])
@@ -4298,7 +3981,7 @@ export default function Home() {
         ),
       };
     });
-  }, [state.activeTaskId]);
+  }, [state.activeTaskId, state.taskDetailMode]);
 
   const handleRejectEdit = useCallback((edit: EditSuggestion) => {
     updateActiveStaging((staging) =>
@@ -4461,11 +4144,10 @@ export default function Home() {
             instanceIndex = instances.length - 1;
           }
 
-          // Replace with new AI steps as additionalSteps, clear routineSteps
+          // Replace instance steps with new AI steps
           instances[instanceIndex] = {
             ...instances[instanceIndex],
-            routineSteps: [],
-            additionalSteps: newSteps,
+            steps: newSteps,
           };
 
           return {
@@ -4558,14 +4240,15 @@ export default function Home() {
     const now = Date.now();
 
     if (scope === 'instance') {
-      // Add steps to instance.additionalSteps
+      // Add steps to instance
       const activeDate = getActiveOccurrenceDate(task);
       if (!activeDate) return;
 
-      const newAdditionalSteps = staging.suggestions.map((suggestion) =>
+      const newInstanceSteps = staging.suggestions.map((suggestion) =>
         createStep(suggestion.text, {
           id: suggestion.id,
           source: 'ai_generated',
+          origin: 'ai',
           estimatedMinutes: suggestion.estimatedMinutes || null,
           estimateSource: suggestion.estimatedMinutes ? 'ai' : null,
           substeps: suggestion.substeps.map((sub) => ({
@@ -4593,9 +4276,9 @@ export default function Home() {
             const updatedInstances = [...instances];
             updatedInstances[instanceIndex] = {
               ...updatedInstances[instanceIndex],
-              additionalSteps: [
-                ...(updatedInstances[instanceIndex].additionalSteps || []),
-                ...newAdditionalSteps,
+              steps: [
+                ...updatedInstances[instanceIndex].steps,
+                ...newInstanceSteps,
               ],
             };
             return {
@@ -4606,12 +4289,11 @@ export default function Home() {
               updatedAt: now,
             };
           } else {
-            // Create new instance with additional steps (use createInstance to avoid mutation)
+            // Create new instance with steps
             const newInstance = createInstance(t, activeDate);
-            newInstance.additionalSteps = [...newAdditionalSteps];
             return {
               ...t,
-              recurringInstances: [...instances, newInstance],
+              recurringInstances: [...instances, { ...newInstance, steps: [...newInstance.steps, ...newInstanceSteps] }],
               staging: null,
               aiAssisted: true,
               updatedAt: now,
@@ -4666,7 +4348,7 @@ export default function Home() {
 
               updatedInstances = t.recurringInstances.map(i =>
                 i.date === activeDate
-                  ? { ...i, routineSteps: [...i.routineSteps, ...instanceSteps] }
+                  ? { ...i, steps: [...i.steps, ...instanceSteps] }
                   : i
               );
             }
@@ -4705,8 +4387,10 @@ export default function Home() {
   const poolTasks = filterPool(state.tasks);
   const queueItems = getTodayItems(state.focusQueue);
 
-  const awarenessData = activeStaleItems.length > 0 && state.currentView === 'focus'
-    ? {
+  const awarenessData = (() => {
+    // Focus view: stale queue items
+    if (activeStaleItems.length > 0 && state.currentView === 'focus') {
+      return {
         items: activeStaleItems.map(({ item, task, days }) => ({
           id: item.id,
           taskId: task.id,
@@ -4717,8 +4401,25 @@ export default function Home() {
         onReview: (taskId: string) => handleOpenTask(taskId),
         onDismiss: handleDismissStaleItem,
         onNext: handleNextStaleItem,
-      }
-    : null;
+      };
+    }
+    // Tasks view: old inbox items
+    if (activeOldInboxItems.length > 0 && state.currentView === 'tasks') {
+      return {
+        items: activeOldInboxItems.map(({ task, days }) => ({
+          id: task.id,
+          taskId: task.id,
+          title: task.title,
+          days,
+        })),
+        currentIndex: Math.min(oldInboxIndex, activeOldInboxItems.length - 1),
+        onReview: (taskId: string) => handleOpenTask(taskId),
+        onDismiss: handleDismissOldInboxItem,
+        onNext: handleNextOldInboxItem,
+      };
+    }
+    return null;
+  })();
 
   const counts = {
     inbox: inboxTasks.length,
@@ -4827,7 +4528,7 @@ export default function Home() {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   return (
-    <div className="h-screen flex bg-zinc-50 dark:bg-zinc-900">
+    <div className="fixed inset-0 flex bg-zinc-50 dark:bg-zinc-900">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -4891,7 +4592,7 @@ export default function Home() {
       {/* Main Column - pushes based on sidebar state and right drawer state */}
       <div
         className={`
-          flex-1 flex flex-col min-w-0 transition-all duration-300
+          flex-1 flex flex-col min-w-0 transition-all duration-300 pb-[env(safe-area-inset-bottom)]
           ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
           ${aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : completedDrawerOpen ? 'lg:mr-[400px]' : ''}
           ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] pointer-events-none lg:translate-x-0 lg:pointer-events-auto' : ''}
@@ -4945,7 +4646,8 @@ export default function Home() {
           onTouchEnd={handleSwipeEnd}
         >
           {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet; when sidebar open use minimal padding */}
-          <div className={`max-w-4xl mx-auto px-4 py-6 ${sidebarOpen ? 'pb-24' : aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}>
+          {/* Focus mode: full width, no padding (has its own layout). Other views: max-w-4xl centered with padding */}
+          <div className={`${state.currentView === 'focusMode' ? 'h-full' : `max-w-4xl mx-auto px-4 py-6 ${sidebarOpen ? 'pb-24' : aiAssistant.state.mode !== 'collapsed' ? 'lg:pb-24 pb-[52vh]' : 'pb-48 lg:pb-24'}`}`}>
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
@@ -5019,6 +4721,7 @@ export default function Home() {
 
             {state.currentView === 'taskDetail' && activeTask && (
               <TaskDetail
+                key={activeTask.id}
                 task={activeTask}
                 queue={state.focusQueue}
                 projects={state.projects}
@@ -5071,6 +4774,8 @@ export default function Home() {
                 onCompleteRoutine={handleCompleteRoutine}
                 onSkipRoutine={handleSkipRoutine}
                 onMarkRoutineIncomplete={handleMarkRoutineIncomplete}
+                onUnskipRoutine={handleMarkRoutineIncomplete}
+                onStartRecurringFocus={handleStartRecurringFocus}
                 onAcceptWithScope={handleAcceptWithScope}
                 onToggleMode={handleToggleTaskDetailMode}
                 onResetFromTemplate={activeTask?.isRecurring ? () => handleResetFromTemplate(activeTask.id) : undefined}

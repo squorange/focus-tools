@@ -10,7 +10,7 @@ import ProgressRing from "@/components/shared/ProgressRing";
 import RoutinesList from "@/components/routines/RoutinesList";
 
 // Tab types for navigation
-type TasksTab = 'staging' | 'routines' | 'waiting' | 'deferred' | 'completed' | 'archived';
+type TasksTab = 'staging' | 'routines' | 'on_hold' | 'done';
 
 interface TasksViewProps {
   inboxTasks: Task[];
@@ -68,10 +68,12 @@ export default function TasksView({
       const tabMap: Record<string, TasksTab> = {
         'staging': 'staging',
         'routines': 'routines',
-        'waiting': 'waiting',
-        'deferred': 'deferred',
-        'completed': 'completed',
-        'archived': 'archived',
+        'waiting': 'on_hold',
+        'deferred': 'on_hold',
+        'on_hold': 'on_hold',
+        'completed': 'done',
+        'archived': 'done',
+        'done': 'done',
       };
       const tab = tabMap[pendingFilter];
       if (tab) {
@@ -124,19 +126,17 @@ export default function TasksView({
     [allTasksList]
   );
 
+  // Check if task is already in queue (moved before tabs for count calculation)
+  const queueTaskIds = useMemo(() => new Set(queue.items.map((i) => i.taskId)), [queue.items]);
+  const isInQueue = (taskId: string) => queueTaskIds.has(taskId);
+
   // Tab definitions with counts
   const tabs = useMemo(() => [
-    { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) <= new Date())).length },
+    { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.isRecurring && !queueTaskIds.has(t.id) && !t.waitingOn).length },
     { id: 'routines' as TasksTab, label: 'Routines', count: routinesAll.length },
-    { id: 'waiting' as TasksTab, label: 'Waiting', count: waitingTasksAll.length },
-    { id: 'deferred' as TasksTab, label: 'Deferred', count: deferredTasksAll.length },
-    { id: 'completed' as TasksTab, label: 'Completed', count: completedTasksAll.length },
-    { id: 'archived' as TasksTab, label: 'Archived', count: archivedTasksAll.length },
-  ], [inboxTasks, poolTasks, routinesAll, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
-
-  // Check if task is already in queue
-  const queueTaskIds = new Set(queue.items.map((i) => i.taskId));
-  const isInQueue = (taskId: string) => queueTaskIds.has(taskId);
+    { id: 'on_hold' as TasksTab, label: 'On Hold', count: waitingTasksAll.length + deferredTasksAll.length },
+    { id: 'done' as TasksTab, label: 'Done', count: completedTasksAll.length + archivedTasksAll.length },
+  ], [inboxTasks, poolTasks, queueTaskIds, routinesAll, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
 
   // Staging tab: Filter tasks - resurfaced, ready (exclude tasks in queue)
   const resurfacedTasks = poolTasks.filter(
@@ -159,27 +159,25 @@ export default function TasksView({
 
   return (
     <div className="space-y-6">
-      {/* Scrollable Tab Bar - centers when fits, left-pins + scrolls when overflows */}
-      <div className="overflow-x-auto scrollbar-hide -mx-4 pl-4">
-        <div className="inline-flex pr-4">
-          <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                }`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="ml-1 opacity-50">{tab.count}</span>
-                )}
-              </button>
-            ))}
-          </div>
+      {/* Centered Tab Bar */}
+      <div className="flex justify-center">
+        <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className="ml-1 opacity-50">{tab.count}</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -192,111 +190,88 @@ export default function TasksView({
         />
       )}
 
-      {/* Waiting Tab */}
-      {activeTab === 'waiting' && (
-        <section>
-          {waitingTasksAll.length > 0 ? (
-            <div className="space-y-2">
-              {waitingTasksAll.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  isInQueue={isInQueue(task.id)}
-                  project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id)}
-                  onAddToQueue={() => onAddToQueue(task.id)}
-                  onDefer={onDefer}
-                  onPark={onPark}
-                  onDelete={onDelete}
-                  badge={`Waiting: ${task.waitingOn?.who}`}
-                />
-              ))}
+      {/* On Hold Tab */}
+      {activeTab === 'on_hold' && (
+        <>
+          {waitingTasksAll.length === 0 && deferredTasksAll.length === 0 ? (
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+              No tasks on hold
             </div>
           ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-              No tasks waiting on others
-            </div>
+            <>
+              {/* Waiting Section */}
+              {waitingTasksAll.length > 0 && (
+                <section>
+                  <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+                    <span>Waiting</span>
+                    <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                      {waitingTasksAll.length}
+                    </span>
+                  </h3>
+                  <div className="space-y-2">
+                    {waitingTasksAll.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        isInQueue={isInQueue(task.id)}
+                        project={getProject(task)}
+                        onOpen={() => onOpenTask(task.id)}
+                        onAddToQueue={() => onAddToQueue(task.id)}
+                        onDefer={onDefer}
+                        onPark={onPark}
+                        onDelete={onDelete}
+                        badge={`Waiting: ${task.waitingOn?.who}`}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Deferred Section */}
+              {deferredTasksAll.length > 0 && (
+                <section className={waitingTasksAll.length > 0 ? "mt-6" : ""}>
+                  <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+                    <span>Deferred</span>
+                    <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                      {deferredTasksAll.length}
+                    </span>
+                  </h3>
+                  <div className="space-y-2">
+                    {deferredTasksAll.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        isInQueue={isInQueue(task.id)}
+                        project={getProject(task)}
+                        onOpen={() => onOpenTask(task.id)}
+                        onAddToQueue={() => onAddToQueue(task.id)}
+                        onDefer={onDefer}
+                        onPark={onPark}
+                        onDelete={onDelete}
+                        badge={`Until: ${task.deferredUntil}`}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </>
           )}
-        </section>
+        </>
       )}
 
-      {/* Deferred Tab */}
-      {activeTab === 'deferred' && (
-        <section>
-          {deferredTasksAll.length > 0 ? (
-            <div className="space-y-2">
-              {deferredTasksAll.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  isInQueue={isInQueue(task.id)}
-                  project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id)}
-                  onAddToQueue={() => onAddToQueue(task.id)}
-                  onDefer={onDefer}
-                  onPark={onPark}
-                  onDelete={onDelete}
-                  badge={`Until: ${task.deferredUntil}`}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-              No deferred tasks
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Completed Tab */}
-      {activeTab === 'completed' && (
-        <section>
-          {completedTasksAll.length > 0 ? (
-            <div className="space-y-2">
-              {completedTasksAll.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  isInQueue={false}
-                  project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id)}
-                  onDelete={onDelete}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-              No completed tasks
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Archived Tab */}
-      {activeTab === 'archived' && (
-        <section>
-          {archivedTasksAll.length > 0 ? (
-            <div className="space-y-2">
-              {archivedTasksAll.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  isInQueue={isInQueue(task.id)}
-                  project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id)}
-                  onAddToQueue={() => onAddToQueue(task.id)}
-                  onDefer={onDefer}
-                  onPark={onPark}
-                  onDelete={onDelete}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-              No archived tasks
-            </div>
-          )}
-        </section>
+      {/* Done Tab */}
+      {activeTab === 'done' && (
+        <DoneTab
+          completedTasksAll={completedTasksAll}
+          archivedTasksAll={archivedTasksAll}
+          isInQueue={isInQueue}
+          getProject={getProject}
+          onOpenTask={onOpenTask}
+          onAddToQueue={onAddToQueue}
+          onDefer={onDefer}
+          onPark={onPark}
+          onDelete={onDelete}
+        />
       )}
 
       {/* Staging Tab - Sectioned View */}
@@ -438,6 +413,172 @@ export default function TasksView({
       )}
     </div>
   );
+}
+
+// Done Tab: Completed (grouped by date) + Archived (collapsed)
+function DoneTab({
+  completedTasksAll,
+  archivedTasksAll,
+  isInQueue,
+  getProject,
+  onOpenTask,
+  onAddToQueue,
+  onDefer,
+  onPark,
+  onDelete,
+}: {
+  completedTasksAll: Task[];
+  archivedTasksAll: Task[];
+  isInQueue: (taskId: string) => boolean;
+  getProject: (task: Task) => Project | null;
+  onOpenTask: (taskId: string, mode?: 'executing' | 'managing') => void;
+  onAddToQueue: (taskId: string, forToday?: boolean) => void;
+  onDefer: (taskId: string, until: string) => void;
+  onPark: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
+}) {
+  const [archivedCollapsed, setArchivedCollapsed] = React.useState(true);
+  const [archivedShowAll, setArchivedShowAll] = React.useState(false);
+
+  // Group completed tasks by date
+  const completedGrouped = useMemo(() => {
+    const groups: Record<string, Task[]> = {};
+    [...completedTasksAll]
+      .sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0))
+      .forEach(task => {
+        const date = task.completedAt
+          ? new Date(task.completedAt).toISOString().split('T')[0]
+          : 'Unknown';
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(task);
+      });
+    return Object.entries(groups);
+  }, [completedTasksAll]);
+
+  // Sorted archived with expand/collapse
+  const sortedArchived = useMemo(() =>
+    [...archivedTasksAll].sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0)),
+    [archivedTasksAll]
+  );
+  const visibleArchived = archivedShowAll ? sortedArchived : sortedArchived.slice(0, 5);
+
+  if (completedTasksAll.length === 0 && archivedTasksAll.length === 0) {
+    return (
+      <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+        No completed or archived tasks
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Archived Section - collapsible, above Completed */}
+      {archivedTasksAll.length > 0 && (
+        <section className={completedTasksAll.length > 0 ? "mb-6" : ""}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400">
+              <span>Archived</span>
+              <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                {archivedTasksAll.length}
+              </span>
+            </h3>
+            <div className="flex items-center gap-2">
+              {sortedArchived.length > 5 && (
+                <button
+                  onClick={() => { setArchivedCollapsed(false); setArchivedShowAll(true); }}
+                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                >
+                  Show All
+                </button>
+              )}
+              <button
+                onClick={() => setArchivedCollapsed(!archivedCollapsed)}
+                className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                aria-label={archivedCollapsed ? "Expand archived section" : "Collapse archived section"}
+              >
+                <svg
+                  className={`w-4 h-4 text-zinc-400 transition-transform ${archivedCollapsed ? '' : 'rotate-180'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          {!archivedCollapsed && (
+            <div className="space-y-2">
+              {visibleArchived.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  isInQueue={isInQueue(task.id)}
+                  project={getProject(task)}
+                  onOpen={() => onOpenTask(task.id)}
+                  onAddToQueue={() => onAddToQueue(task.id)}
+                  onDefer={onDefer}
+                  onPark={onPark}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Completed Section - grouped by date */}
+      {completedTasksAll.length > 0 && (
+        <section>
+          <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+            <span>Completed</span>
+            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              {completedTasksAll.length}
+            </span>
+          </h3>
+          <div className="space-y-4">
+            {completedGrouped.map(([date, tasks]) => (
+              <section key={date}>
+                <h4 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-2 sticky top-0 bg-white dark:bg-zinc-900 py-1">
+                  {formatCompletedDate(date)}
+                </h4>
+                <div className="space-y-2">
+                  {tasks.map(task => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      isInQueue={false}
+                      project={getProject(task)}
+                      onOpen={() => onOpenTask(task.id)}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
+// Format date for completed groups
+function formatCompletedDate(dateStr: string): string {
+  if (dateStr === 'Unknown') return 'Unknown';
+  const date = new Date(dateStr + 'T00:00:00');
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 // Check if date is overdue
