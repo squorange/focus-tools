@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Reminder } from "@/lib/types";
 import {
-  getRelativeReminderOptions,
   formatReminder,
   getNotificationPermission,
   requestNotificationPermission,
@@ -24,20 +23,11 @@ export default function ReminderPicker({
   onChange,
   onClose,
 }: ReminderPickerProps) {
-  const [mode, setMode] = useState<"relative" | "absolute">(
-    reminder?.type === "absolute" ? "absolute" : "relative"
-  );
   const [customDate, setCustomDate] = useState<string>(() => {
     if (reminder?.type === "absolute" && reminder.absoluteTime) {
       return new Date(reminder.absoluteTime).toISOString().split("T")[0];
     }
-    // Default: targetDate > deadlineDate > tomorrow
-    if (targetDate && new Date(targetDate) > new Date()) {
-      return targetDate;
-    }
-    if (deadlineDate && new Date(deadlineDate) > new Date()) {
-      return deadlineDate;
-    }
+    // Default: tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split("T")[0];
@@ -57,10 +47,33 @@ export default function ReminderPicker({
   const hasDeadlineDate = !!deadlineDate;
   const hasAnyDate = hasTargetDate || hasDeadlineDate;
 
-  const relativeOptions = getRelativeReminderOptions(
-    hasTargetDate,
-    hasDeadlineDate
-  );
+  // Simplified relative options - only show if target/deadline exists
+  const getRelativeOptions = () => {
+    const options: Array<{
+      label: string;
+      value: { type: "relative"; relativeMinutes: number; relativeTo: "target" | "deadline" };
+    }> = [];
+
+    if (hasDeadlineDate) {
+      options.push(
+        { label: "1 hour before deadline", value: { type: "relative", relativeMinutes: 60, relativeTo: "deadline" } },
+        { label: "1 day before deadline", value: { type: "relative", relativeMinutes: 24 * 60, relativeTo: "deadline" } },
+        { label: "1 week before deadline", value: { type: "relative", relativeMinutes: 7 * 24 * 60, relativeTo: "deadline" } }
+      );
+    }
+
+    if (hasTargetDate) {
+      options.push(
+        { label: "1 hour before target", value: { type: "relative", relativeMinutes: 60, relativeTo: "target" } },
+        { label: "1 day before target", value: { type: "relative", relativeMinutes: 24 * 60, relativeTo: "target" } },
+        { label: "1 week before target", value: { type: "relative", relativeMinutes: 7 * 24 * 60, relativeTo: "target" } }
+      );
+    }
+
+    return options;
+  };
+
+  const relativeOptions = getRelativeOptions();
 
   const handleRequestPermission = async () => {
     const granted = await requestNotificationPermission();
@@ -86,11 +99,6 @@ export default function ReminderPicker({
       type: "absolute",
       absoluteTime: date.getTime(),
     });
-    onClose();
-  };
-
-  const handleRemoveReminder = () => {
-    onChange(null);
     onClose();
   };
 
@@ -145,57 +153,9 @@ export default function ReminderPicker({
 
       {/* Picker dropdown */}
       <div className="absolute right-0 top-full mt-1 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[280px]">
-        {/* Current reminder display */}
-        {reminder && (
-          <div className="px-3 pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-700">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-              Current reminder
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                {formatReminder(reminder, targetDate, deadlineDate)}
-              </span>
-              <button
-                onClick={handleRemoveReminder}
-                className="text-xs text-red-600 dark:text-red-400 hover:underline"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Mode tabs */}
-        {hasAnyDate && (
-          <div className="px-3 mb-2">
-            <div className="flex bg-zinc-100 dark:bg-zinc-700 rounded-md p-0.5">
-              <button
-                onClick={() => setMode("relative")}
-                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                  mode === "relative"
-                    ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400"
-                }`}
-              >
-                Before date
-              </button>
-              <button
-                onClick={() => setMode("absolute")}
-                className={`flex-1 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                  mode === "absolute"
-                    ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-zinc-100 shadow-sm"
-                    : "text-zinc-600 dark:text-zinc-400"
-                }`}
-              >
-                Specific time
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Relative options */}
-        {mode === "relative" && hasAnyDate && (
-          <div className="max-h-[200px] overflow-y-auto">
+        {/* Relative shortcuts - only if target/deadline exists */}
+        {hasAnyDate && relativeOptions.length > 0 && (
+          <div className="pb-2 mb-2 border-b border-zinc-100 dark:border-zinc-700">
             {relativeOptions.map((option, idx) => (
               <button
                 key={idx}
@@ -208,65 +168,40 @@ export default function ReminderPicker({
           </div>
         )}
 
-        {/* Absolute time picker */}
-        {(mode === "absolute" || !hasAnyDate) && (
-          <div className="px-3 py-2">
-            {!hasAnyDate && (
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-                Set a specific date and time
-              </div>
-            )}
-            <div className="flex gap-2 mb-3">
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                className="flex-1 px-2 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded"
-              />
-              <input
-                type="time"
-                value={customTime}
-                onChange={(e) => setCustomTime(e.target.value)}
-                className="w-24 px-2 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded"
-              />
+        {/* Date/time picker - always shown */}
+        <div className="px-3 py-2">
+          {!hasAnyDate && (
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+              Set a specific date and time
             </div>
-
-            {/* Quick presets */}
-            <div className="flex flex-wrap gap-1 mb-3">
-              <button
-                onClick={() => {
-                  const tomorrow = new Date();
-                  tomorrow.setDate(tomorrow.getDate() + 1);
-                  setCustomDate(tomorrow.toISOString().split("T")[0]);
-                  setCustomTime("09:00");
-                }}
-                className="px-2 py-1 text-xs bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded hover:bg-zinc-200 dark:hover:bg-zinc-600"
-              >
-                Tomorrow 9am
-              </button>
-              <button
-                onClick={() => {
-                  const nextMonday = new Date();
-                  nextMonday.setDate(
-                    nextMonday.getDate() + ((8 - nextMonday.getDay()) % 7 || 7)
-                  );
-                  setCustomDate(nextMonday.toISOString().split("T")[0]);
-                  setCustomTime("09:00");
-                }}
-                className="px-2 py-1 text-xs bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded hover:bg-zinc-200 dark:hover:bg-zinc-600"
-              >
-                Next Monday 9am
-              </button>
+          )}
+          {hasAnyDate && (
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+              Or set a specific time
             </div>
-
-            <button
-              onClick={handleSetCustomTime}
-              className="w-full px-3 py-2 text-sm bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors"
-            >
-              Set Reminder
-            </button>
+          )}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              className="flex-1 px-2 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded"
+            />
+            <input
+              type="time"
+              value={customTime}
+              onChange={(e) => setCustomTime(e.target.value)}
+              className="w-24 px-2 py-1.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded"
+            />
           </div>
-        )}
+
+          <button
+            onClick={handleSetCustomTime}
+            className="w-full px-3 py-2 text-sm bg-violet-600 text-white rounded-md hover:bg-violet-700 transition-colors"
+          >
+            Set Reminder
+          </button>
+        </div>
       </div>
     </>
   );

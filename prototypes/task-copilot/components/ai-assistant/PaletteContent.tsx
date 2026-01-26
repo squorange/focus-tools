@@ -4,6 +4,8 @@ import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AIResponse, QuickAction, SuggestionsContent, RecommendationContent } from '@/lib/ai-types';
 import { AITargetContext } from '@/lib/types';
+import { ActiveAlert } from '@/lib/notification-types';
+import { Bell } from 'lucide-react';
 import { HEIGHT_TRANSITION, ANIMATIONS, STEP_QUICK_ACTIONS } from '@/lib/ai-constants';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { QuickActions } from './QuickActions';
@@ -45,6 +47,12 @@ interface PaletteContentProps {
     onDismiss: (itemId: string) => void;
     onNext: () => void;
   } | null;
+  // Active alerts (pokes and reminders) - sticky, visible during AI activity
+  activeAlerts?: ActiveAlert[] | null;
+  currentAlertIndex?: number;
+  onCycleAlert?: () => void;
+  onStartPokeAction?: () => void;
+  onReminderAction?: () => void;
 }
 
 export function PaletteContent({
@@ -68,6 +76,11 @@ export function PaletteContent({
   aiTargetContext,
   onClearAITarget,
   awareness,
+  activeAlerts,
+  currentAlertIndex = 0,
+  onCycleAlert,
+  onStartPokeAction,
+  onReminderAction,
 }: PaletteContentProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -271,8 +284,8 @@ export function PaletteContent({
         </div>
       )}
 
-      {/* Awareness banner - stale item nudge (hidden when step targeted) */}
-      {awareness && !aiTargetContext && !isLoading && !response && (() => {
+      {/* Awareness banner - stale item nudge (hidden when step targeted or alerts active) */}
+      {awareness && !aiTargetContext && (!activeAlerts || activeAlerts.length === 0) && !isLoading && !response && (() => {
         const current = awareness.items[awareness.currentIndex];
         if (!current) return null;
         const total = awareness.items.length;
@@ -322,6 +335,145 @@ export function PaletteContent({
             </div>
           </div>
         );
+      })()}
+
+      {/* Alert banners - sticky, visible even during AI activity (takes priority over awareness) */}
+      {activeAlerts && activeAlerts.length > 0 && !aiTargetContext && (() => {
+        const current = activeAlerts[currentAlertIndex];
+        const alertCount = activeAlerts.length;
+        const hasMultiple = alertCount > 1;
+
+        if (current.type === 'poke') {
+          const poke = current.data;
+          const dueTime = new Date(poke.anchorTime);
+          const dueTimeStr = dueTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+          return (
+            <div className="px-3 py-2 mb-2 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+              {/* Title row: pointing emoji + task title + due time + count */}
+              <div className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-sm mt-0.5">👉🏽</span>
+                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  &ldquo;{poke.taskTitle}&rdquo; — Due {dueTimeStr}
+                </span>
+                {hasMultiple && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    ({currentAlertIndex + 1}/{alertCount})
+                  </button>
+                )}
+              </div>
+              {/* Duration breakdown */}
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
+                ~{poke.durationMinutes} min + {poke.bufferMinutes} min buffer
+              </div>
+              {/* Actions row - compact filled buttons */}
+              <div className="flex items-center gap-1.5 mt-2 ml-6">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onStartPokeAction?.(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-violet-100 dark:bg-violet-900/40
+                    text-violet-700 dark:text-violet-300
+                    hover:bg-violet-200 dark:hover:bg-violet-800/50
+                    transition-colors"
+                >
+                  Start
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); poke.onSnooze(5); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Snooze 5m
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); poke.onDismiss(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          );
+        } else {
+          // Reminder banner - amber themed
+          const reminder = current.data;
+          const reminderTime = new Date(reminder.reminderTime);
+          const timeStr = reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+          return (
+            <div className="px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+              {/* Title row: bell icon + task title + time + count */}
+              <div className="flex items-start gap-2">
+                <Bell
+                  size={14}
+                  className="flex-shrink-0 mt-0.5 text-amber-500 dark:text-amber-400"
+                />
+                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  &ldquo;{reminder.taskTitle}&rdquo; — Set for {timeStr}
+                </span>
+                {hasMultiple && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    ({currentAlertIndex + 1}/{alertCount})
+                  </button>
+                )}
+              </div>
+              {/* Actions row - compact filled buttons */}
+              <div className="flex items-center gap-1.5 mt-2 ml-6">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onReminderAction?.(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-amber-100 dark:bg-amber-900/40
+                    text-amber-700 dark:text-amber-300
+                    hover:bg-amber-200 dark:hover:bg-amber-800/50
+                    transition-colors"
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); reminder.onSnooze(5); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Snooze 5m
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); reminder.onDismiss(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-100 dark:bg-zinc-800
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          );
+        }
       })()}
 
       {/* Content area - scrollable with gradient fades */}

@@ -1,149 +1,233 @@
 "use client";
 
-import { useMemo } from "react";
-import {
-  minutesToHoursAndMinutes,
-  hoursAndMinutesToMinutes,
-  MINUTE_INCREMENTS,
-  HOUR_INCREMENTS,
-} from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface DurationInputProps {
-  value: number | null; // total minutes
+  value: number | null; // total minutes (manual override or explicit setting)
+  autoValue?: number | null; // auto-calculated value (e.g., sum of steps)
   onChange: (minutes: number | null) => void;
-  showSource?: "user" | "ai" | null;
-  compact?: boolean;
+  source?: "manual" | "ai" | "steps" | null; // source of the current value
+  placeholder?: string;
+}
+
+/**
+ * Parse a duration string into total minutes.
+ *
+ * Supported formats:
+ * - No units → assume minutes: "45" → 45, "90" → 90
+ * - Minutes only: "45m", "45 min", "45 mins" → 45
+ * - Hours only: "1h", "1hr", "1.5h" → 60, 90
+ * - Combined: "1h 30m", "1h30m", "1 hr 30 min" → 90
+ *
+ * Returns null if the input is invalid.
+ */
+export function parseDuration(input: string): number | null {
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed) return null;
+
+  // Combined hours and minutes: "1h 30m", "1h30m", "1 hr 30 min", "1hr30min"
+  const combinedMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\s*(\d+)\s*(?:m|min|mins|minute|minutes)?$/);
+  if (combinedMatch) {
+    const hours = parseFloat(combinedMatch[1]);
+    const mins = parseInt(combinedMatch[2], 10);
+    if (!isNaN(hours) && !isNaN(mins) && hours >= 0 && mins >= 0) {
+      return Math.round(hours * 60) + mins;
+    }
+  }
+
+  // Hours only: "1h", "1hr", "1.5h", "2 hours"
+  const hoursMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)$/);
+  if (hoursMatch) {
+    const hours = parseFloat(hoursMatch[1]);
+    if (!isNaN(hours) && hours >= 0) {
+      return Math.round(hours * 60);
+    }
+  }
+
+  // Minutes only: "45m", "45 min", "45mins"
+  const minutesMatch = trimmed.match(/^(\d+)\s*(?:m|min|mins|minute|minutes)$/);
+  if (minutesMatch) {
+    const mins = parseInt(minutesMatch[1], 10);
+    if (!isNaN(mins) && mins >= 0) {
+      return mins;
+    }
+  }
+
+  // Plain number → assume minutes
+  const plainNumber = trimmed.match(/^(\d+)$/);
+  if (plainNumber) {
+    const mins = parseInt(plainNumber[1], 10);
+    if (!isNaN(mins) && mins >= 0) {
+      return mins;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Format minutes into a display string.
+ *
+ * Display rules:
+ * - < 60 min → "45m"
+ * - ≥ 60 min, no remainder → "1h", "2h"
+ * - ≥ 60 min, with remainder → "1h 30m"
+ */
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (mins === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${mins}m`;
 }
 
 export default function DurationInput({
   value,
+  autoValue,
   onChange,
-  showSource,
-  compact = false,
+  source,
+  placeholder = "e.g. 45m or 1h 30m",
 }: DurationInputProps) {
-  const { hours, minutes } = useMemo(() => {
-    if (!value) return { hours: 0, minutes: 0 };
-    return minutesToHoursAndMinutes(value);
-  }, [value]);
+  // Determine effective display value: manual override (value) takes priority, then auto-calculated (autoValue)
+  const effectiveValue = value ?? autoValue ?? null;
+  const isUsingAutoValue = value == null && autoValue != null;
+  const hasManualOverride = value != null && autoValue != null && value !== autoValue;
 
-  const handleHoursChange = (newHours: number) => {
-    const newTotal = hoursAndMinutesToMinutes(newHours, minutes);
-    onChange(newTotal > 0 ? newTotal : null);
+  // Internal text state for the input field
+  const [inputText, setInputText] = useState<string>(() =>
+    effectiveValue != null ? formatDuration(effectiveValue) : ""
+  );
+  const [hasError, setHasError] = useState(false);
+
+  // Sync input text when effective value changes externally
+  useEffect(() => {
+    if (effectiveValue != null) {
+      setInputText(formatDuration(effectiveValue));
+      setHasError(false);
+    } else {
+      setInputText("");
+      setHasError(false);
+    }
+  }, [effectiveValue]);
+
+  const handleBlur = () => {
+    const trimmed = inputText.trim();
+
+    // Empty input clears the manual value (reverts to auto if available)
+    if (!trimmed) {
+      setHasError(false);
+      if (value !== null) {
+        onChange(null);
+      }
+      return;
+    }
+
+    const parsed = parseDuration(trimmed);
+    if (parsed !== null) {
+      setHasError(false);
+      // Only set manual value if different from auto value
+      if (autoValue != null && parsed === autoValue) {
+        // Same as auto value, clear manual override
+        onChange(null);
+      } else {
+        onChange(parsed);
+      }
+      // Format the displayed text to canonical form
+      setInputText(formatDuration(parsed));
+    } else {
+      // Invalid input: show error and revert to previous value
+      setHasError(true);
+      setTimeout(() => {
+        setInputText(effectiveValue != null ? formatDuration(effectiveValue) : "");
+        setHasError(false);
+      }, 1500);
+    }
   };
 
-  const handleMinutesChange = (newMinutes: number) => {
-    const newTotal = hoursAndMinutesToMinutes(hours, newMinutes);
-    onChange(newTotal > 0 ? newTotal : null);
-  };
-
-  const handleClear = () => {
+  // Clear manual override (resets to auto value if available)
+  const handleClearOverride = () => {
+    setHasError(false);
     onChange(null);
   };
 
-  if (compact) {
-    return (
-      <div className="inline-flex items-center gap-1.5">
-        {/* Hours dropdown */}
-        <select
-          value={hours}
-          onChange={(e) => handleHoursChange(parseInt(e.target.value))}
-          className="px-1 py-0.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
-        >
-          {HOUR_INCREMENTS.map((h) => (
-            <option key={h} value={h}>
-              {h}h
-            </option>
-          ))}
-        </select>
+  // Clear everything (when there's no auto value)
+  const handleClearAll = () => {
+    setInputText("");
+    setHasError(false);
+    onChange(null);
+  };
 
-        {/* Minutes dropdown */}
-        <select
-          value={minutes}
-          onChange={(e) => handleMinutesChange(parseInt(e.target.value))}
-          className="px-1 py-0.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
-        >
-          {MINUTE_INCREMENTS.map((m) => (
-            <option key={m} value={m}>
-              {m}m
-            </option>
-          ))}
-        </select>
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+  };
 
-        {/* AI badge */}
-        {showSource === "ai" && (
-          <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
-            AI
-          </span>
-        )}
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          inputMode="text"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className={`
+            w-full px-3 py-1.5 pr-8 text-sm
+            bg-white dark:bg-zinc-800
+            border rounded-lg
+            focus:outline-none focus:ring-2 focus:ring-violet-500
+            ${hasError
+              ? "border-red-400 dark:border-red-500"
+              : "border-zinc-200 dark:border-zinc-700"
+            }
+            ${isUsingAutoValue ? "text-zinc-500 dark:text-zinc-400" : ""}
+          `}
+        />
 
-        {/* Clear button */}
-        {value && (
+        {/* Clear button - shows X when there's a manual override to reset, or when there's no auto value */}
+        {(hasManualOverride || (effectiveValue != null && autoValue == null)) && (
           <button
-            onClick={handleClear}
-            className="p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
-            title="Clear estimate"
+            onClick={hasManualOverride ? handleClearOverride : handleClearAll}
+            type="button"
+            className="absolute right-2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+            title={hasManualOverride ? "Reset to auto-calculated" : "Clear estimate"}
           >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         )}
       </div>
-    );
-  }
 
-  return (
-    <div className="flex items-center gap-2">
-      {/* Hours dropdown */}
-      <div className="flex items-center gap-1">
-        <select
-          value={hours}
-          onChange={(e) => handleHoursChange(parseInt(e.target.value))}
-          className="px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-        >
-          {HOUR_INCREMENTS.map((h) => (
-            <option key={h} value={h}>
-              {h}
-            </option>
-          ))}
-        </select>
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">h</span>
-      </div>
-
-      {/* Minutes dropdown */}
-      <div className="flex items-center gap-1">
-        <select
-          value={minutes}
-          onChange={(e) => handleMinutesChange(parseInt(e.target.value))}
-          className="px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-        >
-          {MINUTE_INCREMENTS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">m</span>
-      </div>
-
-      {/* AI badge */}
-      {showSource === "ai" && (
-        <span className="px-1.5 py-0.5 text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
-          AI
+      {/* Error hint */}
+      {hasError && (
+        <span className="text-xs text-red-500 dark:text-red-400">
+          Invalid format. Try: 45m, 1h, or 1h 30m
         </span>
       )}
 
-      {/* Clear button */}
-      {value && (
-        <button
-          onClick={handleClear}
-          className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
-          title="Clear estimate"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      {/* Source indicator - only shows context, not the value */}
+      {!hasError && effectiveValue != null && (
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          {source === "steps" && "From steps"}
+          {source === "ai" && (
+            <span className="inline-flex items-center gap-1">
+              AI estimate
+              <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
+                AI
+              </span>
+            </span>
+          )}
+          {source === "manual" && (hasManualOverride ? "Manual override" : "Manual")}
+          {!source && isUsingAutoValue && "From steps"}
+        </span>
       )}
     </div>
   );

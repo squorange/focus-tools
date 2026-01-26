@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Task, Project, FocusQueue } from "@/lib/types";
 import MetadataPill from "@/components/shared/MetadataPill";
 import { getTodayISO } from "@/lib/utils";
-import { dateMatchesPattern, getNextOccurrence, getActiveOccurrenceDate } from "@/lib/recurring-utils";
+import { dateMatchesPattern, getNextOccurrence, getActiveOccurrenceDate, timestampToLocalDate } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 
 interface ProjectsViewProps {
@@ -48,7 +48,7 @@ function formatNextDueDate(task: Task): { text: string; isPastDue: boolean } {
   const today = getTodayISO();
   const pattern = task.recurrence as RecurrenceRuleExtended;
   const startDate = pattern.startDate ||
-    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : today);
+    (task.createdAt ? timestampToLocalDate(task.createdAt) : today);
 
   const isDueToday = dateMatchesPattern(today, pattern, startDate);
   const todayInstance = task.recurringInstances?.find(i => i.date === today);

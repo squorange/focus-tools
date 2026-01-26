@@ -25,7 +25,19 @@ import {
   createFocusQueueItem,
   generateId,
 } from "@/lib/types";
-import { loadState, saveState, exportData, importData } from "@/lib/storage";
+import { loadState, saveState, exportData, importData, loadNotifications, saveNotifications } from "@/lib/storage";
+import { Notification, ActiveAlert } from "@/lib/notification-types";
+import {
+  getUnacknowledgedCount,
+  markNotificationAcknowledged,
+  getReadyToFire,
+  markNotificationFired,
+  getAnyActiveStartPoke,
+  snoozeNotification,
+  cancelNotificationsForCompletedTask,
+  getAllActiveAlerts,
+} from "@/lib/notification-utils";
+import { getStartPokeStatus } from "@/lib/start-poke-utils";
 import {
   logTaskCreated,
   logTaskCompleted,
@@ -75,6 +87,8 @@ import SearchView from "@/components/search/SearchView";
 import ProjectsView from "@/components/projects/ProjectsView";
 import ProjectModal from "@/components/shared/ProjectModal";
 import ToastContainer, { Toast } from "@/components/shared/Toast";
+import NotificationsHub from "@/components/notifications/NotificationsHub";
+import NotificationSettings from "@/components/notifications/NotificationSettings";
 import { usePWA } from "@/lib/usePWA";
 import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/ai-assistant";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
@@ -83,7 +97,7 @@ import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, Col
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
-import { initializeReminders } from "@/lib/notifications";
+import { initializeReminders, initializeStartPokes } from "@/lib/notifications";
 
 // ============================================
 // Initial States
@@ -112,6 +126,7 @@ export default function Home() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stagingIsNewArrival, setStagingIsNewArrival] = useState(false);
   const [paletteManuallyOpened, setPaletteManuallyOpened] = useState(false);
   // Track relationship between staging and palette content
@@ -132,6 +147,9 @@ export default function Home() {
   const [taskCreationOpen, setTaskCreationOpen] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
   const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
+
+  // Alert cycling state (for pokes and reminders)
+  const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
 
   // Search state (simplified - sidebar mode swaps based on focus/query)
   const [searchInputFocused, setSearchInputFocused] = useState(false);
@@ -1052,6 +1070,13 @@ export default function Home() {
       // Initialize reminders (check for any due while app was closed)
       initializeReminders();
 
+      // Initialize start pokes (check for any due while app was closed)
+      initializeStartPokes();
+
+      // Load notifications from localStorage
+      const loadedNotifications = loadNotifications();
+      setNotifications(loadedNotifications);
+
       // Load recent task IDs from localStorage
       try {
         const savedRecentIds = localStorage.getItem('focus-tools-recent-tasks');
@@ -1076,6 +1101,69 @@ export default function Home() {
       saveState(state);
     }
   }, [state, hasHydrated]);
+
+  // Save notifications changes to localStorage
+  useEffect(() => {
+    if (hasHydrated) {
+      saveNotifications(notifications);
+    }
+  }, [notifications, hasHydrated]);
+
+  // Check for notifications that need to fire (periodically + on app focus)
+  // UI updates automatically via startPokeAlertData when notifications are fired
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    const checkAndFireNotifications = () => {
+      // Pass tasks to filter out notifications for completed tasks
+      const readyToFire = getReadyToFire(notifications, state.tasks);
+      if (readyToFire.length > 0) {
+        setNotifications((prev) => {
+          let updated = prev;
+          for (const notification of readyToFire) {
+            updated = markNotificationFired(notification.id, updated);
+          }
+          return updated;
+        });
+      }
+    };
+
+    // Check immediately
+    checkAndFireNotifications();
+
+    // Check every minute
+    const interval = setInterval(checkAndFireNotifications, 60000);
+
+    // Check on window focus (user returns to app)
+    const handleFocus = () => checkAndFireNotifications();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [hasHydrated, notifications, state.tasks]);
+
+  // Cancel pending notifications for completed tasks
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    // Find completed tasks that still have pending notifications
+    const completedTaskIds = state.tasks
+      .filter(t => t.status === 'complete' || t.completedAt !== null)
+      .map(t => t.id);
+
+    setNotifications((prev) => {
+      let updated = prev;
+      for (const taskId of completedTaskIds) {
+        const hadPending = updated.some(n => n.taskId === taskId && n.firedAt === null);
+        if (hadPending) {
+          updated = cancelNotificationsForCompletedTask(taskId, updated);
+        }
+      }
+      return updated;
+    });
+  }, [hasHydrated, state.tasks]);
 
   // Save recent task IDs to localStorage
   useEffect(() => {
@@ -1457,6 +1545,47 @@ export default function Home() {
     }
   }, [state.currentView, activeStaleItems, staleIndex, activeOldInboxItems, oldInboxIndex]);
 
+  // Show Start Poke alert in MiniBar when there's an active (fired but unacknowledged) start poke
+  // This takes priority over regular nudges
+  useEffect(() => {
+    const activePoke = getAnyActiveStartPoke(notifications);
+
+    if (activePoke && activePoke.taskId) {
+      const task = state.tasks.find((t) => t.id === activePoke.taskId);
+      if (task) {
+        const status = getStartPokeStatus(task, state.userSettings);
+        // Format anchor time for display
+        const anchorTime = status.anchorTime;
+        const anchorTimeStr = anchorTime
+          ? new Date(anchorTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+          : '';
+        aiAssistant.setCollapsedContent({
+          type: 'start_poke',
+          text: anchorTimeStr
+            ? `👉🏽 Start "${task.title}" by ${anchorTimeStr}`
+            : `👉🏽 Start "${task.title}"`,
+          startPokeAlert: {
+            taskId: task.id,
+            taskTitle: task.title,
+            notificationId: activePoke.id,
+            anchorTime: status.anchorTime ?? (Date.now() + 30 * 60000),
+            durationMinutes: status.durationMinutes ?? (task.estimatedDurationMinutes ?? 30),
+            bufferMinutes: status.bufferMinutes ?? state.userSettings.startPokeBufferMinutes,
+          },
+        });
+        return;
+      }
+    }
+
+    // Clear start_poke if no longer active (but don't clear other content types)
+    if (aiAssistant.state.collapsedContent.type === 'start_poke') {
+      aiAssistant.setCollapsedContent({
+        type: 'idle',
+        text: 'Ask AI...',
+      });
+    }
+  }, [notifications, state.tasks, state.userSettings, aiAssistant.state.collapsedContent.type]);
+
   const handleDismissStaleItem = useCallback((itemId: string) => {
     setDismissedStaleIds((prev) => { const next = new Set(prev); next.add(itemId); return next; });
   }, []);
@@ -1579,6 +1708,50 @@ export default function Home() {
     setState((prev) => ({
       ...prev,
       taskDetailMode: prev.taskDetailMode === 'executing' ? 'managing' : 'executing',
+    }));
+  }, []);
+
+  // ============================================
+  // Notification Handlers
+  // ============================================
+
+  const handleNotificationTap = useCallback((notification: Notification) => {
+    // Mark as acknowledged
+    setNotifications((prev) => markNotificationAcknowledged(notification.id, prev));
+
+    // Navigate to the task if there is one
+    if (notification.taskId) {
+      const task = state.tasks.find(t => t.id === notification.taskId);
+      if (task) {
+        setPreviousView(state.currentView);
+        setState((prev) => ({
+          ...prev,
+          currentView: 'taskDetail',
+          activeTaskId: notification.taskId,
+        }));
+      }
+    }
+  }, [state.tasks, state.currentView]);
+
+  const handleDismissNotification = useCallback((notificationId: string) => {
+    setNotifications((prev) => markNotificationAcknowledged(notificationId, prev));
+  }, []);
+
+  const handleOpenNotificationSettings = useCallback(() => {
+    setPreviousView(state.currentView);
+    setState((prev) => ({
+      ...prev,
+      currentView: 'settings',
+    }));
+  }, [state.currentView]);
+
+  const handleUpdateUserSettings = useCallback((updates: Partial<AppState['userSettings']>) => {
+    setState((prev) => ({
+      ...prev,
+      userSettings: {
+        ...prev.userSettings,
+        ...updates,
+      },
     }));
   }, []);
 
@@ -4386,6 +4559,7 @@ export default function Home() {
   const inboxTasks = filterInbox(state.tasks);
   const poolTasks = filterPool(state.tasks);
   const queueItems = getTodayItems(state.focusQueue);
+  const notificationCount = getUnacknowledgedCount(notifications);
 
   const awarenessData = (() => {
     // Focus view: stale queue items
@@ -4421,6 +4595,71 @@ export default function Home() {
     return null;
   })();
 
+  // Active alerts data (pokes and reminders for MiniBar/Palette)
+  const activeAlertsData: ActiveAlert[] = useMemo(() => {
+    // Create unified handlers for alerts
+    const handlers = {
+      onStartPoke: (taskId: string, notificationId: string) => {
+        // Acknowledge the notification
+        setNotifications((prev) => markNotificationAcknowledged(notificationId, prev));
+        // Navigate to task
+        handleOpenTask(taskId);
+        // If the task is in the queue, start focus
+        const queueItem = state.focusQueue.items.find((item) => item.taskId === taskId);
+        if (queueItem) {
+          handleStartFocus(queueItem.id);
+        }
+      },
+      onViewReminder: (taskId: string, notificationId: string) => {
+        setNotifications((prev) => markNotificationAcknowledged(notificationId, prev));
+        handleOpenTask(taskId);
+      },
+      onSnooze: (notificationId: string, minutes: number) => {
+        setNotifications((prev) => snoozeNotification(notificationId, prev, minutes));
+      },
+      onDismiss: (notificationId: string) => {
+        setNotifications((prev) => markNotificationAcknowledged(notificationId, prev));
+      },
+    };
+
+    return getAllActiveAlerts(
+      notifications,
+      state.tasks,
+      state.userSettings,
+      handlers
+    );
+  }, [notifications, state.tasks, state.userSettings, state.focusQueue.items, handleOpenTask, handleStartFocus]);
+
+  // Handle alert cycling
+  const handleCycleAlert = useCallback(() => {
+    if (activeAlertsData.length > 1) {
+      setCurrentAlertIndex((prev) => (prev + 1) % activeAlertsData.length);
+    }
+  }, [activeAlertsData.length]);
+
+  // Handle start poke action (from MiniBar/Palette)
+  const handleStartPokeAction = useCallback(() => {
+    const currentAlert = activeAlertsData[currentAlertIndex];
+    if (currentAlert?.type === 'poke') {
+      currentAlert.data.onStart();
+    }
+  }, [activeAlertsData, currentAlertIndex]);
+
+  // Handle reminder action (from MiniBar/Palette)
+  const handleReminderAction = useCallback(() => {
+    const currentAlert = activeAlertsData[currentAlertIndex];
+    if (currentAlert?.type === 'reminder') {
+      currentAlert.data.onView();
+    }
+  }, [activeAlertsData, currentAlertIndex]);
+
+  // Reset alert index when alerts change
+  useEffect(() => {
+    if (currentAlertIndex >= activeAlertsData.length) {
+      setCurrentAlertIndex(0);
+    }
+  }, [activeAlertsData.length, currentAlertIndex]);
+
   const counts = {
     inbox: inboxTasks.length,
     pool: poolTasks.length,
@@ -4447,6 +4686,8 @@ export default function Home() {
     switch (state.currentView) {
       case 'projects': return 'Projects';
       case 'inbox': return 'Needs Triage';
+      case 'notifications': return 'Notifications';
+      case 'settings': return 'Settings';
       case 'taskDetail': return null;  // Task title shown elsewhere
       case 'focusMode': return null;   // Focus mode has own header
       default: return null;  // focus/tasks use TabCluster
@@ -4548,6 +4789,7 @@ export default function Home() {
         onSearchInputBlur={() => setSearchInputFocused(false)}
         searchInputFocused={searchInputFocused}
         inboxCount={inboxTasks.length}
+        notificationCount={notificationCount}
         shouldFocusSearch={shouldFocusSearch}
         onSearchFocused={() => setShouldFocusSearch(false)}
         // Jump To filter shortcuts
@@ -4564,9 +4806,6 @@ export default function Home() {
         }}
         // Back to menu (exit search mode)
         onBackToMenu={handleBackToMenu}
-        // Data management
-        onExportData={handleExportData}
-        onImportData={handleTriggerImport}
         // Projects for search results
         projects={state.projects}
         tasks={state.tasks}
@@ -4622,7 +4861,7 @@ export default function Home() {
             projectModalOpen={projectModalOpen}
             onOpenProjectModalWithCallback={handleOpenProjectModalWithCallback}
             viewTitle={viewTitle}
-            showBackButton={state.currentView === 'projects' || state.currentView === 'inbox' || state.currentView === 'taskDetail'}
+            showBackButton={state.currentView === 'inbox' || state.currentView === 'taskDetail'}
             onBack={() => {
               if (state.currentView === 'taskDetail') {
                 handleBackToList();
@@ -4719,12 +4958,30 @@ export default function Home() {
               />
             )}
 
+            {state.currentView === 'notifications' && (
+              <NotificationsHub
+                notifications={notifications}
+                onNotificationTap={handleNotificationTap}
+                onDismiss={handleDismissNotification}
+              />
+            )}
+
+            {state.currentView === 'settings' && (
+              <NotificationSettings
+                userSettings={state.userSettings}
+                onUpdateSettings={handleUpdateUserSettings}
+                onExportData={handleExportData}
+                onImportData={handleTriggerImport}
+              />
+            )}
+
             {state.currentView === 'taskDetail' && activeTask && (
               <TaskDetail
                 key={activeTask.id}
                 task={activeTask}
                 queue={state.focusQueue}
                 projects={state.projects}
+                userSettings={state.userSettings}
                 mode={state.taskDetailMode}
                 suggestions={activeTask.staging?.suggestions || []}
                 edits={activeTask.staging?.edits || []}
@@ -4767,6 +5024,7 @@ export default function Home() {
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
                 onOpenProjectModal={handleOpenProjectModal}
+                onOpenProjectModalWithCallback={handleOpenProjectModalWithCallback}
                 aiTargetContext={aiTargetContext}
                 isAILoading={aiAssistant.state.isLoading}
                 onOpenAIPalette={handleOpenAIPalette}
@@ -4899,6 +5157,11 @@ export default function Home() {
             aiTargetContext={aiTargetContext}
             onClearAITarget={clearAITargetContext}
             awareness={awarenessData}
+            activeAlerts={activeAlertsData.length > 0 ? activeAlertsData : null}
+            currentAlertIndex={currentAlertIndex}
+            onCycleAlert={handleCycleAlert}
+            onStartPokeAction={handleStartPokeAction}
+            onReminderAction={handleReminderAction}
           />
         </div>
       )}

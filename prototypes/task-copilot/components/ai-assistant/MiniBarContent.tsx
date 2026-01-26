@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Bell } from 'lucide-react';
 import { CollapsedContent } from '@/lib/ai-types';
 import { ANIMATIONS, LOADING_ANIMATION } from '@/lib/ai-constants';
 import { ShimmerText } from './ShimmerText';
@@ -10,17 +10,35 @@ interface MiniBarContentProps {
   content: CollapsedContent;
   onExpand: () => void;
   onScrollToSuggestions?: () => void;
+  onStartPokeAction?: () => void;  // When "Start" is tapped on a start poke
+  onReminderAction?: () => void;   // When "View" is tapped on a reminder
+  onCycleAlert?: () => void;       // When alert count is tapped to cycle
 }
 
-export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: MiniBarContentProps) {
+export function MiniBarContent({
+  content,
+  onExpand,
+  onScrollToSuggestions,
+  onStartPokeAction,
+  onReminderAction,
+  onCycleAlert,
+}: MiniBarContentProps) {
   const isLoading = content.type === 'loading';
   const isNudge = content.type === 'nudge';
+  const isStartPoke = content.type === 'start_poke';
+  const isReminder = content.type === 'reminder';
+  const isAlert = isStartPoke || isReminder;
   const isResponse = content.type === 'response';
   const isIdle = content.type === 'idle';
   const isSuggestionsReady = content.type === 'suggestionsReady';
   const isConfirmation = content.type === 'confirmation';
   const isPrompt = content.type === 'prompt';
   const isCancelled = content.type === 'cancelled';
+
+  // Alert cycling info
+  const alertCount = content.alertCount ?? 1;
+  const currentAlertIndex = content.currentAlertIndex ?? 0;
+  const hasMultipleAlerts = alertCount > 1;
 
   // Handle click: always expand Palette, and also scroll to StagingArea if suggestions ready
   const handleClick = () => {
@@ -39,16 +57,22 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
     }
   };
 
+  // Handle alert cycle click
+  const handleCycleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCycleAlert?.();
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.1 }}
-      className={`h-12 px-6 sm:px-4 flex items-center gap-3 cursor-pointer ${isPrompt || isNudge ? '!pr-[9px]' : ''}`}
+      className={`h-12 px-6 sm:px-4 flex items-center gap-3 cursor-pointer ${isPrompt || isNudge || isAlert ? '!pr-[9px]' : ''}`}
       onClick={handleClick}
     >
-      {/* Icon - Lucide Sparkles for AI boundary */}
+      {/* Icon - Emoji for poke, Bell for reminder, Sparkles for AI */}
       <AnimatePresence mode="wait">
         <motion.div
           key={content.type}
@@ -58,10 +82,19 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
           transition={{ duration: ANIMATIONS.contentFadeDuration }}
           className={`flex-shrink-0 ${isLoading ? 'animate-pulse-sparkle' : ''}`}
         >
-          <Sparkles
-            size={18}
-            className="text-violet-500 dark:text-violet-400"
-          />
+          {isStartPoke ? (
+            <span className="text-base leading-none" role="img" aria-label="Start poke">👉🏽</span>
+          ) : isReminder ? (
+            <Bell
+              size={18}
+              className="text-amber-500 dark:text-amber-400"
+            />
+          ) : (
+            <Sparkles
+              size={18}
+              className="text-violet-500 dark:text-violet-400"
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -100,8 +133,72 @@ export function MiniBarContent({ content, onExpand, onScrollToSuggestions }: Min
 
       {/* Trailing element */}
       <AnimatePresence mode="wait">
-        {/* Prompt pill - slides in from right */}
-        {isPrompt && content.prompt ? (
+        {/* Start Poke action - "Start" button + optional count */}
+        {isStartPoke && onStartPokeAction ? (
+          <motion.div
+            key="start-poke-action"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="flex items-center gap-1.5"
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartPokeAction();
+              }}
+              className="flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full
+                bg-violet-100 dark:bg-violet-900/40
+                text-violet-700 dark:text-violet-300
+                hover:bg-violet-200 dark:hover:bg-violet-800/50
+                transition-colors"
+            >
+              Start
+            </button>
+            {hasMultipleAlerts && (
+              <button
+                onClick={handleCycleClick}
+                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                ({currentAlertIndex + 1}/{alertCount})
+              </button>
+            )}
+          </motion.div>
+        ) : /* Reminder action - "View" button + optional count */
+        isReminder && onReminderAction ? (
+          <motion.div
+            key="reminder-action"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            className="flex items-center gap-1.5"
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onReminderAction();
+              }}
+              className="flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full
+                bg-amber-100 dark:bg-amber-900/40
+                text-amber-700 dark:text-amber-300
+                hover:bg-amber-200 dark:hover:bg-amber-800/50
+                transition-colors"
+            >
+              View
+            </button>
+            {hasMultipleAlerts && (
+              <button
+                onClick={handleCycleClick}
+                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                ({currentAlertIndex + 1}/{alertCount})
+              </button>
+            )}
+          </motion.div>
+        ) : /* Prompt pill - slides in from right */
+        isPrompt && content.prompt ? (
           <motion.button
             key="prompt-pill"
             initial={{ opacity: 0, x: 20 }}

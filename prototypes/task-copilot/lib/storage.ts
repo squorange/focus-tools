@@ -2,6 +2,7 @@ import {
   AppState,
   SCHEMA_VERSION,
   createInitialAppState,
+  createDefaultUserSettings,
   Task,
   Step,
   Substep,
@@ -12,7 +13,9 @@ import {
   SnoozedNudge,
   StagingState,
   RecurringInstance,
+  UserSettings,
 } from './types';
+import { Notification } from './notification-types';
 import { pruneOldInstances } from './recurring-utils';
 
 // ============================================
@@ -24,6 +27,7 @@ const STORAGE_KEYS = {
   events: 'focus-tools-events',
   sessions: 'focus-tools-sessions',
   nudges: 'focus-tools-nudges',
+  notifications: 'focus-tools-notifications',
 } as const;
 
 // ============================================
@@ -97,6 +101,22 @@ export function loadNudges(): { nudges: Nudge[]; snoozedNudges: SnoozedNudge[] }
   } catch (error) {
     console.error('Failed to load nudges:', error);
     return { nudges: [], snoozedNudges: [] };
+  }
+}
+
+/**
+ * Load notifications separately
+ */
+export function loadNotifications(): Notification[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.notifications);
+    if (!stored) return [];
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Failed to load notifications:', error);
+    return [];
   }
 }
 
@@ -181,6 +201,19 @@ export function saveNudges(nudges: Nudge[], snoozedNudges: SnoozedNudge[]): void
   }
 }
 
+/**
+ * Save notifications separately
+ */
+export function saveNotifications(notifications: Notification[]): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.notifications, JSON.stringify(notifications));
+  } catch (error) {
+    console.error('Failed to save notifications:', error);
+  }
+}
+
 // ============================================
 // Migration
 // ============================================
@@ -242,6 +275,16 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV10(state);
   }
 
+  // Version 10 → 11: Add Start Nudge fields to tasks and userSettings to AppState
+  if (version < 11) {
+    state = migrateToV11(state);
+  }
+
+  // Version 11 → 12: Rename Start Nudge → Start Poke, add time fields to tasks
+  if (version < 12) {
+    state = migrateToV12(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -283,8 +326,13 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         projectId: null,
         context: null,
         targetDate: null,
+        targetTime: null,
         deadlineDate: null,
+        deadlineTime: null,
         reminder: null,
+        startPokeOverride: null,
+        estimatedDurationMinutes: null,
+        estimatedDurationSource: null,
         effort: null,
         estimatedMinutes: null,
         totalTimeSpent: 0,
@@ -699,6 +747,77 @@ function migrateToV10(state: Partial<AppState> & Record<string, unknown>): Parti
 }
 
 /**
+ * Migrate from v10 to v11 (Add Start Nudge/Poke fields to tasks and userSettings to AppState)
+ * Note: Field names were renamed from startNudge* to startPoke* in v12, but we initialize here
+ */
+function migrateToV11(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Add new Start Poke fields to tasks (using new field names)
+  const tasks = ((state.tasks as Task[]) || []).map((task) => ({
+    ...task,
+    startPokeOverride: task.startPokeOverride ?? null,
+    estimatedDurationMinutes: task.estimatedDurationMinutes ?? null,
+    estimatedDurationSource: task.estimatedDurationSource ?? null,
+  }));
+
+  // Add userSettings with defaults (using new field names)
+  const userSettings: UserSettings = {
+    startPokeEnabled: true,
+    startPokeDefault: 'none',
+    startPokeBufferMinutes: 10,
+    startPokeBufferPercentage: false,
+    ...((state.userSettings as Partial<UserSettings>) || {}),
+  };
+
+  return {
+    ...state,
+    schemaVersion: 11,
+    tasks,
+    userSettings,
+  };
+}
+
+/**
+ * Migrate from v11 to v12 (Rename Start Nudge → Start Poke, add time fields to tasks)
+ */
+function migrateToV12(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Migrate tasks: rename startNudgeOverride → startPokeOverride, add time fields
+  const tasks = ((state.tasks as Task[]) || []).map((task) => {
+    // Get old field value if it exists
+    const oldOverride = (task as unknown as { startNudgeOverride?: 'on' | 'off' | null }).startNudgeOverride;
+
+    return {
+      ...task,
+      // Add time fields
+      targetTime: task.targetTime ?? null,
+      deadlineTime: task.deadlineTime ?? null,
+      // Rename startNudgeOverride → startPokeOverride
+      startPokeOverride: task.startPokeOverride ?? oldOverride ?? null,
+    };
+  });
+
+  // Migrate userSettings: rename fields and add startPokeEnabled
+  const oldSettings = (state.userSettings as unknown as Record<string, unknown>) || {};
+  const userSettings: UserSettings = {
+    startPokeEnabled: (oldSettings.startPokeEnabled as boolean) ??
+      // If old startNudgeDefault was not 'none', user had it enabled
+      ((oldSettings.startNudgeDefault as string) !== 'none' && oldSettings.startNudgeDefault !== undefined),
+    startPokeDefault: (oldSettings.startPokeDefault as UserSettings['startPokeDefault']) ??
+      (oldSettings.startNudgeDefault as UserSettings['startPokeDefault']) ?? 'all',
+    startPokeBufferMinutes: (oldSettings.startPokeBufferMinutes as number) ??
+      (oldSettings.startNudgeDefaultBufferMinutes as number) ?? 10,
+    startPokeBufferPercentage: (oldSettings.startPokeBufferPercentage as boolean) ??
+      (oldSettings.startNudgeBufferPercentage as boolean) ?? false,
+  };
+
+  return {
+    ...state,
+    schemaVersion: 12,
+    tasks,
+    userSettings,
+  };
+}
+
+/**
  * Migrate legacy step format to new format
  */
 function migrateSteps(legacySteps: unknown[]): Step[] {
@@ -779,6 +898,13 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     recurringTotalCompletions: task.recurringTotalCompletions ?? 0,
     recurringLastCompleted: task.recurringLastCompleted ?? null,
     recurringNextDue: task.recurringNextDue ?? null,
+    // Time fields (v12)
+    targetTime: task.targetTime ?? null,
+    deadlineTime: task.deadlineTime ?? null,
+    // Start Time Poke fields (v11→v12 renamed)
+    startPokeOverride: task.startPokeOverride ?? null,
+    estimatedDurationMinutes: task.estimatedDurationMinutes ?? null,
+    estimatedDurationSource: task.estimatedDurationSource ?? null,
     // Ensure steps have Model E fields
     steps: task.steps.map((step) => ({
       ...step,
@@ -826,6 +952,10 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     nudges: partial.nudges ?? initial.nudges,
     snoozedNudges: partial.snoozedNudges ?? initial.snoozedNudges,
     analytics: partial.analytics ?? initial.analytics,
+    userSettings: {
+      ...createDefaultUserSettings(),
+      ...((partial.userSettings as Partial<UserSettings>) ?? {}),
+    },
     currentView: (partial.currentView as AppState['currentView']) ?? initial.currentView,
     activeTaskId: partial.activeTaskId ?? initial.activeTaskId,
     taskDetailMode: (partial.taskDetailMode as AppState['taskDetailMode']) ?? initial.taskDetailMode,
@@ -867,6 +997,7 @@ export function clearStorage(): void {
   localStorage.removeItem(STORAGE_KEYS.events);
   localStorage.removeItem(STORAGE_KEYS.sessions);
   localStorage.removeItem(STORAGE_KEYS.nudges);
+  localStorage.removeItem(STORAGE_KEYS.notifications);
 }
 
 // ============================================
@@ -881,6 +1012,7 @@ export function exportData(): string {
   const events = loadEvents();
   const sessions = loadSessions();
   const { nudges, snoozedNudges } = loadNudges();
+  const notifications = loadNotifications();
 
   return JSON.stringify(
     {
@@ -891,6 +1023,7 @@ export function exportData(): string {
       sessions,
       nudges,
       snoozedNudges,
+      notifications,
     },
     null,
     2
@@ -921,6 +1054,10 @@ export function importData(jsonString: string): { success: boolean; error?: stri
 
     if (data.nudges || data.snoozedNudges) {
       saveNudges(data.nudges || [], data.snoozedNudges || []);
+    }
+
+    if (data.notifications) {
+      saveNotifications(data.notifications);
     }
 
     return { success: true };

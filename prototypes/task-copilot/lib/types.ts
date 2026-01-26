@@ -2,7 +2,23 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 12;
+
+// ============================================
+// Re-export Notification Types
+// ============================================
+
+export type {
+  Notification,
+  NotificationType,
+  NotificationIcon,
+  StartPokeDefault,
+  StartPokeOverride,
+  DurationSource,
+  StartPokeStatus,
+  StartPokeSettings,
+  NotificationGroup,
+} from './notification-types';
 
 // ============================================
 // Task Structure Types
@@ -121,10 +137,17 @@ export interface Task {
 
   // Dates
   targetDate: string | null;        // ISO date (YYYY-MM-DD)
+  targetTime: string | null;        // Optional time in HH:mm format (24-hour)
   deadlineDate: string | null;      // ISO date (YYYY-MM-DD)
+  deadlineTime: string | null;      // Optional time in HH:mm format (24-hour)
 
   // Reminder (for PWA notifications)
   reminder: Reminder | null;
+
+  // Start Time Poke (time-to-start notification)
+  startPokeOverride: 'on' | 'off' | null;  // null = use global default
+  estimatedDurationMinutes: number | null;   // Task-level duration override
+  estimatedDurationSource: 'manual' | 'ai' | 'steps' | null;  // Source of estimate
 
   // Effort & Time
   effort: Effort | null;
@@ -674,15 +697,29 @@ export type SortOption =
 // ============================================
 
 // Navigation: 2-tab + Search model
-// Focus (home) | Tasks (combined Inbox + Pool) | Search | TaskDetail | Inbox (drill-in) | FocusMode | Projects
+// Focus (home) | Tasks (combined Inbox + Pool) | Search | TaskDetail | Inbox (drill-in) | FocusMode | Projects | Notifications | Settings
 export type ViewType =
   | 'focus'      // Default home - Focus Queue with horizons
   | 'tasks'      // Combined Inbox + Pool view
   | 'inbox'      // Drill-in from Tasks "View all" inbox items
   | 'search'     // Search + Quick Access view
   | 'projects'   // Projects management view
+  | 'notifications'  // Notifications hub view
+  | 'settings'   // Settings view (Start Time Poke, Export/Import)
   | 'taskDetail'
   | 'focusMode';
+
+// ============================================
+// User Settings (stored with app state)
+// ============================================
+
+export interface UserSettings {
+  // Start Time Poke settings
+  startPokeEnabled: boolean;  // Top-level toggle to enable/disable the feature globally
+  startPokeDefault: 'all' | 'routines_only' | 'tasks_only' | 'none';
+  startPokeBufferMinutes: number;
+  startPokeBufferPercentage: boolean;  // If true, use 15% instead of fixed buffer
+}
 
 export interface AppState {
   schemaVersion: number;
@@ -701,6 +738,9 @@ export interface AppState {
   nudges: Nudge[];
   snoozedNudges: SnoozedNudge[];
   analytics: UserAnalytics | null;
+
+  // User settings
+  userSettings: UserSettings;
 
   // Navigation (Model E: updated view types)
   currentView: ViewType;
@@ -828,8 +868,15 @@ export function createTask(title: string, options?: Partial<Task>): Task {
     context: null,
 
     targetDate: null,
+    targetTime: null,
     deadlineDate: null,
+    deadlineTime: null,
     reminder: null,
+
+    // Start Time Poke
+    startPokeOverride: null,
+    estimatedDurationMinutes: null,
+    estimatedDurationSource: null,
 
     effort: null,
     estimatedMinutes: null,
@@ -934,6 +981,14 @@ export function createInitialAppState(): AppState {
     snoozedNudges: [],
     analytics: null,
 
+    // User settings with defaults
+    userSettings: {
+      startPokeEnabled: false,                // Feature disabled by default
+      startPokeDefault: 'all',                // When enabled, apply to all tasks by default
+      startPokeBufferMinutes: 10,             // 10 minute buffer
+      startPokeBufferPercentage: false,       // Use fixed buffer by default
+    },
+
     // Model E: default view is focus (home)
     currentView: 'focus',
     activeTaskId: null,
@@ -976,6 +1031,16 @@ export function createInitialAppState(): AppState {
 
     completedTodayExpanded: true,
     error: null,
+  };
+}
+
+// Create default user settings
+export function createDefaultUserSettings(): UserSettings {
+  return {
+    startPokeEnabled: false,                // Feature disabled by default
+    startPokeDefault: 'all',                // When enabled, apply to all tasks by default
+    startPokeBufferMinutes: 10,             // 10 minute buffer
+    startPokeBufferPercentage: false,       // Use fixed buffer by default
   };
 }
 

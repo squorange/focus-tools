@@ -1,11 +1,14 @@
 /**
- * PWA Notification helpers for task reminders
+ * PWA Notification helpers for task reminders and start pokes
  */
 
-import { Reminder } from './types';
+import { Reminder, Task, UserSettings } from './types';
+import { calculateStartPokeTime, isStartPokeEnabled } from './start-poke-utils';
+import { StartPokeSettings } from './notification-types';
 
 // Key for storing scheduled reminders in localStorage
 const SCHEDULED_REMINDERS_KEY = 'task-copilot-scheduled-reminders';
+const SCHEDULED_START_POKES_KEY = 'task-copilot-scheduled-start-pokes';
 
 interface ScheduledReminder {
   taskId: string;
@@ -14,8 +17,17 @@ interface ScheduledReminder {
   timerId?: ReturnType<typeof setTimeout>;
 }
 
+interface ScheduledStartPoke {
+  taskId: string;
+  taskTitle: string;
+  scheduledTime: number; // Unix timestamp in ms (poke time, not due time)
+  notificationId: string; // ID of the Notification object in notifications array
+}
+
 // In-memory map of active timers (for session-based reminders)
 const activeTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+// Separate map for start poke timers
+const activeStartPokeTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
 /**
  * Check if browser supports notifications
@@ -334,4 +346,176 @@ export function getRelativeReminderOptions(
   }
 
   return options;
+}
+
+// ============================================
+// Start Poke PWA Notifications
+// ============================================
+
+/**
+ * Get stored scheduled start pokes from localStorage
+ */
+function getStoredStartPokes(): ScheduledStartPoke[] {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(SCHEDULED_START_POKES_KEY);
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Save scheduled start pokes to localStorage
+ */
+function saveStoredStartPokes(pokes: ScheduledStartPoke[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SCHEDULED_START_POKES_KEY, JSON.stringify(pokes));
+}
+
+/**
+ * Remove a start poke from localStorage
+ */
+function removeStoredStartPoke(taskId: string): void {
+  const pokes = getStoredStartPokes();
+  const filtered = pokes.filter(n => n.taskId !== taskId);
+  saveStoredStartPokes(filtered);
+}
+
+/**
+ * Convert UserSettings to StartPokeSettings
+ */
+function toPokeSettings(settings: UserSettings): StartPokeSettings {
+  return {
+    startPokeEnabled: settings.startPokeEnabled,
+    startPokeDefault: settings.startPokeDefault,
+    startPokeBufferMinutes: settings.startPokeBufferMinutes,
+    startPokeBufferPercentage: settings.startPokeBufferPercentage,
+  };
+}
+
+/**
+ * Schedule a start poke PWA notification for a task
+ * Returns true if scheduled successfully
+ */
+export function scheduleStartPokePWA(
+  task: Task,
+  settings: UserSettings,
+  notificationId: string
+): boolean {
+  const pokeSettings = toPokeSettings(settings);
+
+  // Check if start poke is enabled
+  if (!isStartPokeEnabled(task, pokeSettings)) {
+    return false;
+  }
+
+  // Calculate the poke time
+  const pokeResult = calculateStartPokeTime(task, pokeSettings);
+  if (!pokeResult.time) {
+    return false;
+  }
+
+  const pokeTime = pokeResult.time;
+  const now = Date.now();
+  const delay = pokeTime - now;
+
+  // If poke time is in the past, don't schedule (will be handled by immediate fire logic)
+  if (delay <= 0) {
+    return false;
+  }
+
+  // Cancel any existing poke for this task
+  cancelStartPokePWA(task.id);
+
+  // Store the poke
+  const pokes = getStoredStartPokes();
+  pokes.push({
+    taskId: task.id,
+    taskTitle: task.title,
+    scheduledTime: pokeTime,
+    notificationId,
+  });
+  saveStoredStartPokes(pokes);
+
+  // Set up the timer for in-session notifications
+  const timerId = setTimeout(() => {
+    showNotification(
+      'Time to start',
+      `${task.title} — Start now to finish on time`,
+      task.id
+    );
+    removeStoredStartPoke(task.id);
+    activeStartPokeTimers.delete(task.id);
+  }, delay);
+
+  activeStartPokeTimers.set(task.id, timerId);
+
+  return true;
+}
+
+/**
+ * Cancel a scheduled start poke PWA notification
+ */
+export function cancelStartPokePWA(taskId: string): void {
+  // Clear in-memory timer
+  const timerId = activeStartPokeTimers.get(taskId);
+  if (timerId) {
+    clearTimeout(timerId);
+    activeStartPokeTimers.delete(taskId);
+  }
+
+  // Remove from storage
+  removeStoredStartPoke(taskId);
+}
+
+/**
+ * Initialize start pokes from storage on app load
+ * Call this on app startup to restore any pending start pokes
+ */
+export function initializeStartPokes(): void {
+  const pokes = getStoredStartPokes();
+  const now = Date.now();
+
+  pokes.forEach(poke => {
+    const delay = poke.scheduledTime - now;
+
+    if (delay <= 0) {
+      // Poke was due while app was closed - show it now
+      showNotification(
+        'Time to start',
+        `${poke.taskTitle} — Start now to finish on time`,
+        poke.taskId
+      );
+      removeStoredStartPoke(poke.taskId);
+    } else {
+      // Schedule for future
+      const timerId = setTimeout(() => {
+        showNotification(
+          'Time to start',
+          `${poke.taskTitle} — Start now to finish on time`,
+          poke.taskId
+        );
+        removeStoredStartPoke(poke.taskId);
+        activeStartPokeTimers.delete(poke.taskId);
+      }, delay);
+      activeStartPokeTimers.set(poke.taskId, timerId);
+    }
+  });
+}
+
+/**
+ * Reschedule start poke when task properties change
+ */
+export function rescheduleStartPoke(
+  task: Task,
+  settings: UserSettings,
+  notificationId: string
+): boolean {
+  // Cancel existing
+  cancelStartPokePWA(task.id);
+
+  // Reschedule if still enabled
+  return scheduleStartPokePWA(task, settings, notificationId);
 }

@@ -9,14 +9,14 @@ import {
   FolderOpen,
   PanelLeft,
   PanelLeftClose,
-  Download,
-  Upload,
   Flag,
   Clock,
   CheckCircle,
   ChevronRight,
   XCircle,
   X,
+  Bell,
+  Settings,
 } from "lucide-react";
 // Note: ArrowLeft removed - "Back to menu" replaced by X button in search bar
 import { searchTasks, buildProjectMap, SearchResult, getSearchPreview } from "@/lib/utils";
@@ -44,6 +44,7 @@ interface SidebarProps {
   onSearchInputBlur: () => void;
   searchInputFocused: boolean;
   inboxCount: number;
+  notificationCount?: number;
   // Auto-focus search input
   shouldFocusSearch?: boolean;
   onSearchFocused?: () => void;
@@ -55,9 +56,6 @@ interface SidebarProps {
   onOpenTask?: (taskId: string) => void;
   // Back to menu (exit search mode)
   onBackToMenu?: () => void;
-  // Data management
-  onExportData?: () => void;
-  onImportData?: () => void;
   // For search results
   projects?: Project[];
   tasks?: Task[];
@@ -267,6 +265,7 @@ export default function Sidebar({
   onSearchInputBlur,
   searchInputFocused,
   inboxCount,
+  notificationCount = 0,
   shouldFocusSearch,
   onSearchFocused,
   filterCounts,
@@ -274,8 +273,6 @@ export default function Sidebar({
   recentTasks,
   onOpenTask,
   onBackToMenu,
-  onExportData,
-  onImportData,
   projects,
   tasks,
 }: SidebarProps) {
@@ -566,31 +563,30 @@ export default function Sidebar({
                   onClick={() => handleNavigation("projects")}
                   isCollapsed={isCollapsed}
                 />
+
+                {/* Notifications */}
+                <NavItem
+                  icon={<Bell size={20} />}
+                  label="Notifications"
+                  isActive={currentView === "notifications"}
+                  onClick={() => handleNavigation("notifications")}
+                  isCollapsed={isCollapsed}
+                  badge={notificationCount}
+                />
               </>
             )}
           </nav>
 
-          {/* Data management at bottom - only show when not in search mode */}
+          {/* Settings + Data management at bottom - only show when not in search mode */}
           {!isSearchActive && (
             <div className="flex-shrink-0 p-3 border-t border-zinc-200 dark:border-zinc-700 space-y-1">
-              {onExportData && (
-                <NavItem
-                  icon={<Download size={20} />}
-                  label="Export"
-                  isActive={false}
-                  onClick={onExportData}
-                  isCollapsed={isCollapsed}
-                />
-              )}
-              {onImportData && (
-                <NavItem
-                  icon={<Upload size={20} />}
-                  label="Import"
-                  isActive={false}
-                  onClick={onImportData}
-                  isCollapsed={isCollapsed}
-                />
-              )}
+              <NavItem
+                icon={<Settings size={20} />}
+                label="Settings"
+                isActive={currentView === "settings"}
+                onClick={() => handleNavigation("settings")}
+                isCollapsed={isCollapsed}
+              />
             </div>
           )}
         </div>

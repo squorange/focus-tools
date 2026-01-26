@@ -38,6 +38,8 @@ export interface AIAssistantState {
 export type CollapsedContentType =
   | 'idle'           // "Ask AI..."
   | 'nudge'          // Proactive suggestion
+  | 'start_poke'     // Start Time Poke notification alert
+  | 'reminder'       // Reminder notification alert
   | 'status'         // Contextual info
   | 'response'       // Brief response summary (text response ready)
   | 'suggestionsReady' // Structured suggestions ready (show count + down arrow)
@@ -64,6 +66,23 @@ export interface CollapsedContent {
     onClick: () => void;
   };
   prompt?: ContextualPrompt;  // For 'prompt' type: the pill action
+  startPokeAlert?: {         // For 'start_poke' type: notification data
+    taskId: string;
+    taskTitle: string;
+    notificationId: string;
+    anchorTime: number;      // Unix timestamp of when task is due
+    durationMinutes: number;
+    bufferMinutes: number;
+  };
+  reminderAlert?: {          // For 'reminder' type: notification data
+    taskId: string;
+    taskTitle: string;
+    notificationId: string;
+    reminderTime: number;    // When reminder was set to fire
+  };
+  // Multiple alerts support
+  alertCount?: number;       // Total number of active alerts
+  currentAlertIndex?: number; // Which alert is currently shown (0-indexed)
 }
 
 // ============ Responses ============

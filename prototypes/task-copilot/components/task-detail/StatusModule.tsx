@@ -2,7 +2,7 @@
 
 import { Task } from "@/lib/types";
 import { RecurrenceRuleExtended, RecurringInstance } from "@/lib/recurring-types";
-import { describePattern, getTodayISO, dateMatchesPattern } from "@/lib/recurring-utils";
+import { describePattern, getTodayISO, dateMatchesPattern, timestampToLocalDate } from "@/lib/recurring-utils";
 import { Check, ChevronRight, Repeat, SkipForward, Zap } from "lucide-react";
 
 // 48px progress ring for the status module - fraction only, no label inside
@@ -182,7 +182,7 @@ export default function StatusModule({
     // Check if today was skipped
     const today = getTodayISO();
     const pattern = recurrencePattern;
-    const startDate = pattern?.startDate || (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : today);
+    const startDate = pattern?.startDate || (task.createdAt ? timestampToLocalDate(task.createdAt) : today);
     const todayMatchesPattern = pattern ? dateMatchesPattern(today, pattern, startDate) : false;
     const todayInstance = task.recurringInstances?.find(i => i.date === today);
     const wasSkippedToday = todayMatchesPattern && todayInstance?.skipped;

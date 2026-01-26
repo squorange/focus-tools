@@ -297,12 +297,24 @@ export function getPreviousOccurrence(
 }
 
 /**
+ * Convert a timestamp to local date string (YYYY-MM-DD)
+ * Uses local timezone instead of UTC to avoid date mismatches
+ */
+export function timestampToLocalDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Get the effective start date for pattern matching, with fallback chain:
  * pattern.startDate → task.createdAt → today
  */
 function getEffectiveStartDate(task: Task, pattern: RecurrenceRuleExtended, dayStartHour: number = 5): string {
   return pattern.startDate ||
-    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
+    (task.createdAt ? timestampToLocalDate(task.createdAt) : getTodayISO(dayStartHour));
 }
 
 /**
@@ -533,7 +545,7 @@ export function skipInstance(
   if (newTask.recurrence) {
     const pattern = newTask.recurrence as RecurrenceRuleExtended;
     const startDate = pattern.startDate ||
-      (newTask.createdAt ? new Date(newTask.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
+      (newTask.createdAt ? timestampToLocalDate(newTask.createdAt) : getTodayISO(dayStartHour));
     newTask.recurringNextDue = getNextOccurrence(pattern, date, startDate);
   }
 
@@ -617,7 +629,7 @@ export function updateTaskMetadataAfterCompletion(
   if (task.recurrence) {
     const pattern = task.recurrence as RecurrenceRuleExtended;
     const startDate = pattern.startDate ||
-      (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
+      (task.createdAt ? timestampToLocalDate(task.createdAt) : getTodayISO(dayStartHour));
     task.recurringNextDue = getNextOccurrence(pattern, date, startDate);
   }
 
@@ -694,7 +706,7 @@ export function calculateStreak(task: Task, dayStartHour: number = 5): number {
   const pattern = task.recurrence as RecurrenceRuleExtended;
   // Use pattern.startDate, or task.createdAt, or today as fallback
   const startDate = pattern.startDate ||
-    (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : getTodayISO(dayStartHour));
+    (task.createdAt ? timestampToLocalDate(task.createdAt) : getTodayISO(dayStartHour));
   const today = getTodayISO(dayStartHour);
 
   let streak = 0;
@@ -757,7 +769,7 @@ export function generateInstancesForRange(
   // Fix: use task.createdAt as fallback for startDate so past dates can match pattern
   // Previously defaulted to today, which caused history calendar to miss past completions
   const patternStart = pattern.startDate
-    || (task.createdAt ? new Date(task.createdAt).toISOString().split('T')[0] : null)
+    || (task.createdAt ? timestampToLocalDate(task.createdAt) : null)
     || startDate; // Fallback to range start if no creation date
   const today = getTodayISO(dayStartHour);
   const instances: TaskInstance[] = [];

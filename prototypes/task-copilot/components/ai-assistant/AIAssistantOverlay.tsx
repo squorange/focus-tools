@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { AIResponse, QuickAction, CollapsedContent } from '@/lib/ai-types';
 import { AITargetContext } from '@/lib/types';
+import { ActiveAlert } from '@/lib/notification-types';
 import { HEIGHTS, HEIGHT_TRANSITION } from '@/lib/ai-constants';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -53,6 +54,12 @@ interface AIAssistantOverlayProps {
     onDismiss: (itemId: string) => void;
     onNext: () => void;
   } | null;
+  // Active alerts (pokes and reminders) - sticky, visible during AI activity
+  activeAlerts?: ActiveAlert[] | null;
+  currentAlertIndex?: number;
+  onCycleAlert?: () => void;
+  onStartPokeAction?: () => void;
+  onReminderAction?: () => void;
 }
 
 export function AIAssistantOverlay({
@@ -81,6 +88,11 @@ export function AIAssistantOverlay({
   aiTargetContext,
   onClearAITarget,
   awareness,
+  activeAlerts,
+  currentAlertIndex = 0,
+  onCycleAlert,
+  onStartPokeAction,
+  onReminderAction,
 }: AIAssistantOverlayProps) {
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
@@ -179,6 +191,9 @@ export function AIAssistantOverlay({
             content={collapsedContent}
             onExpand={onExpand}
             onScrollToSuggestions={onScrollToSuggestions}
+            onStartPokeAction={onStartPokeAction}
+            onReminderAction={onReminderAction}
+            onCycleAlert={onCycleAlert}
           />
         ) : (
           <PaletteContent
@@ -203,6 +218,11 @@ export function AIAssistantOverlay({
             aiTargetContext={aiTargetContext}
             onClearAITarget={onClearAITarget}
             awareness={awareness}
+            activeAlerts={activeAlerts}
+            currentAlertIndex={currentAlertIndex}
+            onCycleAlert={onCycleAlert}
+            onStartPokeAction={onStartPokeAction}
+            onReminderAction={onReminderAction}
           />
         )}
       </AnimatePresence>

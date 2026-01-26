@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock } from "lucide-react";
+import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock, Plus, ChevronDown, Check } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep } from "@/lib/types";
+import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
@@ -14,11 +14,16 @@ import MetadataPill from "@/components/shared/MetadataPill";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import HealthPill from "@/components/shared/HealthPill";
 import ReminderPicker from "@/components/shared/ReminderPicker";
+import StartPokeField from "@/components/task-detail/StartPokeField";
+import DurationInput from "@/components/shared/DurationInput";
+import { getDuration, getStepDurationSum } from "@/lib/start-poke-utils";
 import HistoryModal from "@/components/routines/HistoryModal";
 import EditTemplateModal from "@/components/task-detail/EditTemplateModal";
 import RecurrenceFields from "@/components/task-detail/RecurrenceFields";
 import StatusModule from "@/components/task-detail/StatusModule";
 import { formatReminder, scheduleReminder, cancelReminder } from "@/lib/notifications";
+import { getStartPokeStatus, formatPokeTime, isStartPokeEnabled } from "@/lib/start-poke-utils";
+import { StartPokeSettings } from "@/lib/notification-types";
 
 // Format date for routine section headers: "Today, January 19" or "Tuesday, January 20"
 function formatRoutineDateHeader(dateStr: string): string {
@@ -40,6 +45,7 @@ interface TaskDetailProps {
   task: Task;
   queue: FocusQueue;
   projects: Project[];
+  userSettings: UserSettings;
   // Mode for recurring tasks: 'executing' = work on today's instance, 'managing' = edit template
   mode?: 'executing' | 'managing';
   suggestions: SuggestedStep[];
@@ -83,6 +89,7 @@ interface TaskDetailProps {
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
   onOpenProjectModal: (project?: Project) => void;
+  onOpenProjectModalWithCallback?: (callback: (projectId: string) => void) => void;
   // Inline AI actions
   aiTargetContext?: AITargetContext | null;
   isAILoading?: boolean;  // True when AI request is in flight
@@ -111,6 +118,7 @@ export default function TaskDetail({
   task,
   queue,
   projects,
+  userSettings,
   mode = 'executing',
   suggestions,
   edits,
@@ -153,6 +161,7 @@ export default function TaskDetail({
   onAcceptTitle,
   onRejectTitle,
   onOpenProjectModal,
+  onOpenProjectModalWithCallback,
   aiTargetContext,
   isAILoading,
   onOpenAIPalette,
@@ -181,6 +190,23 @@ export default function TaskDetail({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   // Reminder picker state
   const [showReminderPicker, setShowReminderPicker] = useState(false);
+  // Project dropdown state
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler for project dropdown
+  useEffect(() => {
+    if (!showProjectDropdown) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node)) {
+        setShowProjectDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProjectDropdown]);
 
   // Swipe-back gesture handling is now centralized in page.tsx (on <main> element)
   // This ensures iOS Safari fires touch events correctly on the scroll container
@@ -277,10 +303,23 @@ export default function TaskDetail({
   const getDetailsSummary = () => {
     const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'healthy' | 'due' | 'overdue' | 'project'; color?: string; icon?: 'bell'; health?: ReturnType<typeof computeHealthStatus> }[] = [];
 
-    // RECURRING TASKS: Only show reminder info if set
+    // RECURRING TASKS: Only show reminder + start poke info if set
     if (isRecurring) {
       if (task.reminder) {
         pills.push({ label: formatReminder(task.reminder, task.targetDate, task.deadlineDate), variant: 'default', icon: 'bell' });
+      }
+      // Start Poke indicator for recurring
+      if (task.startPokeOverride !== 'off') {
+        const pokeSettings: StartPokeSettings = {
+          startPokeEnabled: userSettings.startPokeEnabled,
+          startPokeDefault: userSettings.startPokeDefault,
+          startPokeBufferMinutes: userSettings.startPokeBufferMinutes,
+          startPokeBufferPercentage: userSettings.startPokeBufferPercentage,
+        };
+        const pokeStatus = getStartPokeStatus(task, pokeSettings);
+        if (pokeStatus.enabled && pokeStatus.nudgeTime !== null) {
+          pills.push({ label: `Poke at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'bell' });
+        }
       }
       return pills;
     }
@@ -311,6 +350,19 @@ export default function TaskDetail({
     // Reminder (with bell icon)
     if (task.reminder) {
       pills.push({ label: formatReminder(task.reminder, task.targetDate, task.deadlineDate), variant: 'default', icon: 'bell' });
+    }
+    // Start Poke indicator for one-off tasks
+    if (task.startPokeOverride !== 'off') {
+      const pokeSettings: StartPokeSettings = {
+        startPokeEnabled: userSettings.startPokeEnabled,
+        startPokeDefault: userSettings.startPokeDefault,
+        startPokeBufferMinutes: userSettings.startPokeBufferMinutes,
+        startPokeBufferPercentage: userSettings.startPokeBufferPercentage,
+      };
+      const pokeStatus = getStartPokeStatus(task, pokeSettings);
+      if (pokeStatus.enabled && pokeStatus.nudgeTime !== null) {
+        pills.push({ label: `Poke at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'bell' });
+      }
     }
     const project = projects.find(p => p.id === task.projectId);
     if (project) {
@@ -487,8 +539,17 @@ export default function TaskDetail({
                 </button>
               </>
             ) : (
-              /* Regular task buttons */
+              /* Regular task buttons (Focus first for consistency with recurring) */
               <>
+                {/* Focus button first - primary action for engagement (matches recurring task pattern) */}
+                {isInQueue && (
+                  <button
+                    onClick={() => onStartFocus(queueItem!.id)}
+                    className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                  >
+                    Focus
+                  </button>
+                )}
                 {canMarkComplete && (
                   <button
                     onClick={handleMarkTaskComplete}
@@ -505,14 +566,7 @@ export default function TaskDetail({
                     Mark Incomplete
                   </button>
                 )}
-                {isInQueue ? (
-                  <button
-                    onClick={() => onStartFocus(queueItem!.id)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-                  >
-                    Focus
-                  </button>
-                ) : (
+                {!isInQueue && (
                   <>
                     {task.status === "inbox" && (
                       <button
@@ -622,18 +676,32 @@ export default function TaskDetail({
                   )}
                 </>
               )}
-              {/* History button - icon only on mobile */}
+              {/* History button - full label in managing mode (only button), icon-only with matched height otherwise */}
               <button
                 onClick={() => setShowHistoryModal(true)}
-                className="p-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                className={`text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors ${
+                  mode === 'managing'
+                    ? 'px-4 py-2 flex items-center gap-1.5'
+                    : 'p-2.5'
+                }`}
                 title="History"
               >
                 <History className="w-4 h-4" />
+                {mode === 'managing' && <span>History</span>}
               </button>
             </>
           ) : (
-            /* Regular task buttons - mobile */
+            /* Regular task buttons - mobile (Focus first for consistency with recurring) */
             <>
+              {/* Focus button first - primary action for engagement (matches recurring task pattern) */}
+              {isInQueue && (
+                <button
+                  onClick={() => onStartFocus(queueItem!.id)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                >
+                  Focus
+                </button>
+              )}
               {canMarkComplete && (
                 <button
                   onClick={handleMarkTaskComplete}
@@ -650,24 +718,13 @@ export default function TaskDetail({
                   Mark Incomplete
                 </button>
               )}
-              {isInQueue ? (
+              {!isInQueue && task.status === "inbox" && (
                 <button
-                  onClick={() => onStartFocus(queueItem!.id)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                  onClick={() => onSendToPool(task.id)}
+                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
-                  Focus
+                  Move to Ready
                 </button>
-              ) : (
-                <>
-                  {task.status === "inbox" && (
-                    <button
-                      onClick={() => onSendToPool(task.id)}
-                      className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
-                    >
-                      Move to Ready
-                    </button>
-                  )}
-                </>
               )}
             </>
           )}
@@ -892,34 +949,89 @@ export default function TaskDetail({
                     <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">Edit routine template to change settings</span>
                   </>
                 ) : (
-                  /* Editable: select with add button */
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <select
-                        value={task.projectId || ""}
-                        onChange={(e) => onUpdateTask(task.id, { projectId: e.target.value || null })}
-                        className="w-full h-8 px-2 py-1 pr-8 text-sm appearance-none bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-zinc-700 dark:text-zinc-300"
-                      >
-                        <option value="">No project</option>
-                        {projects.filter(p => p.status === 'active').map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.name}
-                          </option>
-                        ))}
-                      </select>
-                      <svg className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                  /* Editable: custom dropdown with inline "Add new project" */
+                  <div ref={projectDropdownRef} className="relative">
                     <button
-                      onClick={() => onOpenProjectModal()}
-                      className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-                      title="Create project"
+                      onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                      className="w-full h-8 px-2 pr-8 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-zinc-700 dark:text-zinc-300 flex items-center"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
+                      {task.projectId ? (
+                        <>
+                          {projects.find(p => p.id === task.projectId)?.color && (
+                            <span
+                              className="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0"
+                              style={{ backgroundColor: projects.find(p => p.id === task.projectId)?.color || undefined }}
+                            />
+                          )}
+                          <span className="truncate">{projects.find(p => p.id === task.projectId)?.name || 'Unknown project'}</span>
+                        </>
+                      ) : (
+                        <span className="text-zinc-400 dark:text-zinc-500">No project</span>
+                      )}
                     </button>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+
+                    {/* Dropdown menu */}
+                    {showProjectDropdown && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden">
+                        {/* No project option */}
+                        <button
+                          onClick={() => {
+                            onUpdateTask(task.id, { projectId: null });
+                            setShowProjectDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-600 dark:text-zinc-400"
+                        >
+                          <span>No project</span>
+                          {!task.projectId && <Check className="w-4 h-4 text-violet-500" />}
+                        </button>
+
+                        {/* Project options */}
+                        {projects.filter(p => p.status === 'active').map((project) => (
+                          <button
+                            key={project.id}
+                            onClick={() => {
+                              onUpdateTask(task.id, { projectId: project.id });
+                              setShowProjectDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-700 dark:text-zinc-300"
+                          >
+                            <span className="flex items-center gap-2 truncate">
+                              {project.color && (
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: project.color }}
+                                />
+                              )}
+                              <span className="truncate">{project.name}</span>
+                            </span>
+                            {task.projectId === project.id && <Check className="w-4 h-4 text-violet-500 flex-shrink-0" />}
+                          </button>
+                        ))}
+
+                        {/* Divider */}
+                        <div className="border-t border-zinc-100 dark:border-zinc-700" />
+
+                        {/* Add new project option */}
+                        <button
+                          onClick={() => {
+                            setShowProjectDropdown(false);
+                            if (onOpenProjectModalWithCallback) {
+                              // Auto-select the new project after creation
+                              onOpenProjectModalWithCallback((newProjectId) => {
+                                onUpdateTask(task.id, { projectId: newProjectId });
+                              });
+                            } else {
+                              onOpenProjectModal();
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center gap-2 text-violet-600 dark:text-violet-400"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add new project...</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1011,98 +1123,250 @@ export default function TaskDetail({
                 </div>
               )}
 
-              {/* RECURRING TASKS: Only show Reminder */}
+              {/* RECURRING TASKS: Show Reminder + Start Nudge */}
               {isRecurring ? (
-                <div className="col-span-2 pb-1">
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowReminderPicker(!showReminderPicker)}
-                      className="w-full h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
-                    >
-                      <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
-                        {task.reminder
-                          ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
-                          : "None"}
-                      </span>
-                      <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </button>
-                    {showReminderPicker && (
-                      <ReminderPicker
-                        reminder={task.reminder}
-                        targetDate={task.targetDate}
-                        deadlineDate={task.deadlineDate}
-                        onChange={(reminder) => {
-                          onUpdateTask(task.id, { reminder });
-                          // Schedule or cancel the reminder
-                          if (reminder) {
-                            scheduleReminder(
-                              task.id,
-                              task.title,
-                              reminder,
-                              task.targetDate,
-                              task.deadlineDate
-                            );
-                          } else {
-                            cancelReminder(task.id);
-                          }
-                        }}
-                        onClose={() => setShowReminderPicker(false)}
-                      />
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* ONE-OFF TASKS: Full details layout */
                 <>
-                  {/* LINE 3: Target | Deadline */}
-                  <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
-                    {/* Target Date */}
-                    <div className="min-w-0 relative">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
-                      <input
-                        type="date"
-                        value={task.targetDate || ""}
-                        onChange={(e) => onUpdateTask(task.id, { targetDate: e.target.value || null })}
-                        className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                      />
-                      {task.targetDate && (
+                  <div className="col-span-2 pb-1">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
+                    <div className="relative flex gap-1.5">
+                      <button
+                        onClick={() => setShowReminderPicker(!showReminderPicker)}
+                        className={`flex-1 h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between ${task.reminder ? 'pr-2' : 'pr-8'}`}
+                      >
+                        <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
+                          {task.reminder
+                            ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
+                            : "None"}
+                        </span>
+                        {!task.reminder && (
+                          <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                        )}
+                      </button>
+                      {task.reminder && (
                         <button
                           type="button"
-                          onClick={() => onUpdateTask(task.id, { targetDate: null })}
-                          className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                          title="Clear date"
+                          onClick={() => {
+                            onUpdateTask(task.id, { reminder: null });
+                            cancelReminder(task.id);
+                          }}
+                          className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                          title="Clear reminder"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <X className="w-4 h-4" />
                         </button>
+                      )}
+                      {showReminderPicker && (
+                        <ReminderPicker
+                          reminder={task.reminder}
+                          targetDate={task.targetDate}
+                          deadlineDate={task.deadlineDate}
+                          onChange={(reminder) => {
+                            onUpdateTask(task.id, { reminder });
+                            // Schedule or cancel the reminder
+                            if (reminder) {
+                              scheduleReminder(
+                                task.id,
+                                task.title,
+                                reminder,
+                                task.targetDate,
+                                task.deadlineDate
+                              );
+                            } else {
+                              cancelReminder(task.id);
+                            }
+                          }}
+                          onClose={() => setShowReminderPicker(false)}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Start Time Poke | Duration for recurring tasks */}
+                  <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
+                    {/* Start Time Poke */}
+                    <div className="min-w-0">
+                      {mode === 'managing' ? (
+                        /* Template mode: editable */
+                        <StartPokeField
+                          task={task}
+                          userSettings={userSettings}
+                          onChange={(override) => {
+                            onUpdateTask(task.id, { startPokeOverride: override });
+                          }}
+                        />
+                      ) : (
+                      /* Executing mode: read-only display */
+                      (() => {
+                        const pokeSettings: StartPokeSettings = {
+                          startPokeEnabled: userSettings.startPokeEnabled,
+                          startPokeDefault: userSettings.startPokeDefault,
+                          startPokeBufferMinutes: userSettings.startPokeBufferMinutes,
+                          startPokeBufferPercentage: userSettings.startPokeBufferPercentage,
+                        };
+                        const pokeStatus = getStartPokeStatus(task, pokeSettings);
+                        const isEnabled = isStartPokeEnabled(task, pokeSettings);
+
+                        return (
+                          <div>
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Start Time Poke</span>
+                            <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                              <span>{isEnabled ? 'On' : 'Off'}</span>
+                              <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                            </div>
+                            {isEnabled && pokeStatus.nudgeTime !== null && (
+                              <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                                Poke at {formatPokeTime(pokeStatus.nudgeTime)}
+                              </span>
+                            )}
+                            <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                              Edit routine template to change
+                            </span>
+                          </div>
+                        );
+                      })()
                       )}
                     </div>
 
-                    {/* Deadline */}
-                    <div className="min-w-0 relative">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
-                      <input
-                        type="date"
-                        value={task.deadlineDate || ""}
-                        onChange={(e) => onUpdateTask(task.id, { deadlineDate: e.target.value || null })}
-                        className="w-full min-w-0 h-8 px-2 py-1 pr-8 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-                      />
-                      {task.deadlineDate && (
-                        <button
-                          type="button"
-                          onClick={() => onUpdateTask(task.id, { deadlineDate: null })}
-                          className="absolute right-2 top-1/2 mt-2.5 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                          title="Clear date"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
+                    {/* Duration */}
+                    <div className="min-w-0">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Duration</span>
+                      {mode === 'managing' ? (
+                        <DurationInput
+                          value={task.estimatedDurationMinutes}
+                          autoValue={getStepDurationSum(task.steps) > 0 ? getStepDurationSum(task.steps) : null}
+                          onChange={(minutes) => {
+                            onUpdateTask(task.id, {
+                              estimatedDurationMinutes: minutes,
+                              estimatedDurationSource: minutes ? 'manual' : null,
+                            });
+                          }}
+                          source={
+                            task.estimatedDurationSource === 'ai' ? 'ai'
+                            : task.estimatedDurationMinutes ? 'manual'
+                            : getStepDurationSum(task.steps) > 0 ? 'steps'
+                            : null
+                          }
+                        />
+                      ) : (
+                        /* Executing mode: read-only display */
+                        <>
+                          <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span>{task.estimatedDurationMinutes ? `${task.estimatedDurationMinutes} min` : getStepDurationSum(task.steps) > 0 ? `${getStepDurationSum(task.steps)} min` : 'Not set'}</span>
+                            <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                          </div>
+                          <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                            {getStepDurationSum(task.steps) > 0 && !task.estimatedDurationMinutes ? 'From steps' : 'Edit routine template to change'}
+                          </span>
+                        </>
                       )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* ONE-OFF TASKS: Full details layout */
+                <>
+                  {/* LINE 3: Target | Deadline (with optional time) */}
+                  <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
+                    {/* Target Date + Time */}
+                    <div className="min-w-0">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
+                      <div className="flex gap-1.5">
+                        <div className="relative flex-1 min-w-0">
+                          <input
+                            type="date"
+                            value={task.targetDate || ""}
+                            onChange={(e) => onUpdateTask(task.id, {
+                              targetDate: e.target.value || null,
+                              // Clear time if date is cleared
+                              ...(e.target.value ? {} : { targetTime: null })
+                            })}
+                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          />
+                          {task.targetDate && (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateTask(task.id, { targetDate: null, targetTime: null })}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                              title="Clear date"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {task.targetDate && (
+                          <div className="relative flex-shrink-0">
+                            <input
+                              type="time"
+                              value={task.targetTime || ""}
+                              onChange={(e) => onUpdateTask(task.id, { targetTime: e.target.value || null })}
+                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                              placeholder="Time"
+                            />
+                            {task.targetTime && (
+                              <button
+                                type="button"
+                                onClick={() => onUpdateTask(task.id, { targetTime: null })}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                title="Clear time"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Deadline + Time */}
+                    <div className="min-w-0">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+                      <div className="flex gap-1.5">
+                        <div className="relative flex-1 min-w-0">
+                          <input
+                            type="date"
+                            value={task.deadlineDate || ""}
+                            onChange={(e) => onUpdateTask(task.id, {
+                              deadlineDate: e.target.value || null,
+                              // Clear time if date is cleared
+                              ...(e.target.value ? {} : { deadlineTime: null })
+                            })}
+                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          />
+                          {task.deadlineDate && (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateTask(task.id, { deadlineDate: null, deadlineTime: null })}
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                              title="Clear date"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {task.deadlineDate && (
+                          <div className="relative flex-shrink-0">
+                            <input
+                              type="time"
+                              value={task.deadlineTime || ""}
+                              onChange={(e) => onUpdateTask(task.id, { deadlineTime: e.target.value || null })}
+                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                              placeholder="Time"
+                            />
+                            {task.deadlineTime && (
+                              <button
+                                type="button"
+                                onClick={() => onUpdateTask(task.id, { deadlineTime: null })}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                title="Clear time"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1111,20 +1375,37 @@ export default function TaskDetail({
                     {/* Reminder */}
                     <div>
                       <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
-                      <div className="relative">
+                      <div className="relative flex gap-1">
                         <button
                           onClick={() => setShowReminderPicker(!showReminderPicker)}
-                          className="w-full h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
+                          className="flex-1 h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
                         >
                           <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
                             {task.reminder
                               ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
                               : "None"}
                           </span>
-                          <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                          </svg>
+                          {!task.reminder && (
+                            <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                          )}
                         </button>
+                        {task.reminder && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdateTask(task.id, { reminder: null });
+                              cancelReminder(task.id);
+                            }}
+                            className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                            title="Clear reminder"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
                         {showReminderPicker && (
                           <ReminderPicker
                             reminder={task.reminder}
@@ -1166,6 +1447,41 @@ export default function TaskDetail({
                         }
                         placeholder="Nobody"
                         className="w-full h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Start Time Poke | Duration */}
+                  <div className="col-span-2 grid grid-cols-2 gap-x-4 min-w-0">
+                    {/* Start Time Poke */}
+                    <div className="min-w-0">
+                      <StartPokeField
+                        task={task}
+                        userSettings={userSettings}
+                        onChange={(override) => {
+                          onUpdateTask(task.id, { startPokeOverride: override });
+                        }}
+                      />
+                    </div>
+
+                    {/* Duration */}
+                    <div className="min-w-0">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Duration</span>
+                      <DurationInput
+                        value={task.estimatedDurationMinutes}
+                        autoValue={getStepDurationSum(task.steps) > 0 ? getStepDurationSum(task.steps) : null}
+                        onChange={(minutes) => {
+                          onUpdateTask(task.id, {
+                            estimatedDurationMinutes: minutes,
+                            estimatedDurationSource: minutes ? 'manual' : null,
+                          });
+                        }}
+                        source={
+                          task.estimatedDurationSource === 'ai' ? 'ai'
+                          : task.estimatedDurationMinutes ? 'manual'
+                          : getStepDurationSum(task.steps) > 0 ? 'steps'
+                          : null
+                        }
                       />
                     </div>
                   </div>
