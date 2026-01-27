@@ -258,7 +258,7 @@ export function PaletteContent({
     >
       {/* Target banner - shows when step is targeted (reply arrow style) */}
       {aiTargetContext && !isLoading && !response && (
-        <div className="flex items-center justify-between px-3 py-2 mb-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+        <div className="flex items-center justify-between px-3 py-2 mb-2 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg">
           <div className="flex items-center gap-2 min-w-0">
             {/* Reply arrow icon */}
             <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0 text-zinc-400">
@@ -345,8 +345,9 @@ export function PaletteContent({
 
         if (current.type === 'poke') {
           const poke = current.data;
-          // Calculate poke time (start time) from anchor time
-          const pokeTime = poke.anchorTime - (poke.durationMinutes + poke.bufferMinutes) * 60 * 1000;
+          // Calculate poke time (start time) from anchor time, rounded to nearest 5 minutes
+          const rawPokeTime = poke.anchorTime - (poke.durationMinutes + poke.bufferMinutes) * 60 * 1000;
+          const pokeTime = Math.round(rawPokeTime / 300000) * 300000; // Round to nearest 5 min
           const pokeTimeStr = new Date(pokeTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
           const dueTimeStr = new Date(poke.anchorTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
@@ -368,19 +369,21 @@ export function PaletteContent({
                   </button>
                 )}
               </div>
-              {/* Duration + due time */}
+              {/* Duration + buffer + due time */}
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
-                ~{poke.durationMinutes} min → due {dueTimeStr}
+                {poke.usePercentageBuffer
+                  ? `~${poke.durationMinutes}m + 15% buffer → due ${dueTimeStr}`
+                  : `${poke.durationMinutes} min + ${poke.bufferMinutes} min buffer → due ${dueTimeStr}`}
               </div>
-              {/* Actions row - compact filled buttons (all gray) */}
+              {/* Actions row - compact filled buttons (all gray translucent) */}
               <div className="flex items-center gap-1.5 mt-2 ml-6">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onStartPokeAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Start
@@ -389,9 +392,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); poke.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Snooze 5m
@@ -400,9 +403,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); poke.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Dismiss
@@ -454,9 +457,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); reminder.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Snooze 5m
@@ -465,9 +468,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); reminder.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Dismiss
@@ -755,7 +758,7 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <form onSubmit={handleSubmit}>
-            <div className="bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-transparent focus-within:border-violet-500 transition-colors">
+            <div className="bg-white/60 dark:bg-zinc-900/60 rounded-xl border border-transparent focus-within:border-violet-500 transition-colors">
               <textarea
                 ref={inputRef}
                 rows={1}

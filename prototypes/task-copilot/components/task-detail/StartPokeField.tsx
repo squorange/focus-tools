@@ -155,25 +155,19 @@ export default function StartPokeField({
             </span>
           )}
 
-          {/* State 3: Fully calculated - show pill with poke time */}
+          {/* State 3: Fully calculated - show plain text with poke time */}
           {status.nudgeTime !== null && status.durationMinutes !== null && status.bufferMinutes !== null && status.anchorTime !== null && (
             <>
-              {/* Primary: Pill with emoji + start time */}
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                    bg-violet-100 dark:bg-violet-900/30
-                    text-violet-700 dark:text-violet-300
-                    text-xs font-medium"
-                >
-                  <span role="img" aria-label="Start poke">👉🏽</span>
-                  Start at {formatPokeTime(status.nudgeTime)}
-                </span>
-              </div>
+              {/* Primary: emoji + start time (plain text) */}
+              <span className="text-xs text-zinc-700 dark:text-zinc-300">
+                👉🏽 Start at {formatPokeTime(status.nudgeTime)}
+              </span>
 
               {/* Secondary line: calculation breakdown */}
               <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                {formatDurationForPoke(status.durationMinutes)} + {formatDurationForPoke(status.bufferMinutes)} buffer → due {formatAnchorTime(status.anchorTime, true)}
+                {settings.startPokeBufferPercentage
+                  ? `~${status.durationMinutes}m + 15% buffer → ${formatAnchorTime(status.anchorTime, true)}`
+                  : `${formatDurationForPoke(status.durationMinutes)} + ${formatDurationForPoke(status.bufferMinutes)} buffer → ${formatAnchorTime(status.anchorTime, true)}`}
               </span>
 
               {/* Link to adjust estimate (optional) */}

@@ -180,6 +180,8 @@ export default function TaskDetail({
   const [newStepText, setNewStepText] = useState("");
   const [showDeferMenu, setShowDeferMenu] = useState(false);
   const [completedStepsExpanded, setCompletedStepsExpanded] = useState(false);
+  // Single popover constraint: tracks which menu is open (pattern: "step-{id}", "substep-{id}")
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   // Auto-expand details for inbox tasks (triage mode), collapse for ready/queued tasks
   const [detailsExpanded, setDetailsExpanded] = useState(task.status === 'inbox');
   // Focus selection modal state
@@ -301,7 +303,7 @@ export default function TaskDetail({
 
   // Build details summary for collapsed view
   const getDetailsSummary = () => {
-    const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'healthy' | 'due' | 'overdue' | 'project'; color?: string; icon?: 'bell'; health?: ReturnType<typeof computeHealthStatus> }[] = [];
+    const pills: { label: string; variant: 'default' | 'priority-high' | 'priority-medium' | 'healthy' | 'due' | 'overdue' | 'project'; color?: string; icon?: 'bell' | 'poke'; health?: ReturnType<typeof computeHealthStatus> }[] = [];
 
     // RECURRING TASKS: Only show reminder + start poke info if set
     if (isRecurring) {
@@ -318,7 +320,7 @@ export default function TaskDetail({
         };
         const pokeStatus = getStartPokeStatus(task, pokeSettings);
         if (pokeStatus.enabled && pokeStatus.nudgeTime !== null) {
-          pills.push({ label: `Poke at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'bell' });
+          pills.push({ label: `Start at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'poke' });
         }
       }
       return pills;
@@ -361,7 +363,7 @@ export default function TaskDetail({
       };
       const pokeStatus = getStartPokeStatus(task, pokeSettings);
       if (pokeStatus.enabled && pokeStatus.nudgeTime !== null) {
-        pills.push({ label: `Poke at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'bell' });
+        pills.push({ label: `Start at ${formatPokeTime(pokeStatus.nudgeTime)}`, variant: 'default', icon: 'poke' });
       }
     }
     const project = projects.find(p => p.id === task.projectId);
@@ -923,6 +925,8 @@ export default function TaskDetail({
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
+                      ) : pill.icon === 'poke' ? (
+                        <span className="text-[10px]">👉🏽</span>
                       ) : undefined}
                     >
                       {pill.label}
@@ -1612,6 +1616,9 @@ export default function TaskDetail({
                           mode={mode}
                           isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                           isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
+                          openMenuId={openMenuId}
+                          onOpenMenu={setOpenMenuId}
+                          onCloseMenu={() => setOpenMenuId(null)}
                           onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                           onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
                           onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
@@ -1684,6 +1691,9 @@ export default function TaskDetail({
                         isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                         isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                         hideCheckbox={mode === 'managing'}
+                        openMenuId={openMenuId}
+                        onOpenMenu={setOpenMenuId}
+                        onCloseMenu={() => setOpenMenuId(null)}
                         onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                         onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
                         onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
@@ -1729,6 +1739,9 @@ export default function TaskDetail({
                             isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                             isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                             hideCheckbox={mode === 'managing'}
+                            openMenuId={openMenuId}
+                            onOpenMenu={setOpenMenuId}
+                            onCloseMenu={() => setOpenMenuId(null)}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
@@ -1770,6 +1783,9 @@ export default function TaskDetail({
                             isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                             isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                             hideCheckbox={mode === 'managing'}
+                            openMenuId={openMenuId}
+                            onOpenMenu={setOpenMenuId}
+                            onCloseMenu={() => setOpenMenuId(null)}
                             onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                             onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
                             onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
@@ -1805,6 +1821,9 @@ export default function TaskDetail({
                       isAITarget={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id}
                       isAITargetLoading={aiTargetContext?.type === 'step' && aiTargetContext?.stepId === step.id && isAILoading}
                       hideCheckbox={mode === 'managing'}
+                      openMenuId={openMenuId}
+                      onOpenMenu={setOpenMenuId}
+                      onCloseMenu={() => setOpenMenuId(null)}
                       onToggleComplete={(completed) => onStepComplete(task.id, step.id, completed)}
                       onSubstepComplete={(substepId, completed) => onSubstepComplete(task.id, step.id, substepId, completed, mode)}
                       onUpdateStep={(text) => onUpdateStep(task.id, step.id, text, mode)}
@@ -2173,6 +2192,10 @@ interface StepItemProps {
   isAITarget?: boolean; // Highlight when this step is targeted by AI action
   isAITargetLoading?: boolean; // Show spinner when this step is AI target AND request in flight
   hideCheckbox?: boolean; // Hide checkbox (for managing mode)
+  // Single popover constraint
+  openMenuId: string | null;
+  onOpenMenu: (id: string) => void;
+  onCloseMenu: () => void;
   onToggleComplete: (completed: boolean) => void;
   onSubstepComplete: (substepId: string, completed: boolean) => void;
   onUpdateStep: (text: string) => void;
@@ -2189,17 +2212,19 @@ interface StepItemProps {
   onOpenAIPalette?: () => void;
 }
 
-function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITargetLoading, hideCheckbox, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus, onOpenAIPalette }: StepItemProps) {
+function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITargetLoading, hideCheckbox, openMenuId, onOpenMenu, onCloseMenu, onToggleComplete, onSubstepComplete, onUpdateStep, onUpdateSubstep, onUpdateEstimate, onDelete, onMoveUp, onMoveDown, onAddSubstep, onDeleteSubstep, onMoveSubstepUp, onMoveSubstepDown, onStartFocus, onOpenAIPalette }: StepItemProps) {
   const [editingStep, setEditingStep] = useState(false);
   const [stepText, setStepText] = useState(step.text);
   const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
   const [substepText, setSubstepText] = useState("");
-  const [showKebabMenu, setShowKebabMenu] = useState(false);
-  const [showSubstepMenu, setShowSubstepMenu] = useState<string | null>(null);
   const [addingSubstep, setAddingSubstep] = useState(false);
   const [newSubstepText, setNewSubstepText] = useState("");
   const [editingEstimate, setEditingEstimate] = useState(false);
   const [estimateValue, setEstimateValue] = useState(step.estimatedMinutes?.toString() || "");
+
+  // Compute menu states from parent's openMenuId
+  const showKebabMenu = openMenuId === `step-${step.id}`;
+  const showSubstepMenu = openMenuId?.startsWith('substep-') ? openMenuId.replace('substep-', '') : null;
 
   const isFirst = index === 0;
   const isLast = index === totalSteps - 1;
@@ -2412,7 +2437,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
         {/* Step actions kebab menu */}
         <div className="relative">
           <button
-            onClick={() => setShowKebabMenu(!showKebabMenu)}
+            onClick={() => showKebabMenu ? onCloseMenu() : onOpenMenu(`step-${step.id}`)}
             className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded"
             title="Step options"
           >
@@ -2423,7 +2448,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
           {showKebabMenu && (
             <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
               <button
-                onClick={() => { onMoveUp(); setShowKebabMenu(false); }}
+                onClick={() => { onMoveUp(); onCloseMenu(); }}
                 disabled={isFirst}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -2433,7 +2458,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 Move Up
               </button>
               <button
-                onClick={() => { onMoveDown(); setShowKebabMenu(false); }}
+                onClick={() => { onMoveDown(); onCloseMenu(); }}
                 disabled={isLast}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -2445,7 +2470,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               {/* Add Substep - always available (templates can have substeps too) */}
               <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
               <button
-                onClick={() => { setAddingSubstep(true); setShowKebabMenu(false); }}
+                onClick={() => { setAddingSubstep(true); onCloseMenu(); }}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2457,7 +2482,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 onClick={() => {
                   setEstimateValue(step.estimatedMinutes?.toString() || "");
                   setEditingEstimate(true);
-                  setShowKebabMenu(false);
+                  onCloseMenu();
                 }}
                 className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
@@ -2468,7 +2493,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               </button>
               <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
               <button
-                onClick={() => { onDelete(); setShowKebabMenu(false); }}
+                onClick={() => { onDelete(); onCloseMenu(); }}
                 className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2548,7 +2573,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               {/* Substep actions menu */}
               <div className="relative opacity-0 group-hover/substep:opacity-100 transition-opacity">
                 <button
-                  onClick={() => setShowSubstepMenu(showSubstepMenu === substep.id ? null : substep.id)}
+                  onClick={() => showSubstepMenu === substep.id ? onCloseMenu() : onOpenMenu(`substep-${substep.id}`)}
                   className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -2556,33 +2581,33 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   </svg>
                 </button>
                 {showSubstepMenu === substep.id && (
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[120px]">
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
                     <button
-                      onClick={() => { onMoveSubstepUp(substep.id); setShowSubstepMenu(null); }}
+                      onClick={() => { onMoveSubstepUp(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === 0}
-                      className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                       </svg>
                       Move Up
                     </button>
                     <button
-                      onClick={() => { onMoveSubstepDown(substep.id); setShowSubstepMenu(null); }}
+                      onClick={() => { onMoveSubstepDown(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === step.substeps.length - 1}
-                      className="w-full px-3 py-1.5 text-xs text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       Move Down
                     </button>
                     <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
                     <button
-                      onClick={() => { onDeleteSubstep(substep.id); setShowSubstepMenu(null); }}
-                      className="w-full px-3 py-1.5 text-xs text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                      onClick={() => { onDeleteSubstep(substep.id); onCloseMenu(); }}
+                      className="w-full px-3 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                       Delete

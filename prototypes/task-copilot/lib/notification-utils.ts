@@ -479,6 +479,7 @@ export function getActiveStartPokes(
         anchorTime: anchorTime ?? Date.now() + 60 * 60 * 1000, // Fallback to 1hr from now
         durationMinutes: durationMinutes ?? 30, // Fallback
         bufferMinutes,
+        usePercentageBuffer: settings.startPokeBufferPercentage,
         onStart: () => handlers.onStart(task.id, n.id),
         onSnooze: (minutes: number) => handlers.onSnooze(n.id, minutes),
         onDismiss: () => handlers.onDismiss(n.id),

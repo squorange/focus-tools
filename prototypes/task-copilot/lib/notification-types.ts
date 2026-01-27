@@ -81,6 +81,7 @@ export interface StartPokeAlert {
   anchorTime: number;        // Unix timestamp of when task is due
   durationMinutes: number;
   bufferMinutes: number;
+  usePercentageBuffer: boolean;  // Whether 15% buffer mode was used
   onStart: () => void;
   onSnooze: (minutes: number) => void;
   onDismiss: () => void;

@@ -579,7 +579,7 @@ export default function Sidebar({
 
           {/* Settings + Data management at bottom - only show when not in search mode */}
           {!isSearchActive && (
-            <div className="flex-shrink-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-zinc-200 dark:border-zinc-700 space-y-1">
+            <div className="flex-shrink-0 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] space-y-1">
               <NavItem
                 icon={<Settings size={20} />}
                 label="Settings"
