@@ -13,6 +13,7 @@ interface RoutineCardProps {
   onSkip: (taskId: string) => void;
   onOpenDetail: (taskId: string) => void;
   timeWindowStatus?: TimeWindowStatus; // before/active/past target time window
+  dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
 }
 
 export default function RoutineCard({
@@ -20,11 +21,12 @@ export default function RoutineCard({
   onComplete,
   onOpenDetail,
   timeWindowStatus = "before",
+  dayStartHour = 0,
 }: RoutineCardProps) {
   if (!task.recurrence) return null;
 
   // Calculate overdue days
-  const today = getTodayISO();
+  const today = getTodayISO(dayStartHour);
   const nextDue = task.recurringNextDue;
   let overdueDays = 0;
   if (nextDue && nextDue < today) {
@@ -33,7 +35,7 @@ export default function RoutineCard({
   }
 
   // Get current instance for step progress
-  const activeDate = getActiveOccurrenceDate(task) || today;
+  const activeDate = getActiveOccurrenceDate(task, dayStartHour) || today;
   const instance = ensureInstance(task, activeDate);
 
   // Count steps
@@ -67,7 +69,7 @@ export default function RoutineCard({
         className={`
           w-full h-[110px] rounded-xl border transition-all
           ${isActiveWindow
-            ? "border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-900/20"
+            ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20"
             : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
           }
           hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-sm

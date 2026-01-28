@@ -25,6 +25,11 @@ export default function NotificationsHub({
   const groups = groupNotificationsByDate(notifications);
   const upcomingNotifications = getUpcoming(notifications);
 
+  // Missed: scheduled time passed but never fired (app was closed)
+  const missedNotifications = notifications.filter(
+    n => n.firedAt === null && n.acknowledgedAt === null && n.scheduledAt < Date.now()
+  );
+
   // Active: fired but not acknowledged (needs attention)
   const activeNotifications = notifications.filter(
     n => n.firedAt !== null && n.acknowledgedAt === null
@@ -50,6 +55,28 @@ export default function NotificationsHub({
 
   return (
     <div className="space-y-6">
+      {/* Missed section: notifications that were never fired (app was closed) */}
+      {missedNotifications.length > 0 && (
+        <div>
+          <h2 className="text-base font-medium text-violet-600 dark:text-violet-400 mb-3">
+            Missed
+          </h2>
+          <div className="space-y-2">
+            {missedNotifications.map((notification) => (
+              <NotificationCard
+                key={notification.id}
+                notification={notification}
+                section="missed"
+                onTap={() => onNotificationTap(notification)}
+                onStart={onStart ? () => onStart(notification) : undefined}
+                onSnooze={onSnooze ? (mins) => onSnooze(notification.id, mins) : undefined}
+                onDismiss={() => onDismiss(notification.id)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Active section: fired but not acknowledged */}
       {activeNotifications.length > 0 && (
         <div>
@@ -58,19 +85,15 @@ export default function NotificationsHub({
           </h2>
           <div className="space-y-2">
             {activeNotifications.map((notification) => (
-              <div
+              <NotificationCard
                 key={notification.id}
-                className="ring-2 ring-violet-500/50 rounded-lg"
-              >
-                <NotificationCard
-                  notification={notification}
-                  section="active"
-                  onTap={() => onNotificationTap(notification)}
-                  onStart={onStart ? () => onStart(notification) : undefined}
-                  onSnooze={onSnooze ? (mins) => onSnooze(notification.id, mins) : undefined}
-                  onDismiss={() => onDismiss(notification.id)}
-                />
-              </div>
+                notification={notification}
+                section="active"
+                onTap={() => onNotificationTap(notification)}
+                onStart={onStart ? () => onStart(notification) : undefined}
+                onSnooze={onSnooze ? (mins) => onSnooze(notification.id, mins) : undefined}
+                onDismiss={() => onDismiss(notification.id)}
+              />
             ))}
           </div>
         </div>

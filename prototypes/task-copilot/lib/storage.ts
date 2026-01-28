@@ -285,6 +285,11 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV12(state);
   }
 
+  // Version 12 → 13: Add dayStartHour to userSettings
+  if (version < 13) {
+    state = migrateToV13(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -765,6 +770,7 @@ function migrateToV11(state: Partial<AppState> & Record<string, unknown>): Parti
     startPokeDefault: 'none',
     startPokeBufferMinutes: 10,
     startPokeBufferPercentage: false,
+    dayStartHour: 0,
     ...((state.userSettings as Partial<UserSettings>) || {}),
   };
 
@@ -807,12 +813,31 @@ function migrateToV12(state: Partial<AppState> & Record<string, unknown>): Parti
       (oldSettings.startNudgeDefaultBufferMinutes as number) ?? 10,
     startPokeBufferPercentage: (oldSettings.startPokeBufferPercentage as boolean) ??
       (oldSettings.startNudgeBufferPercentage as boolean) ?? false,
+    dayStartHour: (oldSettings.dayStartHour as number) ?? 0,
   };
 
   return {
     ...state,
     schemaVersion: 12,
     tasks,
+    userSettings,
+  };
+}
+
+/**
+ * Migrate from v12 to v13 (Add dayStartHour to userSettings)
+ */
+function migrateToV13(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Add dayStartHour to userSettings with default 0 (calendar midnight)
+  const userSettings: UserSettings = {
+    ...createDefaultUserSettings(),
+    ...((state.userSettings as Partial<UserSettings>) || {}),
+    dayStartHour: ((state.userSettings as Partial<UserSettings>)?.dayStartHour) ?? 0,
+  };
+
+  return {
+    ...state,
+    schemaVersion: 13,
     userSettings,
   };
 }

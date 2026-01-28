@@ -9,6 +9,7 @@ interface DailySummaryBannerProps {
   tasks: Task[];
   todayItems: FocusQueueItem[];
   onOpenCompleted: () => void;
+  dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
 }
 
 // Get total estimated time for items (only if high confidence - 50%+ have estimates)
@@ -52,13 +53,14 @@ export default function DailySummaryBanner({
   tasks,
   todayItems,
   onOpenCompleted,
+  dayStartHour = 0,
 }: DailySummaryBannerProps) {
   // Count completions today (tasks + steps + recurring instances)
-  const completionCount = countCompletionsToday(tasks);
+  const completionCount = countCompletionsToday(tasks, dayStartHour);
 
   // Get ALL routines applicable for today (including completed/skipped)
   // This fixes the bug where completing a routine decreased total instead of increasing done
-  const allRoutinesToday = filterRoutinesForToday(tasks);
+  const allRoutinesToday = filterRoutinesForToday(tasks, dayStartHour);
 
   // Calculate total items for today (queue items + ALL applicable routines)
   const totalItems = todayItems.length + allRoutinesToday.length;

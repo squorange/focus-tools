@@ -70,7 +70,7 @@ export default function BottomSheet({
               info: PanInfo
             ) => setDragY(info.offset.y)}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col touch-none"
+            className="fixed inset-x-0 bottom-0 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-300/50 dark:border-zinc-700/50 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] flex flex-col"
             style={{
               zIndex,
               height,
@@ -83,7 +83,7 @@ export default function BottomSheet({
               onClick={onClose}
               onMouseEnter={() => setIsHandleHovered(true)}
               onMouseLeave={() => setIsHandleHovered(false)}
-              className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0 flex-shrink-0"
+              className="w-full pt-3 pb-2 flex justify-center cursor-pointer bg-transparent border-0 flex-shrink-0 touch-none"
               aria-label="Close"
             >
               <motion.div className="relative w-10 h-1 flex">

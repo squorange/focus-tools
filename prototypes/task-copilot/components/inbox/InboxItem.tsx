@@ -92,7 +92,7 @@ export default function InboxItem({
   if (!isExpanded) {
     // Collapsed view
     return (
-      <div className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+      <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 hover:border-violet-300 dark:hover:border-violet-600 rounded-lg transition-colors">
         <div className="flex items-center gap-3 px-4 py-3">
           {/* Expand toggle */}
           <button
@@ -157,7 +157,7 @@ export default function InboxItem({
 
   // Expanded view - Triage mode
   return (
-    <div className="bg-white dark:bg-zinc-800 border border-violet-200 dark:border-violet-800 rounded-lg shadow-sm">
+    <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-lg shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-100 dark:border-zinc-700">
         {/* Collapse toggle */}
@@ -333,7 +333,7 @@ export default function InboxItem({
                       onDefer(task.id, getDeferDate(option));
                       setShowDeferMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     {option.label}
                   </button>

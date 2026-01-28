@@ -12,7 +12,7 @@ interface QuickActionsProps {
 
 export function QuickActions({ actions, onSelect, disabled = false }: QuickActionsProps) {
   return (
-    <div className="flex flex-wrap gap-2 py-2">
+    <div className="flex flex-wrap gap-2">
       {actions.map((action, index) => (
         <motion.button
           key={action.id}
@@ -27,8 +27,8 @@ export function QuickActions({ actions, onSelect, disabled = false }: QuickActio
           whileTap={{ scale: 0.95 }}
           className={`
             flex items-center gap-1.5 px-3 py-1.5
-            bg-violet-100 dark:bg-violet-900/30
-            hover:bg-violet-200 dark:hover:bg-violet-800/40
+            bg-violet-100/90 dark:bg-violet-900/50
+            hover:bg-violet-200 dark:hover:bg-violet-800/60
             rounded-full text-sm text-violet-700 dark:text-violet-300
             whitespace-nowrap font-medium
             transition-colors

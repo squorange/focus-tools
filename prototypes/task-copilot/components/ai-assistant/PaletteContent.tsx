@@ -254,7 +254,7 @@ export function PaletteContent({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.15, delay: 0.05, layout: heightTransition }}
-      className="px-6 pb-6 sm:px-4 sm:pb-4 flex flex-col"
+      className="px-6 pb-6 sm:px-4 sm:pb-4 flex flex-col h-full max-h-full overflow-hidden"
     >
       {/* Target banner - shows when step is targeted (reply arrow style) */}
       {aiTargetContext && !isLoading && !response && (
@@ -482,7 +482,7 @@ export function PaletteContent({
       })()}
 
       {/* Content area - scrollable with gradient fades */}
-      <div className="relative flex-1 min-h-0 mb-4">
+      <div className="relative flex-1 min-h-0 mb-2 overflow-hidden">
         {/* Top gradient fade (visible when scrolled down) */}
         <div
           className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
@@ -492,7 +492,7 @@ export function PaletteContent({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="overflow-y-auto overflow-x-visible max-h-[calc(50vh-220px)] scrollbar-hide"
+          className="overflow-y-auto overflow-x-visible h-full max-h-full min-h-[80px] scrollbar-hide"
         >
           <motion.div
             animate={{
@@ -758,7 +758,7 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <form onSubmit={handleSubmit}>
-            <div className="bg-white/60 dark:bg-zinc-900/60 rounded-xl border border-transparent focus-within:border-violet-500 transition-colors">
+            <div className="bg-violet-100/40 dark:bg-violet-950/40 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
               <textarea
                 ref={inputRef}
                 rows={1}

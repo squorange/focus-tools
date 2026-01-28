@@ -31,6 +31,7 @@ export default function SettingsView({
   const [showScopePicker, setShowScopePicker] = useState(false);
   const [showBufferPicker, setShowBufferPicker] = useState(false);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
+  const [showDayOffsetMoreInfo, setShowDayOffsetMoreInfo] = useState(false);
 
   const scopeOptions: ScopeOption[] = [
     { value: 'all', label: 'All tasks' },
@@ -66,7 +67,7 @@ export default function SettingsView({
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
                 Start Time Poke
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
@@ -156,6 +157,111 @@ export default function SettingsView({
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </div>
                   </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Day Offset section */}
+        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+          {/* Toggle row */}
+          <div className="p-4 flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                Day Offset
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {userSettings.dayStartHour > 0
+                  ? `Your day runs ${userSettings.dayStartHour}:00 AM → ${userSettings.dayStartHour}:00 AM.`
+                  : 'Your day runs midnight → midnight.'
+                }{' '}
+                <button
+                  onClick={() => setShowDayOffsetMoreInfo(!showDayOffsetMoreInfo)}
+                  className="text-violet-600 dark:text-violet-400 hover:underline"
+                >
+                  {showDayOffsetMoreInfo ? 'Less info' : 'More info'}
+                </button>
+              </p>
+            </div>
+            {/* iOS-style toggle */}
+            <button
+              onClick={() => onUpdateSettings({
+                dayStartHour: userSettings.dayStartHour > 0 ? 0 : 5
+              })}
+              className={`
+                relative w-[51px] h-[31px] rounded-full transition-colors flex-shrink-0
+                ${userSettings.dayStartHour > 0
+                  ? 'bg-violet-500'
+                  : 'bg-zinc-300 dark:bg-zinc-600'
+                }
+              `}
+            >
+              <span
+                className={`
+                  absolute top-[2px] left-[2px] w-[27px] h-[27px] rounded-full bg-white shadow-sm transition-transform duration-200
+                  ${userSettings.dayStartHour > 0 ? 'translate-x-[20px]' : 'translate-x-0'}
+                `}
+              />
+            </button>
+          </div>
+
+          {/* More info expandable section */}
+          <AnimatePresence>
+            {showDayOffsetMoreInfo && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 pt-0">
+                  <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 text-sm text-zinc-500 dark:text-zinc-400 space-y-2">
+                    <p>This affects:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>When routines reset and show as overdue</li>
+                      <li>How "All done for today" is calculated</li>
+                      <li>Streak tracking for recurring tasks</li>
+                    </ul>
+                    <p className="text-xs pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                      {userSettings.dayStartHour > 0
+                        ? `Tasks completed before ${userSettings.dayStartHour}:00 AM count as yesterday.`
+                        : 'Tasks completed after midnight count as the new day.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Settings rows - animated expansion when enabled */}
+          <AnimatePresence>
+            {userSettings.dayStartHour > 0 && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  {/* Day start time row */}
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Day starts at</span>
+                    <select
+                      value={userSettings.dayStartHour}
+                      onChange={(e) => onUpdateSettings({ dayStartHour: parseInt(e.target.value, 10) })}
+                      className="text-sm text-zinc-500 dark:text-zinc-400 bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((hour) => (
+                        <option key={hour} value={hour}>
+                          {hour}:00 AM
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </motion.div>
             )}

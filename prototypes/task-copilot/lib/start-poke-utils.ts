@@ -140,10 +140,10 @@ export function calculateBuffer(
   settings: StartPokeSettings
 ): number {
   if (settings.startPokeBufferPercentage) {
-    // 15% of duration, rounded to nearest 5 minutes, minimum 5 minutes
+    // 15% of duration, minimum 5 minutes
+    // Note: rounding is applied to the final start time instead of the buffer
     const rawBuffer = durationMinutes * 0.15;
-    const roundedToFive = Math.round(rawBuffer / 5) * 5;
-    return Math.max(5, roundedToFive);
+    return Math.max(5, rawBuffer);
   }
 
   return settings.startPokeBufferMinutes;
@@ -170,8 +170,9 @@ export function calculateStartPokeTime(
   const bufferMinutes = calculateBuffer(durationMinutes, settings);
   const totalMinutes = durationMinutes + bufferMinutes;
 
-  // Start Poke Time = Anchor Time - (Duration + Buffer)
-  const pokeTime = anchorTime - (totalMinutes * 60 * 1000);
+  // Start Poke Time = Anchor Time - (Duration + Buffer), rounded to nearest 5 minutes
+  const rawPokeTime = anchorTime - (totalMinutes * 60 * 1000);
+  const pokeTime = Math.round(rawPokeTime / 300000) * 300000; // 300000ms = 5 minutes
 
   return { time: pokeTime, anchorTime, durationMinutes, bufferMinutes };
 }
@@ -242,7 +243,9 @@ export function getStartPokeStatus(
   if (hasAnchor && hasDuration && durationMinutes) {
     bufferMinutes = calculateBuffer(durationMinutes, settings);
     const totalMinutes = durationMinutes + bufferMinutes;
-    nudgeTime = anchorTime - (totalMinutes * 60 * 1000);
+    // Round to nearest 5 minutes for cleaner start times
+    const rawNudgeTime = anchorTime - (totalMinutes * 60 * 1000);
+    nudgeTime = Math.round(rawNudgeTime / 300000) * 300000; // 300000ms = 5 minutes
   }
 
   return {

@@ -129,9 +129,9 @@ export default function TriageRow({
 
   return (
     <div
-      className={`group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg ${
+      className={`group bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-lg ${
         isCompact ? "p-3" : "p-4"
-      } hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors`}
+      } hover:border-violet-300 dark:hover:border-violet-600 transition-colors`}
     >
       {/* Desktop layout */}
       <div className="hidden sm:flex sm:items-center sm:gap-2">

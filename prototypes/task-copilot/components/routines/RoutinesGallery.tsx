@@ -11,6 +11,7 @@ interface RoutinesGalleryProps {
   onCompleteRoutine: (taskId: string) => void;
   onSkipRoutine: (taskId: string) => void;
   onOpenTask: (taskId: string) => void;
+  dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
 }
 
 // Time window status for a routine's scheduled time
@@ -45,12 +46,13 @@ export default function RoutinesGallery({
   onCompleteRoutine,
   onSkipRoutine,
   onOpenTask,
+  dayStartHour = 0,
 }: RoutinesGalleryProps) {
   // Get routines due today (includes overdue with rollover), sorted by scheduled time
   const dueRoutines = useMemo(() => {
-    const filtered = filterDueToday(tasks);
+    const filtered = filterDueToday(tasks, dayStartHour);
     return sortByTime(filtered);
-  }, [tasks]);
+  }, [tasks, dayStartHour]);
 
   // Scroll state for gradient fades
   const [showLeftFade, setShowLeftFade] = useState(false);
@@ -154,6 +156,7 @@ export default function RoutinesGallery({
                 onSkip={onSkipRoutine}
                 onOpenDetail={onOpenTask}
                 timeWindowStatus={getTimeWindowStatus(task)}
+                dayStartHour={dayStartHour}
               />
             </div>
           ))}

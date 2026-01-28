@@ -140,10 +140,12 @@ export function AIAssistantOverlay({
       {...dragProps}
       className={`
         w-full sm:w-[400px]
-        bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg
-        border border-zinc-300/50 dark:border-zinc-700/50
+        bg-gradient-to-br from-violet-50/50 via-violet-100/40 to-violet-50/50
+        dark:from-violet-950/30 dark:via-violet-950/20 dark:to-violet-950/30
+        backdrop-blur-lg
+        border border-violet-200/30 dark:border-violet-800/30
         overflow-hidden
-        shadow-xl shadow-black/10 dark:shadow-black/30
+        shadow-lg shadow-violet-400/[0.04] dark:shadow-violet-950/20
         rounded-3xl
         ${isExpanded ? 'touch-none' : ''}
         ${isAnimating ? 'pointer-events-none' : ''}

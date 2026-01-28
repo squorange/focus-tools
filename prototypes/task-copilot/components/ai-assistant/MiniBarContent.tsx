@@ -148,10 +148,10 @@ export function MiniBarContent({
                 e.stopPropagation();
                 onStartPokeAction();
               }}
-              className="flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full
-                bg-zinc-100 dark:bg-zinc-800
-                text-zinc-700 dark:text-zinc-300
-                hover:bg-zinc-200 dark:hover:bg-zinc-700
+              className="flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-full
+                bg-violet-100 dark:bg-violet-900/40
+                text-violet-700 dark:text-violet-300
+                hover:bg-violet-200 dark:hover:bg-violet-800/50
                 transition-colors"
             >
               Start
@@ -207,9 +207,9 @@ export function MiniBarContent({
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
             onClick={handlePromptPillClick}
             className="flex-shrink-0 px-3 py-1.5 text-sm rounded-full
-              bg-zinc-100 dark:bg-zinc-800
-              text-zinc-700 dark:text-zinc-300
-              hover:bg-zinc-200 dark:hover:bg-zinc-700
+              bg-violet-100 dark:bg-violet-900/40
+              text-violet-700 dark:text-violet-300
+              hover:bg-violet-200 dark:hover:bg-violet-800/50
               transition-colors"
           >
             {content.prompt.pillIcon} {content.prompt.pillLabel}
@@ -223,9 +223,9 @@ export function MiniBarContent({
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
             className="flex-shrink-0 px-3 py-1.5 text-sm rounded-full
-              bg-zinc-100 dark:bg-zinc-800
-              text-zinc-700 dark:text-zinc-300
-              hover:bg-zinc-200 dark:hover:bg-zinc-700
+              bg-violet-100 dark:bg-violet-900/40
+              text-violet-700 dark:text-violet-300
+              hover:bg-violet-200 dark:hover:bg-violet-800/50
               transition-colors"
             onClick={(e) => {
               e.stopPropagation();

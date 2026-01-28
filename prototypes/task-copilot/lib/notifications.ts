@@ -473,8 +473,11 @@ export function cancelStartPokePWA(taskId: string): void {
 /**
  * Initialize start pokes from storage on app load
  * Call this on app startup to restore any pending start pokes
+ * @param onMissedPoke - Optional callback when a missed poke is detected (for syncing with in-app notification state)
  */
-export function initializeStartPokes(): void {
+export function initializeStartPokes(
+  onMissedPoke?: (taskId: string, notificationId: string) => void
+): void {
   const pokes = getStoredStartPokes();
   const now = Date.now();
 
@@ -488,6 +491,12 @@ export function initializeStartPokes(): void {
         `${poke.taskTitle} — Start now to finish on time`,
         poke.taskId
       );
+
+      // Notify caller to mark in-app notification as fired
+      if (onMissedPoke) {
+        onMissedPoke(poke.taskId, poke.notificationId);
+      }
+
       removeStoredStartPoke(poke.taskId);
     } else {
       // Schedule for future

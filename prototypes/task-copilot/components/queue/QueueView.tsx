@@ -53,6 +53,8 @@ interface QueueViewProps {
   // Completed drawer state (lifted to page.tsx for layout push behavior)
   completedDrawerOpen: boolean;
   onToggleCompletedDrawer: (open: boolean) => void;
+  // Day offset setting
+  dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
   // Note: "What should I do?" is now handled via minibar contextual prompt
 }
 
@@ -100,6 +102,7 @@ export default function QueueView({
   onSkipRoutine,
   completedDrawerOpen,
   onToggleCompletedDrawer,
+  dayStartHour = 0,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
@@ -390,12 +393,13 @@ export default function QueueView({
   const totalItems = activeItems.length;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" style={{ touchAction: 'pan-y' }}>
       {/* Daily Summary Banner - tap to open completed drawer */}
       <DailySummaryBanner
         tasks={tasks}
         todayItems={todayItems}
         onOpenCompleted={() => onToggleCompletedDrawer(true)}
+        dayStartHour={dayStartHour}
       />
 
       {/* Routines Gallery - shows due routines at top */}
@@ -404,6 +408,7 @@ export default function QueueView({
         onCompleteRoutine={onCompleteRoutine}
         onSkipRoutine={onSkipRoutine}
         onOpenTask={onOpenTask}
+        dayStartHour={dayStartHour}
       />
 
       {/* Header with today estimate */}
@@ -538,7 +543,7 @@ export default function QueueView({
                           <div className="flex-1 h-px bg-gradient-to-r from-violet-400 via-violet-500 to-violet-400 dark:from-violet-600 dark:via-violet-500 dark:to-violet-600" />
                         </div>
                         {/* Label - absolutely centered over the line with opaque background */}
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-400 bg-white dark:bg-zinc-900 border border-violet-300 dark:border-violet-700 rounded select-none">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-white dark:bg-zinc-900 border border-violet-300 dark:border-violet-700 rounded select-none">
                           Today
                         </span>
                       </div>
@@ -626,6 +631,7 @@ export default function QueueView({
         onClose={() => onToggleCompletedDrawer(false)}
         tasks={tasks}
         onNavigateToTask={onOpenTask}
+        dayStartHour={dayStartHour}
       />
 
       {/* Focus Selection Modal for editing step selection */}

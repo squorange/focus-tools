@@ -127,7 +127,7 @@ export default function QueueItem({
           isComplete
             ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
             : isToday
-              ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
+              ? "border-violet-100 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
               : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
         }
       `}

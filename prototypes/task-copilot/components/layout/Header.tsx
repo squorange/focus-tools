@@ -123,30 +123,32 @@ export default function Header({
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Right: Plus button with popover */}
-        <div className="relative">
-          <button
-            ref={plusButtonRef}
-            onClick={taskCreationOpen ? onCloseTaskCreation : onOpenTaskCreation}
-            className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
-            aria-label={taskCreationOpen ? "Close task creation" : "Add task"}
-          >
-            <Plus size={20} className="text-violet-600 dark:text-violet-400" />
-          </button>
+        {/* Right: Plus button with popover - hidden in settings view */}
+        {currentView !== 'settings' && (
+          <div className="relative">
+            <button
+              ref={plusButtonRef}
+              onClick={taskCreationOpen ? onCloseTaskCreation : onOpenTaskCreation}
+              className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+              aria-label={taskCreationOpen ? "Close task creation" : "Add task"}
+            >
+              <Plus size={20} className="text-violet-600 dark:text-violet-400" />
+            </button>
 
-          {/* Task Creation Popover */}
-          <TaskCreationPopover
-            isOpen={taskCreationOpen}
-            onClose={onCloseTaskCreation}
-            onQuickAdd={onQuickAddTask}
-            onAddAndOpen={onAddAndOpenTask}
-            projects={projects}
-            anchorRef={plusButtonRef}
-            onOpenProjectModal={onOpenProjectModal}
-            projectModalOpen={projectModalOpen}
-            onOpenProjectModalWithCallback={onOpenProjectModalWithCallback}
-          />
-        </div>
+            {/* Task Creation Popover */}
+            <TaskCreationPopover
+              isOpen={taskCreationOpen}
+              onClose={onCloseTaskCreation}
+              onQuickAdd={onQuickAddTask}
+              onAddAndOpen={onAddAndOpenTask}
+              projects={projects}
+              anchorRef={plusButtonRef}
+              onOpenProjectModal={onOpenProjectModal}
+              projectModalOpen={projectModalOpen}
+              onOpenProjectModalWithCallback={onOpenProjectModalWithCallback}
+            />
+          </div>
+        )}
       </div>
     </header>
   );

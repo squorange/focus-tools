@@ -104,7 +104,7 @@ export function AIDrawer({
       </div>
 
       {/* Messages area - flex col to bottom-align messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col">
+      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col min-h-0">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <p className="text-sm text-zinc-400 dark:text-zinc-500">
@@ -146,7 +146,7 @@ export function AIDrawer({
       {/* Input area */}
       <div className="flex-shrink-0 p-4">
         <form onSubmit={handleSubmit}>
-          <div className="bg-zinc-100 dark:bg-zinc-800 rounded-xl border border-transparent focus-within:border-violet-500 transition-colors">
+          <div className="bg-zinc-100/60 dark:bg-zinc-800/70 rounded-xl border border-zinc-200/50 dark:border-zinc-700/40 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
             <textarea
               ref={inputRef}
               rows={1}
@@ -203,7 +203,7 @@ export function AIDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
-      className="fixed z-50 flex flex-col shadow-xl shadow-black/10 dark:shadow-black/30 right-0 top-0 bottom-0 bg-white dark:bg-[#0c0c0c] border-l border-zinc-200 dark:border-zinc-800 pt-[env(safe-area-inset-top)]"
+      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white dark:bg-[#0c0c0c] border-l border-zinc-200 dark:border-zinc-800 pt-[env(safe-area-inset-top)]"
       style={{ width: WIDTHS.drawer }}
     >
       {drawerContent}

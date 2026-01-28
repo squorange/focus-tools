@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 // ============================================
 // Re-export Notification Types
@@ -24,6 +24,16 @@ export type {
 // Task Structure Types
 // ============================================
 
+/**
+ * Substep - atomic action within a step
+ *
+ * Note: Substeps intentionally have NO time estimate fields (estimatedMinutes, estimateSource).
+ * Rationale:
+ * 1. Substeps are meant to be quick, atomic actions (not time-boxed work units)
+ * 2. Adding estimates to substeps adds cognitive overhead during capture
+ * 3. Parent step estimate should encompass all substeps
+ * 4. Keeps the data model simpler
+ */
 export interface Substep {
   id: string;
   text: string;
@@ -719,6 +729,9 @@ export interface UserSettings {
   startPokeDefault: 'all' | 'routines_only' | 'tasks_only' | 'none';
   startPokeBufferMinutes: number;
   startPokeBufferPercentage: boolean;  // If true, use 15% instead of fixed buffer
+
+  // Day offset settings
+  dayStartHour: number;  // 0-12, default 5. Hour when "today" begins. 0 = midnight (no offset)
 }
 
 export interface AppState {
@@ -987,6 +1000,7 @@ export function createInitialAppState(): AppState {
       startPokeDefault: 'all',                // When enabled, apply to all tasks by default
       startPokeBufferMinutes: 10,             // 10 minute buffer
       startPokeBufferPercentage: false,       // Use fixed buffer by default
+      dayStartHour: 0,                        // 0 = midnight (calendar day, no offset)
     },
 
     // Model E: default view is focus (home)
@@ -1041,6 +1055,7 @@ export function createDefaultUserSettings(): UserSettings {
     startPokeDefault: 'all',                // When enabled, apply to all tasks by default
     startPokeBufferMinutes: 10,             // 10 minute buffer
     startPokeBufferPercentage: false,       // Use fixed buffer by default
+    dayStartHour: 0,                        // 0 = midnight (calendar day, no offset)
   };
 }
 

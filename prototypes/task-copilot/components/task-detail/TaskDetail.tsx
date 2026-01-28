@@ -2446,7 +2446,9 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
             </svg>
           </button>
           {showKebabMenu && (
-            <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+            <>
+            <div className="fixed inset-0 z-10" onClick={() => onCloseMenu()} />
+            <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
               <button
                 onClick={() => { onMoveUp(); onCloseMenu(); }}
                 disabled={isFirst}
@@ -2502,6 +2504,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 Delete
               </button>
             </div>
+            </>
           )}
         </div>
       </div>
@@ -2581,7 +2584,9 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   </svg>
                 </button>
                 {showSubstepMenu === substep.id && (
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+                  <>
+                  <div className="fixed inset-0 z-10" onClick={() => onCloseMenu()} />
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
                     <button
                       onClick={() => { onMoveSubstepUp(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === 0}
@@ -2613,6 +2618,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                       Delete
                     </button>
                   </div>
+                  </>
                 )}
               </div>
             </div>

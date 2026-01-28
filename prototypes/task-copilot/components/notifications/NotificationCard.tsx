@@ -10,53 +10,76 @@ interface NotificationCardProps {
   onStart?: () => void;
   onSnooze?: (minutes: number) => void;
   onCancel?: () => void;
-  section?: 'active' | 'upcoming' | 'past';
+  section?: 'active' | 'missed' | 'upcoming' | 'past';
 }
 
 // Icon component based on notification icon type
 function NotificationIconComponent({ icon, type }: { icon: NotificationIcon; type: NotificationType }) {
-  const colorClasses = getColorClasses(type);
+  const iconColor = getIconColor(type);
   const iconSize = 18;
 
   switch (icon) {
     case 'bell-ring':
-      return <BellRing size={iconSize} className={colorClasses.icon} />;
+      return <BellRing size={iconSize} className={iconColor} />;
     case 'clock':
-      return <Clock size={iconSize} className={colorClasses.icon} />;
+      return <Clock size={iconSize} className={iconColor} />;
     case 'flame':
-      return <Flame size={iconSize} className={colorClasses.icon} />;
+      return <Flame size={iconSize} className={iconColor} />;
     case 'info':
     default:
-      return <Info size={iconSize} className={colorClasses.icon} />;
+      return <Info size={iconSize} className={iconColor} />;
   }
 }
 
-// Color scheme by notification type
-function getColorClasses(type: NotificationType): { bg: string; border: string; icon: string; text: string } {
-  switch (type) {
-    case 'start_poke':
+// Color scheme by section (active/missed get violet, others get standard task row styling)
+function getSectionColors(section: 'active' | 'missed' | 'upcoming' | 'past'): {
+  bg: string;
+  border: string;
+  icon: string;
+  text: string;
+  borderWidth: string;
+} {
+  switch (section) {
+    case 'active':
+      return {
+        bg: 'bg-violet-50 dark:bg-violet-900/20',
+        border: 'border-violet-300 dark:border-violet-700',
+        icon: 'text-violet-500 dark:text-violet-400',
+        text: 'text-violet-700 dark:text-violet-300',
+        borderWidth: 'border-2',
+      };
+    case 'missed':
       return {
         bg: 'bg-violet-50 dark:bg-violet-900/20',
         border: 'border-violet-200 dark:border-violet-800',
         icon: 'text-violet-500 dark:text-violet-400',
         text: 'text-violet-700 dark:text-violet-300',
+        borderWidth: 'border',
       };
-    case 'streak':
-      return {
-        bg: 'bg-orange-50 dark:bg-orange-900/20',
-        border: 'border-orange-200 dark:border-orange-800',
-        icon: 'text-orange-500 dark:text-orange-400',
-        text: 'text-orange-700 dark:text-orange-300',
-      };
-    case 'reminder':
-    case 'system':
+    case 'upcoming':
+    case 'past':
     default:
       return {
         bg: 'bg-zinc-50 dark:bg-zinc-800/80',
         border: 'border-zinc-200 dark:border-zinc-700',
         icon: 'text-zinc-500 dark:text-zinc-400',
         text: 'text-zinc-700 dark:text-zinc-300',
+        borderWidth: 'border',
       };
+  }
+}
+
+// Icon colors by notification type (separate from card styling)
+function getIconColor(type: NotificationType): string {
+  switch (type) {
+    case 'start_poke':
+      return 'text-violet-500 dark:text-violet-400';
+    case 'streak':
+      return 'text-orange-500 dark:text-orange-400';
+    case 'reminder':
+    case 'system':
+    default:
+      return 'text-zinc-500 dark:text-zinc-400';
   }
 }
 
@@ -97,10 +120,11 @@ export default function NotificationCard({
   onCancel,
   section = 'active',
 }: NotificationCardProps) {
-  const colors = getColorClasses(notification.type);
+  const sectionColors = getSectionColors(section);
   const isUnread = notification.firedAt !== null && notification.acknowledgedAt === null;
   const isFired = notification.firedAt !== null;
   const isStartPoke = notification.type === 'start_poke';
+  const isHighlighted = section === 'active' || section === 'missed';
 
   // Format: "Start at X" for pokes, regular title for others
   const timeStr = formatNotificationTime(notification.scheduledAt);
@@ -112,14 +136,14 @@ export default function NotificationCard({
     <div
       onClick={onTap}
       className={`
-        w-full text-left p-3 rounded-lg border transition-colors cursor-pointer
-        ${colors.bg} ${colors.border}
+        w-full text-left p-3 rounded-lg transition-colors cursor-pointer
+        ${sectionColors.borderWidth} ${sectionColors.bg} ${sectionColors.border}
         hover:border-zinc-300 dark:hover:border-zinc-600
       `}
     >
       <div className="flex gap-3">
         {/* Icon - emoji for pokes, icon for others */}
-        <div className={`flex-shrink-0 mt-0.5 ${isStartPoke ? '' : `w-8 h-8 rounded-full flex items-center justify-center ${colors.bg}`}`}>
+        <div className={`flex-shrink-0 mt-0.5 ${isStartPoke ? '' : 'w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700'}`}>
           {isStartPoke ? (
             <span className="text-lg leading-none" role="img" aria-label="Start poke">👉🏽</span>
           ) : (
@@ -130,7 +154,7 @@ export default function NotificationCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${colors.text}`}>
+            <span className={`text-sm font-medium ${isHighlighted ? sectionColors.text : 'text-zinc-800 dark:text-zinc-200'}`}>
               {displayTitle}
             </span>
             {isUnread && (
@@ -143,46 +167,46 @@ export default function NotificationCard({
             </p>
           )}
           <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
-            {isFired ? 'Fired' : 'Scheduled'}: {timeStr}
+            {isFired ? 'Fired' : section === 'missed' ? 'Missed' : 'Scheduled'}: {timeStr}
           </span>
 
           {/* Action buttons based on section */}
-          {(section === 'active' || section === 'upcoming') && (
+          {(section === 'active' || section === 'missed' || section === 'upcoming') && (
             <div className="flex items-center gap-1.5 mt-2">
               {onStart && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onStart(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Start
                 </button>
               )}
-              {section === 'active' && onSnooze && (
+              {(section === 'active' || section === 'missed') && onSnooze && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Snooze 5m
                 </button>
               )}
-              {section === 'active' && onDismiss && (
+              {(section === 'active' || section === 'missed') && onDismiss && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Dismiss
@@ -193,9 +217,9 @@ export default function NotificationCard({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onCancel(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-100 dark:bg-zinc-800
+                    bg-zinc-900/10 dark:bg-white/10
                     text-zinc-700 dark:text-zinc-300
-                    hover:bg-zinc-200 dark:hover:bg-zinc-700
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   Cancel

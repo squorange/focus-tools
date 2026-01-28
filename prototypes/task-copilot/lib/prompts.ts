@@ -29,6 +29,9 @@ When breaking down complex tasks:
 NEVER embed time estimates in step text (e.g., "Buy groceries ~15 min" is WRONG).
 ALWAYS use the estimatedMinutes field in the tool schema.
 
+IMPORTANT: Only estimate time for STEPS, never for substeps. Substeps are quick, atomic actions—
+the parent step's estimate should encompass all its substeps.
+
 Example:
 - WRONG: { text: "Buy groceries ~15 min" }
 - RIGHT: { text: "Buy groceries", estimatedMinutes: 15 }

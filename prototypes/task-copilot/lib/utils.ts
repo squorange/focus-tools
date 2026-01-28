@@ -5,10 +5,20 @@ import { Task, Step, FocusQueueItem, Project } from './types';
 // ============================================
 
 /**
- * Get today's date as ISO string (YYYY-MM-DD) using local timezone
+ * Get today's date as ISO string (YYYY-MM-DD) using local timezone.
+ *
+ * @param dayStartHour - Hour when the day starts (0-12). Default 0 (midnight).
+ *   If current time is before dayStartHour, returns yesterday's date.
+ *   This allows a "day" to span e.g. 5 AM to 5 AM instead of midnight to midnight.
  */
-export function getTodayISO(): string {
+export function getTodayISO(dayStartHour: number = 0): string {
   const now = new Date();
+
+  // If dayStartHour is set and current hour is before it, treat as "yesterday"
+  if (dayStartHour > 0 && now.getHours() < dayStartHour) {
+    now.setDate(now.getDate() - 1);
+  }
+
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');

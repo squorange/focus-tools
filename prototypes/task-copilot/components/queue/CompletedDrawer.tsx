@@ -10,6 +10,7 @@ interface CompletedDrawerProps {
   onClose: () => void;
   tasks: Task[];
   onNavigateToTask: (taskId: string) => void;
+  dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
 }
 
 export default function CompletedDrawer({
@@ -17,12 +18,13 @@ export default function CompletedDrawer({
   onClose,
   tasks,
   onNavigateToTask,
+  dayStartHour = 0,
 }: CompletedDrawerProps) {
   const [daysToShow, setDaysToShow] = useState(7);
 
   const { groups: completionGroups, hasMore } = useMemo(
-    () => getCompletions(tasks, daysToShow),
-    [tasks, daysToShow]
+    () => getCompletions(tasks, daysToShow, dayStartHour),
+    [tasks, daysToShow, dayStartHour]
   );
 
   const totalTasks = completionGroups.reduce((sum, g) => sum + g.taskCompletions.length, 0);
@@ -253,7 +255,7 @@ function TaskCompletionItem({
 
       {/* Completed steps as children (only if task not fully completed) */}
       {task.completedSteps.length > 0 && (
-        <div className="mt-1.5 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700 space-y-0.5">
+        <div className="mt-1.5 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700 space-y-1.5">
           {task.completedSteps.map((step) => (
             <div
               key={step.stepId}

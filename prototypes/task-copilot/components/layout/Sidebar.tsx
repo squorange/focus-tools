@@ -44,6 +44,7 @@ interface SidebarProps {
   onSearchInputBlur: () => void;
   searchInputFocused: boolean;
   inboxCount: number;
+  todayCount?: number;
   notificationCount?: number;
   // Auto-focus search input
   shouldFocusSearch?: boolean;
@@ -265,6 +266,7 @@ export default function Sidebar({
   onSearchInputBlur,
   searchInputFocused,
   inboxCount,
+  todayCount = 0,
   notificationCount = 0,
   shouldFocusSearch,
   onSearchFocused,
@@ -542,6 +544,7 @@ export default function Sidebar({
                   isActive={currentView === "focus" || currentView === "focusMode"}
                   onClick={() => handleNavigation("focus")}
                   isCollapsed={isCollapsed}
+                  badge={todayCount}
                 />
                 <NavItem
                   icon={<ListTodo size={20} />}

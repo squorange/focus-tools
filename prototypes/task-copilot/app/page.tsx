@@ -1108,12 +1108,26 @@ export default function Home() {
       // Initialize reminders (check for any due while app was closed)
       initializeReminders();
 
-      // Initialize start pokes (check for any due while app was closed)
-      initializeStartPokes();
-
-      // Load notifications from localStorage
+      // Load notifications from localStorage FIRST (before initializing start pokes)
       const loadedNotifications = loadNotifications();
-      setNotifications(loadedNotifications);
+
+      // Initialize start pokes and track missed ones (for syncing with in-app notification state)
+      const missedPokeNotificationIds: string[] = [];
+      initializeStartPokes((taskId, notificationId) => {
+        missedPokeNotificationIds.push(notificationId);
+      });
+
+      // Mark missed pokes as fired in the notification state
+      const updatedNotifications = missedPokeNotificationIds.length > 0
+        ? loadedNotifications.map(n => {
+            if (missedPokeNotificationIds.includes(n.id)) {
+              return { ...n, firedAt: Date.now() };
+            }
+            return n;
+          })
+        : loadedNotifications;
+
+      setNotifications(updatedNotifications);
 
       // Load recent task IDs from localStorage
       try {
@@ -1481,10 +1495,18 @@ export default function Home() {
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - swipeStartRef.current.x;
     const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
+    const startedAtLeftEdge = swipeStartRef.current.x < EDGE_THRESHOLD;
 
     // Check if this is a valid horizontal swipe
     if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
-      // Focus↔Tasks swipe navigation (when sidebar is closed)
+      // Edge swipe from left to open sidebar (except on Tasks view - preserve tab switching)
+      if (startedAtLeftEdge && deltaX > 0 && !sidebarOpen && state.currentView !== 'tasks') {
+        setSidebarOpen(true);
+        swipeStartRef.current = null;
+        return;
+      }
+
+      // Focus↔Tasks swipe navigation (when sidebar is closed, only on Tasks view for left-edge swipes)
       if (!sidebarOpen && (state.currentView === 'focus' || state.currentView === 'tasks')) {
         if (deltaX > 0 && state.currentView === 'tasks') {
           // Swipe right → go to Focus
@@ -4910,7 +4932,18 @@ export default function Home() {
 
   const inboxTasks = filterInbox(state.tasks);
   const poolTasks = filterPool(state.tasks);
-  const queueItems = getTodayItems(state.focusQueue);
+  // Badge count: only active one-off tasks for "today" (excludes routines and upcoming)
+  // Uses todayLineIndex to match QueueView's visual "Today" section
+  const todayCount = useMemo(() => {
+    const activeItems = state.focusQueue.items
+      .filter(i => !i.completed)
+      .sort((a, b) => a.order - b.order);
+    const todayItems = activeItems.slice(0, state.focusQueue.todayLineIndex);
+    return todayItems.filter(item => {
+      const task = state.tasks.find(t => t.id === item.taskId);
+      return task && !task.isRecurring;
+    }).length;
+  }, [state.focusQueue.items, state.focusQueue.todayLineIndex, state.tasks]);
   const notificationCount = getUnacknowledgedCount(notifications);
 
   const awarenessData = (() => {
@@ -5015,7 +5048,7 @@ export default function Home() {
   const counts = {
     inbox: inboxTasks.length,
     pool: poolTasks.length,
-    queue: queueItems.length,
+    queue: state.focusQueue.items.filter(i => !i.completed).length,
   };
 
   // Filter counts for sidebar
@@ -5141,6 +5174,7 @@ export default function Home() {
         onSearchInputBlur={() => setSearchInputFocused(false)}
         searchInputFocused={searchInputFocused}
         inboxCount={inboxTasks.length}
+        todayCount={todayCount}
         notificationCount={notificationCount}
         shouldFocusSearch={shouldFocusSearch}
         onSearchFocused={() => setShouldFocusSearch(false)}
@@ -5233,6 +5267,10 @@ export default function Home() {
           className={`flex-1 transition-all duration-300 ${
             sidebarOpen ? 'overflow-y-auto pointer-events-none lg:pointer-events-auto' : 'overflow-y-auto'
           }`}
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
         >
@@ -5261,6 +5299,7 @@ export default function Home() {
                 onSkipRoutine={handleSkipRoutine}
                 completedDrawerOpen={completedDrawerOpen}
                 onToggleCompletedDrawer={handleToggleCompletedDrawer}
+                dayStartHour={state.userSettings.dayStartHour}
               />
             )}
 
@@ -5471,8 +5510,8 @@ export default function Home() {
       </div>
 
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
-      {/* Only show when not in drawer mode (drawer handled separately) */}
-      {aiAssistant.state.mode !== 'drawer' && (
+      {/* Only show when not in drawer mode (drawer handled separately) and not in settings view */}
+      {aiAssistant.state.mode !== 'drawer' && state.currentView !== 'settings' && (
         <div className={`
           fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end
           sm:bottom-4
@@ -5524,9 +5563,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* AI Assistant Drawer (full chat) */}
+      {/* AI Assistant Drawer (full chat) - hidden in settings view */}
       <AnimatePresence>
-        {aiAssistant.state.mode === 'drawer' && (
+        {aiAssistant.state.mode === 'drawer' && state.currentView !== 'settings' && (
           <>
             {/* Backdrop - hidden on desktop (side-by-side), visible on tablet/mobile */}
             <motion.div

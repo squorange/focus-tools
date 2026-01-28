@@ -19,8 +19,10 @@ import {
  * Get today's date as ISO string, respecting day-start hour
  * E.g., at 2am with dayStartHour=5, returns yesterday's date
  * Uses local timezone to avoid UTC offset issues
+ *
+ * @param dayStartHour - Hour when the day starts (0-12). Default 0 (midnight/no offset).
  */
-export function getTodayISO(dayStartHour: number = 5): string {
+export function getTodayISO(dayStartHour: number = 0): string {
   const now = new Date();
   // If before day-start hour, treat as previous day
   if (now.getHours() < dayStartHour) {
@@ -340,10 +342,12 @@ function getEffectiveStartDate(task: Task, pattern: RecurrenceRuleExtended, dayS
 /**
  * Get the active occurrence date for a task
  * Returns today if due today, or next due date if not
+ *
+ * @param dayStartHour - Hour when the day starts (0-12). Default 0 (midnight/no offset).
  */
 export function getActiveOccurrenceDate(
   task: Task,
-  dayStartHour: number = 5
+  dayStartHour: number = 0
 ): string | null {
   if (!task.isRecurring || !task.recurrence) return null;
 
@@ -881,8 +885,10 @@ export function filterRecurringTasks(tasks: Task[]): Task[] {
 
 /**
  * Filter recurring tasks due today
+ *
+ * @param dayStartHour - Hour when the day starts (0-12). Default 0 (midnight/no offset).
  */
-export function filterDueToday(tasks: Task[], dayStartHour: number = 5): Task[] {
+export function filterDueToday(tasks: Task[], dayStartHour: number = 0): Task[] {
   const today = getTodayISO(dayStartHour);
 
   return filterRecurringTasks(tasks).filter((task) => {
@@ -925,8 +931,10 @@ export function filterDueToday(tasks: Task[], dayStartHour: number = 5): Task[] 
  * Filter all routines applicable for today (includes completed/skipped)
  * Used for accurate daily progress counting in DailySummaryBanner
  * Unlike filterDueToday which excludes completed/skipped routines
+ *
+ * @param dayStartHour - Hour when the day starts (0-12). Default 0 (midnight/no offset).
  */
-export function filterRoutinesForToday(tasks: Task[], dayStartHour: number = 5): Task[] {
+export function filterRoutinesForToday(tasks: Task[], dayStartHour: number = 0): Task[] {
   const today = getTodayISO(dayStartHour);
 
   return filterRecurringTasks(tasks).filter((task) => {
