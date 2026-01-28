@@ -69,7 +69,7 @@ export default function Header({
   const plusButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-[#0c0c0c] border-b border-zinc-200 dark:border-transparent px-4 lg:px-6">
+    <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg px-4 lg:px-6">
       <div className="h-14 flex items-center gap-2 relative">
         {/* Left: Hamburger/Back + TabCluster */}
         <div className="flex items-center gap-2">

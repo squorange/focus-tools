@@ -122,16 +122,13 @@ export default function TaskRow({
     <div
       className={`
         group px-3 sm:px-4 py-3
-        bg-zinc-50 dark:bg-zinc-800/80
         border rounded-lg
         hover:border-zinc-300 dark:hover:border-zinc-700
         transition-colors cursor-pointer
         ${
           isComplete
-            ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10"
-            : isInQueue
-            ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10"
-            : "border-zinc-200 dark:border-zinc-800"
+            ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
+            : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800"
         }
       `}
       onClick={() => onOpenTask(task.id)}

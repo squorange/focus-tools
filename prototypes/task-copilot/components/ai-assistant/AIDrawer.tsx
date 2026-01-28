@@ -90,7 +90,7 @@ export function AIDrawer({
   const drawerContent = (
     <>
       {/* Header - h-14 (56px) to match app header */}
-      <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-transparent">
+      <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg">
         <h2 id="drawer-title" className="sr-only">AI Assistant</h2>
         <div />
         <motion.button
@@ -203,7 +203,7 @@ export function AIDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
-      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white dark:bg-[#0c0c0c] border-l border-zinc-200 dark:border-zinc-800 pt-[env(safe-area-inset-top)]"
+      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white/95 dark:bg-[#0c0c0c]/95 backdrop-blur-xl border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
       style={{ width: WIDTHS.drawer }}
     >
       {drawerContent}

@@ -69,8 +69,8 @@ export default function RoutineCard({
         className={`
           w-full h-[110px] rounded-xl border transition-all
           ${isActiveWindow
-            ? "border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20"
-            : "border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+            ? "border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20"
+            : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800"
           }
           hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-sm
         `}

@@ -371,7 +371,7 @@ export default function Sidebar({
         {/* Safe area padding for iOS */}
         <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
           {/* Header with drawer toggle (desktop only) - matches main header styling */}
-          <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 border-b border-zinc-200 dark:border-transparent bg-white dark:bg-[#0c0c0c]">
+          <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg">
             {/* Drawer toggle - always in upper-left, easy tap target */}
             <button
               onClick={onToggleCollapse}

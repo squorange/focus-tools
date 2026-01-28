@@ -111,7 +111,7 @@ export default function CompletedDrawer({
       {/* Desktop: Side drawer from right */}
       <div
         className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200 lg:dark:border-zinc-800 lg:bg-white lg:dark:bg-[#0c0c0c]
+          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200/50 lg:dark:border-zinc-700/30 lg:bg-white/95 lg:dark:bg-[#0c0c0c]/95 lg:backdrop-blur-xl
           transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
           ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
         `}
@@ -122,7 +122,7 @@ export default function CompletedDrawer({
           }`}
         >
           {/* Header */}
-          <div className="h-14 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
+          <div className="h-14 flex items-center justify-between px-4 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg flex-shrink-0">
             <div className="flex items-center gap-2">
               <svg
                 className="w-5 h-5 text-green-600 dark:text-green-400"
@@ -168,7 +168,7 @@ export default function CompletedDrawer({
       <div className="lg:hidden">
         <BottomSheet isOpen={isOpen} onClose={onClose} height="50vh">
           {/* Mobile header row */}
-          <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
+          <div className="flex items-center justify-between px-4 pb-2 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg flex-shrink-0">
             <div className="flex items-center gap-2">
               <svg
                 className="w-5 h-5 text-green-600 dark:text-green-400"

@@ -39,23 +39,24 @@ export default function MetadataPill({
     due: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
     overdue:
       "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    project: "", // Uses inline style for color
+    project: "bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-400", // Monochrome like default
   };
 
-  // For project pills, create inline style with the project's color
-  const style =
-    variant === "project" && color
-      ? {
-          backgroundColor: `${color}20`,
-          color: color,
-        }
-      : undefined;
+  // No inline style needed for project variant (now uses monochrome styling)
+  const style = undefined;
 
   return (
     <span
       className={`${baseClasses} ${variantClasses[variant]}`}
       style={style}
     >
+      {/* Project color dot - 10px (w-2.5 h-2.5), concentric with left pill radius */}
+      {variant === "project" && color && (
+        <span
+          className="w-2.5 h-2.5 rounded-full flex-shrink-0 mr-1"
+          style={{ backgroundColor: color }}
+        />
+      )}
       {icon && <span className="mr-0.5 flex-shrink-0">{icon}</span>}
       {children}
     </span>
