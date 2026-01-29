@@ -371,11 +371,14 @@ export default function Sidebar({
         {/* Safe area padding for iOS */}
         <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
           {/* Header with drawer toggle (desktop only) - matches main header styling */}
-          <div className="flex-shrink-0 h-14 hidden lg:flex items-center px-4 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg">
-            {/* Drawer toggle - always in upper-left, easy tap target */}
+          <div className={`
+            flex-shrink-0 h-14 hidden lg:flex items-center bg-white dark:bg-zinc-900
+            ${isCollapsed ? "justify-center" : "px-4"}
+          `}>
+            {/* Drawer toggle - centered when collapsed, left-aligned when expanded */}
             <button
               onClick={onToggleCollapse}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               aria-label={isCollapsed ? "Expand drawer" : "Collapse drawer"}
             >
               {isCollapsed ? (
@@ -386,74 +389,77 @@ export default function Sidebar({
             </button>
           </div>
 
-          {/* Search - h-14 matches header height, icon stays in place */}
-          <div className="h-14 flex items-center gap-2 px-3 border-b border-zinc-200 dark:border-zinc-800">
-            <div className="relative flex-1">
-              {/* Icon always in same position */}
-              <Search
-                size={18}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-400 transition-opacity duration-300"
-              />
-              {/* Input fades out on collapse */}
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                onFocus={onSearchInputFocus}
-                onBlur={onSearchInputBlur}
-                className={`
-                  w-full pl-9 pr-8 py-2 text-sm bg-zinc-100 dark:bg-zinc-800
-                  border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500
-                  text-zinc-900 dark:text-zinc-100 placeholder-zinc-500
-                  transition-opacity duration-300
-                  ${isCollapsed ? 'opacity-0 pointer-events-none' : 'opacity-100'}
-                `}
-              />
-              {/* Clear button - inside input, shows when text exists */}
-              {searchQuery && !isCollapsed && (
-                <button
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent input blur
-                    onSearchChange('');
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-                  title="Clear search"
-                >
-                  <XCircle size={16} />
-                </button>
-              )}
-              {/* Clickable overlay when collapsed */}
-              {isCollapsed && (
-                <button
-                  onClick={() => {
-                    onToggleCollapse();
-                    setTimeout(() => searchInputRef.current?.focus(), 300);
-                  }}
-                  className="absolute inset-0 cursor-pointer"
-                  title="Search"
-                />
-              )}
-            </div>
-
-            {/* Exit search mode button - outside input, always visible when search active */}
-            {isSearchActive && !isCollapsed && (
+          {/* Search - h-14 matches header height */}
+          <div className={`
+            h-14 flex items-center
+            ${isCollapsed ? "justify-center" : "gap-2 px-3"}
+          `}>
+            {isCollapsed ? (
+              /* Collapsed: Search icon button - matches NavItem styling */
               <button
-                onClick={onBackToMenu}
-                className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
-                title="Exit search"
+                onClick={() => {
+                  onToggleCollapse();
+                  setTimeout(() => searchInputRef.current?.focus(), 300);
+                }}
+                className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                title="Search"
               >
-                <X size={18} className="text-zinc-500 dark:text-zinc-400" />
+                <Search size={20} className="text-zinc-600 dark:text-zinc-400" />
               </button>
+            ) : (
+              /* Expanded: Full search field */
+              <>
+                <div className="relative flex-1">
+                  <Search
+                    size={20}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-400"
+                  />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    onFocus={onSearchInputFocus}
+                    onBlur={onSearchInputBlur}
+                    className="w-full pl-10 pr-8 py-2.5 text-sm bg-zinc-100 dark:bg-zinc-800
+                      border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500
+                      text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                  />
+                  {/* Clear button - inside input, shows when text exists */}
+                  {searchQuery && (
+                    <button
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent input blur
+                        onSearchChange('');
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      title="Clear search"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Exit search mode button - outside input, visible when search active */}
+                {isSearchActive && (
+                  <button
+                    onClick={onBackToMenu}
+                    className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
+                    title="Exit search"
+                  >
+                    <X size={20} className="text-zinc-500 dark:text-zinc-400" />
+                  </button>
+                )}
+              </>
             )}
           </div>
 
           {/* Navigation / Search Content */}
-          <nav className={`flex-1 overflow-y-auto p-3 space-y-1 ${isSearchActive ? 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]' : ''}`}>
+          <nav className={`flex-1 overflow-y-auto pt-2 px-3 pb-3 ${isSearchActive ? 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]' : ''}`}>
             {/* Search Mode: Empty State (Jump To + Recent) OR Results */}
             {isSearchActive && !isCollapsed ? (
-              <>
+              <div className="space-y-1">
                 {searchQuery.trim() ? (
                   /* Search Results */
                   <>
@@ -533,49 +539,51 @@ export default function Sidebar({
 
                   </>
                 )}
-              </>
+              </div>
             ) : (
-              /* Normal Nav Menu */
+              /* Normal Nav Menu - sections separated so divider spacing works */
               <>
-                {/* Main destinations */}
-                <NavItem
-                  icon={<Target size={20} />}
-                  label="Focus"
-                  isActive={currentView === "focus" || currentView === "focusMode"}
-                  onClick={() => handleNavigation("focus")}
-                  isCollapsed={isCollapsed}
-                  badge={todayCount}
-                />
-                <NavItem
-                  icon={<ListTodo size={20} />}
-                  label="Tasks"
-                  isActive={currentView === "tasks" || currentView === "inbox"}
-                  onClick={() => handleNavigation("tasks")}
-                  isCollapsed={isCollapsed}
-                  badge={inboxCount}
-                />
+                {/* Primary nav: Focus + Tasks */}
+                <div className="space-y-4">
+                  <NavItem
+                    icon={<Target size={20} />}
+                    label="Focus"
+                    isActive={currentView === "focus" || currentView === "focusMode"}
+                    onClick={() => handleNavigation("focus")}
+                    isCollapsed={isCollapsed}
+                    badge={todayCount}
+                  />
+                  <NavItem
+                    icon={<ListTodo size={20} />}
+                    label="Tasks"
+                    isActive={currentView === "tasks" || currentView === "inbox"}
+                    onClick={() => handleNavigation("tasks")}
+                    isCollapsed={isCollapsed}
+                    badge={inboxCount}
+                  />
+                </div>
 
-                {/* Separator - after Focus/Tasks */}
-                <div className="my-3 border-t border-zinc-200 dark:border-zinc-700" />
+                {/* Separator - NOT inside space-y-1, so my-4 works */}
+                <div className="my-4 border-t border-zinc-200 dark:border-zinc-700" />
 
-                {/* Projects */}
-                <NavItem
-                  icon={<FolderOpen size={20} />}
-                  label="Projects"
-                  isActive={currentView === "projects"}
-                  onClick={() => handleNavigation("projects")}
-                  isCollapsed={isCollapsed}
-                />
-
-                {/* Notifications */}
-                <NavItem
-                  icon={<Bell size={20} />}
-                  label="Notifications"
-                  isActive={currentView === "notifications"}
-                  onClick={() => handleNavigation("notifications")}
-                  isCollapsed={isCollapsed}
-                  badge={notificationCount}
-                />
+                {/* Secondary nav: Projects + Notifications */}
+                <div className="space-y-4">
+                  <NavItem
+                    icon={<FolderOpen size={20} />}
+                    label="Projects"
+                    isActive={currentView === "projects"}
+                    onClick={() => handleNavigation("projects")}
+                    isCollapsed={isCollapsed}
+                  />
+                  <NavItem
+                    icon={<Bell size={20} />}
+                    label="Notifications"
+                    isActive={currentView === "notifications"}
+                    onClick={() => handleNavigation("notifications")}
+                    isCollapsed={isCollapsed}
+                    badge={notificationCount}
+                  />
+                </div>
               </>
             )}
           </nav>

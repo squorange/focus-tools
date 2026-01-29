@@ -89,8 +89,8 @@ export function AIDrawer({
 
   const drawerContent = (
     <>
-      {/* Header - h-14 (56px) to match app header */}
-      <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg">
+      {/* Header - h-14 (56px) to match app header - no bg to inherit from parent container */}
+      <div className="flex-shrink-0 h-14 px-4 flex items-center justify-between">
         <h2 id="drawer-title" className="sr-only">AI Assistant</h2>
         <div />
         <motion.button
@@ -146,7 +146,7 @@ export function AIDrawer({
       {/* Input area */}
       <div className="flex-shrink-0 p-4">
         <form onSubmit={handleSubmit}>
-          <div className="bg-zinc-100/60 dark:bg-zinc-800/70 rounded-xl border border-zinc-200/50 dark:border-zinc-700/40 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
+          <div className="bg-violet-50/30 dark:bg-violet-900/10 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
             <textarea
               ref={inputRef}
               rows={1}
@@ -170,7 +170,7 @@ export function AIDrawer({
                 type="submit"
                 disabled={!query.trim() || isLoading}
                 whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
-                className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-700
+                className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-400/30 dark:disabled:bg-zinc-600/30
                   disabled:cursor-not-allowed text-white rounded-full transition-colors"
                 aria-label="Send message"
               >
@@ -203,7 +203,7 @@ export function AIDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
-      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white/95 dark:bg-[#0c0c0c]/95 backdrop-blur-xl border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
+      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white dark:bg-zinc-900 border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
       style={{ width: WIDTHS.drawer }}
     >
       {drawerContent}

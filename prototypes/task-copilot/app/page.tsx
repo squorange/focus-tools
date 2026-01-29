@@ -168,6 +168,7 @@ export default function Home() {
 
   // Ref for main content scroll-to-top on tab re-tap
   const mainRef = useRef<HTMLDivElement>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Stale queue item nudge state (session-level)
   const [dismissedStaleIds, setDismissedStaleIds] = useState<Set<string>>(new Set());
@@ -1472,6 +1473,13 @@ export default function Home() {
   const SWIPE_MIN_DISTANCE = 50; // minimum horizontal distance for swipe
   const SWIPE_RATIO = 2; // horizontal must be > 2x vertical
 
+  // Scroll-based header shadow
+  const handleMainScroll = useCallback(() => {
+    if (mainRef.current) {
+      setIsScrolled(mainRef.current.scrollTop >= 8);
+    }
+  }, []);
+
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     // Only track swipes that start near screen edges
     const touch = e.touches[0];
@@ -1497,13 +1505,31 @@ export default function Home() {
     const deltaY = Math.abs(touch.clientY - swipeStartRef.current.y);
     const startedAtLeftEdge = swipeStartRef.current.x < EDGE_THRESHOLD;
 
+    // Top-level views (accessible from menu) vs child views (have back button)
+    const topLevelViews = ['focus', 'tasks'];
+    const childViews = ['taskDetail', 'focusMode', 'inbox', 'projects', 'search', 'notifications', 'settings'];
+    const isTopLevel = topLevelViews.includes(state.currentView);
+    const isChildView = childViews.includes(state.currentView);
+
     // Check if this is a valid horizontal swipe
     if (Math.abs(deltaX) > SWIPE_MIN_DISTANCE && Math.abs(deltaX) > deltaY * SWIPE_RATIO) {
-      // Edge swipe from left to open sidebar (except on Tasks view - preserve tab switching)
-      if (startedAtLeftEdge && deltaX > 0 && !sidebarOpen && state.currentView !== 'tasks') {
-        setSidebarOpen(true);
-        swipeStartRef.current = null;
-        return;
+      // Left-edge swipe right behavior depends on view type
+      if (startedAtLeftEdge && deltaX > 0 && !sidebarOpen) {
+        if (isChildView) {
+          // Child views: swipe from left edge goes BACK (mirrors handleBackToList logic)
+          setState((prev) => ({
+            ...prev,
+            currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
+            activeTaskId: null,
+          }));
+          swipeStartRef.current = null;
+          return;
+        } else if (isTopLevel && state.currentView !== 'tasks') {
+          // Top-level views (except Tasks - preserve tab switching): open sidebar
+          setSidebarOpen(true);
+          swipeStartRef.current = null;
+          return;
+        }
       }
 
       // Focus↔Tasks swipe navigation (when sidebar is closed, only on Tasks view for left-edge swipes)
@@ -1515,15 +1541,6 @@ export default function Home() {
           // Swipe left → go to Tasks
           setState((prev) => ({ ...prev, currentView: 'tasks' }));
         }
-      }
-
-      // Swipe-right to go back from child views (mirrors handleBackToList logic)
-      if (deltaX > 0 && ['taskDetail', 'focusMode', 'inbox', 'projects', 'search'].includes(state.currentView)) {
-        setState((prev) => ({
-          ...prev,
-          currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
-          activeTaskId: null,
-        }));
       }
     }
 
@@ -5258,6 +5275,7 @@ export default function Home() {
               }
             }}
             hideNavigation={state.currentView === 'taskDetail'}
+            isScrolled={isScrolled}
           />
         )}
 
@@ -5273,6 +5291,7 @@ export default function Home() {
           }}
           onTouchStart={handleSwipeStart}
           onTouchEnd={handleSwipeEnd}
+          onScroll={handleMainScroll}
         >
           {/* pb-48 clears AI minibar + room for dropdowns; pb-24 on desktop for minibar; when AI open pb-[52vh] for bottom sheet */}
           {/* Focus mode: full width, no padding (has its own layout). Other views: max-w-4xl centered with padding */}

@@ -258,7 +258,7 @@ export function PaletteContent({
     >
       {/* Target banner - shows when step is targeted (reply arrow style) */}
       {aiTargetContext && !isLoading && !response && (
-        <div className="flex items-center justify-between px-3 py-2 mb-2 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+        <div className="flex items-center justify-between px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
           <div className="flex items-center gap-2 min-w-0">
             {/* Reply arrow icon */}
             <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0 text-zinc-400">
@@ -291,7 +291,7 @@ export function PaletteContent({
         const total = awareness.items.length;
 
         return (
-          <div className="px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+          <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
             {/* Title row: emoji + full title (wraps) + count */}
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 text-sm mt-0.5">👀</span>
@@ -304,19 +304,27 @@ export function PaletteContent({
                 </span>
               )}
             </div>
-            {/* Actions row */}
-            <div className="flex items-center gap-1 mt-1.5 ml-6">
+            {/* Actions row - compact filled buttons (all gray translucent) */}
+            <div className="flex items-center gap-1.5 mt-2 ml-6">
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); awareness.onReview(current.taskId); }}
-                className="px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-800/30 rounded transition-colors"
+                className="px-2.5 py-1 text-xs font-medium rounded-full
+                  bg-zinc-900/10 dark:bg-white/10
+                  text-zinc-700 dark:text-zinc-300
+                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  transition-colors"
               >
                 Review
               </button>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); awareness.onDismiss(current.id); }}
-                className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded transition-colors"
+                className="px-2.5 py-1 text-xs font-medium rounded-full
+                  bg-zinc-900/10 dark:bg-white/10
+                  text-zinc-700 dark:text-zinc-300
+                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  transition-colors"
               >
                 Dismiss
               </button>
@@ -324,12 +332,14 @@ export function PaletteContent({
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); awareness.onNext(); }}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-900/10 dark:bg-white/10
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    transition-colors"
                   aria-label="Next item"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  Next
                 </button>
               )}
             </div>
@@ -352,7 +362,7 @@ export function PaletteContent({
           const dueTimeStr = new Date(poke.anchorTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
           return (
-            <div className="px-3 py-2 mb-2 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+            <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
               {/* Title row: pointing emoji + task title + poke time + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">👉🏽</span>
@@ -414,18 +424,18 @@ export function PaletteContent({
             </div>
           );
         } else {
-          // Reminder banner - amber themed
+          // Reminder banner - violet themed (unified with other banners)
           const reminder = current.data;
           const reminderTime = new Date(reminder.reminderTime);
           const timeStr = reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
           return (
-            <div className="px-3 py-2 mb-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+            <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
               {/* Title row: bell icon + task title + time + count */}
               <div className="flex items-start gap-2">
                 <Bell
                   size={14}
-                  className="flex-shrink-0 mt-0.5 text-amber-500 dark:text-amber-400"
+                  className="flex-shrink-0 mt-0.5 text-violet-500 dark:text-violet-400"
                 />
                 <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
                   &ldquo;{reminder.taskTitle}&rdquo; — Set for {timeStr}
@@ -440,15 +450,15 @@ export function PaletteContent({
                   </button>
                 )}
               </div>
-              {/* Actions row - compact filled buttons */}
+              {/* Actions row - compact filled buttons (all gray translucent) */}
               <div className="flex items-center gap-1.5 mt-2 ml-6">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onReminderAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-amber-100 dark:bg-amber-900/40
-                    text-amber-700 dark:text-amber-300
-                    hover:bg-amber-200 dark:hover:bg-amber-800/50
+                    bg-zinc-900/10 dark:bg-white/10
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
                   View
@@ -482,7 +492,7 @@ export function PaletteContent({
       })()}
 
       {/* Content area - scrollable with gradient fades */}
-      <div className="relative flex-1 min-h-0 mb-2 overflow-hidden">
+      <div className="relative flex-1 min-h-0 mb-4 overflow-hidden">
         {/* Top gradient fade (visible when scrolled down) */}
         <div
           className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
@@ -492,7 +502,7 @@ export function PaletteContent({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
-          className="overflow-y-auto overflow-x-visible h-full max-h-full min-h-[80px] scrollbar-hide"
+          className="overflow-y-auto overflow-x-visible h-full max-h-full scrollbar-hide"
         >
           <motion.div
             animate={{
@@ -576,6 +586,153 @@ export function PaletteContent({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Action buttons - inside scroll so always reachable */}
+              {response && !showInput && !isLoading && (
+                <div className="flex items-center justify-start gap-3 pt-4 pb-2">
+                  {/* SUGGESTIONS: Got it + Ask AI (auto-scroll handles navigation) */}
+                  {hasSuggestionsResponse && (
+                    <>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onDismiss();
+                          onCollapse?.();
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          bg-violet-600 text-white hover:bg-violet-700"
+                      >
+                        Got it
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onManualInteraction?.();
+                          setShowInput(true);
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-600
+                          hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      >
+                        Ask AI
+                      </button>
+                    </>
+                  )}
+
+                  {/* TEXT / EXPLANATION: Got it (PRIMARY) + Ask AI (SECONDARY) */}
+                  {hasContentResponse && (
+                    <>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onDismiss();
+                          onCollapse?.();
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-white bg-violet-600 hover:bg-violet-700"
+                      >
+                        Got it
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onManualInteraction?.();
+                          setShowInput(true);
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
+                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                      >
+                        Ask AI
+                      </button>
+                    </>
+                  )}
+
+                  {/* ERROR: Retry (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
+                  {hasErrorResponse && (
+                    <>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onManualInteraction?.();
+                          onSubmit(); // Retry the query
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-white bg-violet-600 hover:bg-violet-700"
+                      >
+                        Retry
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onManualInteraction?.();
+                          setShowInput(true);
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
+                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                      >
+                        Ask AI
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onDismiss();
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                          hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        Dismiss
+                      </button>
+                    </>
+                  )}
+
+                  {/* RECOMMENDATION: Start Focus (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
+                  {hasRecommendationResponse && (
+                    <>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          const taskId = (response?.content as RecommendationContent)?.taskId;
+                          if (taskId && onStartRecommendedFocus) {
+                            onStartRecommendedFocus(taskId);
+                          }
+                          onDismiss();
+                          onCollapse?.();
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-white bg-violet-600 hover:bg-violet-700"
+                      >
+                        Start Focus
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onManualInteraction?.();
+                          setShowInput(true);
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
+                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                      >
+                        Ask AI
+                      </button>
+                      <button
+                        onClick={() => {
+                          cancelAutoCollapse();
+                          onDismiss();
+                        }}
+                        className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
+                          text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
+                          hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      >
+                        Dismiss
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -588,164 +745,6 @@ export function PaletteContent({
 
       {/* ============ Fixed Bottom Controls ============ */}
       <div className="flex-shrink-0">
-        {/* Button row with AnimatePresence for smooth height transition */}
-        <AnimatePresence mode="wait">
-          {response && !showInput && !isLoading && (
-            <motion.div
-              key="buttons"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.15 }}
-              className="overflow-hidden"
-            >
-              <div className="flex items-center justify-start gap-3 pt-1">
-          {/* SUGGESTIONS: Got it + Ask AI (auto-scroll handles navigation) */}
-          {hasSuggestionsResponse && (
-            <>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onDismiss();
-                  onCollapse?.();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-600 text-white hover:bg-violet-700"
-              >
-                Got it
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  setShowInput(true);
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-600
-                  hover:bg-zinc-50 dark:hover:bg-zinc-800"
-              >
-                Ask AI
-              </button>
-            </>
-          )}
-
-          {/* TEXT / EXPLANATION: Got it (PRIMARY) + Ask AI (SECONDARY) */}
-          {hasContentResponse && (
-            <>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onDismiss();
-                  onCollapse?.();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-white bg-violet-600 hover:bg-violet-700"
-              >
-                Got it
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  setShowInput(true);
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
-              >
-                Ask AI
-              </button>
-            </>
-          )}
-
-          {/* ERROR: Retry (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
-          {hasErrorResponse && (
-            <>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  onSubmit(); // Retry the query
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-white bg-violet-600 hover:bg-violet-700"
-              >
-                Retry
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  setShowInput(true);
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
-              >
-                Ask AI
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onDismiss();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
-                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Dismiss
-              </button>
-            </>
-          )}
-
-          {/* RECOMMENDATION: Start Focus (PRIMARY) + Ask AI (SECONDARY) + Dismiss (TERTIARY) */}
-          {hasRecommendationResponse && (
-            <>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  const taskId = (response?.content as RecommendationContent)?.taskId;
-                  if (taskId && onStartRecommendedFocus) {
-                    onStartRecommendedFocus(taskId);
-                  }
-                  onDismiss();
-                  onCollapse?.();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-white bg-violet-600 hover:bg-violet-700"
-              >
-                Start Focus
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onManualInteraction?.();
-                  setShowInput(true);
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                  hover:bg-violet-200 dark:hover:bg-violet-800/40"
-              >
-                Ask AI
-              </button>
-              <button
-                onClick={() => {
-                  cancelAutoCollapse();
-                  onDismiss();
-                }}
-                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                  text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
-                  hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              >
-                Dismiss
-              </button>
-            </>
-          )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Input with AnimatePresence for smooth height transition */}
         <AnimatePresence mode="wait">
           {showInput && (
@@ -758,7 +757,7 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <form onSubmit={handleSubmit}>
-            <div className="bg-violet-100/40 dark:bg-violet-950/40 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
+            <div className="bg-violet-50/30 dark:bg-violet-900/10 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -805,7 +804,7 @@ export function PaletteContent({
                   type="submit"
                   disabled={!query.trim() || isLoading}
                   whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
-                  className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-700
+                  className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-400/30 dark:disabled:bg-zinc-600/30
                     disabled:cursor-not-allowed text-white rounded-full transition-colors"
                   aria-label="Send message"
                 >

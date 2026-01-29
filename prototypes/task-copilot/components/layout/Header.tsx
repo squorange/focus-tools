@@ -37,6 +37,8 @@ interface HeaderProps {
   hideNavigation?: boolean;
   // Search mode (first-class state)
   isSearchMode?: boolean;
+  // Scroll-based header shadow
+  isScrolled?: boolean;
 }
 
 export default function Header({
@@ -65,11 +67,14 @@ export default function Header({
   onBack,
   hideNavigation,
   isSearchMode,
+  isScrolled = false,
 }: HeaderProps) {
   const plusButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg px-4 lg:px-6">
+    <header className={`flex-shrink-0 pt-[env(safe-area-inset-top)] bg-zinc-50 dark:bg-zinc-900 px-4 lg:px-6 transition-shadow duration-200 ${
+      isScrolled ? 'shadow-sm' : ''
+    }`}>
       <div className="h-14 flex items-center gap-2 relative">
         {/* Left: Hamburger/Back + TabCluster */}
         <div className="flex items-center gap-2">
@@ -77,7 +82,7 @@ export default function Header({
           {showBackButton && onBack ? (
             <button
               onClick={onBack}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               aria-label="Go back"
             >
               <ArrowLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
@@ -86,7 +91,7 @@ export default function Header({
             /* Drawer toggle button (mobile only - desktop toggle is in sidebar) */
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="lg:hidden p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               aria-label="Toggle drawer"
             >
               <PanelLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
@@ -129,7 +134,7 @@ export default function Header({
             <button
               ref={plusButtonRef}
               onClick={taskCreationOpen ? onCloseTaskCreation : onOpenTaskCreation}
-              className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
+              className="p-2.5 rounded-lg bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 dark:hover:bg-violet-900/50 transition-colors"
               aria-label={taskCreationOpen ? "Close task creation" : "Add task"}
             >
               <Plus size={20} className="text-violet-600 dark:text-violet-400" />
