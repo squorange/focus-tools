@@ -283,22 +283,12 @@ export default function FilterDrawer({
       {/* Header - h-14 matches standard */}
       <div className="h-14 flex items-center justify-between px-4 shrink-0">
         <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">Filters</h2>
-        <div className="flex items-center gap-2">
-          {hasActiveFilters && (
-            <button
-              onClick={clearAllFilters}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-            >
-              Clear all
-            </button>
-          )}
-          <button
-            onClick={onClose}
-            className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Scrollable content */}
@@ -523,18 +513,31 @@ export default function FilterDrawer({
         </div>
       </div>
 
-      {/* Footer with count */}
+      {/* Footer with count and actions */}
       <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-sm text-zinc-500 dark:text-zinc-400">
             {matchCount} {matchCount === 1 ? 'task' : 'tasks'}
           </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
-          >
-            Done
-          </button>
+          <div className="flex items-center gap-2">
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors"
+              >
+                Clear all
+              </button>
+            )}
+            {/* Done button - mobile only (desktop can use X or click outside) */}
+            {isMobile && (
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+              >
+                Done
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -547,7 +550,7 @@ export default function FilterDrawer({
         isOpen={isOpen}
         onClose={onClose}
         height="85vh"
-        zIndex={50}
+        zIndex={60}
       >
         {renderContent()}
       </BottomSheet>

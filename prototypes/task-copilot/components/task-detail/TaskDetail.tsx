@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock, Plus, ChevronDown, Check } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings, DrawerType } from "@/lib/types";
+import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, MetadataSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings, DrawerType } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
@@ -51,6 +51,7 @@ interface TaskDetailProps {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
   deletions: DeletionSuggestion[];
+  metadataSuggestions?: MetadataSuggestion[];
   suggestedTitle: string | null;
   stagingIsNewArrival?: boolean;
   onStagingAnimationComplete?: () => void;
@@ -73,6 +74,8 @@ interface TaskDetailProps {
   onUpdateStepSelection: (queueItemId: string, selectionType: 'all_today' | 'all_upcoming' | 'specific_steps', selectedStepIds: string[]) => void;
   onSendToPool: (taskId: string) => void;
   onDefer: (taskId: string, until: string) => void;
+  onClearDefer?: (taskId: string) => void;
+  onClearWaitingOn?: (taskId: string) => void;
   onPark: (taskId: string) => void;
   onUnarchive: (taskId: string) => void;
   onDeleteTask: (taskId: string) => void;
@@ -86,6 +89,8 @@ interface TaskDetailProps {
   onRejectEdit: (edit: EditSuggestion) => void;
   onAcceptDeletion: (deletion: DeletionSuggestion) => void;
   onRejectDeletion: (deletion: DeletionSuggestion) => void;
+  onAcceptMetadata?: (metadata: MetadataSuggestion) => void;
+  onRejectMetadata?: (metadata: MetadataSuggestion) => void;
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
   onOpenProjectModal: (project?: Project) => void;
@@ -127,6 +132,7 @@ export default function TaskDetail({
   suggestions,
   edits,
   deletions,
+  metadataSuggestions,
   suggestedTitle,
   stagingIsNewArrival = false,
   onStagingAnimationComplete,
@@ -149,6 +155,8 @@ export default function TaskDetail({
   onUpdateStepSelection,
   onSendToPool,
   onDefer,
+  onClearDefer,
+  onClearWaitingOn,
   onPark,
   onUnarchive,
   onDeleteTask,
@@ -162,6 +170,8 @@ export default function TaskDetail({
   onRejectEdit,
   onAcceptDeletion,
   onRejectDeletion,
+  onAcceptMetadata,
+  onRejectMetadata,
   onAcceptTitle,
   onRejectTitle,
   onOpenProjectModal,
@@ -856,35 +866,116 @@ export default function TaskDetail({
         />
       )}
 
-      {/* Template/Instance Banner - shown for recurring tasks in both modes */}
-      {isRecurring && onToggleMode && (
-        <div className={`flex items-center justify-between px-4 py-3 rounded-lg mb-6 ${
-          mode === 'managing'
-            ? 'bg-violet-100 dark:bg-violet-900/30 border border-violet-300 dark:border-violet-700'
-            : 'bg-violet-50 dark:bg-violet-900/20 border border-violet-200/60 dark:border-violet-800/60'
-        }`}>
-          <div className="flex items-center gap-2">
-            {mode === 'managing' ? (
-              <>
-                <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-                  Editing template
+      {/* All Banners - stacked with 8px gap */}
+      {((isRecurring && onToggleMode) || (isRecurring && isPaused) || task.deferredUntil || task.waitingOn) && (
+        <div className="space-y-2 mb-6">
+          {/* Template/Instance Banner - shown for recurring tasks in both modes */}
+          {isRecurring && onToggleMode && (
+            <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${
+              mode === 'managing'
+                ? 'bg-violet-100 dark:bg-violet-900/30 border border-violet-300 dark:border-violet-700'
+                : 'bg-violet-50 dark:bg-violet-900/20 border border-violet-200/60 dark:border-violet-800/60'
+            }`}>
+              <div className="flex items-center gap-2">
+                {mode === 'managing' ? (
+                  <>
+                    <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                      Editing template
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                    For {activeDate ? formatRoutineDateHeader(activeDate) : 'today'}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onToggleMode}
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:underline transition-colors"
+              >
+                {mode === 'managing' ? 'Show current →' : 'Edit template →'}
+              </button>
+            </div>
+          )}
+
+          {/* Paused Recurring Task Banner - amber theme */}
+          {isRecurring && isPaused && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+              <div className="flex items-center gap-2">
+                <Pause className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  Routine paused
                 </span>
-              </>
-            ) : (
-              <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-                For {activeDate ? formatRoutineDateHeader(activeDate) : 'today'}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onToggleMode}
-            className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:underline transition-colors"
-          >
-            {mode === 'managing' ? 'Show current →' : 'Edit template →'}
-          </button>
+              </div>
+              <button
+                onClick={() => {
+                  onUpdateTask(task.id, {
+                    recurrence: {
+                      ...recurrencePattern!,
+                      pausedAt: null,
+                      pausedUntil: null,
+                    },
+                  });
+                }}
+                className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline transition-colors"
+              >
+                Resume
+              </button>
+            </div>
+          )}
+
+          {/* Deferred Status Banner - amber theme */}
+          {task.deferredUntil && (() => {
+            const deferExpired = task.deferredUntil <= getTodayISO();
+            return (
+              <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    {deferExpired
+                      ? `Defer expired on ${formatDate(task.deferredUntil)}`
+                      : `Deferred until ${formatDate(task.deferredUntil)}`}
+                  </span>
+                </div>
+                {onClearDefer && (
+                  <button
+                    onClick={() => onClearDefer(task.id)}
+                    className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline transition-colors"
+                  >
+                    {deferExpired ? 'Dismiss' : 'Clear'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Waiting On Status Banner - amber theme */}
+          {task.waitingOn && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  Waiting on {task.waitingOn.who}
+                  {task.waitingOn.followUpDate && ` · Follow up ${formatDate(task.waitingOn.followUpDate)}`}
+                </span>
+              </div>
+              {onClearWaitingOn && (
+                <button
+                  onClick={() => onClearWaitingOn(task.id)}
+                  className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:underline transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1602,12 +1693,13 @@ export default function TaskDetail({
       </div>}
 
       {/* Staging Area for AI suggestions */}
-      {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
+      {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || (metadataSuggestions && metadataSuggestions.length > 0) || suggestedTitle) && (
         <div id="staging-area" className="mb-6 scroll-mt-4">
           <StagingArea
             suggestions={suggestions}
             edits={edits}
             deletions={deletions}
+            metadataSuggestions={metadataSuggestions}
             suggestedTitle={suggestedTitle}
             currentTitle={task.title}
             onAcceptOne={onAcceptOne}
@@ -1617,6 +1709,8 @@ export default function TaskDetail({
             onRejectEdit={onRejectEdit}
             onAcceptDeletion={onAcceptDeletion}
             onRejectDeletion={onRejectDeletion}
+            onAcceptMetadata={onAcceptMetadata}
+            onRejectMetadata={onRejectMetadata}
             onAcceptTitle={onAcceptTitle}
             onRejectTitle={onRejectTitle}
             isNewArrival={stagingIsNewArrival}

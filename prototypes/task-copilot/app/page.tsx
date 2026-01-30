@@ -15,11 +15,14 @@ import {
   SuggestedStep,
   EditSuggestion,
   DeletionSuggestion,
+  MetadataSuggestion,
   StagingState,
   StructureResponse,
   Project,
   AITargetContext,
   EnergyLevel,
+  ImportanceLevel,
+  EnergyType,
   createTask,
   createStep,
   createProject,
@@ -78,6 +81,7 @@ import {
 } from "@/lib/recurring-utils";
 import * as stepUtils from "@/lib/step-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
+import { getTaskPriorityInfo } from "@/lib/priority";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 // Old AIDrawer removed - functionality moved to minibar/palette
@@ -456,6 +460,7 @@ export default function Home() {
       // Task Detail view - pass full task context including progress, health, dates
       const health = computeHealthStatus(currentTask);
       const queueItem = state.focusQueue.items.find(i => i.taskId === currentTask.id);
+      const priorityInfo = getTaskPriorityInfo(currentTask, state.currentEnergy);
 
       viewContext = {
         taskDetailMode: true,
@@ -527,6 +532,16 @@ export default function Home() {
               })),
             }));
           })(),
+          // Nudge System Fields
+          importance: currentTask.importance || null,
+          importanceSource: currentTask.importanceSource || null,
+          importanceNote: currentTask.importanceNote || null,
+          energyType: currentTask.energyType || null,
+          leadTimeDays: currentTask.leadTimeDays || null,
+          // Computed Priority
+          priorityScore: priorityInfo.score,
+          priorityTier: priorityInfo.tier,
+          effectiveDeadline: priorityInfo.effectiveDeadline?.toISOString().split('T')[0] || null,
         },
       };
     }
@@ -648,6 +663,7 @@ export default function Home() {
           suggestions,
           edits: [],
           deletions: [],
+          metadataSuggestions: [],
           suggestedTitle: data.suggestedTitle || data.taskTitle || null,
           pendingAction,
         }));
@@ -666,6 +682,7 @@ export default function Home() {
           suggestions: [],
           edits: editsToApply,
           deletions: [],
+          metadataSuggestions: [],
           suggestedTitle: null,
           pendingAction,
         }));
@@ -684,6 +701,7 @@ export default function Home() {
           suggestions: [],
           edits: [],
           deletions: deletionsToApply,
+          metadataSuggestions: [],
           suggestedTitle: null,
           pendingAction,
         }));
@@ -693,6 +711,23 @@ export default function Home() {
           setStagingIsNewArrival(true);
           setStagingPopulatedAt(Date.now());  // Track when staging was populated
         }
+      }
+
+      // Handle metadata suggestions
+      if (data.metadataSuggestions && data.metadataSuggestions.length > 0) {
+        const metadataToApply = data.metadataSuggestions; // Capture for TypeScript narrowing
+        updateActiveStaging(() => ({
+          suggestions: [],
+          edits: [],
+          deletions: [],
+          metadataSuggestions: metadataToApply,
+          suggestedTitle: null,
+          pendingAction: 'metadata',
+        }));
+
+        // Trigger StagingArea pulse animation
+        setStagingIsNewArrival(true);
+        setStagingPopulatedAt(Date.now());
       }
 
       // Issue 10: Store queue messages for 48h retention (queue context only)
@@ -2192,13 +2227,25 @@ export default function Home() {
     let previousDeferredUntil: string | null = null;
     let previousDeferredAt: number | null = null;
     let previousDeferredCount: number = 0;
+    let previousDeferredFrom: 'focus' | 'ready' | null = null;
+    let removedQueueItem: FocusQueueItem | undefined;
+
     setState((prev) => {
       deferredTask = prev.tasks.find((t) => t.id === taskId);
       if (deferredTask) {
         previousDeferredUntil = deferredTask.deferredUntil;
         previousDeferredAt = deferredTask.deferredAt;
         previousDeferredCount = deferredTask.deferredCount;
+        previousDeferredFrom = deferredTask.deferredFrom;
       }
+
+      // Check if task is in focus queue
+      removedQueueItem = prev.focusQueue.items.find(item => item.taskId === taskId);
+      const isInFocusQueue = !!removedQueueItem;
+
+      // Determine origin location
+      const deferredFrom: 'focus' | 'ready' | null = isInFocusQueue ? 'focus' : 'ready';
+
       return {
         ...prev,
         tasks: prev.tasks.map((t) =>
@@ -2209,10 +2256,16 @@ export default function Home() {
                 deferredUntil: until,
                 deferredAt: Date.now(),
                 deferredCount: t.deferredCount + 1,
+                deferredFrom,
                 updatedAt: Date.now(),
               }
             : t
         ),
+        // Remove from focus queue if present
+        focusQueue: {
+          ...prev.focusQueue,
+          items: prev.focusQueue.items.filter(item => item.taskId !== taskId),
+        },
       };
     });
 
@@ -2236,13 +2289,128 @@ export default function Home() {
                       deferredUntil: previousDeferredUntil,
                       deferredAt: previousDeferredAt,
                       deferredCount: previousDeferredCount,
+                      deferredFrom: previousDeferredFrom,
                       updatedAt: Date.now(),
                     }
                   : t
               ),
+              // Restore queue item if it was removed
+              focusQueue: removedQueueItem
+                ? {
+                    ...prev.focusQueue,
+                    items: [...prev.focusQueue.items, removedQueueItem],
+                  }
+                : prev.focusQueue,
             }));
           },
         },
+      }]);
+    }
+  }, []);
+
+  // Clear defer and optionally restore to focus queue
+  const handleClearDefer = useCallback((taskId: string) => {
+    let clearedTask: Task | undefined;
+    let restoredToFocus = false;
+
+    setState((prev) => {
+      clearedTask = prev.tasks.find((t) => t.id === taskId);
+      if (!clearedTask) return prev;
+
+      const wasFromFocus = clearedTask.deferredFrom === 'focus';
+      restoredToFocus = wasFromFocus;
+
+      // Clear defer fields on task
+      const updatedTasks = prev.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              deferredUntil: null,
+              deferredAt: null,
+              deferredFrom: null,
+              updatedAt: Date.now(),
+            }
+          : t
+      );
+
+      // If was from focus, add back to queue
+      if (wasFromFocus) {
+        const task = updatedTasks.find((t) => t.id === taskId)!;
+        const newItem = createFocusQueueItem(taskId, 'today', {
+          selectionType: 'all_upcoming',
+          selectedStepIds: []
+        });
+
+        const activeItems = prev.focusQueue.items.filter((i) => !i.completed);
+        const completedItems = prev.focusQueue.items.filter((i) => i.completed);
+        const todaySection = activeItems.slice(0, prev.focusQueue.todayLineIndex);
+        const laterSection = activeItems.slice(prev.focusQueue.todayLineIndex);
+
+        // Insert at beginning of Upcoming section (just after Today line)
+        const newItems = [...todaySection, { ...newItem, order: todaySection.length }, ...laterSection, ...completedItems]
+          .map((item, idx) => ({ ...item, order: idx }));
+
+        return {
+          ...prev,
+          tasks: updatedTasks,
+          focusQueue: {
+            ...prev.focusQueue,
+            items: newItems,
+            // todayLineIndex stays the same since we're adding to Upcoming
+          },
+        };
+      }
+
+      return {
+        ...prev,
+        tasks: updatedTasks,
+      };
+    });
+
+    // Show toast
+    if (clearedTask) {
+      const taskTitle = clearedTask.title || 'Task';
+      const toastId = generateId();
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: restoredToFocus
+          ? `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" restored to Focus`
+          : `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Ready`,
+        type: 'success',
+      }]);
+    }
+  }, []);
+
+  // Clear waiting on status
+  const handleClearWaitingOn = useCallback((taskId: string) => {
+    let clearedTask: Task | undefined;
+
+    setState((prev) => {
+      clearedTask = prev.tasks.find((t) => t.id === taskId);
+      if (!clearedTask) return prev;
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                waitingOn: null,
+                updatedAt: Date.now(),
+              }
+            : t
+        ),
+      };
+    });
+
+    // Show toast
+    if (clearedTask) {
+      const taskTitle = clearedTask.title || 'Task';
+      const toastId = generateId();
+      setToasts((prev) => [...prev, {
+        id: toastId,
+        message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" no longer waiting`,
+        type: 'success',
       }]);
     }
   }, []);
@@ -4487,6 +4655,62 @@ export default function Home() {
     );
   }, [updateActiveStaging]);
 
+  // Metadata suggestion handlers
+  const handleAcceptMetadata = useCallback((metadata: MetadataSuggestion) => {
+    if (!state.activeTaskId) return;
+
+    setState((prev) => {
+      const task = prev.tasks.find((t) => t.id === state.activeTaskId);
+      if (!task) return prev;
+
+      // Build the update object based on the field
+      let updates: Partial<Task> = {};
+      switch (metadata.field) {
+        case 'importance':
+          updates = { importance: metadata.value as ImportanceLevel };
+          break;
+        case 'energyType':
+          updates = { energyType: metadata.value as EnergyType };
+          break;
+        case 'leadTimeDays':
+          updates = { leadTimeDays: metadata.value as number };
+          break;
+      }
+
+      // Remove the accepted metadata from staging
+      const updatedStaging = task.staging
+        ? {
+            ...task.staging,
+            metadataSuggestions: task.staging.metadataSuggestions.filter(
+              (m) => !(m.field === metadata.field && m.value === metadata.value)
+            ),
+          }
+        : null;
+
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === state.activeTaskId
+            ? { ...t, ...updates, staging: updatedStaging, updatedAt: Date.now() }
+            : t
+        ),
+      };
+    });
+  }, [state.activeTaskId]);
+
+  const handleRejectMetadata = useCallback((metadata: MetadataSuggestion) => {
+    updateActiveStaging((staging) =>
+      staging
+        ? {
+            ...staging,
+            metadataSuggestions: staging.metadataSuggestions.filter(
+              (m) => !(m.field === metadata.field && m.value === metadata.value)
+            ),
+          }
+        : null
+    );
+  }, [updateActiveStaging]);
+
   const handleAcceptTitle = useCallback(() => {
     if (!state.activeTaskId) return;
 
@@ -5518,6 +5742,7 @@ export default function Home() {
                 suggestions={activeTask.staging?.suggestions || []}
                 edits={activeTask.staging?.edits || []}
                 deletions={activeTask.staging?.deletions || []}
+                metadataSuggestions={activeTask.staging?.metadataSuggestions || []}
                 suggestedTitle={activeTask.staging?.suggestedTitle || null}
                 stagingIsNewArrival={stagingIsNewArrival}
                 onStagingAnimationComplete={() => setStagingIsNewArrival(false)}
@@ -5540,6 +5765,8 @@ export default function Home() {
                 onUpdateStepSelection={handleUpdateStepSelection}
                 onSendToPool={handleSendToPool}
                 onDefer={handleDefer}
+                onClearDefer={handleClearDefer}
+                onClearWaitingOn={handleClearWaitingOn}
                 onPark={handlePark}
                 onUnarchive={handleUnarchive}
                 onDeleteTask={handleDeleteTask}
@@ -5553,6 +5780,8 @@ export default function Home() {
                 onRejectEdit={handleRejectEdit}
                 onAcceptDeletion={handleAcceptDeletion}
                 onRejectDeletion={handleRejectDeletion}
+                onAcceptMetadata={handleAcceptMetadata}
+                onRejectMetadata={handleRejectMetadata}
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
                 onOpenProjectModal={handleOpenProjectModal}
@@ -5599,6 +5828,7 @@ export default function Home() {
                 suggestions={activeTask.staging?.suggestions || []}
                 edits={activeTask.staging?.edits || []}
                 deletions={activeTask.staging?.deletions || []}
+                metadataSuggestions={activeTask.staging?.metadataSuggestions || []}
                 suggestedTitle={activeTask.staging?.suggestedTitle || null}
                 onAcceptOne={handleAcceptSuggestion}
                 onAcceptAll={handleAcceptAll}
@@ -5607,6 +5837,8 @@ export default function Home() {
                 onRejectEdit={handleRejectEdit}
                 onAcceptDeletion={handleAcceptDeletion}
                 onRejectDeletion={handleRejectDeletion}
+                onAcceptMetadata={handleAcceptMetadata}
+                onRejectMetadata={handleRejectMetadata}
                 onAcceptTitle={handleAcceptTitle}
                 onRejectTitle={handleRejectTitle}
                 onAcceptWithScope={handleAcceptWithScope}
@@ -5648,12 +5880,13 @@ export default function Home() {
       </div>
 
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
-      {/* Hide when: in drawer mode, settings view, modals open, or keyboard visible */}
+      {/* Hide when: in drawer mode, settings view, modals open, filter drawer open (mobile), or keyboard visible */}
       {aiAssistant.state.mode !== 'drawer' &&
        state.currentView !== 'settings' &&
        !taskCreationOpen &&
        !projectModalOpen &&
        activeDrawer !== 'focus-selection' &&
+       activeDrawer !== 'filter' &&
        !isKeyboardVisible && (
         <div className={`
           fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end

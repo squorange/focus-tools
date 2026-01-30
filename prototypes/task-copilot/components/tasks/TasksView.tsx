@@ -155,7 +155,7 @@ export default function TasksView({
   const tabs = useMemo(() => [
     { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.isRecurring && !queueTaskIds.has(t.id) && !t.waitingOn).length },
     { id: 'routines' as TasksTab, label: 'Routines', count: routinesAll.length },
-    { id: 'on_hold' as TasksTab, label: 'On Hold', count: waitingTasksAll.length + deferredTasksAll.length },
+    { id: 'on_hold' as TasksTab, label: 'Hold', count: waitingTasksAll.length + deferredTasksAll.length },
     { id: 'done' as TasksTab, label: 'Done', count: completedTasksAll.length + archivedTasksAll.length },
   ], [inboxTasks, poolTasks, queueTaskIds, routinesAll, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
 
@@ -229,10 +229,10 @@ export default function TasksView({
         {activeTab === 'staging' && (
           <button
             onClick={() => onFilterDrawerChange?.(true)}
-            className="relative flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>Filter</span>
+            <span className="hidden sm:inline">Filter</span>
             {countActiveFilters(filters) > 0 && (
               <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold bg-violet-600 text-white rounded-full">
                 {countActiveFilters(filters)}
@@ -309,7 +309,7 @@ export default function TasksView({
                         onDefer={onDefer}
                         onPark={onPark}
                         onDelete={onDelete}
-                        badge={`Until: ${task.deferredUntil}`}
+                        badge={`Until ${formatDate(task.deferredUntil!)}`}
                       />
                     ))}
                   </div>

@@ -96,14 +96,15 @@ export default function RoutinesList({
   onOpenTask,
 }: RoutinesListProps) {
   const allRoutines = filterRecurringTasks(tasks);
-  const activeRoutines = filterActive(allRoutines);
-  const pausedRoutines = filterPaused(allRoutines);
 
-  // Group active routines by frequency
-  const groupedActive = FREQUENCY_ORDER.reduce((acc, freq) => {
-    const freqTasks = filterByFrequency(activeRoutines, freq);
+  // Group ALL routines by frequency (including paused)
+  const groupedRoutines = FREQUENCY_ORDER.reduce((acc, freq) => {
+    const freqTasks = filterByFrequency(allRoutines, freq);
     if (freqTasks.length > 0) {
-      acc[freq] = sortByTime(freqTasks);
+      // Sort active first, then paused; within each group sort by time
+      const active = filterActive(freqTasks);
+      const paused = filterPaused(freqTasks);
+      acc[freq] = [...sortByTime(active), ...sortByTime(paused)];
     }
     return acc;
   }, {} as Record<string, Task[]>);
@@ -130,9 +131,9 @@ export default function RoutinesList({
 
   return (
     <div className="space-y-6">
-      {/* Active Routines - Grouped by Frequency */}
+      {/* Routines - Grouped by Frequency (includes paused) */}
       {FREQUENCY_ORDER.map((freq) => {
-        const freqTasks = groupedActive[freq];
+        const freqTasks = groupedRoutines[freq];
         if (!freqTasks || freqTasks.length === 0) return null;
 
         return (
@@ -144,41 +145,22 @@ export default function RoutinesList({
               </span>
             </h2>
             <div className="space-y-2">
-              {freqTasks.map((task) => (
-                <RoutineRow
-                  key={task.id}
-                  task={task}
-                  project={getProject(task)}
-                  onOpen={() => onOpenTask(task.id, 'managing')}
-                />
-              ))}
+              {freqTasks.map((task) => {
+                const isPaused = (task.recurrence as RecurrenceRuleExtended)?.paused;
+                return (
+                  <RoutineRow
+                    key={task.id}
+                    task={task}
+                    project={getProject(task)}
+                    onOpen={() => onOpenTask(task.id, 'managing')}
+                    isPaused={isPaused}
+                  />
+                );
+              })}
             </div>
           </section>
         );
       })}
-
-      {/* Paused Routines */}
-      {pausedRoutines.length > 0 && (
-        <section>
-          <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-            <span>Paused</span>
-            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
-              {pausedRoutines.length}
-            </span>
-          </h2>
-          <div className="space-y-2">
-            {pausedRoutines.map((task) => (
-              <RoutineRow
-                key={task.id}
-                task={task}
-                project={getProject(task)}
-                onOpen={() => onOpenTask(task.id, 'managing')}
-                isPaused
-              />
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
@@ -250,13 +232,23 @@ function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
 
       {/* Row 2: Metadata pills */}
       <div className="flex items-center gap-1.5 mt-2 flex-wrap ml-5">
+        {/* Paused pill - amber variant */}
+        {isPaused && (
+          <MetadataPill
+            variant="paused"
+            icon={<Pause className="w-3 h-3" />}
+          >
+            Paused
+          </MetadataPill>
+        )}
+
         {/* Recurrence pill with icon - show descriptive label (time/days) instead of redundant frequency */}
-        {(recurrenceLabel || isPaused) && (
+        {recurrenceLabel && !isPaused && (
           <MetadataPill
             variant="default"
-            icon={isPaused ? <Pause className="w-3 h-3" /> : <Repeat className="w-3 h-3" />}
+            icon={<Repeat className="w-3 h-3" />}
           >
-            {isPaused ? "Paused" : recurrenceLabel}
+            {recurrenceLabel}
           </MetadataPill>
         )}
 

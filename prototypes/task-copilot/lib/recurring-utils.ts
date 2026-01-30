@@ -746,10 +746,10 @@ export function calculateStreak(task: Task, dayStartHour: number = 5): number {
       // Skipped doesn't break streak, move to previous
       checkDate = getPreviousOccurrence(today, pattern, startDate);
     } else {
-      // TODAY IS DUE BUT NOT DONE = NO CURRENT STREAK
-      // This is the key fix: if today is a match day but not completed,
-      // the streak is broken regardless of past completions
-      return 0;
+      // TODAY IS DUE BUT NOT DONE YET
+      // Don't break streak - user still has time to complete today
+      // Continue counting from yesterday backwards
+      checkDate = getPreviousOccurrence(today, pattern, startDate);
     }
   } else {
     // Today not an occurrence day, start from most recent

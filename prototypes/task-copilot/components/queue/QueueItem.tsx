@@ -119,13 +119,14 @@ export default function QueueItem({
 
   // Check if we have any metadata to display
   const hasMetadata = progress.total > 0 || estimate || task.targetDate ||
-    task.deadlineDate || project || showHealthPill;
+    task.deadlineDate || project || showHealthPill || hasWaiting;
 
   return (
     <div
+      onClick={() => onOpenTask(task.id)}
       className={`
         group relative px-2 sm:px-3 py-3
-        border rounded-lg
+        border rounded-lg cursor-pointer
         transition-all duration-300 select-none
         ${
           isComplete
@@ -139,18 +140,15 @@ export default function QueueItem({
       {/* Desktop layout */}
       <div className="hidden sm:flex sm:items-center sm:gap-2">
         {/* Status indicator OR drag handle on hover */}
-        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+        <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
           {/* Ring shown by default, hidden on group-hover */}
-          <button
-            onClick={() => onOpenTask(task.id)}
-            className="group-hover:hidden"
-          >
+          <div className="group-hover:hidden">
             <ProgressRing
               completed={progress.completed}
               total={progress.total}
               isComplete={isComplete}
             />
-          </button>
+          </div>
           {/* Drag handle shown on hover only */}
           <div className="hidden group-hover:block text-zinc-400 cursor-grab active:cursor-grabbing">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -165,10 +163,7 @@ export default function QueueItem({
         </div>
 
         {/* Content */}
-        <button
-          onClick={() => onOpenTask(task.id)}
-          className="flex-1 text-left min-w-0"
-        >
+        <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2">
             <span
               className={`text-zinc-900 dark:text-zinc-100 truncate ${
@@ -177,20 +172,6 @@ export default function QueueItem({
             >
               {task.title || "Untitled"}
             </span>
-            {hasWaiting && (
-              <span
-                className="flex-shrink-0 text-amber-500"
-                title={`Waiting on: ${task.waitingOn?.who}`}
-              >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-            )}
             {hasReminder && (
               <span className="flex-shrink-0 text-violet-500" title="Reminder set">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,6 +183,11 @@ export default function QueueItem({
           </div>
           {hasMetadata && (
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {hasWaiting && (
+                <MetadataPill variant="waiting">
+                  Waiting: {task.waitingOn?.who}
+                </MetadataPill>
+              )}
               {showHealthPill && health && (
                 <HealthPill health={health} size="sm" />
               )}
@@ -222,10 +208,10 @@ export default function QueueItem({
               )}
             </div>
           )}
-        </button>
+        </div>
 
         {/* Priority display + Menu button - Desktop */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <PriorityDisplay tier={priorityInfo.tier} showChevron={false} />
           <div className="relative">
             <button
@@ -312,21 +298,15 @@ export default function QueueItem({
       <div className="sm:hidden">
         {/* Row 1: Progress ring + Title + Actions */}
         <div className="flex items-start gap-2">
-          <button
-            onClick={() => onOpenTask(task.id)}
-            className="flex-shrink-0 w-5 h-5 mt-0.5"
-          >
+          <div className="flex-shrink-0 w-5 h-5 mt-0.5">
             <ProgressRing
               completed={progress.completed}
               total={progress.total}
               isComplete={isComplete}
             />
-          </button>
+          </div>
 
-          <button
-            onClick={() => onOpenTask(task.id)}
-            className="flex-1 min-w-0 text-left"
-          >
+          <div className="flex-1 min-w-0 text-left">
             <span
               className={`text-zinc-900 dark:text-zinc-100 ${
                 isComplete ? "line-through opacity-60" : ""
@@ -334,20 +314,9 @@ export default function QueueItem({
             >
               {task.title || "Untitled"}
             </span>
-          </button>
+          </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {hasWaiting && (
-              <span className="text-amber-500" title={`Waiting on: ${task.waitingOn?.who}`}>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-            )}
+          <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             {hasReminder && (
               <span className="text-violet-500" title="Reminder set">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -443,6 +412,11 @@ export default function QueueItem({
         {hasMetadata && (
           <div className="flex items-center gap-2 mt-2 ml-6">
             <div className="flex items-center gap-1.5 flex-wrap flex-1">
+              {hasWaiting && (
+                <MetadataPill variant="waiting">
+                  Waiting: {task.waitingOn?.who}
+                </MetadataPill>
+              )}
               {progress.total > 0 && <MetadataPill>{progress.label}</MetadataPill>}
               {estimate && <MetadataPill>{estimate}</MetadataPill>}
               {task.targetDate && (

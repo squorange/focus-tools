@@ -365,6 +365,15 @@ export default function DetailsSection({
           pickerType: 'project',
         });
       }
+
+      // Origin pill for deferred tasks
+      if (task.deferredFrom) {
+        const originLabel = task.deferredFrom === 'focus' ? 'From Focus' : 'From Ready';
+        pills.push({
+          label: originLabel,
+          variant: "filled",
+        });
+      }
     }
 
     return pills;
@@ -383,7 +392,7 @@ export default function DetailsSection({
   return (
     <div className="mb-6">
       {/* Unified Status/Details Container */}
-      <div className={`px-4 ${showStatusModule ? 'py-3' : 'py-2'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl`}>
+      <div className={`px-4 ${showStatusModule ? 'py-3' : 'py-2.5'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl`}>
         {/* Status Module - shown when applicable */}
         {showStatusModule && (
           <StatusModule
@@ -407,56 +416,29 @@ export default function DetailsSection({
         )}
 
         {/* Fixed header row with priority - always visible, never moves */}
-        <div className="flex items-center justify-between">
+        {/* When collapsed, entire row is tappable to expand */}
+        <div
+          className={`flex items-start justify-between ${!expanded ? 'cursor-pointer' : ''}`}
+          onClick={() => { if (!expanded) setExpanded(true); }}
+        >
           {/* Left side: collapsed pills OR expanded label */}
-          <div className="flex-1 min-w-0 mr-3 min-h-[28px] relative">
-            {/* COLLAPSED: Pills - each pill handles its own click for quick-edit */}
+          <div className="flex-1 min-w-0 mr-3 min-h-[26px] relative flex items-center">
+            {/* COLLAPSED: Pills - read-only, row handles tap to expand */}
             <div
-              className={`absolute inset-0 flex items-center transition-opacity duration-200 ${
-                !expanded ? "opacity-100" : "opacity-0 pointer-events-none"
+              className={`flex flex-wrap gap-1.5 items-center transition-opacity duration-200 ${
+                !expanded ? "opacity-100" : "opacity-0 pointer-events-none absolute inset-0"
               }`}
-              onClick={(e) => {
-                // Only expand if clicking the container itself (not a child pill)
-                if (e.target === e.currentTarget) {
-                  setExpanded(true);
-                }
-              }}
             >
-              <div
-                className="flex flex-wrap gap-1.5 items-center"
-                onClick={(e) => {
-                  // Expand if clicking the container (between pills)
-                  if (e.target === e.currentTarget) {
-                    setExpanded(true);
-                  }
-                }}
-              >
-                {collapsedPills.map((pill, idx) => (
-                  <div
-                    key={idx}
-                    ref={activeCollapsedPicker && collapsedPills[idx]?.pickerType === activeCollapsedPicker ? collapsedPillRef : undefined}
-                  >
-                    <DetailsPill
-                      icon={pill.icon}
-                      label={pill.label}
-                      variant={pill.variant}
-                      size="sm"
-                      projectColor={pill.projectColor}
-                      onPress={(e) => {
-                        if (pill.pickerType) {
-                          // Set the ref to this element before opening picker
-                          if (e?.currentTarget) {
-                            (collapsedPillRef as React.MutableRefObject<HTMLDivElement | null>).current = e.currentTarget.parentElement as HTMLDivElement;
-                          }
-                          setActiveCollapsedPicker(pill.pickerType);
-                        } else {
-                          setExpanded(true);
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
+              {collapsedPills.map((pill, idx) => (
+                <DetailsPill
+                  key={idx}
+                  icon={pill.icon}
+                  label={pill.label}
+                  variant={pill.variant === "locked" ? "filled" : pill.variant}
+                  size="sm"
+                  projectColor={pill.projectColor}
+                />
+              ))}
             </div>
 
             {/* EXPANDED: "DETAILS" label - tappable to collapse */}
@@ -472,8 +454,8 @@ export default function DetailsSection({
             </button>
           </div>
 
-          {/* Right side: Priority + Chevron - FIXED POSITION */}
-          <div className="flex-shrink-0">
+          {/* Right side: Priority + Chevron - aligned with first row */}
+          <div className="flex-shrink-0 h-[26px] flex items-center">
             <PriorityDisplay
               tier={priorityTier}
               onPress={() => setShowPriorityModal(true)}

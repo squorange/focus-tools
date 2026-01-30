@@ -9,7 +9,10 @@ type PillVariant =
   | "healthy"
   | "project"
   | "due"
-  | "overdue";
+  | "overdue"
+  | "paused"
+  | "waiting"
+  | "deferred";
 
 interface MetadataPillProps {
   children: React.ReactNode;
@@ -40,6 +43,9 @@ export default function MetadataPill({
     overdue:
       "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
     project: "bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-400", // Monochrome like default
+    paused: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+    waiting: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+    deferred: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
   };
 
   // No inline style needed for project variant (now uses monochrome styling)

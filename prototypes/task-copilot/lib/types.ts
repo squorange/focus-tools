@@ -208,6 +208,7 @@ export interface Task {
   deferredUntil: string | null;     // ISO date to resurface
   deferredAt: number | null;        // When it was deferred
   deferredCount: number;            // Times deferred (for pattern detection)
+  deferredFrom: 'focus' | 'ready' | null;  // Origin location for restoration on clear
 
   // Organization
   priority: Priority | null;
@@ -727,8 +728,16 @@ export interface StagingState {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
   deletions: DeletionSuggestion[];
+  metadataSuggestions: MetadataSuggestion[];
   suggestedTitle: string | null;
-  pendingAction: 'replace' | 'suggest' | 'edit' | 'delete' | null;
+  pendingAction: 'replace' | 'suggest' | 'edit' | 'delete' | 'metadata' | null;
+}
+
+// Metadata suggestion for nudge system fields
+export interface MetadataSuggestion {
+  field: 'importance' | 'energyType' | 'leadTimeDays';
+  value: string | number;
+  reason: string;
 }
 
 export interface StructureResponse {
@@ -739,6 +748,7 @@ export interface StructureResponse {
   suggestions: SuggestedStep[] | null;  // For "suggest" action
   edits: EditSuggestion[] | null;       // For "edit" action
   deletions: DeletionSuggestion[] | null;  // For "delete" action
+  metadataSuggestions?: MetadataSuggestion[] | null;  // For "suggest_metadata" action
   message: string;
 }
 
@@ -980,6 +990,7 @@ export function createTask(title: string, options?: Partial<Task>): Task {
     deferredUntil: null,
     deferredAt: null,
     deferredCount: 0,
+    deferredFrom: null,
 
     priority: null,
     tags: [],
