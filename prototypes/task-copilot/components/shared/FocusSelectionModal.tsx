@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { Task, SelectionType } from "@/lib/types";
 import BottomSheet from "@/components/shared/BottomSheet";
+import RightDrawer from "@/components/shared/RightDrawer";
 
 interface FocusSelectionModalProps {
   isOpen: boolean;
   task: Task;
-  initialSelectionType: SelectionType; // 'all_today' | 'all_upcoming' | 'specific_steps'
-  initialSelectedStepIds: string[]; // Step IDs selected for Today (only used if specific_steps)
+  initialSelectionType: SelectionType;
+  initialSelectedStepIds: string[];
   onClose: () => void;
-  onConfirm: (selectionType: SelectionType, selectedStepIds: string[]) => void;
-  mode: "add" | "edit"; // Affects button labels
+  /** Called immediately on each change (direct edit, no save button) */
+  onUpdateSelection: (selectionType: SelectionType, selectedStepIds: string[]) => void;
 }
 
 export default function FocusSelectionModal({
@@ -20,8 +22,7 @@ export default function FocusSelectionModal({
   initialSelectionType,
   initialSelectedStepIds,
   onClose,
-  onConfirm,
-  mode,
+  onUpdateSelection,
 }: FocusSelectionModalProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isMobileView, setIsMobileView] = useState(false);
@@ -43,13 +44,10 @@ export default function FocusSelectionModal({
   useEffect(() => {
     if (isOpen) {
       if (initialSelectionType === 'all_upcoming') {
-        // No steps selected for Today
         setSelectedIds(new Set());
       } else if (initialSelectionType === 'specific_steps') {
-        // Use provided step IDs
         setSelectedIds(new Set(initialSelectedStepIds));
       } else {
-        // all_today - select all incomplete steps
         setSelectedIds(new Set(incompleteSteps.map((s) => s.id)));
       }
     }
@@ -59,61 +57,21 @@ export default function FocusSelectionModal({
   const todayCount = selectedIds.size;
   const upcomingCount = incompleteSteps.filter((s) => !selectedIds.has(s.id)).length;
 
-  const handleSetToday = (stepId: string) => {
-    const step = task.steps.find((s) => s.id === stepId);
-    if (step?.completed) return;
-
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.add(stepId);
-      return next;
-    });
-  };
-
-  const handleSetUpcoming = (stepId: string) => {
-    const step = task.steps.find((s) => s.id === stepId);
-    if (step?.completed) return;
-
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(stepId);
-      return next;
-    });
-  };
-
-  const handleAllToday = () => {
-    setSelectedIds(new Set(incompleteSteps.map((s) => s.id)));
-  };
-
-  const handleAllUpcoming = () => {
-    setSelectedIds(new Set());
-  };
-
-  const handleConfirm = () => {
-    const allSelected = incompleteSteps.every((s) => selectedIds.has(s.id));
-    const noneSelected = selectedIds.size === 0;
+  // Compute selection type from current state
+  const computeSelectionType = (ids: Set<string>): { type: SelectionType; stepIds: string[] } => {
+    const allSelected = incompleteSteps.every((s) => ids.has(s.id));
+    const noneSelected = ids.size === 0;
 
     if (noneSelected) {
-      // No steps checked → all upcoming
-      onConfirm('all_upcoming', []);
+      return { type: 'all_upcoming', stepIds: [] };
     } else if (allSelected) {
-      // All incomplete steps selected → all_today
-      onConfirm('all_today', []);
+      return { type: 'all_today', stepIds: [] };
     } else {
-      // Partial selection → specific_steps
-      onConfirm('specific_steps', Array.from(selectedIds));
+      return { type: 'specific_steps', stepIds: Array.from(ids) };
     }
   };
 
-  if (!isOpen) return null;
-
-  // If task has no steps, auto-confirm with all_today (no modal needed)
-  if (task.steps.length === 0) {
-    onConfirm('all_today', []);
-    return null;
-  }
-
-  // Toggle handler for segmented control
+  // Toggle a step and immediately save
   const handleToggle = (stepId: string) => {
     const step = task.steps.find((s) => s.id === stepId);
     if (step?.completed) return;
@@ -125,41 +83,54 @@ export default function FocusSelectionModal({
       } else {
         next.add(stepId);
       }
+      // Immediately update
+      const { type, stepIds } = computeSelectionType(next);
+      onUpdateSelection(type, stepIds);
       return next;
     });
   };
 
-  // Shared content components
-  const Header = ({ showCloseButton = true }: { showCloseButton?: boolean }) => (
-    <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-        Edit Focus
-      </h2>
-      {showCloseButton && (
-        <button
-          onClick={onClose}
-          className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      )}
+  // Bulk actions - also immediately save
+  const handleAllToday = () => {
+    const newIds = new Set(incompleteSteps.map((s) => s.id));
+    setSelectedIds(newIds);
+    onUpdateSelection('all_today', []);
+  };
+
+  const handleAllUpcoming = () => {
+    setSelectedIds(new Set());
+    onUpdateSelection('all_upcoming', []);
+  };
+
+  if (!isOpen) return null;
+
+  // If task has no steps, auto-update and close
+  if (task.steps.length === 0) {
+    onUpdateSelection('all_today', []);
+    onClose();
+    return null;
+  }
+
+  // Header with X close button (matches main navbar - no bottom border)
+  const Header = () => (
+    <div className="h-14 flex items-center justify-between px-2 shrink-0">
+      <div className="px-2">
+        <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+          Edit Focus
+        </h2>
+      </div>
+      <button
+        onClick={onClose}
+        className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        aria-label="Close"
+      >
+        <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+      </button>
     </div>
   );
 
   const BulkActions = () => (
-    <div className="flex gap-2 px-4 pt-2 pb-3 border-b border-zinc-200 dark:border-zinc-700 shrink-0">
+    <div className="flex gap-2 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
       <button
         onClick={handleAllToday}
         className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300
@@ -180,7 +151,7 @@ export default function FocusSelectionModal({
   );
 
   const StepList = () => (
-    <div className="flex-1 overflow-y-auto px-4 py-3">
+    <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
       {task.steps.map((step, index) => {
         const isSelected = selectedIds.has(step.id);
         const isCompleted = step.completed;
@@ -203,7 +174,7 @@ export default function FocusSelectionModal({
               {index + 1}. {step.text}
             </span>
 
-            {/* Segmented Controller - entire control is tappable to toggle */}
+            {/* Segmented Controller */}
             {!isCompleted && (
               <div
                 onClick={() => handleToggle(step.id)}
@@ -235,30 +206,12 @@ export default function FocusSelectionModal({
     </div>
   );
 
+  // Footer - just summary, no buttons (changes save immediately)
   const Footer = () => (
-    <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
-      {/* Single row: Summary left, buttons right */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-          {todayCount} today · {upcomingCount} upcoming
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400
-                       hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-1.5 text-sm font-medium text-white bg-violet-600
-                       hover:bg-violet-700 rounded-lg transition-colors"
-          >
-            Save
-          </button>
-        </div>
-      </div>
+    <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+      <span className="text-sm text-zinc-500 dark:text-zinc-400">
+        {todayCount} for today · {upcomingCount} for upcoming
+      </span>
     </div>
   );
 
@@ -267,7 +220,7 @@ export default function FocusSelectionModal({
     return (
       <BottomSheet isOpen={isOpen} onClose={onClose} height="85vh">
         <div className="flex flex-col h-full">
-          <Header showCloseButton={false} />
+          <Header />
           <BulkActions />
           <StepList />
           <Footer />
@@ -276,24 +229,15 @@ export default function FocusSelectionModal({
     );
   }
 
-  // Desktop: Centered modal
+  // Desktop: Right drawer
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div
-          className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Header />
-          <BulkActions />
-          <StepList />
-          <Footer />
-        </div>
+    <RightDrawer isOpen={isOpen} onClose={onClose} width="400px" zIndex={50}>
+      <div className="flex flex-col h-full">
+        <Header />
+        <BulkActions />
+        <StepList />
+        <Footer />
       </div>
-    </>
+    </RightDrawer>
   );
 }

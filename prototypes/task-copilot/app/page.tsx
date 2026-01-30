@@ -9,6 +9,7 @@ import {
   Message,
   QueueMessage,
   ViewType,
+  DrawerType,
   FocusModeState,
   FocusQueueItem,
   SuggestedStep,
@@ -18,6 +19,7 @@ import {
   StructureResponse,
   Project,
   AITargetContext,
+  EnergyLevel,
   createTask,
   createStep,
   createProject,
@@ -97,11 +99,13 @@ import { usePWA } from "@/lib/usePWA";
 import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/ai-assistant";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
+import { useKeyboardVisible } from "@/hooks/useKeyboardVisible";
 import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
-import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA } from "@/lib/notifications";
+import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA, supportsNotifications, getNotificationPermission } from "@/lib/notifications";
+import NotificationPermissionBanner from "@/components/shared/NotificationPermissionBanner";
 
 // ============================================
 // Initial States
@@ -150,10 +154,19 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [taskCreationOpen, setTaskCreationOpen] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
-  const [completedDrawerOpen, setCompletedDrawerOpen] = useState(false);
+
+  // Centralized drawer state - only one drawer can be open at a time
+  // This enables push behavior (content pushes left) and prevents overlapping drawers
+  const [activeDrawer, setActiveDrawer] = useState<DrawerType>(null);
+
+  // Derived state for backwards compatibility
+  const completedDrawerOpen = activeDrawer === 'completed';
 
   // Alert cycling state (for pokes and reminders)
   const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
+
+  // Keyboard visibility detection (for hiding minibar when keyboard is open)
+  const isKeyboardVisible = useKeyboardVisible();
 
   // Search state (simplified - sidebar mode swaps based on focus/query)
   const [searchInputFocused, setSearchInputFocused] = useState(false);
@@ -180,6 +193,9 @@ export default function Home() {
 
   // Callback for auto-selecting new project after creation (from TaskCreationPopover)
   const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
+
+  // Notification permission banner state
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
   // Register PWA service worker
   usePWA();
@@ -1162,6 +1178,19 @@ export default function Home() {
     }
   }, [notifications, hasHydrated]);
 
+  // Check notification permission on load and show banner if needed
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    // Show permission banner after a short delay if permission is default
+    if (supportsNotifications() && getNotificationPermission() === 'default') {
+      const timer = setTimeout(() => {
+        setShowNotificationPrompt(true);
+      }, 2000); // 2 second delay to not overwhelm on first load
+      return () => clearTimeout(timer);
+    }
+  }, [hasHydrated]);
+
   // Schedule notifications for all eligible queued tasks on initial load
   // This ensures notifications are created for tasks that were added before this feature existed
   useEffect(() => {
@@ -1348,11 +1377,12 @@ export default function Home() {
           break;
 
         case 'f':
-          // Go to Focus tab (also exits search mode)
+          // Go to Focus tab (also exits search mode and closes drawers)
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             setSearchQuery('');
             setSearchInputFocused(false);
+            setActiveDrawer(null);
             setState((prev) => ({
               ...prev,
               currentView: 'focus',
@@ -1362,11 +1392,12 @@ export default function Home() {
           break;
 
         case 't':
-          // Go to Tasks tab (also exits search mode)
+          // Go to Tasks tab (also exits search mode and closes drawers)
           if (!e.metaKey && !e.ctrlKey) {
             e.preventDefault();
             setSearchQuery('');
             setSearchInputFocused(false);
+            setActiveDrawer(null);
             setState((prev) => ({
               ...prev,
               currentView: 'tasks',
@@ -1423,6 +1454,7 @@ export default function Home() {
           }
           // Priority 5: Go back from task detail or focus mode
           else if (state.currentView === 'taskDetail' || state.currentView === 'focusMode') {
+            setActiveDrawer(null);
             setState((prev) => ({
               ...prev,
               currentView: previousView,
@@ -1706,6 +1738,11 @@ export default function Home() {
 
   const handleViewChange = useCallback((view: ViewType) => {
     aiAssistant.clearNudge();
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     setState((prev) => {
       if (prev.currentView === view) {
         // Same tab tapped again — scroll to top
@@ -1723,7 +1760,7 @@ export default function Home() {
         activeTaskId: ['focus', 'tasks', 'inbox', 'search'].includes(view) ? null : prev.activeTaskId,
       };
     });
-  }, []);
+  }, [aiAssistant]);
 
   // ============================================
   // Inline AI Actions (Step-Level)
@@ -1777,6 +1814,11 @@ export default function Home() {
   }, [state.tasks, aiAssistant]);
 
   const handleOpenTask = useCallback((taskId: string, mode?: 'executing' | 'managing') => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     // Save current view before navigating to task detail
     setPreviousView(state.currentView);
     setState((prev) => ({
@@ -1791,16 +1833,21 @@ export default function Home() {
       const filtered = prev.filter(id => id !== taskId);
       return [taskId, ...filtered].slice(0, 5); // Keep max 5
     });
-  }, [state.currentView]);
+  }, [state.currentView, aiAssistant]);
 
   const handleBackToList = useCallback(() => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     setState((prev) => ({
       ...prev,
       // Safety: Prevent stuck state if previousView points to current view or 'taskDetail'
       currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
       activeTaskId: null,
     }));
-  }, [previousView]);
+  }, [previousView, aiAssistant]);
 
   const handleToggleTaskDetailMode = useCallback(() => {
     setState((prev) => ({
@@ -1859,6 +1906,14 @@ export default function Home() {
         ...prev.userSettings,
         ...updates,
       },
+    }));
+  }, []);
+
+  const handleEnergyChange = useCallback((energy: EnergyLevel | null) => {
+    setState((prev) => ({
+      ...prev,
+      currentEnergy: energy,
+      currentEnergySetAt: energy ? Date.now() : null,
     }));
   }, []);
 
@@ -3142,6 +3197,11 @@ export default function Home() {
 
   // Start focus session
   const handleStartFocus = useCallback((queueItemId: string) => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     setState((prev) => {
       const queueItem = prev.focusQueue.items.find((i) => i.id === queueItemId);
       if (!queueItem) return prev;
@@ -3182,10 +3242,15 @@ export default function Home() {
         },
       };
     });
-  }, []);
+  }, [aiAssistant]);
 
   // Handle "Start" action from notification
   const handleNotificationStart = useCallback((notification: Notification) => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     // Acknowledge the notification
     setNotifications((prev) => markNotificationAcknowledged(notification.id, prev));
 
@@ -3208,10 +3273,15 @@ export default function Home() {
         }
       }
     }
-  }, [state.tasks, state.focusQueue.items, state.currentView, handleStartFocus]);
+  }, [state.tasks, state.focusQueue.items, state.currentView, handleStartFocus, aiAssistant]);
 
   // Start focus session for recurring task (no queue item needed)
   const handleStartRecurringFocus = useCallback((taskId: string) => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     setState((prev) => {
       const task = prev.tasks.find((t) => t.id === taskId);
       if (!task || !task.isRecurring) return prev;
@@ -3243,7 +3313,7 @@ export default function Home() {
         },
       };
     });
-  }, []);
+  }, [aiAssistant]);
 
   // Navigation helpers
   const handleGoToTasks = useCallback(() => {
@@ -3263,24 +3333,39 @@ export default function Home() {
     setState((prev) => ({ ...prev, currentView: 'projects' as const }));
   }, [state.currentView]);
 
-  // Completed drawer toggle with mutual exclusivity (only 1 right drawer at a time)
-  const handleToggleCompletedDrawer = useCallback((open: boolean) => {
-    if (open) {
-      // Opening completed drawer - close AI drawer if open
-      if (aiAssistant.state.mode === 'drawer') {
-        aiAssistant.closeDrawer();
-      }
+  // Open a drawer - closes any other open drawer first
+  // This is the single point of control for drawer state
+  const handleOpenDrawer = useCallback((drawer: DrawerType) => {
+    if (drawer === null) {
+      setActiveDrawer(null);
+      return;
     }
-    setCompletedDrawerOpen(open);
+    // Close AI drawer if it's open and we're opening a different drawer
+    if (aiAssistant.state.mode === 'drawer' && drawer !== 'ai') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(drawer);
   }, [aiAssistant]);
 
-  // AI drawer open with mutual exclusivity (close completed drawer first)
-  const handleOpenAIDrawer = useCallback(() => {
-    if (completedDrawerOpen) {
-      setCompletedDrawerOpen(false);
+  // Close the currently active drawer
+  const handleCloseDrawer = useCallback(() => {
+    setActiveDrawer(null);
+  }, []);
+
+  // Completed drawer toggle - wrapper for backwards compatibility
+  const handleToggleCompletedDrawer = useCallback((open: boolean) => {
+    if (open) {
+      handleOpenDrawer('completed');
+    } else {
+      handleCloseDrawer();
     }
+  }, [handleOpenDrawer, handleCloseDrawer]);
+
+  // AI drawer open with mutual exclusivity
+  const handleOpenAIDrawer = useCallback(() => {
+    handleOpenDrawer('ai');
     aiAssistant.openDrawer();
-  }, [completedDrawerOpen, aiAssistant]);
+  }, [handleOpenDrawer, aiAssistant]);
 
   // Data export/import
   const handleExportData = useCallback(() => {
@@ -3365,6 +3450,11 @@ export default function Home() {
   }, [aiAssistant]);
 
   const handleExitFocus = useCallback(() => {
+    // Close any open drawer on navigation
+    if (aiAssistant.state.mode === 'drawer') {
+      aiAssistant.closeDrawer();
+    }
+    setActiveDrawer(null);
     let shouldSetPreviousViewToFocus = false;
 
     setState((prev) => {
@@ -3403,7 +3493,7 @@ export default function Home() {
     if (shouldSetPreviousViewToFocus) {
       setPreviousView('focus');
     }
-  }, [previousView]);
+  }, [previousView, aiAssistant]);
 
   // ============================================
   // Step Operations
@@ -5236,7 +5326,14 @@ export default function Home() {
         className={`
           flex-1 flex flex-col min-w-0 transition-all duration-300
           ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-[320px]'}
-          ${aiAssistant.state.mode === 'drawer' ? 'lg:mr-80' : completedDrawerOpen ? 'lg:mr-[400px]' : ''}
+          ${
+            // Right margin based on active drawer type (single source of truth)
+            // AI drawer: 320px (w-80), filter/importance/energy/leadTime: 360px, others: 400px
+            activeDrawer === 'ai' ? 'lg:mr-80'
+            : activeDrawer === 'filter' || activeDrawer === 'importance' || activeDrawer === 'energy' || activeDrawer === 'leadTime' ? 'lg:mr-[360px]'
+            : activeDrawer ? 'lg:mr-[400px]'
+            : ''
+          }
           ${sidebarOpen ? 'translate-x-[calc(100vw-72px)] pointer-events-none lg:translate-x-0 lg:pointer-events-auto' : ''}
         `}
       >
@@ -5299,6 +5396,13 @@ export default function Home() {
               aiAssistant.state.mode !== 'collapsed'
                 ? 'lg:pb-24 pb-[calc(52vh+env(safe-area-inset-bottom))]'
                 : 'pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-24'}`}`}>
+            {/* Notification Permission Banner - shown on Focus view */}
+            {state.currentView === 'focus' && showNotificationPrompt && (
+              <NotificationPermissionBanner
+                onDismiss={() => setShowNotificationPrompt(false)}
+              />
+            )}
+
             {/* View Router */}
             {state.currentView === 'focus' && (
               <QueueView
@@ -5319,6 +5423,9 @@ export default function Home() {
                 completedDrawerOpen={completedDrawerOpen}
                 onToggleCompletedDrawer={handleToggleCompletedDrawer}
                 dayStartHour={state.userSettings.dayStartHour}
+                activeDrawer={activeDrawer}
+                onOpenDrawer={handleOpenDrawer}
+                onCloseDrawer={handleCloseDrawer}
               />
             )}
 
@@ -5344,6 +5451,15 @@ export default function Home() {
                 // Controlled tab state for back navigation
                 activeTab={activeTasksTab}
                 onTabChange={setActiveTasksTab}
+                // Controlled filter drawer state (closed when navigating away)
+                filterDrawerOpen={activeDrawer === 'filter'}
+                onFilterDrawerChange={(isOpen) => {
+                  if (isOpen) {
+                    handleOpenDrawer('filter');
+                  } else {
+                    handleCloseDrawer();
+                  }
+                }}
               />
             )}
 
@@ -5453,6 +5569,9 @@ export default function Home() {
                 onAcceptWithScope={handleAcceptWithScope}
                 onToggleMode={handleToggleTaskDetailMode}
                 onResetFromTemplate={activeTask?.isRecurring ? () => handleResetFromTemplate(activeTask.id) : undefined}
+                activeDrawer={activeDrawer}
+                onOpenDrawer={handleOpenDrawer}
+                onCloseDrawer={handleCloseDrawer}
               />
             )}
 
@@ -5521,7 +5640,7 @@ export default function Home() {
         fixed bottom-24 sm:bottom-20 lg:bottom-24 left-0 right-0 z-50 flex justify-center pointer-events-none
         transition-all duration-300
         ${sidebarCollapsed ? 'lg:left-16' : 'lg:left-[320px]'}
-        ${completedDrawerOpen ? 'lg:right-[400px]' : 'lg:right-0'}
+        ${activeDrawer ? 'lg:right-[400px]' : 'lg:right-0'}
       `}>
         <div className="pointer-events-auto">
           <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -5529,14 +5648,19 @@ export default function Home() {
       </div>
 
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
-      {/* Only show when not in drawer mode (drawer handled separately) and not in settings view */}
-      {aiAssistant.state.mode !== 'drawer' && state.currentView !== 'settings' && (
+      {/* Hide when: in drawer mode, settings view, modals open, or keyboard visible */}
+      {aiAssistant.state.mode !== 'drawer' &&
+       state.currentView !== 'settings' &&
+       !taskCreationOpen &&
+       !projectModalOpen &&
+       activeDrawer !== 'focus-selection' &&
+       !isKeyboardVisible && (
         <div className={`
           fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end
           sm:bottom-4
           transition-all duration-300
           ${sidebarCollapsed ? 'lg:left-20' : 'lg:left-[336px]'}
-          ${completedDrawerOpen ? 'lg:right-[416px]' : 'lg:right-6'}
+          ${activeDrawer ? 'lg:right-[416px]' : 'lg:right-6'}
           ${sidebarOpen ? 'max-lg:translate-y-[100vh]' : ''}
         `}>
           <AIAssistantOverlay

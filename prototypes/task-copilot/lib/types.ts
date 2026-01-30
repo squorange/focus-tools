@@ -2,7 +2,7 @@
 // Schema Version
 // ============================================
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 15;
 
 // ============================================
 // Re-export Notification Types
@@ -90,6 +90,76 @@ export type HealthStatus = 'healthy' | 'at_risk' | 'critical';
 export type CompletionType = 'step_based' | 'manual';
 export type ArchivedReason = 'completed_naturally' | 'abandoned' | 'parked' | 'duplicate';
 
+// ============================================
+// Nudge System Types (Phase 1)
+// ============================================
+
+/**
+ * User-set importance level - represents stakes/consequences
+ * This is the user's judgment of how important a task is.
+ */
+export type ImportanceLevel = 'must_do' | 'should_do' | 'could_do' | 'would_like_to';
+
+/**
+ * Task energy type - how the task feels emotionally
+ * Used for energy-aware filtering and matching.
+ */
+export type EnergyType = 'energizing' | 'neutral' | 'draining';
+
+/**
+ * User's current energy level - self-reported state
+ * Used for energy-aware task filtering.
+ */
+export type EnergyLevel = 'high' | 'medium' | 'low';
+
+/**
+ * System-calculated priority tier - represents what to work on now
+ * Derived from priority score calculation.
+ */
+export type PriorityTier = 'critical' | 'high' | 'medium' | 'low';
+
+/**
+ * Filter options for task list views
+ * All filters support multi-select (arrays) with OR logic within each filter
+ */
+export interface TaskFilters {
+  // Date filters - ARRAYS (OR logic: task matches if it matches ANY selected value)
+  dueDateRange?: ('overdue' | 'today' | 'this_week' | 'next_week' | 'later' | 'none')[];
+  targetDateRange?: ('today' | 'this_week' | 'next_week' | 'later' | 'none')[];
+  createdRange?: ('today' | 'this_week' | 'this_month' | 'older')[];
+
+  // Duration filter - ARRAY
+  durationRange?: ('quick' | 'short' | 'medium' | 'long' | 'deep' | 'none')[];
+
+  // Organization - projectId is now ARRAY to allow multi-select
+  projectId?: (string | 'none')[];
+  priority?: ('high' | 'medium' | 'low' | 'none')[];
+
+  // Health & status - ARRAYS
+  healthStatus?: ('at_risk' | 'critical')[];
+  stalenessRange?: ('7_days' | '14_days' | '30_days')[];
+  deferCount?: ('never' | '1x' | '2_3x' | '4_plus')[];
+
+  // P1 filters (future)
+  importance?: ImportanceLevel[];
+  effort?: ('quick' | 'medium' | 'deep')[];
+  showWaiting?: boolean;
+  showDeferred?: boolean;
+  missingDetails?: boolean;
+  tags?: string[];
+}
+
+/**
+ * Tracks when nudges were last fired per task (Phase 5: Orchestrator)
+ * Used for deduplication/cooldown enforcement
+ */
+export interface NudgeTracker {
+  // Map of taskId -> timestamp of last fired nudge
+  lastNudgeByTask: Record<string, number>;
+  // Map of notificationType -> timestamp of last fired nudge of this type (global)
+  lastNudgeByType: Record<string, number>;
+}
+
 export type TaskSource =
   | 'manual'
   | 'ai_breakdown'
@@ -144,6 +214,14 @@ export interface Task {
   tags: string[];
   projectId: string | null;
   context: string | null;
+
+  // Nudge System Fields (Phase 1)
+  importance: ImportanceLevel | null;          // User-set importance level
+  importanceSource: 'self' | 'partner' | null; // Who set the importance
+  importanceNote: string | null;               // Optional context for importance
+  energyType: EnergyType | null;               // How the task feels emotionally
+  leadTimeDays: number | null;                 // Calendar runway needed beyond active work
+  leadTimeSource: 'manual' | 'ai' | null;      // Who set the lead time
 
   // Dates
   targetDate: string | null;        // ISO date (YYYY-MM-DD)
@@ -719,6 +797,21 @@ export type ViewType =
   | 'taskDetail'
   | 'focusMode';
 
+// Drawer type for push behavior and single-drawer constraint
+// Width: ai = 320px (w-80), filter = 360px, all others = 400px
+export type DrawerType =
+  | 'ai'              // AI assistant drawer (320px)
+  | 'completed'       // Completed tasks drawer (400px)
+  | 'focus-selection' // Focus selection modal as drawer (400px)
+  | 'history'         // Completion history drawer (400px)
+  | 'pattern'         // Recurrence pattern drawer (400px)
+  | 'priority'        // Priority breakdown drawer (400px)
+  | 'importance'      // Importance picker drawer (360px)
+  | 'energy'          // Energy type picker drawer (360px)
+  | 'leadTime'        // Lead time picker drawer (360px)
+  | 'filter'          // Filter drawer on Tasks view (360px)
+  | null;             // No drawer open
+
 // ============================================
 // User Settings (stored with app state)
 // ============================================
@@ -732,6 +825,12 @@ export interface UserSettings {
 
   // Day offset settings
   dayStartHour: number;  // 0-12, default 5. Hour when "today" begins. 0 = midnight (no offset)
+
+  // Nudge System Settings (Phase 1)
+  quietHoursEnabled: boolean;           // Suppress push notifications during quiet hours
+  quietHoursStart: string | null;       // "22:00" - when quiet hours begin
+  quietHoursEnd: string | null;         // "07:00" - when quiet hours end
+  nudgeCooldownMinutes: number;         // Prevent rapid-fire nudges for same task
 }
 
 export interface AppState {
@@ -754,6 +853,13 @@ export interface AppState {
 
   // User settings
   userSettings: UserSettings;
+
+  // User energy state (Phase 1: Nudge System)
+  currentEnergy: EnergyLevel | null;      // User's self-reported energy level
+  currentEnergySetAt: number | null;      // When energy was last set (for staleness)
+
+  // Nudge orchestrator state (Phase 5: Orchestrator)
+  nudgeTracker: NudgeTracker;             // Tracks last nudge time per task for deduplication
 
   // Navigation (Model E: updated view types)
   currentView: ViewType;
@@ -880,6 +986,14 @@ export function createTask(title: string, options?: Partial<Task>): Task {
     projectId: null,
     context: null,
 
+    // Nudge System Fields
+    importance: null,
+    importanceSource: null,
+    importanceNote: null,
+    energyType: null,
+    leadTimeDays: null,
+    leadTimeSource: null,
+
     targetDate: null,
     targetTime: null,
     deadlineDate: null,
@@ -1001,6 +1115,21 @@ export function createInitialAppState(): AppState {
       startPokeBufferMinutes: 10,             // 10 minute buffer
       startPokeBufferPercentage: false,       // Use fixed buffer by default
       dayStartHour: 0,                        // 0 = midnight (calendar day, no offset)
+      // Nudge System Settings
+      quietHoursEnabled: false,               // Quiet hours disabled by default
+      quietHoursStart: '22:00',               // Default: 10 PM
+      quietHoursEnd: '07:00',                 // Default: 7 AM
+      nudgeCooldownMinutes: 15,               // 15 minute cooldown between nudges
+    },
+
+    // User energy state (Phase 1: Nudge System)
+    currentEnergy: null,
+    currentEnergySetAt: null,
+
+    // Nudge orchestrator state (Phase 5: Orchestrator)
+    nudgeTracker: {
+      lastNudgeByTask: {},
+      lastNudgeByType: {},
     },
 
     // Model E: default view is focus (home)
@@ -1056,6 +1185,11 @@ export function createDefaultUserSettings(): UserSettings {
     startPokeBufferMinutes: 10,             // 10 minute buffer
     startPokeBufferPercentage: false,       // Use fixed buffer by default
     dayStartHour: 0,                        // 0 = midnight (calendar day, no offset)
+    // Nudge System Settings
+    quietHoursEnabled: false,               // Quiet hours disabled by default
+    quietHoursStart: '22:00',               // Default: 10 PM
+    quietHoursEnd: '07:00',                 // Default: 7 AM
+    nudgeCooldownMinutes: 15,               // 15 minute cooldown between nudges
   };
 }
 

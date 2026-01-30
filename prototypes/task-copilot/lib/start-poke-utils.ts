@@ -354,3 +354,169 @@ export function overrideDiffersFromDefault(
   const overrideEnabled = override === 'on';
   return overrideEnabled !== defaultEnabled;
 }
+
+// ============================================
+// Runway Nudge Calculation
+// ============================================
+// Runway nudge fires 1 day before the EFFECTIVE deadline
+// (effective deadline = deadline - leadTimeDays)
+// This gives users a heads-up that they need to START the task soon,
+// separate from the execution nudge (start_poke) which fires when
+// they need to be actively working.
+
+/**
+ * Calculate the effective deadline for a task
+ * Effective deadline = actual deadline - lead time days
+ * This is when the user should ideally START working on the task
+ */
+export function getEffectiveDeadlineTimestamp(task: Task): {
+  effectiveDeadline: number | null;
+  actualDeadline: number | null;
+  leadTimeDays: number;
+} {
+  // Must have a deadline date
+  if (!task.deadlineDate) {
+    return { effectiveDeadline: null, actualDeadline: null, leadTimeDays: 0 };
+  }
+
+  // Get actual deadline timestamp
+  const actualDeadline = dateToTimestampForRunway(
+    task.deadlineDate,
+    task.deadlineTime || null,
+    DEFAULT_DEADLINE_HOUR
+  );
+
+  const leadTimeDays = task.leadTimeDays || 0;
+
+  if (leadTimeDays <= 0) {
+    // No lead time configured - effective deadline equals actual deadline
+    return { effectiveDeadline: actualDeadline, actualDeadline, leadTimeDays: 0 };
+  }
+
+  // Effective deadline = actual deadline - lead time days
+  const effectiveDeadline = actualDeadline - (leadTimeDays * 24 * 60 * 60 * 1000);
+
+  return { effectiveDeadline, actualDeadline, leadTimeDays };
+}
+
+/**
+ * Convert date string + optional time to Unix timestamp (for runway calculation)
+ */
+function dateToTimestampForRunway(dateStr: string, time: string | null, defaultHour: number): number {
+  const date = new Date(dateStr + 'T12:00:00'); // Use noon to avoid timezone issues
+
+  if (time) {
+    const [hours, minutes] = time.split(':').map(Number);
+    date.setHours(hours, minutes, 0, 0);
+  } else {
+    date.setHours(defaultHour, 0, 0, 0);
+  }
+
+  return date.getTime();
+}
+
+/**
+ * Calculate when the Runway Nudge should fire
+ * Fires 1 day before the effective deadline
+ * Returns null if task doesn't have lead time configured
+ */
+export function calculateRunwayNudgeTime(task: Task): {
+  time: number | null;
+  effectiveDeadline: number | null;
+  actualDeadline: number | null;
+  leadTimeDays: number;
+} {
+  const { effectiveDeadline, actualDeadline, leadTimeDays } = getEffectiveDeadlineTimestamp(task);
+
+  // Only applicable if task has lead time configured
+  if (!effectiveDeadline || leadTimeDays <= 0) {
+    return { time: null, effectiveDeadline: null, actualDeadline: null, leadTimeDays: 0 };
+  }
+
+  // Runway nudge fires 1 day before effective deadline, at 9 AM
+  const oneDayBefore = effectiveDeadline - (24 * 60 * 60 * 1000);
+
+  // Set to 9 AM on that day for a reasonable reminder time
+  const nudgeDate = new Date(oneDayBefore);
+  nudgeDate.setHours(9, 0, 0, 0);
+  const nudgeTime = nudgeDate.getTime();
+
+  return { time: nudgeTime, effectiveDeadline, actualDeadline, leadTimeDays };
+}
+
+/**
+ * Check if Runway Nudge is applicable for a task
+ * Only tasks with leadTimeDays > 0 and a deadline get runway nudges
+ */
+export function isRunwayNudgeApplicable(task: Task): boolean {
+  return (
+    task.deadlineDate !== null &&
+    task.leadTimeDays !== null &&
+    task.leadTimeDays > 0 &&
+    task.status !== 'complete' &&
+    task.status !== 'archived'
+  );
+}
+
+/**
+ * Get the runway nudge status for a task
+ * Used by UI and scheduling logic
+ */
+export interface RunwayNudgeStatus {
+  applicable: boolean;           // Whether runway nudge applies to this task
+  nudgeTime: number | null;      // When the nudge should fire
+  effectiveDeadline: number | null;
+  actualDeadline: number | null;
+  leadTimeDays: number;
+  daysUntilEffective: number | null;  // Days from now until effective deadline
+}
+
+export function getRunwayNudgeStatus(task: Task): RunwayNudgeStatus {
+  if (!isRunwayNudgeApplicable(task)) {
+    return {
+      applicable: false,
+      nudgeTime: null,
+      effectiveDeadline: null,
+      actualDeadline: null,
+      leadTimeDays: 0,
+      daysUntilEffective: null,
+    };
+  }
+
+  const { time, effectiveDeadline, actualDeadline, leadTimeDays } = calculateRunwayNudgeTime(task);
+
+  // Calculate days until effective deadline
+  let daysUntilEffective: number | null = null;
+  if (effectiveDeadline) {
+    const now = Date.now();
+    daysUntilEffective = Math.ceil((effectiveDeadline - now) / (24 * 60 * 60 * 1000));
+  }
+
+  return {
+    applicable: true,
+    nudgeTime: time,
+    effectiveDeadline,
+    actualDeadline,
+    leadTimeDays,
+    daysUntilEffective,
+  };
+}
+
+/**
+ * Format the runway nudge message for display
+ */
+export function formatRunwayNudgeMessage(task: Task): string {
+  const status = getRunwayNudgeStatus(task);
+  if (!status.applicable || !status.effectiveDeadline) {
+    return '';
+  }
+
+  const effectiveDate = new Date(status.effectiveDeadline);
+  const dateStr = effectiveDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return `Start by ${dateStr} to finish on time (${status.leadTimeDays}d lead time)`;
+}

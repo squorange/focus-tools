@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Task, FocusQueueItem, Project } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
+import { getTaskPriorityInfo } from "@/lib/priority";
 import MetadataPill from "@/components/shared/MetadataPill";
 import HealthPill from "@/components/shared/HealthPill";
 import ProgressRing from "@/components/shared/ProgressRing";
+import PriorityDisplay from "@/components/shared/PriorityDisplay";
 
 interface QueueItemProps {
   item: FocusQueueItem;
@@ -112,10 +114,12 @@ export default function QueueItem({
   // Health status for pool tasks (non-healthy only)
   const health = task.status === 'pool' ? computeHealthStatus(task) : null;
   const showHealthPill = health && health.status !== 'healthy';
+  // Calculate priority tier for display
+  const priorityInfo = getTaskPriorityInfo(task);
 
   // Check if we have any metadata to display
   const hasMetadata = progress.total > 0 || estimate || task.targetDate ||
-    task.deadlineDate || task.priority === "high" || task.priority === "medium" || project || showHealthPill;
+    task.deadlineDate || project || showHealthPill;
 
   return (
     <div
@@ -211,8 +215,6 @@ export default function QueueItem({
                   Due {formatDate(task.deadlineDate)}
                 </MetadataPill>
               )}
-              {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
-              {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
               {project && (
                 <MetadataPill variant="project" color={project.color || "#9ca3af"}>
                   {project.name}
@@ -222,17 +224,19 @@ export default function QueueItem({
           )}
         </button>
 
-        {/* Menu button - Desktop */}
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-            title="More actions"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-            </svg>
-          </button>
+        {/* Priority display + Menu button - Desktop */}
+        <div className="flex items-center gap-1">
+          <PriorityDisplay tier={priorityInfo.tier} showChevron={false} />
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="flex-shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              title="More actions"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
           {showMenu && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
@@ -300,6 +304,7 @@ export default function QueueItem({
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
 
@@ -351,6 +356,8 @@ export default function QueueItem({
                 </svg>
               </span>
             )}
+            {/* Priority display - Mobile */}
+            <PriorityDisplay tier={priorityInfo.tier} showChevron={false} />
             {/* Menu button - Mobile */}
             <div className="relative">
               <button
@@ -446,8 +453,6 @@ export default function QueueItem({
                   {formatDate(task.deadlineDate)}
                 </MetadataPill>
               )}
-              {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
-              {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
               {project && (
                 <MetadataPill variant="project" color={project.color || "#9ca3af"}>
                   {project.name}

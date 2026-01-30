@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
@@ -24,6 +24,23 @@ export default function BottomSheet({
   const prefersReducedMotion = useReducedMotion();
   const [dragY, setDragY] = useState(0);
   const [isHandleHovered, setIsHandleHovered] = useState(false);
+
+  // Lock body scroll when sheet is open to prevent background scrolling
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
 
   const handleDragEnd = (
     _event: MouseEvent | TouchEvent | PointerEvent,

@@ -52,13 +52,21 @@ export default function TaskCreationPopover({
       setProjectId(null);
       setShowProjectDropdown(false);
       setDropdownPosition(null);
-      // Focus immediately - delay can break keyboard trigger on mobile
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
+      // On mobile, delay focus until after bottom sheet animation completes
+      // to prevent keyboard from triggering before sheet is visible
+      if (isMobileView) {
+        const timer = setTimeout(() => {
+          inputRef.current?.focus();
+        }, 350);
+        return () => clearTimeout(timer);
+      } else {
+        // Desktop: focus immediately
+        requestAnimationFrame(() => {
+          inputRef.current?.focus();
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isMobileView]);
 
   // Update mobile state
   useEffect(() => {
@@ -278,7 +286,6 @@ export default function TaskCreationPopover({
                 placeholder="What needs to be done?"
                 className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 autoComplete="off"
-                autoFocus
                 enterKeyHint="done"
               />
             </div>

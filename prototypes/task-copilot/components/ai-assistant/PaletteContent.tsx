@@ -423,6 +423,72 @@ export function PaletteContent({
               </div>
             </div>
           );
+        } else if (current.type === 'runway') {
+          // Runway nudge banner - amber themed (different from poke)
+          const runway = current.data;
+          const effectiveDate = new Date(runway.effectiveDeadline);
+          const dateStr = effectiveDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+
+          return (
+            <div className="px-3 py-2 mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+              {/* Title row: running emoji + task title + date + count */}
+              <div className="flex items-start gap-2">
+                <span className="flex-shrink-0 text-sm mt-0.5">🏃</span>
+                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                  Start &ldquo;{runway.taskTitle}&rdquo; soon
+                </span>
+                {hasMultiple && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  >
+                    ({currentAlertIndex + 1}/{alertCount})
+                  </button>
+                )}
+              </div>
+              {/* Lead time context */}
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
+                {runway.leadTimeDays}d lead time — start by {dateStr} to finish on time
+              </div>
+              {/* Actions row - compact filled buttons */}
+              <div className="flex items-center gap-1.5 mt-2 ml-6">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); runway.onStart(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-900/10 dark:bg-white/10
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    transition-colors"
+                >
+                  View Task
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); runway.onSnooze(60); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-900/10 dark:bg-white/10
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    transition-colors"
+                >
+                  Snooze 1h
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); runway.onDismiss(); }}
+                  className="px-2.5 py-1 text-xs font-medium rounded-full
+                    bg-zinc-900/10 dark:bg-white/10
+                    text-zinc-700 dark:text-zinc-300
+                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          );
         } else {
           // Reminder banner - violet themed (unified with other banners)
           const reminder = current.data;

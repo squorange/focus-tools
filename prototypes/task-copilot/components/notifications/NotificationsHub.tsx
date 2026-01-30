@@ -35,6 +35,53 @@ export default function NotificationsHub({
     n => n.firedAt !== null && n.acknowledgedAt === null
   );
 
+  return (
+    <div className="flex flex-col h-full">
+      {/* Content - no internal header, title is in navbar */}
+      <div className="flex-1 overflow-y-auto">
+        <NotificationsContent
+          notifications={notifications}
+          groups={groups}
+          upcomingNotifications={upcomingNotifications}
+          missedNotifications={missedNotifications}
+          activeNotifications={activeNotifications}
+          onNotificationTap={onNotificationTap}
+          onDismiss={onDismiss}
+          onStart={onStart}
+          onSnooze={onSnooze}
+          onCancel={onCancel}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Extracted notifications content into separate component for cleaner code
+interface NotificationsContentProps {
+  notifications: Notification[];
+  groups: ReturnType<typeof groupNotificationsByDate>;
+  upcomingNotifications: Notification[];
+  missedNotifications: Notification[];
+  activeNotifications: Notification[];
+  onNotificationTap: (notification: Notification) => void;
+  onDismiss: (notificationId: string) => void;
+  onStart?: (notification: Notification) => void;
+  onSnooze?: (notificationId: string, minutes: number) => void;
+  onCancel?: (notificationId: string) => void;
+}
+
+function NotificationsContent({
+  notifications,
+  groups,
+  upcomingNotifications,
+  missedNotifications,
+  activeNotifications,
+  onNotificationTap,
+  onDismiss,
+  onStart,
+  onSnooze,
+  onCancel,
+}: NotificationsContentProps) {
   const isEmpty = notifications.length === 0;
 
   if (isEmpty) {
@@ -58,7 +105,7 @@ export default function NotificationsHub({
       {/* Missed section: notifications that were never fired (app was closed) */}
       {missedNotifications.length > 0 && (
         <div>
-          <h2 className="text-base font-medium text-violet-600 dark:text-violet-400 mb-3">
+          <h2 className="text-base font-medium text-zinc-700 dark:text-zinc-300 mb-3">
             Missed
           </h2>
           <div className="space-y-2">
@@ -80,7 +127,7 @@ export default function NotificationsHub({
       {/* Active section: fired but not acknowledged */}
       {activeNotifications.length > 0 && (
         <div>
-          <h2 className="text-base font-medium text-violet-600 dark:text-violet-400 mb-3">
+          <h2 className="text-base font-medium text-zinc-700 dark:text-zinc-300 mb-3">
             Active
           </h2>
           <div className="space-y-2">

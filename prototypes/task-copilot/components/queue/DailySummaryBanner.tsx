@@ -2,7 +2,7 @@
 
 import { Task, FocusQueueItem } from "@/lib/types";
 import { countCompletionsToday } from "@/lib/completions";
-import { filterRoutinesForToday } from "@/lib/recurring-utils";
+import { filterRoutinesForToday, getTodayISO } from "@/lib/recurring-utils";
 import { ChevronRight } from "lucide-react";
 
 interface DailySummaryBannerProps {
@@ -69,8 +69,27 @@ export default function DailySummaryBanner({
   // Time estimate for today's queue items
   const timeEstimate = getTotalEstimate(todayItems, tasks);
 
-  // "All done" state
-  const allDone = totalItems > 0 && doneItems >= totalItems;
+  // Get today's date for checking routine instances
+  const today = getTodayISO(dayStartHour);
+
+  // Count incomplete routines - check if today's instance is complete/skipped
+  const incompleteRoutines = allRoutinesToday.filter(task => {
+    const todayInstance = task.recurringInstances?.find(i => i.date === today);
+    // If instance exists and is completed or skipped, it's done
+    if (todayInstance?.completed || todayInstance?.skipped) {
+      return false;
+    }
+    // Otherwise it's incomplete (either no instance or not done)
+    return true;
+  }).length;
+
+  // Count incomplete today queue items
+  const incompleteTodayItems = todayItems.filter(item => !item.completed).length;
+
+  // "All done" state - only true if no incomplete items exist
+  const allDone = (todayItems.length > 0 || allRoutinesToday.length > 0)
+    && incompleteRoutines === 0
+    && incompleteTodayItems === 0;
 
   // Don't render if nothing to track
   if (totalItems === 0 && doneItems === 0) {

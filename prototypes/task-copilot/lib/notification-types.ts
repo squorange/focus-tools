@@ -19,7 +19,7 @@ export interface Notification {
   deepLink: string;           // URL or route to navigate to on click
 }
 
-export type NotificationType = 'start_poke' | 'reminder' | 'streak' | 'system';
+export type NotificationType = 'start_poke' | 'runway_nudge' | 'reminder' | 'streak' | 'system';
 
 export type NotificationIcon = 'bell-ring' | 'clock' | 'flame' | 'info';
 
@@ -98,7 +98,23 @@ export interface ReminderAlert {
   onDismiss: () => void;
 }
 
+// Runway nudge alert data for UI display
+// Fires 1 day before effective deadline (deadline - leadTimeDays)
+// Different from start_poke which fires right before task needs to start
+export interface RunwayNudgeAlert {
+  taskId: string;
+  taskTitle: string;
+  notificationId: string;
+  effectiveDeadline: number;   // Unix timestamp of effective deadline (deadline - leadTimeDays)
+  actualDeadline: number;      // Unix timestamp of actual deadline
+  leadTimeDays: number;        // The lead time that was configured
+  onStart: () => void;
+  onSnooze: (minutes: number) => void;
+  onDismiss: () => void;
+}
+
 // Unified alert type for cycling through multiple alerts
 export type ActiveAlert =
   | { type: 'poke'; data: StartPokeAlert }
+  | { type: 'runway'; data: RunwayNudgeAlert }
   | { type: 'reminder'; data: ReminderAlert };

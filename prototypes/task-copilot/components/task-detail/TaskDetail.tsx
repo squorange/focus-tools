@@ -4,7 +4,7 @@ import { useState, useRef, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock, Plus, ChevronDown, Check } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings } from "@/lib/types";
+import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings, DrawerType } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
@@ -18,9 +18,9 @@ import StartPokeField from "@/components/task-detail/StartPokeField";
 import DurationInput from "@/components/shared/DurationInput";
 import { getDuration, getStepDurationSum } from "@/lib/start-poke-utils";
 import HistoryModal from "@/components/routines/HistoryModal";
-import EditTemplateModal from "@/components/task-detail/EditTemplateModal";
 import RecurrenceFields from "@/components/task-detail/RecurrenceFields";
 import StatusModule from "@/components/task-detail/StatusModule";
+import DetailsSection from "@/components/task-detail/DetailsSection";
 import { formatReminder, scheduleReminder, cancelReminder } from "@/lib/notifications";
 import { getStartPokeStatus, formatPokeTime, isStartPokeEnabled } from "@/lib/start-poke-utils";
 import { StartPokeSettings } from "@/lib/notification-types";
@@ -106,6 +106,10 @@ interface TaskDetailProps {
   // Mode toggling
   onToggleMode?: () => void;
   onResetFromTemplate?: () => void;
+  // Centralized drawer management
+  activeDrawer?: DrawerType;
+  onOpenDrawer?: (drawer: DrawerType) => void;
+  onCloseDrawer?: () => void;
 }
 
 // Get queue item for this task
@@ -174,6 +178,9 @@ export default function TaskDetail({
   onAcceptWithScope,
   onToggleMode,
   onResetFromTemplate,
+  activeDrawer,
+  onOpenDrawer,
+  onCloseDrawer,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -184,8 +191,21 @@ export default function TaskDetail({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   // Auto-expand details for inbox tasks (triage mode), collapse for ready/queued tasks
   const [detailsExpanded, setDetailsExpanded] = useState(task.status === 'inbox');
-  // Focus selection modal state
-  const [showFocusModal, setShowFocusModal] = useState(false);
+  // Phase 0: Feature flag for new DetailsSection UI
+  // Set to true to use the new sectioned layout, false for legacy
+  const useNewDetailsUI = true;
+  // Waiting On modal state (for bottom actions)
+  const [showWaitingOnModal, setShowWaitingOnModal] = useState(false);
+  const [waitingOnInput, setWaitingOnInput] = useState(task.waitingOn?.who || '');
+  // Focus selection modal - use centralized drawer state if available, otherwise local
+  const showFocusModal = activeDrawer === 'focus-selection';
+  const setShowFocusModal = (show: boolean) => {
+    if (show && onOpenDrawer) {
+      onOpenDrawer('focus-selection');
+    } else if (!show && onCloseDrawer) {
+      onCloseDrawer();
+    }
+  };
   // Add to Focus dropdown state
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   // Mobile kebab menu state
@@ -239,8 +259,16 @@ export default function TaskDetail({
   const isPaused = recurrencePattern?.pausedAt ? true : false;
   const patternDescription = recurrencePattern ? describePattern(recurrencePattern) : '';
   const [showRoutinePopover, setShowRoutinePopover] = useState(false);
-  const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  // History modal - use centralized drawer state if available
+  const showHistoryModal = activeDrawer === 'history';
+  const setShowHistoryModal = (show: boolean) => {
+    if (show && onOpenDrawer) {
+      onOpenDrawer('history');
+    } else if (!show && onCloseDrawer) {
+      onCloseDrawer();
+    }
+  };
+  // Pattern modal is handled by DetailsSection
   const [showPatternModal, setShowPatternModal] = useState(false);
   const [isPatternHandleHovered, setIsPatternHandleHovered] = useState(false);
   const prefersReducedMotion = useReducedMotion();
@@ -822,11 +850,9 @@ export default function TaskDetail({
               : []
           }
           onClose={() => setShowFocusModal(false)}
-          onConfirm={(selectionType, selectedStepIds) => {
-            setShowFocusModal(false);
+          onUpdateSelection={(selectionType, selectedStepIds) => {
             onUpdateStepSelection(queueItem!.id, selectionType, selectedStepIds);
           }}
-          mode="edit"
         />
       )}
 
@@ -862,8 +888,31 @@ export default function TaskDetail({
         </div>
       )}
 
-      {/* Details Section - Unified container with Status + Details */}
-      <div className="mb-6">
+      {/* NEW: Refactored Details Section (Phase 0) */}
+      {useNewDetailsUI && (
+        <DetailsSection
+          task={task}
+          queue={queue}
+          queueItem={queueItem}
+          projects={projects}
+          userSettings={userSettings}
+          mode={mode}
+          currentInstance={currentInstance}
+          onUpdateTask={onUpdateTask}
+          onOpenProjectModal={onOpenProjectModal}
+          onOpenProjectModalWithCallback={onOpenProjectModalWithCallback}
+          onToggleMode={onToggleMode}
+          defaultExpanded={task.status === 'inbox'}
+          completedStepsExpanded={completedStepsExpanded}
+          onToggleCompletedSteps={() => setCompletedStepsExpanded(!completedStepsExpanded)}
+          activeDrawer={activeDrawer}
+          onOpenDrawer={onOpenDrawer}
+          onCloseDrawer={onCloseDrawer}
+        />
+      )}
+
+      {/* LEGACY: Details Section - Unified container with Status + Details */}
+      {!useNewDetailsUI && <div className="mb-6">
         {/* Section Header */}
         <button
           onClick={() => setDetailsExpanded(!detailsExpanded)}
@@ -1550,7 +1599,7 @@ export default function TaskDetail({
             </div>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Staging Area for AI suggestions */}
       {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
@@ -1881,6 +1930,94 @@ export default function TaskDetail({
         {/* Actions section */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Waiting On button with anchored popover (only for one-off tasks when using new UI) */}
+            {useNewDetailsUI && !isRecurring && (
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setWaitingOnInput(task.waitingOn?.who || '');
+                    setShowWaitingOnModal(true);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
+                    task.waitingOn
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'
+                      : 'text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {task.waitingOn ? `Waiting: ${task.waitingOn.who}` : 'Waiting On'}
+                  {task.waitingOn && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onUpdateTask(task.id, { waitingOn: null });
+                      }}
+                      className="ml-1 hover:text-red-600 dark:hover:text-red-400"
+                      title="Clear waiting on"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </button>
+
+                {/* Anchored Popover */}
+                {showWaitingOnModal && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowWaitingOnModal(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl p-4">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+                        Waiting On
+                      </h3>
+                      <input
+                        type="text"
+                        value={waitingOnInput}
+                        onChange={(e) => setWaitingOnInput(e.target.value)}
+                        placeholder="Who or what are you waiting on?"
+                        className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            onUpdateTask(task.id, {
+                              waitingOn: waitingOnInput.trim()
+                                ? { who: waitingOnInput.trim(), since: Date.now(), followUpDate: null, notes: null }
+                                : null,
+                            });
+                            setShowWaitingOnModal(false);
+                          }
+                          if (e.key === 'Escape') {
+                            setShowWaitingOnModal(false);
+                          }
+                        }}
+                      />
+                      <div className="flex justify-end gap-2 mt-3">
+                        <button
+                          onClick={() => setShowWaitingOnModal(false)}
+                          className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            onUpdateTask(task.id, {
+                              waitingOn: waitingOnInput.trim()
+                                ? { who: waitingOnInput.trim(), since: Date.now(), followUpDate: null, notes: null }
+                                : null,
+                            });
+                            setShowWaitingOnModal(false);
+                          }}
+                          className="px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {isRecurring ? (
               /* Pause/Resume for recurring tasks */
               <button
@@ -2010,69 +2147,6 @@ export default function TaskDetail({
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
           onUpdateTask={onUpdateTask}
-        />
-      )}
-
-      {/* Edit Template Modal for recurring tasks */}
-      {isRecurring && (
-        <EditTemplateModal
-          task={task}
-          currentInstance={currentInstance}
-          isOpen={showEditTemplateModal}
-          onClose={() => setShowEditTemplateModal(false)}
-          onSave={(newTemplateSteps, promotedIds, demotedIds) => {
-            // newTemplateSteps contains instance steps (with instance IDs)
-            // We need to sync both the template (task.steps) and the current instance
-
-            const updates: Partial<Task> = {};
-
-            // Update the template (task.steps) based on promotions/demotions
-            // For demoted steps: Find and remove from task.steps by matching text
-            // For promoted steps: Add copies with new IDs
-            if (currentInstance) {
-              // Get the text of demoted steps (to match against task.steps)
-              const demotedStepTexts = currentInstance.steps
-                .filter((s) => demotedIds.includes(s.id))
-                .map((s) => s.text);
-
-              // Get promoted steps (non-template origin → add to template)
-              const promotedStepsToAdd = currentInstance.steps
-                .filter((s) => promotedIds.includes(s.id))
-                .map((s) => createStep(s.text, { source: s.source }));
-
-              // Update template: remove demoted, add promoted
-              const filteredTemplateSteps = task.steps.filter(
-                (s) => !demotedStepTexts.includes(s.text)
-              );
-              updates.steps = [...filteredTemplateSteps, ...promotedStepsToAdd];
-            }
-
-            // Update recurringInstances to reflect promoted/demoted origin changes
-            if (activeDate && task.recurringInstances) {
-              const updatedInstances = task.recurringInstances.map((inst) => {
-                if (inst.date !== activeDate) return inst;
-
-                return {
-                  ...inst,
-                  steps: inst.steps.map((s) => {
-                    if (promotedIds.includes(s.id)) {
-                      // Promoted: mark as template origin
-                      return { ...s, origin: 'template' as const };
-                    }
-                    if (demotedIds.includes(s.id)) {
-                      // Demoted: mark as manual origin
-                      return { ...s, origin: 'manual' as const };
-                    }
-                    return s;
-                  }),
-                };
-              });
-              updates.recurringInstances = updatedInstances;
-            }
-
-            onUpdateTask(task.id, updates);
-            setShowEditTemplateModal(false);
-          }}
         />
       )}
 

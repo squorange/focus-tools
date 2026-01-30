@@ -746,8 +746,10 @@ export function calculateStreak(task: Task, dayStartHour: number = 5): number {
       // Skipped doesn't break streak, move to previous
       checkDate = getPreviousOccurrence(today, pattern, startDate);
     } else {
-      // Today not done, start checking from previous occurrence
-      checkDate = getPreviousOccurrence(today, pattern, startDate);
+      // TODAY IS DUE BUT NOT DONE = NO CURRENT STREAK
+      // This is the key fix: if today is a match day but not completed,
+      // the streak is broken regardless of past completions
+      return 0;
     }
   } else {
     // Today not an occurrence day, start from most recent
@@ -766,7 +768,18 @@ export function calculateStreak(task: Task, dayStartHour: number = 5): number {
       // Skipped doesn't break streak
       checkDate = getPreviousOccurrence(checkDate, pattern, startDate);
     } else {
-      // Missed - streak broken
+      // No instance found - check if this is truly a miss
+      // If before the first completion, user hadn't "started" their streak yet
+      const firstCompletedInstance = task.recurringInstances
+        .filter(instance => instance.completed)
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
+
+      // If no completions yet, or this date is before first completion, stop counting (not a miss)
+      if (!firstCompletedInstance || (checkDate && checkDate < firstCompletedInstance.date)) {
+        break; // End counting, not a genuine miss
+      }
+
+      // Date is after first completion but no instance - genuine miss, streak broken
       break;
     }
   }

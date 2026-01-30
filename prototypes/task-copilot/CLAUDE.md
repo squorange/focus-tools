@@ -25,21 +25,22 @@ The repo root has a separate `.vercel` project config (`focus-tools-one`) which 
 
 ## Current Sprint / Next Steps
 
-**Last Updated:** January 15, 2026
+**Last Updated:** January 29, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
 | P0 | Inline AI Actions (Steps) | ✅ Complete | Sparkle → Palette with target banner, step-specific quick actions |
 | P0 | Nav/App Restructure | ✅ Complete | Push sidebar, hamburger + plus header, task creation popover |
+| P0 | Nudge System MVP | ✅ Complete | Priority calculation, Priority Queue, orchestrator, energy system, settings |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced proactively |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete (data model, gallery). Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem - needs design discussion |
 | P2 | Reflection/journey view | ⬜ Not Started | "What did I accomplish this week?" |
 | P2 | Voice capture | ⬜ Not Started | Web Speech API to reduce capture friction |
 | P3 | Context switch bookmarking | ⬜ Not Started | AI summarizes state on pause |
-| P3 | Nudge system logic | ⬜ Not Started | Types defined in schema, logic not implemented |
 
 **Recently Completed:**
+- [v28] Nudge System MVP (Phases 0-7): Task Details refactor, priority calculation (64 tests), Priority Queue in NotificationsHub, importance/energy/lead time pickers, runway nudge alerts, orchestrator with deduplication/quiet hours, energy selector with filtering, quiet hours + cooldown settings UI
 - [v27] Recurring Tasks Phase 1-2: Data model (schema v9), recurring-types.ts, recurring-utils.ts (pattern matching, streaks, instances), RoutineCard + RoutinesGallery components, complete/skip handlers
 - [v26] Nav Restructure: Push sidebar (collapsible on desktop 280px↔64px, push on mobile), hamburger + plus header, task creation popover (bottom sheet mobile, dropdown desktop), unified Focus Mode header (timer + exit), removed QuickCapture from views
 - [v25.1] Restructuring trigger refinement: Expanded trigger words (simplify, clean up, tidy up, streamline, consolidate, merge/combine/reduce/fewer steps, too many steps), fixed conflicting prompt guidance, added explicit RULE for restructuring triggers
@@ -995,6 +996,14 @@ The AI assistant uses a four-surface interaction model:
 
 ## Key Implementation Notes
 
+### Icon/Emoji Convention
+- **Icons (Lucide):** Use for all UI elements, pickers, buttons
+- **Emojis:** Reserved ONLY for:
+  - AI action labels (quick actions, suggestions)
+  - Start poke feature (pointing finger right)
+- This keeps the UI clean and consistent while allowing emojis to draw attention to AI features
+
+### Core Principles
 1. **Focus Queue is home** — app opens to Queue view
 2. **One queue entry per task** — no duplicates
 3. **Step selection** — entire task OR specific steps (multi-select)

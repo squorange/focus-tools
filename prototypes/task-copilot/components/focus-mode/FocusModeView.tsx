@@ -180,7 +180,7 @@ export default function FocusModeView({
   return (
     <div className="h-full flex flex-col">
       {/* Focus Mode Header - matches app header styling */}
-      <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg px-4 lg:px-6">
+      <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-zinc-900 px-4 lg:px-6">
         <div className="h-14 flex items-center justify-between">
           {/* Left: Exit button */}
           <button

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Task } from "@/lib/types";
-import { describePatternCompact, getTodayISO, getActiveOccurrenceDate, ensureInstance } from "@/lib/recurring-utils";
+import { describePatternCompact, getTodayISO, getActiveOccurrenceDate, ensureInstance, calculateStreak } from "@/lib/recurring-utils";
 import { Repeat, Zap } from "lucide-react";
 
 type TimeWindowStatus = "before" | "active" | "past";
@@ -44,7 +44,7 @@ export default function RoutineCard({
   const isInstanceComplete = instance.completed;
 
   const patternDescription = describePatternCompact(task.recurrence);
-  const streak = task.recurringStreak;
+  const streak = calculateStreak(task);
 
   // Single tap on circle completes the routine
   const handleCircleClick = (e: React.MouseEvent) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Task } from "@/lib/types";
 import { TaskInstance, InstanceStatus } from "@/lib/recurring-types";
 import {
@@ -9,6 +9,7 @@ import {
   parseISO,
   markInstanceComplete,
   skipInstance,
+  calculateStreak,
 } from "@/lib/recurring-utils";
 import {
   X,
@@ -24,6 +25,7 @@ import {
   Hash,
 } from "lucide-react";
 import BottomSheet from "@/components/shared/BottomSheet";
+import RightDrawer from "@/components/shared/RightDrawer";
 
 interface HistoryModalProps {
   task: Task;
@@ -53,6 +55,17 @@ export default function HistoryModal({
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(typeof window !== "undefined" && window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Day boundary hour - routines after midnight but before this hour count as previous day
   const dayStartHour = 5;
@@ -122,10 +135,10 @@ export default function HistoryModal({
     return grid;
   }, [monthInstances, currentMonth, today]);
 
-  // Stats
+  // Stats - calculate current streak dynamically at display time
   const stats = useMemo(() => {
     return {
-      currentStreak: task.recurringStreak || 0,
+      currentStreak: calculateStreak(task),
       bestStreak: task.recurringBestStreak || 0,
       totalCompletions: task.recurringTotalCompletions || 0,
     };
@@ -376,33 +389,29 @@ export default function HistoryModal({
     </div>
   );
 
-  return (
-    <>
-      {/* Desktop: Centered modal */}
-      <div className="hidden lg:block">
-        {/* Backdrop - z-[60] to overlay sidebar (z-50) */}
-        <div
-          className="fixed inset-0 bg-black/40 z-[60]"
-          onClick={onClose}
-        />
-
-        {/* Modal - z-[70] above backdrop */}
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white dark:bg-zinc-900 rounded-xl shadow-2xl z-[70] flex flex-col max-h-[85vh]">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-              Completion History
-            </h2>
+  // Desktop: Right drawer
+  if (!isMobileView) {
+    return (
+      <RightDrawer isOpen={isOpen} onClose={onClose} width="400px" zIndex={70}>
+        <div className="flex flex-col h-full">
+          {/* Header - matches main navbar (no bottom border) */}
+          <div className="h-14 flex items-center justify-between px-2 shrink-0">
+            <div className="px-2">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                Completion History
+              </h2>
+            </div>
             <button
               onClick={onClose}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
             </button>
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-around py-3 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-center justify-around py-3 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700 shrink-0">
             <div className="flex items-center gap-1.5 text-sm">
               <Flame className="w-4 h-4 text-orange-500" />
               <span className="text-zinc-600 dark:text-zinc-400">Streak:</span>
@@ -427,25 +436,30 @@ export default function HistoryModal({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-4">
+          <div className="flex-1 overflow-auto p-4 min-h-0">
             {renderContent()}
           </div>
         </div>
-      </div>
+      </RightDrawer>
+    );
+  }
 
-      {/* Mobile: Bottom sheet */}
-      <div className="lg:hidden">
-        <BottomSheet isOpen={isOpen} onClose={onClose} height="70vh" zIndex={70}>
-          {/* Mobile header */}
-          <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Completion History
-            </h2>
+  // Mobile: Bottom sheet
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose} height="70vh" zIndex={70}>
+          {/* Mobile header - matches main navbar (no bottom border) */}
+          <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
+            <div className="px-2">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                Completion History
+              </h2>
+            </div>
             <button
               onClick={onClose}
-              className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Close"
             >
-              Done
+              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
             </button>
           </div>
 
@@ -471,13 +485,11 @@ export default function HistoryModal({
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto min-h-0 p-4">
-            {renderContent()}
-          </div>
-        </BottomSheet>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto min-h-0 p-4">
+        {renderContent()}
       </div>
-    </>
+    </BottomSheet>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { Task } from "@/lib/types";
 import { RecurrenceRuleExtended, RecurringInstance } from "@/lib/recurring-types";
-import { describePattern, getTodayISO, dateMatchesPattern, timestampToLocalDate } from "@/lib/recurring-utils";
+import { describePattern, getTodayISO, dateMatchesPattern, timestampToLocalDate, calculateStreak } from "@/lib/recurring-utils";
 import { Check, ChevronRight, Repeat, SkipForward, Zap } from "lucide-react";
 
 // 48px progress ring for the status module - fraction only, no label inside
@@ -157,6 +157,9 @@ export default function StatusModule({
 
   // For recurring tasks - ALWAYS show (daily commitment, absence is informative)
   if (isRecurring) {
+    // Calculate streak dynamically at display time (not cached)
+    const streak = calculateStreak(task);
+
     // MANAGING MODE: Simplified display - just pattern + streak (no chart)
     if (mode === 'managing') {
       return (
@@ -165,10 +168,10 @@ export default function StatusModule({
             <Repeat className="w-3 h-3 text-violet-500" />
             <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
           </div>
-          {task.recurringStreak > 0 && (
+          {streak > 0 && (
             <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
               <Zap className="w-3.5 h-3.5" />
-              <span>{task.recurringStreak}</span>
+              <span>{streak}</span>
             </div>
           )}
         </div>
@@ -235,10 +238,10 @@ export default function StatusModule({
               )}
             </div>
             {/* Streak - right-aligned */}
-            {task.recurringStreak > 0 && (
+            {streak > 0 && (
               <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-shrink-0 ml-2">
                 <Zap className="w-3.5 h-3.5" />
-                <span>{task.recurringStreak}</span>
+                <span>{streak}</span>
               </div>
             )}
           </div>

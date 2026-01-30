@@ -10,6 +10,7 @@ import {
   FocusQueue,
   FocusQueueItem,
   Nudge,
+  NudgeTracker,
   SnoozedNudge,
   StagingState,
   RecurringInstance,
@@ -290,6 +291,16 @@ export function migrateState(stored: Record<string, unknown>): AppState {
     state = migrateToV13(state);
   }
 
+  // Version 13 → 14: Add Nudge System Phase 1 fields
+  if (version < 14) {
+    state = migrateToV14(state);
+  }
+
+  // Version 14 → 15: Add Nudge Orchestrator (Phase 5)
+  if (version < 15) {
+    state = migrateToV15(state);
+  }
+
   // Ensure all required fields exist
   return ensureCompleteState(state);
 }
@@ -330,6 +341,13 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         tags: [],
         projectId: null,
         context: null,
+        // Nudge System fields (v14)
+        importance: null,
+        importanceSource: null,
+        importanceNote: null,
+        energyType: null,
+        leadTimeDays: null,
+        leadTimeSource: null,
         targetDate: null,
         targetTime: null,
         deadlineDate: null,
@@ -766,11 +784,9 @@ function migrateToV11(state: Partial<AppState> & Record<string, unknown>): Parti
 
   // Add userSettings with defaults (using new field names)
   const userSettings: UserSettings = {
+    ...createDefaultUserSettings(),
     startPokeEnabled: true,
     startPokeDefault: 'none',
-    startPokeBufferMinutes: 10,
-    startPokeBufferPercentage: false,
-    dayStartHour: 0,
     ...((state.userSettings as Partial<UserSettings>) || {}),
   };
 
@@ -804,6 +820,7 @@ function migrateToV12(state: Partial<AppState> & Record<string, unknown>): Parti
   // Migrate userSettings: rename fields and add startPokeEnabled
   const oldSettings = (state.userSettings as unknown as Record<string, unknown>) || {};
   const userSettings: UserSettings = {
+    ...createDefaultUserSettings(),
     startPokeEnabled: (oldSettings.startPokeEnabled as boolean) ??
       // If old startNudgeDefault was not 'none', user had it enabled
       ((oldSettings.startNudgeDefault as string) !== 'none' && oldSettings.startNudgeDefault !== undefined),
@@ -839,6 +856,62 @@ function migrateToV13(state: Partial<AppState> & Record<string, unknown>): Parti
     ...state,
     schemaVersion: 13,
     userSettings,
+  };
+}
+
+/**
+ * Migrate from v13 to v14 (Add Nudge System Phase 1 fields)
+ * - Task: importance, importanceSource, importanceNote, energyType, leadTimeDays, leadTimeSource
+ * - UserSettings: quietHoursEnabled, quietHoursStart, quietHoursEnd, nudgeCooldownMinutes
+ * - AppState: currentEnergy, currentEnergySetAt
+ */
+function migrateToV14(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  // Add new Nudge System fields to tasks
+  const tasks = ((state.tasks as Task[]) || []).map((task) => ({
+    ...task,
+    importance: task.importance ?? null,
+    importanceSource: task.importanceSource ?? null,
+    importanceNote: task.importanceNote ?? null,
+    energyType: task.energyType ?? null,
+    leadTimeDays: task.leadTimeDays ?? null,
+    leadTimeSource: task.leadTimeSource ?? null,
+  }));
+
+  // Add new Nudge System settings
+  const existingSettings = (state.userSettings as Partial<UserSettings>) || {};
+  const userSettings: UserSettings = {
+    ...createDefaultUserSettings(),
+    ...existingSettings,
+    quietHoursEnabled: existingSettings.quietHoursEnabled ?? false,
+    quietHoursStart: existingSettings.quietHoursStart ?? '22:00',
+    quietHoursEnd: existingSettings.quietHoursEnd ?? '07:00',
+    nudgeCooldownMinutes: existingSettings.nudgeCooldownMinutes ?? 15,
+  };
+
+  return {
+    ...state,
+    schemaVersion: 14,
+    tasks,
+    userSettings,
+    // Add user energy state fields
+    currentEnergy: (state.currentEnergy as AppState['currentEnergy']) ?? null,
+    currentEnergySetAt: (state.currentEnergySetAt as number | null) ?? null,
+  };
+}
+
+/**
+ * Migrate from v14 to v15 (Add Nudge Orchestrator: nudgeTracker)
+ * - AppState: nudgeTracker with lastNudgeByTask and lastNudgeByType maps
+ */
+function migrateToV15(state: Partial<AppState> & Record<string, unknown>): Partial<AppState> & Record<string, unknown> {
+  return {
+    ...state,
+    schemaVersion: 15,
+    // Add empty nudge tracker
+    nudgeTracker: {
+      lastNudgeByTask: {},
+      lastNudgeByType: {},
+    },
   };
 }
 
@@ -930,6 +1003,13 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
     startPokeOverride: task.startPokeOverride ?? null,
     estimatedDurationMinutes: task.estimatedDurationMinutes ?? null,
     estimatedDurationSource: task.estimatedDurationSource ?? null,
+    // Nudge System fields (v14)
+    importance: task.importance ?? null,
+    importanceSource: task.importanceSource ?? null,
+    importanceNote: task.importanceNote ?? null,
+    energyType: task.energyType ?? null,
+    leadTimeDays: task.leadTimeDays ?? null,
+    leadTimeSource: task.leadTimeSource ?? null,
     // Ensure steps have Model E fields
     steps: task.steps.map((step) => ({
       ...step,
@@ -981,6 +1061,11 @@ function ensureCompleteState(partial: Partial<AppState> & Record<string, unknown
       ...createDefaultUserSettings(),
       ...((partial.userSettings as Partial<UserSettings>) ?? {}),
     },
+    // User energy state (v14)
+    currentEnergy: (partial.currentEnergy as AppState['currentEnergy']) ?? initial.currentEnergy,
+    currentEnergySetAt: (partial.currentEnergySetAt as number | null) ?? initial.currentEnergySetAt,
+    // Nudge orchestrator state (v15)
+    nudgeTracker: (partial.nudgeTracker as AppState['nudgeTracker']) ?? initial.nudgeTracker,
     currentView: (partial.currentView as AppState['currentView']) ?? initial.currentView,
     activeTaskId: partial.activeTaskId ?? initial.activeTaskId,
     taskDetailMode: (partial.taskDetailMode as AppState['taskDetailMode']) ?? initial.taskDetailMode,

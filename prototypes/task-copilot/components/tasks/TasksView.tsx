@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Task, FocusQueue, Project } from "@/lib/types";
+import { Task, FocusQueue, Project, TaskFilters, PriorityTier } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { filterRecurringTasks } from "@/lib/recurring-utils";
+import { getTasksForPriorityQueue, groupTasksByTier, PriorityQueueTask } from "@/lib/priority";
+import { applyTaskFilters } from "@/lib/filters";
 import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
 import ProgressRing from "@/components/shared/ProgressRing";
 import RoutinesList from "@/components/routines/RoutinesList";
+import FilterDrawer from "@/components/shared/FilterDrawer";
+import { Filter, ChevronDown } from "lucide-react";
 
 // Tab types for navigation
 type TasksTab = 'staging' | 'routines' | 'on_hold' | 'done';
@@ -33,6 +37,9 @@ interface TasksViewProps {
   // Controlled tab state for back navigation
   activeTab?: TasksTab;
   onTabChange?: (tab: TasksTab) => void;
+  // Controlled filter drawer state (closed when navigating away)
+  filterDrawerOpen?: boolean;
+  onFilterDrawerChange?: (isOpen: boolean) => void;
 }
 
 export default function TasksView({
@@ -54,13 +61,27 @@ export default function TasksView({
   onClearPendingFilter,
   activeTab: controlledActiveTab,
   onTabChange,
+  filterDrawerOpen = false,
+  onFilterDrawerChange,
 }: TasksViewProps) {
   const [triageCollapsed, setTriageCollapsed] = useState(false);
+  const [filters, setFilters] = useState<TaskFilters>(() => loadFiltersFromStorage());
+  const [tierExpanded, setTierExpanded] = useState<Record<PriorityTier, boolean>>({
+    critical: true,
+    high: true,
+    medium: true,
+    low: true,
+  });
 
   // Tab state - use controlled state if provided, otherwise internal state
   const [internalActiveTab, setInternalActiveTab] = useState<TasksTab>('staging');
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const setActiveTab = onTabChange ?? setInternalActiveTab;
+
+  // Persist filters to localStorage
+  useEffect(() => {
+    saveFiltersToStorage(filters);
+  }, [filters]);
 
   // Apply pending filter from Jump To shortcuts (maps to tabs)
   useEffect(() => {
@@ -146,6 +167,29 @@ export default function TasksView({
     (t) => !t.isRecurring && !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) > new Date()) && !queueTaskIds.has(t.id)
   );
 
+  // Priority-ranked tasks (for tier sections)
+  const priorityTasks = useMemo(() => {
+    const tasksWithPriority = getTasksForPriorityQueue(readyTasks);
+    const filtered = applyTaskFilters(tasksWithPriority, filters);
+    return filtered;
+  }, [readyTasks, filters]);
+
+  // Group by tier
+  const groupedTasks = useMemo(() => groupTasksByTier(priorityTasks), [priorityTasks]);
+
+  // Tier visibility: hide empty tiers, auto-expand medium if no critical/high
+  const visibleTiers = useMemo(() => {
+    const tiers: PriorityTier[] = ['critical', 'high', 'medium', 'low'];
+    return tiers.filter(tier => groupedTasks[tier].length > 0);
+  }, [groupedTasks]);
+
+  // Auto-expand medium if no critical/high
+  useEffect(() => {
+    if (groupedTasks.critical.length === 0 && groupedTasks.high.length === 0 && groupedTasks.medium.length > 0) {
+      setTierExpanded(prev => ({ ...prev, medium: true }));
+    }
+  }, [groupedTasks.critical.length, groupedTasks.high.length, groupedTasks.medium.length]);
+
   // Sort inbox tasks for triage section (top 5)
   const sortedInboxTasks = [...inboxTasks].sort((a, b) => b.createdAt - a.createdAt);
   const triageItems = sortedInboxTasks.slice(0, 5);
@@ -159,8 +203,9 @@ export default function TasksView({
 
   return (
     <div className="space-y-6">
-      {/* Centered Tab Bar */}
-      <div className="flex justify-center">
+      {/* Tab Bar - Left aligned with filter button on right */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Left: Segmented control */}
         <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg">
           {tabs.map((tab) => (
             <button
@@ -179,6 +224,22 @@ export default function TasksView({
             </button>
           ))}
         </div>
+
+        {/* Right: Filter button (only show on Staging tab) */}
+        {activeTab === 'staging' && (
+          <button
+            onClick={() => onFilterDrawerChange?.(true)}
+            className="relative flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            <span>Filter</span>
+            {countActiveFilters(filters) > 0 && (
+              <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold bg-violet-600 text-white rounded-full">
+                {countActiveFilters(filters)}
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Routines Tab */}
@@ -282,9 +343,9 @@ export default function TasksView({
             <section>
           <div className="flex items-center justify-between mb-3">
             {/* Static title - no longer clickable */}
-            <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400">
+            <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-700 dark:text-zinc-300">
               <span>Needs Triage</span>
-              <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              <span className="text-sm font-normal opacity-60">
                 {inboxTasks.length}
               </span>
             </h2>
@@ -373,45 +434,140 @@ export default function TasksView({
         </section>
       )}
 
-      {/* Ready Section */}
-      <section>
-        <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-          <span>Ready</span>
-          <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
-            {readyTasks.length}
-          </span>
-        </h2>
-        {readyTasks.length > 0 ? (
-          <div className="space-y-2">
-            {readyTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isInQueue={isInQueue(task.id)}
-                project={getProject(task)}
-                onOpen={() => onOpenTask(task.id)}
-                onAddToQueue={() => onAddToQueue(task.id)}
-                onDefer={onDefer}
-                onPark={onPark}
-                onDelete={onDelete}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-            <p>No tasks ready in pool.</p>
-            {inboxTasks.length > 0 && (
-              <p className="text-sm mt-1">
-                Triage some inbox items to get started.
-              </p>
-            )}
-          </div>
-        )}
-      </section>
+      {/* Priority Tier Sections */}
+      {visibleTiers.length > 0 ? (
+        visibleTiers.map((tier) => (
+          <TierSection
+            key={tier}
+            tier={tier}
+            tasks={groupedTasks[tier]}
+            expanded={tierExpanded[tier]}
+            onToggle={() => setTierExpanded(prev => ({ ...prev, [tier]: !prev[tier] }))}
+            isInQueue={isInQueue}
+            getProject={getProject}
+            onOpenTask={onOpenTask}
+            onAddToQueue={onAddToQueue}
+            onDefer={onDefer}
+            onPark={onPark}
+            onDelete={onDelete}
+          />
+        ))
+      ) : (
+        <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+          {countActiveFilters(filters) > 0 ? (
+            <>
+              <p>No tasks match your filters.</p>
+              <button
+                onClick={() => setFilters({})}
+                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 mt-2"
+              >
+                Clear filters
+              </button>
+            </>
+          ) : readyTasks.length === 0 ? (
+            <>
+              <p>No tasks ready in pool.</p>
+              {inboxTasks.length > 0 && (
+                <p className="text-sm mt-1">
+                  Triage some inbox items to get started.
+                </p>
+              )}
+            </>
+          ) : (
+            <p>All tasks filtered out.</p>
+          )}
+        </div>
+      )}
 
         </>
       )}
+
+      {/* Filter Drawer - uses portal to escape transformed ancestor */}
+      <FilterDrawer
+        isOpen={filterDrawerOpen}
+        onClose={() => onFilterDrawerChange?.(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+        projects={projects}
+        matchCount={priorityTasks.length}
+      />
     </div>
+  );
+}
+
+// Tier labels - monochrome headers for consistency
+const TIER_CONFIG: Record<PriorityTier, { label: string; color: string }> = {
+  critical: { label: 'Critical', color: 'text-zinc-700 dark:text-zinc-300' },
+  high: { label: 'High', color: 'text-zinc-700 dark:text-zinc-300' },
+  medium: { label: 'Medium', color: 'text-zinc-700 dark:text-zinc-300' },
+  low: { label: 'Low', color: 'text-zinc-700 dark:text-zinc-300' },
+};
+
+// Tier Section Component
+interface TierSectionProps {
+  tier: PriorityTier;
+  tasks: PriorityQueueTask[];
+  expanded: boolean;
+  onToggle: () => void;
+  isInQueue: (taskId: string) => boolean;
+  getProject: (task: Task) => Project | null;
+  onOpenTask: (taskId: string, mode?: 'executing' | 'managing') => void;
+  onAddToQueue: (taskId: string, forToday?: boolean) => void;
+  onDefer: (taskId: string, until: string) => void;
+  onPark: (taskId: string) => void;
+  onDelete: (taskId: string) => void;
+}
+
+function TierSection({
+  tier,
+  tasks,
+  expanded,
+  onToggle,
+  isInQueue,
+  getProject,
+  onOpenTask,
+  onAddToQueue,
+  onDefer,
+  onPark,
+  onDelete,
+}: TierSectionProps) {
+  const config = TIER_CONFIG[tier];
+
+  return (
+    <section>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between mb-3 group"
+      >
+        <h2 className={`flex items-baseline gap-2 text-base font-medium ${config.color}`}>
+          <span>{config.label}</span>
+          <span className="text-sm font-normal opacity-60">
+            {tasks.length}
+          </span>
+        </h2>
+        <ChevronDown
+          className={`w-4 h-4 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {expanded && (
+        <div className="space-y-2">
+          {tasks.map(({ task }) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              isInQueue={isInQueue(task.id)}
+              project={getProject(task)}
+              onOpen={() => onOpenTask(task.id)}
+              onAddToQueue={() => onAddToQueue(task.id)}
+              onDefer={onDefer}
+              onPark={onPark}
+              onDelete={onDelete}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -676,8 +832,6 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
           Due {formatDate(task.deadlineDate)}
         </MetadataPill>
       )}
-      {task.priority === "high" && <MetadataPill variant="priority-high">High</MetadataPill>}
-      {task.priority === "medium" && <MetadataPill variant="priority-medium">Medium</MetadataPill>}
       {project && (
         <MetadataPill variant="project" color={project.color || "#9ca3af"}>
           {project.name}
@@ -801,4 +955,37 @@ function formatRelativeTime(timestamp: number): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return new Date(timestamp).toLocaleDateString();
+}
+
+// Filter persistence helpers
+const FILTERS_STORAGE_KEY = 'task-copilot-filters';
+
+function loadFiltersFromStorage(): TaskFilters {
+  if (typeof window === 'undefined') return {};
+  try {
+    const stored = localStorage.getItem(FILTERS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveFiltersToStorage(filters: TaskFilters): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function countActiveFilters(filters: TaskFilters): number {
+  let count = 0;
+  if (filters.dueDateRange) count++;
+  if (filters.targetDateRange) count++;
+  if (filters.durationRange) count++;
+  if (filters.projectId) count++;
+  if (filters.priority && filters.priority.length > 0) count++;
+  if (filters.healthStatus && filters.healthStatus.length > 0) count++;
+  return count;
 }

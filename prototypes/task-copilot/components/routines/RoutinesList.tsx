@@ -10,6 +10,7 @@ import {
   sortByTime,
   getRoutineMetadataPills,
   describePattern,
+  calculateStreak,
 } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import MetadataPill from "@/components/shared/MetadataPill";
@@ -193,6 +194,8 @@ interface RoutineRowProps {
 function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
   const pills = getRoutineMetadataPills(task);
   const recurrence = task.recurrence as RecurrenceRuleExtended | null;
+  // Calculate streak dynamically at display time (not cached)
+  const streak = calculateStreak(task);
 
   // Get descriptive label for recurrence (time, days, etc.)
   const recurrenceLabel = getRecurrenceLabel(recurrence);
@@ -235,10 +238,10 @@ function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
 
         {/* Streak + Chevron (upper right) */}
         <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-          {(task.recurringStreak ?? 0) > 0 && (
+          {streak > 0 && (
             <div className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               <Zap className="w-3.5 h-3.5" />
-              <span>{task.recurringStreak}</span>
+              <span>{streak}</span>
             </div>
           )}
           <ChevronRight className="w-4 h-4 text-zinc-400" />

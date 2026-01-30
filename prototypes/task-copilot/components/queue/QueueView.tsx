@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useCallback } from "react";
-import { Task, FocusQueue, FocusQueueItem, Project } from "@/lib/types";
+import { Task, FocusQueue, FocusQueueItem, Project, DrawerType } from "@/lib/types";
 import {
   reorderVisualElements,
   deriveStateFromVisual,
@@ -56,6 +56,10 @@ interface QueueViewProps {
   // Day offset setting
   dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
   // Note: "What should I do?" is now handled via minibar contextual prompt
+  // Centralized drawer management
+  activeDrawer?: DrawerType;
+  onOpenDrawer?: (drawer: DrawerType) => void;
+  onCloseDrawer?: () => void;
 }
 
 // Get total estimated time for items
@@ -103,12 +107,32 @@ export default function QueueView({
   completedDrawerOpen,
   onToggleCompletedDrawer,
   dayStartHour = 0,
+  activeDrawer,
+  onOpenDrawer,
+  onCloseDrawer,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
-  // Focus selection modal state
-  const [editingQueueItemId, setEditingQueueItemId] = useState<string | null>(null);
+  // Focus selection modal state - local tracking of which item is being edited
+  const [editingQueueItemId, setEditingQueueItemIdLocal] = useState<string | null>(null);
+
+  // Sync editingQueueItemId with centralized drawer state
+  const setEditingQueueItemId = useCallback((id: string | null) => {
+    setEditingQueueItemIdLocal(id);
+    if (id && onOpenDrawer) {
+      onOpenDrawer('focus-selection');
+    } else if (!id && onCloseDrawer && activeDrawer === 'focus-selection') {
+      onCloseDrawer();
+    }
+  }, [onOpenDrawer, onCloseDrawer, activeDrawer]);
+
+  // Clear local state if drawer is closed externally
+  React.useEffect(() => {
+    if (activeDrawer !== 'focus-selection' && editingQueueItemId) {
+      setEditingQueueItemIdLocal(null);
+    }
+  }, [activeDrawer, editingQueueItemId]);
 
   // Touch drag state
   const [isTouchDragging, setIsTouchDragging] = useState(false);
@@ -651,11 +675,9 @@ export default function QueueView({
                 : []
             }
             onClose={() => setEditingQueueItemId(null)}
-            onConfirm={(selectionType, selectedStepIds) => {
+            onUpdateSelection={(selectionType, selectedStepIds) => {
               onUpdateStepSelection(editingQueueItemId, selectionType, selectedStepIds);
-              setEditingQueueItemId(null);
             }}
-            mode="edit"
           />
         );
       })()}

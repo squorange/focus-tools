@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { X } from "lucide-react";
 import { Task } from "@/lib/types";
 import { getCompletions, formatMinutes, TaskCompletion } from "@/lib/completions";
 import BottomSheet from "@/components/shared/BottomSheet";
@@ -111,7 +112,7 @@ export default function CompletedDrawer({
       {/* Desktop: Side drawer from right */}
       <div
         className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200/50 lg:dark:border-zinc-700/30 lg:bg-white/95 lg:dark:bg-[#0c0c0c]/95 lg:backdrop-blur-xl
+          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200/50 lg:dark:border-zinc-700/30 lg:bg-white lg:dark:bg-zinc-900
           transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
           ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
         `}
@@ -121,31 +122,19 @@ export default function CompletedDrawer({
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
-          {/* Header */}
-          <div className="h-14 flex items-center justify-between px-4 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-green-600 dark:text-green-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          {/* Header - matches main navbar (no bottom border) */}
+          <div className="h-14 flex items-center justify-between px-2 bg-white dark:bg-zinc-900 flex-shrink-0">
+            <div className="px-2">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
                 Completed
-              </span>
+              </h2>
             </div>
             <button
               onClick={onClose}
-              className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Close"
             >
-              Done
+              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
             </button>
           </div>
 
@@ -167,31 +156,19 @@ export default function CompletedDrawer({
       {/* Mobile: Bottom sheet */}
       <div className="lg:hidden">
         <BottomSheet isOpen={isOpen} onClose={onClose} height="50vh">
-          {/* Mobile header row */}
-          <div className="flex items-center justify-between px-4 pb-2 bg-white/80 dark:bg-[#0c0c0c]/80 backdrop-blur-lg flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-green-600 dark:text-green-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          {/* Mobile header row - matches main navbar (no bottom border) */}
+          <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
+            <div className="px-2">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
                 Completed
-              </span>
+              </h2>
             </div>
             <button
               onClick={onClose}
-              className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Close"
             >
-              Done
+              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
             </button>
           </div>
 

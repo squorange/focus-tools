@@ -14,6 +14,7 @@ import {
   StartPokeSettings,
   StartPokeAlert,
   ReminderAlert,
+  RunwayNudgeAlert,
   ActiveAlert,
 } from './notification-types';
 import {
@@ -22,6 +23,9 @@ import {
   getAnchorTime,
   getDuration,
   calculateBuffer,
+  calculateRunwayNudgeTime,
+  isRunwayNudgeApplicable,
+  getRunwayNudgeStatus,
 } from './start-poke-utils';
 
 // ============================================
@@ -63,6 +67,8 @@ function getIconForType(type: NotificationType): NotificationIcon {
   switch (type) {
     case 'start_poke':
       return 'bell-ring';
+    case 'runway_nudge':
+      return 'clock';  // Different icon to distinguish from start_poke
     case 'reminder':
       return 'clock';
     case 'streak':
@@ -152,6 +158,111 @@ export function updateStartPoke(
 ): { notifications: Notification[]; created: Notification | null } {
   // Re-schedule (which cancels existing first)
   return scheduleStartPoke(task, settings, notifications, instanceId);
+}
+
+// ============================================
+// Runway Nudge Scheduling
+// ============================================
+// Runway nudges fire 1 day before the EFFECTIVE deadline
+// (effective deadline = actual deadline - lead time days)
+// This is separate from start_poke which fires based on duration+buffer
+
+/**
+ * Schedule a Runway Nudge for a task
+ * Only applicable for tasks with leadTimeDays > 0
+ * Returns updated notifications array and the created notification (if any)
+ */
+export function scheduleRunwayNudge(
+  task: Task,
+  notifications: Notification[]
+): { notifications: Notification[]; created: Notification | null } {
+  // First, cancel any existing runway nudge for this task
+  let updated = cancelRunwayNudge(task.id, notifications);
+
+  // Check if runway nudge is applicable
+  if (!isRunwayNudgeApplicable(task)) {
+    return { notifications: updated, created: null };
+  }
+
+  // Calculate the runway nudge time
+  const { time: nudgeTime, effectiveDeadline, leadTimeDays } = calculateRunwayNudgeTime(task);
+
+  if (nudgeTime === null || effectiveDeadline === null) {
+    return { notifications: updated, created: null };
+  }
+
+  // Don't schedule if the time has already passed
+  const now = Date.now();
+  if (nudgeTime < now) {
+    return { notifications: updated, created: null };
+  }
+
+  // Format the effective deadline for the message
+  const effectiveDate = new Date(effectiveDeadline);
+  const dateStr = effectiveDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
+  // Create the notification
+  const notification = createNotification('runway_nudge', task, nudgeTime, {
+    title: '🏃 Time to get started',
+    body: `${task.title} — Start by ${dateStr} to finish on time`,
+  });
+
+  updated = [...updated, notification];
+
+  return { notifications: updated, created: notification };
+}
+
+/**
+ * Cancel Runway Nudge notification(s) for a task
+ */
+export function cancelRunwayNudge(
+  taskId: string,
+  notifications: Notification[]
+): Notification[] {
+  return notifications.filter((n) => {
+    if (n.type !== 'runway_nudge') return true;
+    if (n.taskId !== taskId) return true;
+    // Cancel if not yet fired
+    return n.firedAt !== null;
+  });
+}
+
+/**
+ * Update Runway Nudge when task changes
+ * Call this when task's deadline or lead time changes
+ */
+export function updateRunwayNudge(
+  task: Task,
+  notifications: Notification[]
+): { notifications: Notification[]; created: Notification | null } {
+  // Re-schedule (which cancels existing first)
+  return scheduleRunwayNudge(task, notifications);
+}
+
+/**
+ * Schedule both Start Poke and Runway Nudge for a task
+ * Convenience function for when task is created/updated
+ */
+export function scheduleAllNudges(
+  task: Task,
+  settings: StartPokeSettings,
+  notifications: Notification[]
+): { notifications: Notification[]; createdPoke: Notification | null; createdRunway: Notification | null } {
+  // Schedule start poke
+  const pokeResult = scheduleStartPoke(task, settings, notifications);
+
+  // Schedule runway nudge
+  const runwayResult = scheduleRunwayNudge(task, pokeResult.notifications);
+
+  return {
+    notifications: runwayResult.notifications,
+    createdPoke: pokeResult.created,
+    createdRunway: runwayResult.created,
+  };
 }
 
 // ============================================
