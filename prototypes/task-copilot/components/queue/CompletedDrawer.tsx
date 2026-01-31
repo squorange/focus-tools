@@ -70,7 +70,7 @@ export default function CompletedDrawer({
           </p>
         </div>
       ) : (
-        <div className="py-2 pb-8">
+        <div className="py-2">
           {completionGroups.map((group) => (
             <div key={group.dateKey}>
               {/* Date header */}
@@ -175,6 +175,8 @@ export default function CompletedDrawer({
           {/* Mobile content */}
           <div className="flex-1 overflow-y-auto min-h-0">
             {renderContent()}
+            {/* Safe area spacer - uses CSS var from BottomSheet (0 when keyboard open) */}
+            <div style={{ height: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }} />
           </div>
         </BottomSheet>
       </div>

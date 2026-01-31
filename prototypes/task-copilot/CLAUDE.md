@@ -40,6 +40,7 @@ The repo root has a separate `.vercel` project config (`focus-tools-one`) which 
 | P3 | Context switch bookmarking | ⬜ Not Started | AI summarizes state on pause |
 
 **Recently Completed:**
+- [v29] BottomSheet iOS fix: Portal rendering to bypass parent transforms, simpler scroll lock (overflow:hidden vs position:fixed), keyboard detection via visualViewport API, --safe-area-bottom CSS variable for keyboard-aware spacing
 - [v28] Nudge System MVP (Phases 0-7): Task Details refactor, priority calculation (64 tests), Priority Queue in NotificationsHub, importance/energy/lead time pickers, runway nudge alerts, orchestrator with deduplication/quiet hours, energy selector with filtering, quiet hours + cooldown settings UI
 - [v27] Recurring Tasks Phase 1-2: Data model (schema v9), recurring-types.ts, recurring-utils.ts (pattern matching, streaks, instances), RoutineCard + RoutinesGallery components, complete/skip handlers
 - [v26] Nav Restructure: Push sidebar (collapsible on desktop 280px↔64px, push on mobile), hamburger + plus header, task creation popover (bottom sheet mobile, dropdown desktop), unified Focus Mode header (timer + exit), removed QuickCapture from views
@@ -1416,6 +1417,30 @@ Consistent button patterns across modals and components:
 - Mobile bottom sheets: "Done" text button (top-right), animated drag handle, `h-[70vh]` + `rounded-t-3xl`
 - Backdrop: `fixed inset-0 z-40 bg-black/40`
 - Modal/sheet: `z-50`
+
+**BottomSheet Component (iOS Safe Area Handling):**
+
+The `BottomSheet` component (`components/shared/BottomSheet.tsx`) handles iOS safe areas and keyboard correctly. Key implementation details:
+
+| Feature | Implementation | Why |
+|---------|----------------|-----|
+| Portal rendering | `createPortal(content, document.body)` | Bypasses parent transforms that break fixed positioning |
+| Scroll lock | `overflow: hidden` on body | Using `position: fixed` on body breaks fixed children |
+| Keyboard detection | `visualViewport` API resize events | Detects when keyboard opens (viewport shrinks >150px) |
+| Safe area variable | `--safe-area-bottom` CSS variable | `0px` when keyboard open, `env(safe-area-inset-bottom)` when closed |
+
+**For child components using BottomSheet:**
+```tsx
+// For bottom spacing that respects keyboard state:
+style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}
+
+// Or for scroll content spacer:
+<div style={{ height: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }} />
+```
+
+**Examples:**
+- `CompletedDrawer.tsx` - uses spacer div at end of scroll content
+- `AIDrawer.tsx` - uses padding on input area: `calc(1rem + var(--safe-area-bottom, ...))`
 
 **Queue Item Progress Indicator:**
 - Dynamic ring chart shows step completion progress

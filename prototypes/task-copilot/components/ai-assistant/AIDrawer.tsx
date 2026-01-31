@@ -143,8 +143,8 @@ export function AIDrawer({
         </div>
       )}
 
-      {/* Input area */}
-      <div className="flex-shrink-0 p-4">
+      {/* Input area - uses CSS var from BottomSheet for keyboard-aware safe area */}
+      <div className="flex-shrink-0 p-4" style={{ paddingBottom: "calc(1rem + var(--safe-area-bottom, env(safe-area-inset-bottom)))" }}>
         <form onSubmit={handleSubmit}>
           <div className="bg-violet-50/30 dark:bg-violet-900/10 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
             <textarea

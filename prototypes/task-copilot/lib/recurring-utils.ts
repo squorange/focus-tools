@@ -1308,11 +1308,7 @@ export function getRoutineMetadataPills(
     });
   }
 
-  // Paused pill
-  const pattern = task.recurrence as RecurrenceRuleExtended;
-  if (pattern?.pausedAt) {
-    pills.push({ label: 'Paused', color: 'amber' });
-  }
+  // Note: Paused pill is rendered separately in RoutineRow with icon
 
   return pills;
 }
