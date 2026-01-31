@@ -8,9 +8,7 @@ import {
   VisualElement,
 } from "@/lib/queue-reorder";
 import QueueItem from "./QueueItem";
-import CompletedDrawer from "./CompletedDrawer";
 import DailySummaryBanner from "./DailySummaryBanner";
-import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import RoutinesGallery from "@/components/routines/RoutinesGallery";
 
 // Unified slot model: line occupies a slot just like items
@@ -50,9 +48,6 @@ interface QueueViewProps {
   // Routine handlers
   onCompleteRoutine: (taskId: string) => void;
   onSkipRoutine: (taskId: string) => void;
-  // Completed drawer state (lifted to page.tsx for layout push behavior)
-  completedDrawerOpen: boolean;
-  onToggleCompletedDrawer: (open: boolean) => void;
   // Day offset setting
   dayStartHour?: number; // Hour when the day starts (0-12). Default 0 (midnight).
   // Note: "What should I do?" is now handled via minibar contextual prompt
@@ -60,6 +55,8 @@ interface QueueViewProps {
   activeDrawer?: DrawerType;
   onOpenDrawer?: (drawer: DrawerType) => void;
   onCloseDrawer?: () => void;
+  // FocusSelectionModal (lifted to page.tsx for root-level rendering)
+  onOpenFocusSelection?: (queueItemId: string) => void;
 }
 
 // Get total estimated time for items
@@ -104,35 +101,15 @@ export default function QueueView({
   onGoToInbox,
   onCompleteRoutine,
   onSkipRoutine,
-  completedDrawerOpen,
-  onToggleCompletedDrawer,
   dayStartHour = 0,
   activeDrawer,
   onOpenDrawer,
   onCloseDrawer,
+  onOpenFocusSelection,
 }: QueueViewProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<VirtualSlot | null>(null);
   const [isDraggingLine, setIsDraggingLine] = useState(false);
-  // Focus selection modal state - local tracking of which item is being edited
-  const [editingQueueItemId, setEditingQueueItemIdLocal] = useState<string | null>(null);
-
-  // Sync editingQueueItemId with centralized drawer state
-  const setEditingQueueItemId = useCallback((id: string | null) => {
-    setEditingQueueItemIdLocal(id);
-    if (id && onOpenDrawer) {
-      onOpenDrawer('focus-selection');
-    } else if (!id && onCloseDrawer && activeDrawer === 'focus-selection') {
-      onCloseDrawer();
-    }
-  }, [onOpenDrawer, onCloseDrawer, activeDrawer]);
-
-  // Clear local state if drawer is closed externally
-  React.useEffect(() => {
-    if (activeDrawer !== 'focus-selection' && editingQueueItemId) {
-      setEditingQueueItemIdLocal(null);
-    }
-  }, [activeDrawer, editingQueueItemId]);
 
   // Touch drag state
   const [isTouchDragging, setIsTouchDragging] = useState(false);
@@ -422,7 +399,7 @@ export default function QueueView({
       <DailySummaryBanner
         tasks={tasks}
         todayItems={todayItems}
-        onOpenCompleted={() => onToggleCompletedDrawer(true)}
+        onOpenCompleted={() => onOpenDrawer?.('completed')}
         dayStartHour={dayStartHour}
       />
 
@@ -486,7 +463,7 @@ export default function QueueView({
                 </button>
               )}
               <button
-                onClick={() => onToggleCompletedDrawer(true)}
+                onClick={() => onOpenDrawer?.('completed')}
                 className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
               >
                 Show completed
@@ -623,7 +600,7 @@ export default function QueueView({
                         onOpenTask={onOpenTask}
                         onStartFocus={onStartFocus}
                         onRemoveFromQueue={onRemoveFromQueue}
-                        onEditFocus={(queueItemId) => setEditingQueueItemId(queueItemId)}
+                        onEditFocus={(queueItemId) => onOpenFocusSelection?.(queueItemId)}
                         onMoveUp={onMoveItemUp}
                         onMoveDown={onMoveItemDown}
                       />
@@ -648,39 +625,6 @@ export default function QueueView({
           </div>
         )}
       </div>
-
-      {/* Completed Drawer */}
-      <CompletedDrawer
-        isOpen={completedDrawerOpen}
-        onClose={() => onToggleCompletedDrawer(false)}
-        tasks={tasks}
-        onNavigateToTask={onOpenTask}
-        dayStartHour={dayStartHour}
-      />
-
-      {/* Focus Selection Modal for editing step selection */}
-      {editingQueueItemId && (() => {
-        const queueItem = queue.items.find(i => i.id === editingQueueItemId);
-        const task = queueItem ? tasks.find(t => t.id === queueItem.taskId) : null;
-        if (!queueItem || !task) return null;
-
-        return (
-          <FocusSelectionModal
-            isOpen={true}
-            task={task}
-            initialSelectionType={queueItem.selectionType}
-            initialSelectedStepIds={
-              queueItem.selectionType === 'specific_steps'
-                ? queueItem.selectedStepIds
-                : []
-            }
-            onClose={() => setEditingQueueItemId(null)}
-            onUpdateSelection={(selectionType, selectedStepIds) => {
-              onUpdateStepSelection(editingQueueItemId, selectionType, selectedStepIds);
-            }}
-          />
-        );
-      })()}
     </div>
   );
 }

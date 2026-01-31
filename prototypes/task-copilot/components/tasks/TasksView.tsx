@@ -10,7 +10,6 @@ import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
 import ProgressRing from "@/components/shared/ProgressRing";
 import RoutinesList from "@/components/routines/RoutinesList";
-import FilterDrawer from "@/components/shared/FilterDrawer";
 import { Filter, ChevronDown } from "lucide-react";
 
 // Tab types for navigation
@@ -37,9 +36,11 @@ interface TasksViewProps {
   // Controlled tab state for back navigation
   activeTab?: TasksTab;
   onTabChange?: (tab: TasksTab) => void;
-  // Controlled filter drawer state (closed when navigating away)
-  filterDrawerOpen?: boolean;
-  onFilterDrawerChange?: (isOpen: boolean) => void;
+  // Filter state lifted to page.tsx for root-level FilterDrawer
+  filters?: TaskFilters;
+  onFiltersChange?: (filters: TaskFilters) => void;
+  onFilteredCountChange?: (count: number) => void;
+  onOpenFilterDrawer?: () => void;
 }
 
 export default function TasksView({
@@ -61,11 +62,16 @@ export default function TasksView({
   onClearPendingFilter,
   activeTab: controlledActiveTab,
   onTabChange,
-  filterDrawerOpen = false,
-  onFilterDrawerChange,
+  filters: controlledFilters,
+  onFiltersChange,
+  onFilteredCountChange,
+  onOpenFilterDrawer,
 }: TasksViewProps) {
   const [triageCollapsed, setTriageCollapsed] = useState(false);
-  const [filters, setFilters] = useState<TaskFilters>(() => loadFiltersFromStorage());
+  // Use controlled filters if provided, otherwise fallback to local state
+  const [localFilters, setLocalFilters] = useState<TaskFilters>(() => loadFiltersFromStorage());
+  const filters = controlledFilters ?? localFilters;
+  const setFilters = onFiltersChange ?? setLocalFilters;
   const [tierExpanded, setTierExpanded] = useState<Record<PriorityTier, boolean>>({
     critical: true,
     high: true,
@@ -164,7 +170,7 @@ export default function TasksView({
     (t) => t.deferredUntil && new Date(t.deferredUntil) <= new Date()
   );
   const readyTasks = poolTasks.filter(
-    (t) => !t.isRecurring && !t.waitingOn && (!t.deferredUntil || new Date(t.deferredUntil) > new Date()) && !queueTaskIds.has(t.id)
+    (t) => !t.isRecurring && !t.waitingOn && !t.deferredUntil && !queueTaskIds.has(t.id)
   );
 
   // Priority-ranked tasks (for tier sections)
@@ -189,6 +195,11 @@ export default function TasksView({
       setTierExpanded(prev => ({ ...prev, medium: true }));
     }
   }, [groupedTasks.critical.length, groupedTasks.high.length, groupedTasks.medium.length]);
+
+  // Report filtered count changes to parent (for root-level FilterDrawer)
+  useEffect(() => {
+    onFilteredCountChange?.(priorityTasks.length);
+  }, [priorityTasks.length, onFilteredCountChange]);
 
   // Sort inbox tasks for triage section (top 5)
   const sortedInboxTasks = [...inboxTasks].sort((a, b) => b.createdAt - a.createdAt);
@@ -228,7 +239,7 @@ export default function TasksView({
         {/* Right: Filter button (only show on Staging tab) */}
         {activeTab === 'staging' && (
           <button
-            onClick={() => onFilterDrawerChange?.(true)}
+            onClick={() => onOpenFilterDrawer?.()}
             className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
             <Filter className="w-3.5 h-3.5" />
@@ -481,16 +492,6 @@ export default function TasksView({
 
         </>
       )}
-
-      {/* Filter Drawer - uses portal to escape transformed ancestor */}
-      <FilterDrawer
-        isOpen={filterDrawerOpen}
-        onClose={() => onFilterDrawerChange?.(false)}
-        filters={filters}
-        onFiltersChange={setFilters}
-        projects={projects}
-        matchCount={priorityTasks.length}
-      />
     </div>
   );
 }

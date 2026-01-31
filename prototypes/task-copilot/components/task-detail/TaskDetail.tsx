@@ -11,7 +11,6 @@ import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
 import MetadataPill from "@/components/shared/MetadataPill";
-import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import HealthPill from "@/components/shared/HealthPill";
 import ReminderPicker from "@/components/shared/ReminderPicker";
 import StartPokeField from "@/components/task-detail/StartPokeField";
@@ -115,6 +114,8 @@ interface TaskDetailProps {
   activeDrawer?: DrawerType;
   onOpenDrawer?: (drawer: DrawerType) => void;
   onCloseDrawer?: () => void;
+  // FocusSelectionModal (lifted to page.tsx for root-level rendering)
+  onOpenFocusSelection?: (queueItemId: string) => void;
 }
 
 // Get queue item for this task
@@ -191,6 +192,7 @@ export default function TaskDetail({
   activeDrawer,
   onOpenDrawer,
   onCloseDrawer,
+  onOpenFocusSelection,
 }: TaskDetailProps) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
@@ -207,15 +209,6 @@ export default function TaskDetail({
   // Waiting On modal state (for bottom actions)
   const [showWaitingOnModal, setShowWaitingOnModal] = useState(false);
   const [waitingOnInput, setWaitingOnInput] = useState(task.waitingOn?.who || '');
-  // Focus selection modal - use centralized drawer state if available, otherwise local
-  const showFocusModal = activeDrawer === 'focus-selection';
-  const setShowFocusModal = (show: boolean) => {
-    if (show && onOpenDrawer) {
-      onOpenDrawer('focus-selection');
-    } else if (!show && onCloseDrawer) {
-      onCloseDrawer();
-    }
-  };
   // Add to Focus dropdown state
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   // Mobile kebab menu state
@@ -847,24 +840,6 @@ export default function TaskDetail({
           )}
         </div>
       </div>
-
-      {/* Focus Selection Modal - only used for Edit Focus when task is in queue */}
-      {isInQueue && (
-        <FocusSelectionModal
-          isOpen={showFocusModal}
-          task={task}
-          initialSelectionType={queueItem!.selectionType}
-          initialSelectedStepIds={
-            queueItem!.selectionType === 'specific_steps'
-              ? queueItem!.selectedStepIds
-              : []
-          }
-          onClose={() => setShowFocusModal(false)}
-          onUpdateSelection={(selectionType, selectedStepIds) => {
-            onUpdateStepSelection(queueItem!.id, selectionType, selectedStepIds);
-          }}
-        />
-      )}
 
       {/* All Banners - stacked with 8px gap */}
       {((isRecurring && onToggleMode) || (isRecurring && isPaused) || task.deferredUntil || task.waitingOn) && (
@@ -1790,9 +1765,9 @@ export default function TaskDetail({
                 </h2>
                 <div className="flex items-center gap-3">
                   {/* Conditional swap: Edit Focus when in queue, AI Breakdown when not */}
-                  {isInQueue && task.steps.length > 0 ? (
+                  {isInQueue && task.steps.length > 0 && queueItem ? (
                     <button
-                      onClick={() => setShowFocusModal(true)}
+                      onClick={() => onOpenFocusSelection?.(queueItem.id)}
                       className="flex items-center gap-1 text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

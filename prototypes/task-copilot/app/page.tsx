@@ -23,6 +23,7 @@ import {
   EnergyLevel,
   ImportanceLevel,
   EnergyType,
+  TaskFilters,
   createTask,
   createStep,
   createProject,
@@ -44,6 +45,7 @@ import {
   scheduleStartPoke,
   cancelStartPoke,
   removeNotificationsForTask,
+  rescanAllTasksForPokes,
 } from "@/lib/notification-utils";
 import { StartPokeSettings } from "@/lib/notification-types";
 import { getStartPokeStatus } from "@/lib/start-poke-utils";
@@ -90,12 +92,15 @@ import StagingArea from "@/components/StagingArea";
 import InboxView from "@/components/inbox/InboxView";
 import PoolView from "@/components/pool/PoolView";
 import QueueView from "@/components/queue/QueueView";
+import CompletedDrawer from "@/components/queue/CompletedDrawer";
 import TaskDetail from "@/components/task-detail/TaskDetail";
 import FocusModeView from "@/components/focus-mode/FocusModeView";
 import TasksView from "@/components/tasks/TasksView";
 import SearchView from "@/components/search/SearchView";
 import ProjectsView from "@/components/projects/ProjectsView";
 import ProjectModal from "@/components/shared/ProjectModal";
+import FilterDrawer from "@/components/shared/FilterDrawer";
+import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import ToastContainer, { Toast } from "@/components/shared/Toast";
 import NotificationsHub from "@/components/notifications/NotificationsHub";
 import NotificationSettings from "@/components/notifications/NotificationSettings";
@@ -182,6 +187,19 @@ export default function Home() {
   const [pendingFilter, setPendingFilter] = useState<string | null>(null);
   // Track active tab in TasksView for back navigation
   const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'on_hold' | 'done'>('staging');
+  // TasksView filter state (lifted from TasksView for root-level FilterDrawer)
+  const [tasksFilters, setTasksFilters] = useState<TaskFilters>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const stored = localStorage.getItem('task-copilot-filters');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [tasksFilterMatchCount, setTasksFilterMatchCount] = useState(0);
+  // FocusSelectionModal state (lifted for root-level rendering)
+  const [editingFocusQueueItemId, setEditingFocusQueueItemId] = useState<string | null>(null);
 
   // Ref for main content scroll-to-top on tab re-tap
   const mainRef = useRef<HTMLDivElement>(null);
@@ -1309,6 +1327,17 @@ export default function Home() {
     }
   }, [recentTaskIds, hasHydrated]);
 
+  // Save tasks filters to localStorage
+  useEffect(() => {
+    if (hasHydrated) {
+      try {
+        localStorage.setItem('task-copilot-filters', JSON.stringify(tasksFilters));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [tasksFilters, hasHydrated]);
+
   // Freeze recents when entering search mode, unfreeze when exiting
   useEffect(() => {
     const isSearchActive = searchInputFocused || searchQuery.trim() !== '';
@@ -1943,7 +1972,6 @@ export default function Home() {
       },
     }));
   }, []);
-
   const handleEnergyChange = useCallback((energy: EnergyLevel | null) => {
     setState((prev) => ({
       ...prev,
@@ -2633,6 +2661,44 @@ export default function Home() {
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  // Rescan all tasks and regenerate pokes based on current settings
+  const handleRescanPokes = useCallback(() => {
+    const settings = getPokeSettings();
+    const { notifications: updated, result } = rescanAllTasksForPokes(
+      state.tasks,
+      settings,
+      notifications
+    );
+
+    setNotifications(updated);
+
+    // Also reschedule PWA notifications for newly created pokes
+    result.scheduled
+      .filter(s => s.type === 'start_poke')
+      .forEach(s => {
+        const task = state.tasks.find(t => t.id === s.taskId);
+        const notification = updated.find(n => n.taskId === s.taskId && n.type === 'start_poke' && !n.firedAt);
+        if (task && notification) {
+          scheduleStartPokePWA(task, state.userSettings, notification.id);
+        }
+      });
+
+    // Log results for debugging
+    console.log('[Rescan Pokes] Results:', {
+      cancelled: result.cancelled,
+      scheduled: result.scheduled.length,
+      skipped: result.skipped.length,
+    });
+    console.log('[Rescan Pokes] Scheduled:', result.scheduled);
+    console.log('[Rescan Pokes] Skipped:', result.skipped);
+
+    // Show toast with summary
+    showToast({
+      type: 'success',
+      message: `Rescanned: ${result.scheduled.length} pokes scheduled, ${result.skipped.length} skipped`,
+    });
+  }, [state.tasks, state.userSettings, notifications, getPokeSettings, showToast]);
 
   // Quick dump task to inbox (no navigation) - for Tasks view quick capture
   const handleCreateTaskQuick = useCallback((title: string) => {
@@ -3528,6 +3594,19 @@ export default function Home() {
       handleCloseDrawer();
     }
   }, [handleOpenDrawer, handleCloseDrawer]);
+
+  // Open focus selection modal for a queue item
+  const handleOpenFocusSelection = useCallback((queueItemId: string) => {
+    setEditingFocusQueueItemId(queueItemId);
+    handleOpenDrawer('focus-selection');
+  }, [handleOpenDrawer]);
+
+  // Close focus selection modal (clears state when drawer closes)
+  useEffect(() => {
+    if (activeDrawer !== 'focus-selection' && editingFocusQueueItemId) {
+      setEditingFocusQueueItemId(null);
+    }
+  }, [activeDrawer, editingFocusQueueItemId]);
 
   // AI drawer open with mutual exclusivity
   const handleOpenAIDrawer = useCallback(() => {
@@ -5644,12 +5723,11 @@ export default function Home() {
                 onGoToInbox={handleGoToInbox}
                 onCompleteRoutine={handleCompleteRoutine}
                 onSkipRoutine={handleSkipRoutine}
-                completedDrawerOpen={completedDrawerOpen}
-                onToggleCompletedDrawer={handleToggleCompletedDrawer}
                 dayStartHour={state.userSettings.dayStartHour}
                 activeDrawer={activeDrawer}
                 onOpenDrawer={handleOpenDrawer}
                 onCloseDrawer={handleCloseDrawer}
+                onOpenFocusSelection={handleOpenFocusSelection}
               />
             )}
 
@@ -5675,15 +5753,11 @@ export default function Home() {
                 // Controlled tab state for back navigation
                 activeTab={activeTasksTab}
                 onTabChange={setActiveTasksTab}
-                // Controlled filter drawer state (closed when navigating away)
-                filterDrawerOpen={activeDrawer === 'filter'}
-                onFilterDrawerChange={(isOpen) => {
-                  if (isOpen) {
-                    handleOpenDrawer('filter');
-                  } else {
-                    handleCloseDrawer();
-                  }
-                }}
+                // Filter state lifted to page.tsx for root-level FilterDrawer
+                filters={tasksFilters}
+                onFiltersChange={setTasksFilters}
+                onFilteredCountChange={setTasksFilterMatchCount}
+                onOpenFilterDrawer={() => handleOpenDrawer('filter')}
               />
             )}
 
@@ -5728,6 +5802,7 @@ export default function Home() {
                 onUpdateSettings={handleUpdateUserSettings}
                 onExportData={handleExportData}
                 onImportData={handleTriggerImport}
+                onRescanPokes={handleRescanPokes}
               />
             )}
 
@@ -5801,6 +5876,7 @@ export default function Home() {
                 activeDrawer={activeDrawer}
                 onOpenDrawer={handleOpenDrawer}
                 onCloseDrawer={handleCloseDrawer}
+                onOpenFocusSelection={handleOpenFocusSelection}
               />
             )}
 
@@ -5848,6 +5924,49 @@ export default function Home() {
         </main>
       </div>
 
+      {/* CompletedDrawer - ROOT LEVEL (like AIDrawer) for proper iOS z-index */}
+      <CompletedDrawer
+        isOpen={completedDrawerOpen}
+        onClose={() => handleCloseDrawer()}
+        tasks={state.tasks}
+        onNavigateToTask={(taskId) => handleOpenTask(taskId)}
+        dayStartHour={state.userSettings.dayStartHour}
+      />
+
+      {/* FilterDrawer - ROOT LEVEL (like AIDrawer) for proper iOS z-index */}
+      <FilterDrawer
+        isOpen={activeDrawer === 'filter'}
+        onClose={() => handleCloseDrawer()}
+        filters={tasksFilters}
+        onFiltersChange={setTasksFilters}
+        projects={state.projects}
+        matchCount={tasksFilterMatchCount}
+      />
+
+      {/* FocusSelectionModal - ROOT LEVEL (like AIDrawer) for proper iOS z-index */}
+      {editingFocusQueueItemId && (() => {
+        const queueItem = state.focusQueue.items.find(i => i.id === editingFocusQueueItemId);
+        const task = queueItem ? state.tasks.find(t => t.id === queueItem.taskId) : null;
+        if (!queueItem || !task) return null;
+
+        return (
+          <FocusSelectionModal
+            isOpen={activeDrawer === 'focus-selection'}
+            task={task}
+            initialSelectionType={queueItem.selectionType}
+            initialSelectedStepIds={
+              queueItem.selectionType === 'specific_steps'
+                ? queueItem.selectedStepIds
+                : []
+            }
+            onClose={() => handleCloseDrawer()}
+            onUpdateSelection={(selectionType, selectedStepIds) => {
+              handleUpdateStepSelection(editingFocusQueueItemId, selectionType, selectedStepIds);
+            }}
+          />
+        );
+      })()}
+
       {/* Project Modal */}
       <ProjectModal
         isOpen={projectModalOpen}
@@ -5887,6 +6006,7 @@ export default function Home() {
        !projectModalOpen &&
        activeDrawer !== 'focus-selection' &&
        activeDrawer !== 'filter' &&
+       activeDrawer !== 'completed' &&
        !isKeyboardVisible && (
         <div className={`
           fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end
