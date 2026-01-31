@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Task, Step, FocusQueueItem, FocusModeState, SuggestedStep, EditSuggestion, DeletionSuggestion } from "@/lib/types";
+import { Task, Step, FocusQueueItem, FocusModeState, SuggestedStep, EditSuggestion, DeletionSuggestion, MetadataSuggestion } from "@/lib/types";
 import NotesModule from "@/components/NotesModule";
 import StagingArea from "@/components/StagingArea";
 
@@ -30,6 +30,7 @@ interface FocusModeViewProps {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
   deletions: DeletionSuggestion[];
+  metadataSuggestions?: MetadataSuggestion[];
   suggestedTitle: string | null;
   onAcceptOne: (suggestion: SuggestedStep) => void;
   onAcceptAll: () => void;
@@ -38,6 +39,8 @@ interface FocusModeViewProps {
   onRejectEdit: (edit: EditSuggestion) => void;
   onAcceptDeletion: (deletion: DeletionSuggestion) => void;
   onRejectDeletion: (deletion: DeletionSuggestion) => void;
+  onAcceptMetadata?: (metadata: MetadataSuggestion) => void;
+  onRejectMetadata?: (metadata: MetadataSuggestion) => void;
   onAcceptTitle: () => void;
   onRejectTitle: () => void;
   // Routine step scope
@@ -96,6 +99,7 @@ export default function FocusModeView({
   suggestions,
   edits,
   deletions,
+  metadataSuggestions,
   suggestedTitle,
   onAcceptOne,
   onAcceptAll,
@@ -104,6 +108,8 @@ export default function FocusModeView({
   onRejectEdit,
   onAcceptDeletion,
   onRejectDeletion,
+  onAcceptMetadata,
+  onRejectMetadata,
   onAcceptTitle,
   onRejectTitle,
   onAcceptWithScope,
@@ -589,12 +595,13 @@ export default function FocusModeView({
         </div>
 
         {/* Staging Area for AI suggestions */}
-        {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || suggestedTitle) && (
+        {(suggestions.length > 0 || edits.length > 0 || deletions.length > 0 || (metadataSuggestions && metadataSuggestions.length > 0) || suggestedTitle) && (
           <div className="w-full mt-4">
             <StagingArea
               suggestions={suggestions}
               edits={edits}
               deletions={deletions}
+              metadataSuggestions={metadataSuggestions}
               suggestedTitle={suggestedTitle}
               currentTitle={task.title}
               onAcceptOne={onAcceptOne}
@@ -604,6 +611,8 @@ export default function FocusModeView({
               onRejectEdit={onRejectEdit}
               onAcceptDeletion={onAcceptDeletion}
               onRejectDeletion={onRejectDeletion}
+              onAcceptMetadata={onAcceptMetadata}
+              onRejectMetadata={onRejectMetadata}
               onAcceptTitle={onAcceptTitle}
               onRejectTitle={onRejectTitle}
               isRoutine={task.isRecurring}

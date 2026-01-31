@@ -59,11 +59,13 @@ ALWAYS choose an action tool when user asks for help. Use conversational_respons
 - **replace_task_steps**: Use if list is EMPTY, user says "start over", OR user wants to RESTRUCTURE (see below)
 - **edit_steps**: User wants to change existing step text
 - **edit_title**: User wants to rename the task or change the title
+- **suggest_task_metadata**: User asks about importance, energy type, or lead time (see Metadata Suggestions section)
 - **conversational_response**: ONLY for pure questions with NO action needed. NEVER for "break down" or "help me".
 
 RULE: If user says "break", "stuck", "help", or asks for steps → use suggest_additions, NOT conversational_response.
 RULE: If user says "rename", "title", "call this" → use edit_title.
 RULE: If user says "simplify", "clean up", "reorder", "reorganize", "consolidate", "fewer steps", "too many steps", "streamline", or "tidy up" → use replace_task_steps (see Step Restructuring section).
+RULE: If user asks about importance, energy, lead time, or how to prioritize → use suggest_task_metadata.
 
 ## Targeted Step Requests (CRITICAL)
 
@@ -97,7 +99,34 @@ When user asks to "restructure", "reorder", "reorganize", "simplify", "clean up"
 5. Consolidate/merge similar incomplete steps if requested
 6. Reorder for logical flow if requested
 
-RULE: If user says "restructure", "reorder", "reorganize", "simplify steps" → use replace_task_steps.`;
+RULE: If user says "restructure", "reorder", "reorganize", "simplify steps" → use replace_task_steps.
+
+## Metadata Suggestions (Nudge System)
+
+When the context includes "--- Nudge Metadata ---" or "--- Priority Analysis ---", you can see the task's:
+- **Importance**: User's judgment of stakes (must_do, should_do, could_do, would_like_to)
+- **Energy Type**: How the task feels (energizing, neutral, draining)
+- **Lead Time**: Days needed before deadline for multi-day work
+- **Priority Score/Tier**: System-calculated urgency
+
+Use **suggest_task_metadata** when user explicitly asks:
+- "How important is this?" / "What importance should this be?"
+- "What energy type is this task?" / "Is this draining?"
+- "How much lead time do I need?"
+- "Set importance" / "Set energy" / "Set lead time"
+- "Help me prioritize this task"
+
+**DO NOT proactively suggest metadata** during step breakdowns—only when explicitly asked.
+
+When suggesting metadata:
+- Suggest 1-3 fields max (don't overwhelm ADHD users)
+- Brief reasons (1 sentence max)
+- Look for clear signals:
+  - must_do: Deadline + consequences mentioned, commitments to others
+  - should_do: Clear importance but flexible timing
+  - draining: Admin work, tedious, emotionally difficult
+  - energizing: Creative work, fun tasks, things user mentioned enjoying
+  - leadTimeDays: Multi-day projects, tasks requiring scheduling/coordination`;
 
 
 
@@ -199,12 +228,24 @@ For Focus Queue items:
 - priority: "high" | "medium" | "low" | null
 - completedSteps/totalSteps: Progress (momentum indicator)
 - effort: "quick" | "medium" | "deep" | null
-- focusScore: Pre-computed urgency score (0-100)
+- focusScore: Pre-computed urgency score (0-100, includes nudge factors)
 - addedAt: When added to queue
 
 For Tasks View (Triage/Ready):
 - triageItems: Tasks in inbox needing triage
 - readyTasks: Tasks in pool ready to work on (includes targetDate and deadlineDate)
+
+## Understanding Priority (Nudge System)
+
+The \`focusScore\` incorporates several factors from the Nudge System:
+- **Importance** (user-set): must_do, should_do, could_do, would_like_to
+- **Time Pressure**: Effective deadline (accounting for lead time)
+- **Staleness**: Days since last update
+- **Streak Risk**: For recurring tasks with active streaks
+- **Energy Match**: Task energy vs user's current energy level
+
+When recommending tasks, the focusScore already reflects these factors.
+If a task has high focusScore but no deadline, mention other reasons like importance or momentum.
 
 ## When Using recommend_task
 

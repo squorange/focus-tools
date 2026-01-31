@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Download, Upload } from "lucide-react";
+import { ChevronRight, Download, Upload, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserSettings } from "@/lib/types";
 
@@ -10,6 +10,7 @@ interface SettingsViewProps {
   onUpdateSettings: (updates: Partial<UserSettings>) => void;
   onExportData?: () => void;
   onImportData?: () => void;
+  onRescanPokes?: () => void;
 }
 
 type ScopeOption = {
@@ -32,6 +33,7 @@ export default function SettingsView({
   onUpdateSettings,
   onExportData,
   onImportData,
+  onRescanPokes,
 }: SettingsViewProps) {
   const [showScopePicker, setShowScopePicker] = useState(false);
   const [showBufferPicker, setShowBufferPicker] = useState(false);
@@ -442,6 +444,23 @@ export default function SettingsView({
                 <div>
                   <span className="text-sm text-zinc-900 dark:text-zinc-100">Import Data</span>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Restore from a previously exported file</p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+          )}
+
+          {/* Rescan Pokes row */}
+          {onRescanPokes && (
+            <button
+              onClick={onRescanPokes}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-5 h-5 text-zinc-400" />
+                <div>
+                  <span className="text-sm text-zinc-900 dark:text-zinc-100">Rescan Pokes</span>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Regenerate all poke notifications based on current settings</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-400" />

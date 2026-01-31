@@ -714,3 +714,130 @@ export function removeNotificationsForTask(
 ): Notification[] {
   return notifications.filter((n) => n.taskId !== taskId);
 }
+
+// ============================================
+// Bulk Rescan
+// ============================================
+
+export interface RescanResult {
+  scheduled: Array<{ taskId: string; taskTitle: string; type: 'start_poke' | 'runway_nudge'; scheduledAt: number }>;
+  skipped: Array<{ taskId: string; taskTitle: string; reason: string }>;
+  cancelled: number;
+}
+
+/**
+ * Rescan all tasks and regenerate pokes/nudges based on current settings.
+ * Use this after settings change or to fix missing notifications.
+ *
+ * This will:
+ * 1. Cancel all unfired start_poke and runway_nudge notifications
+ * 2. Re-evaluate each task against current settings
+ * 3. Schedule new notifications for eligible tasks
+ *
+ * Returns a summary of what was scheduled/skipped for debugging.
+ */
+export function rescanAllTasksForPokes(
+  tasks: Task[],
+  settings: StartPokeSettings,
+  notifications: Notification[]
+): { notifications: Notification[]; result: RescanResult } {
+  const result: RescanResult = {
+    scheduled: [],
+    skipped: [],
+    cancelled: 0,
+  };
+
+  // Step 1: Cancel all unfired start_poke and runway_nudge notifications
+  let updated = notifications.filter((n) => {
+    if (n.firedAt !== null) return true; // Keep fired notifications
+    if (n.type === 'start_poke' || n.type === 'runway_nudge') {
+      result.cancelled++;
+      return false;
+    }
+    return true;
+  });
+
+  // Step 2: Filter eligible tasks (not completed, not deleted, in pool or queued)
+  const eligibleTasks = tasks.filter((t) => {
+    if (t.deletedAt) return false;
+    if (t.status === 'complete' || t.status === 'archived') return false;
+    return true;
+  });
+
+  // Step 3: For each task, attempt to schedule notifications
+  for (const task of eligibleTasks) {
+    // Check if start poke is enabled for this task
+    if (!isStartPokeEnabled(task, settings)) {
+      result.skipped.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        reason: task.isRecurring
+          ? `Poke disabled (isRecurring=${task.isRecurring}, scope=${settings.startPokeDefault})`
+          : `Poke disabled (not recurring, scope=${settings.startPokeDefault})`,
+      });
+      continue;
+    }
+
+    // Try to schedule start poke
+    const pokeResult = scheduleStartPoke(task, settings, updated);
+    updated = pokeResult.notifications;
+
+    if (pokeResult.created) {
+      result.scheduled.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        type: 'start_poke',
+        scheduledAt: pokeResult.created.scheduledAt,
+      });
+    } else {
+      // Check why it wasn't scheduled
+      const anchorTime = getAnchorTime(task);
+      const { minutes: durationMinutes } = getDuration(task);
+
+      if (anchorTime === null) {
+        result.skipped.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          reason: 'No anchor time (no deadline, target date, or recurrence time)',
+        });
+      } else if (durationMinutes === null) {
+        result.skipped.push({
+          taskId: task.id,
+          taskTitle: task.title,
+          reason: 'No duration estimate',
+        });
+      } else {
+        const buffer = calculateBuffer(durationMinutes, settings);
+        const pokeTime = anchorTime - (durationMinutes * 60 * 1000) - (buffer * 60 * 1000);
+        if (pokeTime < Date.now()) {
+          result.skipped.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            reason: `Poke time already passed (${new Date(pokeTime).toLocaleString()})`,
+          });
+        } else {
+          result.skipped.push({
+            taskId: task.id,
+            taskTitle: task.title,
+            reason: 'Unknown reason',
+          });
+        }
+      }
+    }
+
+    // Try to schedule runway nudge
+    const runwayResult = scheduleRunwayNudge(task, updated);
+    updated = runwayResult.notifications;
+
+    if (runwayResult.created) {
+      result.scheduled.push({
+        taskId: task.id,
+        taskTitle: task.title,
+        type: 'runway_nudge',
+        scheduledAt: runwayResult.created.scheduledAt,
+      });
+    }
+  }
+
+  return { notifications: updated, result };
+}

@@ -17,6 +17,7 @@ import {
   ExplainStepInput,
   EncourageInput,
   RecommendTaskInput,
+  SuggestTaskMetadataInput,
 } from "@/lib/ai-tools";
 
 // Extended request body for focus mode and queue mode
@@ -164,6 +165,16 @@ interface ExtendedStructureRequest extends StructureRequest {
         label: string;
       }>;
     }>;
+    // Nudge System Fields
+    importance: 'must_do' | 'should_do' | 'could_do' | 'would_like_to' | null;
+    importanceSource: 'self' | 'partner' | null;
+    importanceNote: string | null;
+    energyType: 'energizing' | 'neutral' | 'draining' | null;
+    leadTimeDays: number | null;
+    // Computed Priority
+    priorityScore: number;
+    priorityTier: 'critical' | 'high' | 'medium' | 'low';
+    effectiveDeadline: string | null;
   };
 }
 
@@ -608,6 +619,25 @@ function processToolResult(
           reasonType: data.reasonType,
         },
       } as RecommendationResponse;
+    }
+
+    // Metadata suggestion tool
+    case "suggest_task_metadata": {
+      const data = input as SuggestTaskMetadataInput;
+      return {
+        action: "suggest",
+        taskTitle: null,
+        steps: null,
+        suggestions: null,
+        edits: null,
+        deletions: null,
+        metadataSuggestions: data.suggestions.map((s) => ({
+          field: s.field,
+          value: s.value,
+          reason: s.reason,
+        })),
+        message: data.message,
+      };
     }
 
     default:
@@ -1067,6 +1097,50 @@ function buildTaskDetailContextMessage(
     taskDetailContext.health.reasons.forEach(reason => {
       context += `  • ${reason}\n`;
     });
+  }
+
+  // Nudge Metadata
+  const hasNudgeData = taskDetailContext.importance || taskDetailContext.energyType || taskDetailContext.leadTimeDays;
+  if (hasNudgeData) {
+    context += `\n--- Nudge Metadata ---\n`;
+    if (taskDetailContext.importance) {
+      const importanceLabels: Record<string, string> = {
+        'must_do': 'Must Do',
+        'should_do': 'Should Do',
+        'could_do': 'Could Do',
+        'would_like_to': 'Would Like To',
+      };
+      const sourceLabel = taskDetailContext.importanceSource === 'partner' ? ' (set by partner)' : '';
+      context += `Importance: ${importanceLabels[taskDetailContext.importance] || taskDetailContext.importance}${sourceLabel}\n`;
+      if (taskDetailContext.importanceNote) {
+        context += `  Note: "${taskDetailContext.importanceNote}"\n`;
+      }
+    }
+    if (taskDetailContext.energyType) {
+      const energyLabels: Record<string, string> = {
+        'energizing': 'Energizing',
+        'neutral': 'Neutral',
+        'draining': 'Draining (requires effort)',
+      };
+      context += `Energy Type: ${energyLabels[taskDetailContext.energyType] || taskDetailContext.energyType}\n`;
+    }
+    if (taskDetailContext.leadTimeDays) {
+      context += `Lead Time: ${taskDetailContext.leadTimeDays} day${taskDetailContext.leadTimeDays > 1 ? 's' : ''} before deadline\n`;
+    }
+  }
+
+  // Priority Analysis (computed)
+  context += `\n--- Priority Analysis ---\n`;
+  context += `Priority Score: ${taskDetailContext.priorityScore}/100\n`;
+  const tierLabels: Record<string, string> = {
+    'critical': 'CRITICAL',
+    'high': 'HIGH',
+    'medium': 'MEDIUM',
+    'low': 'LOW',
+  };
+  context += `Priority Tier: ${tierLabels[taskDetailContext.priorityTier] || taskDetailContext.priorityTier}\n`;
+  if (taskDetailContext.effectiveDeadline) {
+    context += `Effective Deadline: ${taskDetailContext.effectiveDeadline} (with lead time)\n`;
   }
 
   // Dates

@@ -268,6 +268,66 @@ When in doubt, use suggest_additions instead—it's better to suggest steps than
       required: ["message"],
     },
   },
+  {
+    name: "suggest_task_metadata",
+    description: `Suggest nudge system metadata (importance, energyType, leadTimeDays) for a task.
+
+USE THIS TOOL when user asks:
+- "How important is this?" or "what importance should this be?"
+- "What energy type is this task?" or "is this draining?"
+- "Set importance", "set energy", "set lead time"
+- "How much lead time do I need?"
+- "Help me prioritize this task"
+
+ONLY suggest 1-3 fields at a time—don't overwhelm the user.
+Each suggestion needs a brief reason (1 sentence max).
+
+Importance levels:
+- must_do: High stakes, real consequences if missed (deadline, commitment to others)
+- should_do: Meaningful impact, important but not urgent
+- could_do: Nice to have, would be helpful
+- would_like_to: Optional, purely for personal satisfaction
+
+Energy types:
+- energizing: Fun, creative, or motivating work
+- neutral: Standard tasks, neither draining nor energizing
+- draining: Administrative work, tedious, or emotionally difficult
+
+Lead time: Days needed before deadline to complete the task (buffer for multi-day work).`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        suggestions: {
+          type: "array",
+          description: "1-3 metadata suggestions",
+          items: {
+            type: "object",
+            properties: {
+              field: {
+                type: "string",
+                enum: ["importance", "energyType", "leadTimeDays"],
+                description: "The metadata field to set",
+              },
+              value: {
+                type: ["string", "number"],
+                description: "The suggested value. For importance: 'must_do'|'should_do'|'could_do'|'would_like_to'. For energyType: 'energizing'|'neutral'|'draining'. For leadTimeDays: number (1-14).",
+              },
+              reason: {
+                type: "string",
+                description: "Brief reason for this suggestion (1 sentence max, ADHD-friendly)",
+              },
+            },
+            required: ["field", "value", "reason"],
+          },
+        },
+        message: {
+          type: "string",
+          description: "Brief explanation or follow-up question",
+        },
+      },
+      required: ["suggestions", "message"],
+    },
+  },
 ];
 
 // ============================================
@@ -561,6 +621,15 @@ export interface RecommendTaskInput {
   reasonType: "deadline" | "momentum" | "quick_win" | "priority" | "oldest" | "no_recommendation";
 }
 
+export interface SuggestTaskMetadataInput {
+  suggestions: Array<{
+    field: "importance" | "energyType" | "leadTimeDays";
+    value: string | number;
+    reason: string;
+  }>;
+  message: string;
+}
+
 // Union type for all tool inputs
 export type ToolInput =
   | { name: "replace_task_steps"; input: ReplaceStepsInput }
@@ -573,4 +642,5 @@ export type ToolInput =
   | { name: "suggest_first_action"; input: SuggestFirstActionInput }
   | { name: "explain_step"; input: ExplainStepInput }
   | { name: "encourage"; input: EncourageInput }
-  | { name: "recommend_task"; input: RecommendTaskInput };
+  | { name: "recommend_task"; input: RecommendTaskInput }
+  | { name: "suggest_task_metadata"; input: SuggestTaskMetadataInput };

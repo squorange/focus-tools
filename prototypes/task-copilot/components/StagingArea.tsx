@@ -1,13 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SuggestedStep, EditSuggestion, DeletionSuggestion } from "@/lib/types";
+import { SuggestedStep, EditSuggestion, DeletionSuggestion, MetadataSuggestion } from "@/lib/types";
 import { formatDuration } from "@/lib/utils";
+
+// Display labels for metadata fields
+const FIELD_LABELS: Record<MetadataSuggestion['field'], string> = {
+  importance: 'Importance',
+  energyType: 'Energy Type',
+  leadTimeDays: 'Lead Time',
+};
+
+const VALUE_LABELS: Record<string, string> = {
+  // Importance
+  must_do: 'Must Do',
+  should_do: 'Should Do',
+  could_do: 'Could Do',
+  would_like_to: 'Would Like To',
+  // Energy
+  energizing: 'Energizing',
+  neutral: 'Neutral',
+  draining: 'Draining',
+};
 
 interface StagingAreaProps {
   suggestions: SuggestedStep[];
   edits: EditSuggestion[];
   deletions: DeletionSuggestion[];
+  metadataSuggestions?: MetadataSuggestion[];
   suggestedTitle?: string | null;
   currentTitle?: string;
   onAcceptOne: (suggestion: SuggestedStep) => void;
@@ -15,6 +35,8 @@ interface StagingAreaProps {
   onRejectEdit: (edit: EditSuggestion) => void;
   onAcceptDeletion: (deletion: DeletionSuggestion) => void;
   onRejectDeletion: (deletion: DeletionSuggestion) => void;
+  onAcceptMetadata?: (metadata: MetadataSuggestion) => void;
+  onRejectMetadata?: (metadata: MetadataSuggestion) => void;
   onAcceptTitle?: () => void;
   onRejectTitle?: () => void;
   onAcceptAll: () => void;
@@ -35,6 +57,7 @@ export default function StagingArea({
   suggestions,
   edits,
   deletions,
+  metadataSuggestions,
   suggestedTitle,
   currentTitle,
   onAcceptOne,
@@ -42,6 +65,8 @@ export default function StagingArea({
   onRejectEdit,
   onAcceptDeletion,
   onRejectDeletion,
+  onAcceptMetadata,
+  onRejectMetadata,
   onAcceptTitle,
   onRejectTitle,
   onAcceptAll,
@@ -74,9 +99,10 @@ export default function StagingArea({
   const safeEdits = edits || [];
   const safeSuggestions = suggestions || [];
   const safeDeletions = deletions || [];
+  const safeMetadataSuggestions = metadataSuggestions || [];
   // More robust check - ensure suggestedTitle is truthy and different from current
   const hasTitleSuggestion = Boolean(suggestedTitle) && suggestedTitle !== (currentTitle || '');
-  const totalItems = safeSuggestions.length + safeEdits.length + safeDeletions.length + (hasTitleSuggestion ? 1 : 0);
+  const totalItems = safeSuggestions.length + safeEdits.length + safeDeletions.length + safeMetadataSuggestions.length + (hasTitleSuggestion ? 1 : 0);
 
   if (totalItems === 0) {
     return null;
@@ -283,6 +309,63 @@ export default function StagingArea({
                                  rounded transition-colors"
                     >
                       Keep
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Metadata suggestions */}
+          {safeMetadataSuggestions.length > 0 && (
+            <ul className="space-y-2 mb-2">
+              {safeMetadataSuggestions.map((meta, index) => (
+                <li
+                  key={`meta-${meta.field}-${index}`}
+                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
+                             border border-violet-300 dark:border-violet-600"
+                >
+                  {/* Metadata badge */}
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded">
+                    SET
+                  </span>
+
+                  {/* Content: field → value + reason */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-neutral-700 dark:text-neutral-200">
+                        {FIELD_LABELS[meta.field]}:
+                      </span>
+                      <span className="px-2 py-0.5 text-sm bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 rounded">
+                        {typeof meta.value === 'number'
+                          ? `${meta.value} day${meta.value !== 1 ? 's' : ''}`
+                          : VALUE_LABELS[meta.value as string] || meta.value}
+                      </span>
+                    </div>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                      {meta.reason}
+                    </p>
+                  </div>
+
+                  {/* Accept/Reject buttons */}
+                  <div className="flex-shrink-0 flex gap-1">
+                    <button
+                      onClick={() => onAcceptMetadata?.(meta)}
+                      className="px-2 py-1 text-sm font-medium
+                                 text-green-600 dark:text-green-400
+                                 hover:bg-green-50 dark:hover:bg-green-900/20
+                                 rounded transition-colors"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => onRejectMetadata?.(meta)}
+                      className="px-2 py-1 text-sm font-medium
+                                 text-neutral-500 dark:text-neutral-400
+                                 hover:bg-neutral-100 dark:hover:bg-neutral-700
+                                 rounded transition-colors"
+                    >
+                      Skip
                     </button>
                   </div>
                 </li>
