@@ -1,7 +1,7 @@
 # Focus Tools — Future Considerations
 
-> **Status:** Living document for strategic options and speculative features  
-> **Last Updated:** December 31, 2024  
+> **Status:** Living document for strategic options and speculative features
+> **Last Updated:** January 29, 2026
 > **Purpose:** Capture ideas worth exploring, with analysis, before committing to roadmap
 
 ---
@@ -21,6 +21,243 @@ Idea → [EXPLORING] → Analysis complete → [READY] → Decision made → [PR
 ---
 
 ## Active Considerations
+
+---
+
+### 0. Priority Queue Information Architecture
+
+**Status:** Exploring
+**Added:** January 2026
+**Context:** Priority Queue implemented as tab inside NotificationsHub, but feels misplaced
+
+**Summary:** The Priority Queue (computed ranking of tasks by urgency/importance) currently lives inside the Notifications Hub. This feels like a workaround. Need to decide where Priority Queue should live in the information architecture.
+
+**The Core Tension:**
+- **Pool** = manual organization (recency, tags, projects) - "what's available"
+- **Priority Queue** = computed ranking (urgency, importance, deadlines) - "what should I do next"
+- Both answer a similar question, creating redundancy
+- Priority-under-Notifications feels forced
+
+**Current State:**
+```
+┌─────────────────────────────────────┐
+│  [Focus]  [Tasks]           🔔      │  ← Bell opens NotificationsHub
+├─────────────────────────────────────┤
+│                                     │
+│  Focus Tab: Focus Queue             │
+│  Tasks Tab: Inbox | Pool            │
+│  Bell: Priority | Notifications     │  ← Priority hidden here
+│                                     │
+└─────────────────────────────────────┘
+```
+
+---
+
+#### Options Evaluated
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A. Priority replaces Pool** | Tasks tab becomes Inbox + Priority | Clean IA, single "selection pool" | Loses manual sorting, more opinionated |
+| **B. Priority as sort/view mode** | Pool gets "Sort by: Priority" toggle | Flexible, minimal change | Loses tier groupings (Critical/High/etc) |
+| **C. Priority as third main tab** | Header: Focus \| Priority \| Tasks | Priority becomes first-class | More tabs, cognitive load |
+| **D. Priority in sidebar nav** | Dedicated sidebar item | Discoverable, separate | Clutters sidebar |
+| **E. Reframe Notifications** | Rename to "Hub" - Priority + Notifications = "things needing attention" | Minimal change | Still feels forced |
+
+---
+
+#### Option A: Priority Replaces Pool (Detailed Sketch)
+
+**Concept:** Pool and Priority serve the same purpose—helping you decide what to work on. Priority is a smarter version (computed ranking). Merge them.
+
+**New Information Architecture:**
+```
+┌─────────────────────────────────────┐
+│  [Focus]  [Tasks]           🔔      │
+├─────────────────────────────────────┤
+│                                     │
+│  Focus Tab: Focus Queue             │
+│    - Today / This Week / Upcoming   │
+│    - Your committed work            │
+│                                     │
+│  Tasks Tab: [Inbox] [Priority]      │  ← Segmented control
+│    - Inbox: Capture, triage         │
+│    - Priority: Ranked pool of tasks │
+│                                     │
+│  Bell: Notifications only           │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Priority View Design:**
+
+```
+┌─────────────────────────────────────┐
+│        [Inbox]  [Priority]          │  ← Segmented control
+├─────────────────────────────────────┤
+│  Sort: [Score ▾]  Filter: [All ▾]   │  ← Optional controls
+├─────────────────────────────────────┤
+│                                     │
+│  ▼ Critical (2)                     │
+│  ┌─────────────────────────────────┐│
+│  │ File taxes          [89] → Add  ││
+│  │ 2/5 steps · Due tomorrow        ││
+│  └─────────────────────────────────┘│
+│  ┌─────────────────────────────────┐│
+│  │ Call doctor         [72] → Add  ││
+│  │ Overdue · High priority         ││
+│  └─────────────────────────────────┘│
+│                                     │
+│  ▼ High (5)                         │
+│  ...                                │
+│                                     │
+│  ▸ Medium (12)                      │  ← Collapsed by default
+│  ▸ Low (8)                          │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Sort Options:**
+- **Priority Score** (default) - computed ranking
+- **Deadline** - by due date
+- **Created** - by age
+- **Manual** - user-defined order (for those who want it)
+
+**Workflow:**
+1. Capture → Inbox (quick dump)
+2. Triage → Add details, move to pool (now Priority-ranked automatically)
+3. Select → Browse Priority view, add to Focus Queue
+4. Execute → Focus Mode
+
+**What Changes:**
+- "Pool" concept renamed/merged into "Priority"
+- Tasks view segmented control: Inbox | Priority (instead of Inbox | Pool)
+- Notifications Hub becomes just notifications
+- Priority calculation already done, just surfaced differently
+
+**What Stays the Same:**
+- Focus Queue unchanged
+- Inbox unchanged
+- Task detail unchanged
+- All existing task fields work
+
+**Concerns:**
+- Users who liked manual Pool sorting lose that as default (mitigated by Sort dropdown)
+- Tier groupings (Critical/High/Medium/Low) might feel heavy—could flatten to single sorted list with tier badge
+- "Priority" as a tab name might confuse with task priority field
+
+---
+
+#### Option B: Priority as Sort/View Mode (Detailed Sketch)
+
+**Concept:** Don't restructure IA. Add Priority as a "smart view" that can be accessed from Pool.
+
+**Information Architecture (Unchanged):**
+```
+┌─────────────────────────────────────┐
+│  [Focus]  [Tasks]           🔔      │
+├─────────────────────────────────────┤
+│                                     │
+│  Focus Tab: Focus Queue             │
+│                                     │
+│  Tasks Tab: [Inbox] [Pool]          │
+│    - Pool now has view toggle       │
+│                                     │
+│  Bell: Priority | Notifications     │  ← Keep for quick access
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Pool View with Priority Toggle:**
+
+```
+┌─────────────────────────────────────┐
+│        [Inbox]  [Pool]              │
+├─────────────────────────────────────┤
+│  View: [List ○ Priority]  Sort: ▾   │  ← Toggle between views
+├─────────────────────────────────────┤
+│                                     │
+│  List View (current):               │
+│  - Flat list of tasks               │
+│  - Sort by deadline/created/manual  │
+│  - Filter by project/tag            │
+│                                     │
+│  Priority View (new):               │
+│  - Tasks grouped by tier            │
+│  - Score badge on each task         │
+│  - Same card styling as list        │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Multiple Access Points:**
+1. **Tasks → Pool → Priority view toggle** - main access
+2. **Notifications Hub → Priority tab** - quick access (keep as-is)
+3. **Focus Queue → "Add from Priority" button** - contextual access
+
+**What Changes:**
+- Pool gets a view toggle (List | Priority)
+- Priority view shows tier groupings within Pool
+- Notifications Hub keeps Priority tab for quick access
+
+**What Stays the Same:**
+- All existing navigation
+- Pool remains "Pool"
+- No IA restructure
+
+**Concerns:**
+- Two places to access Priority (Pool toggle + Notifications) creates confusion
+- Doesn't solve "Priority under Notifications feels wrong"
+- View toggle adds complexity to Pool
+- Tier groupings may not work well in a toggle (better as dedicated view)
+
+---
+
+#### Recommendation
+
+**Lean toward Option A** for these reasons:
+
+1. **Conceptual clarity** - Pool and Priority serve same purpose, merge them
+2. **Cleaner IA** - Notifications becomes just notifications
+3. **Natural workflow** - Inbox (capture) → Priority (selection) → Focus (execution)
+4. **Already built** - Priority Queue UI exists, just needs relocation
+
+**However**, this is deferrable. Current implementation works. Could live with Priority-in-Notifications until:
+- User feedback indicates confusion
+- Usage patterns emerge that suggest better placement
+- Major IA refactor is planned anyway
+
+---
+
+#### Implementation Notes (if pursuing Option A)
+
+**Files to modify:**
+- `components/tasks/TasksView.tsx` - Add Priority as second segment
+- `components/notifications/NotificationsHub.tsx` - Remove Priority tab
+- `components/notifications/PriorityQueueModule.tsx` - Move to tasks/ or shared/
+- `app/page.tsx` - Update activeDrawer handling if needed
+
+**New components:**
+- Pool sort/filter controls (if adding Sort dropdown)
+
+**Migration:**
+- No data migration needed
+- Pure UI/navigation change
+
+---
+
+#### Open Questions
+
+- [ ] Should "Priority" be called something else? ("Smart Queue", "Up Next", "Ranked")
+- [ ] How prominent should tier groupings be? (Sections vs. just badges)
+- [ ] Should we keep Priority in Notifications as secondary access point?
+- [ ] What's the default sort when Priority replaces Pool?
+
+---
+
+#### Related Documents
+
+- `NUDGE_SYSTEM_PROGRESS.md` - Priority Queue implementation status
+- `lib/priority.ts` - Priority calculation logic
 
 ---
 
