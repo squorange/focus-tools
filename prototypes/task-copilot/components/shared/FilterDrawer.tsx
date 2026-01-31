@@ -514,7 +514,10 @@ export default function FilterDrawer({
       </div>
 
       {/* Footer with count and actions */}
-      <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+      <div
+        className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
         <div className="flex items-center justify-between">
           <span className="text-sm text-zinc-500 dark:text-zinc-400">
             {matchCount} {matchCount === 1 ? 'task' : 'tasks'}

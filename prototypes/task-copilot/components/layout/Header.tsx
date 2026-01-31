@@ -72,7 +72,7 @@ export default function Header({
   const plusButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className={`flex-shrink-0 pt-[env(safe-area-inset-top)] bg-zinc-50 dark:bg-zinc-900 px-4 lg:px-6 transition-shadow duration-200 ${
+    <header className={`relative z-10 flex-shrink-0 pt-[env(safe-area-inset-top)] bg-zinc-50 dark:bg-zinc-900 px-4 lg:px-6 transition-shadow duration-200 ${
       isScrolled ? 'shadow-sm' : ''
     }`}>
       <div className="h-14 flex items-center gap-2 relative">

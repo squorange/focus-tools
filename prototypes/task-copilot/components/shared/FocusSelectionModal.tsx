@@ -208,7 +208,10 @@ export default function FocusSelectionModal({
 
   // Footer - just summary, no buttons (changes save immediately)
   const Footer = () => (
-    <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+    <div
+      className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0"
+      style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+    >
       <span className="text-sm text-zinc-500 dark:text-zinc-400">
         {todayCount} for today · {upcomingCount} for upcoming
       </span>

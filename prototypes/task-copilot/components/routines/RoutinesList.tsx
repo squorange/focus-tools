@@ -146,7 +146,7 @@ export default function RoutinesList({
             </h2>
             <div className="space-y-2">
               {freqTasks.map((task) => {
-                const isPaused = (task.recurrence as RecurrenceRuleExtended)?.paused;
+                const isPaused = !!(task.recurrence as RecurrenceRuleExtended)?.pausedAt;
                 return (
                   <RoutineRow
                     key={task.id}

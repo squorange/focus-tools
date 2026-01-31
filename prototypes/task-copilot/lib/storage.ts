@@ -337,6 +337,7 @@ function migrateLegacyState(stored: Record<string, unknown>): Partial<AppState> 
         deferredUntil: null,
         deferredAt: null,
         deferredCount: 0,
+        deferredFrom: null,
         priority: null,
         tags: [],
         projectId: null,
