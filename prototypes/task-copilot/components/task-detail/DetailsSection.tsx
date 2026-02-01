@@ -703,6 +703,7 @@ export default function DetailsSection({
                             label="Target Date"
                             showTime={true}
                             triggerRef={targetDateRef}
+                            isMobileView={isMobileView}
                           />
                         )}
                       </div>
@@ -727,6 +728,7 @@ export default function DetailsSection({
                             label="Deadline"
                             showTime={true}
                             triggerRef={deadlineRef}
+                            isMobileView={isMobileView}
                           />
                         )}
                       </div>
@@ -992,6 +994,7 @@ export default function DetailsSection({
           label="Target Date"
           showTime={true}
           triggerRef={collapsedPillRef}
+          isMobileView={isMobileView}
         />
       )}
 
@@ -1007,6 +1010,7 @@ export default function DetailsSection({
           label="Deadline"
           showTime={true}
           triggerRef={collapsedPillRef}
+          isMobileView={isMobileView}
         />
       )}
 
@@ -1097,7 +1101,7 @@ export default function DetailsSection({
 
 /**
  * Inline date picker dropdown for target date and deadline
- * Uses portals to escape overflow-hidden containers
+ * Uses portals on desktop, BottomSheet on mobile
  */
 interface DatePickerDropdownProps {
   value: string | null;
@@ -1107,9 +1111,10 @@ interface DatePickerDropdownProps {
   label: string;
   showTime?: boolean;
   triggerRef?: React.RefObject<HTMLElement | null>;
+  isMobileView?: boolean;
 }
 
-function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = false, triggerRef }: DatePickerDropdownProps) {
+function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = false, triggerRef, isMobileView = false }: DatePickerDropdownProps) {
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     if (value) return value;
     // Default: today
@@ -1123,16 +1128,16 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
     setMounted(true);
   }, []);
 
-  // Calculate position from trigger element
+  // Calculate position from trigger element (desktop only)
   useEffect(() => {
-    if (triggerRef?.current) {
+    if (!isMobileView && triggerRef?.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setPosition({
         top: rect.bottom + 8,
         left: rect.left,
       });
     }
-  }, [triggerRef]);
+  }, [triggerRef, isMobileView]);
 
   const today = new Date().toISOString().split("T")[0];
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -1148,6 +1153,87 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
 
   if (!mounted) return null;
 
+  // Shared content for both mobile and desktop
+  const pickerContent = (
+    <>
+      {/* Quick options */}
+      <div className="space-y-1 mb-4">
+        {quickOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => onChange(option.value, selectedTime || null)}
+            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
+              value === option.value ? "bg-violet-50 dark:bg-violet-900/20" : ""
+            }`}
+          >
+            {option.label}
+            {value === option.value && (
+              <Check className="w-4 h-4 ml-auto text-violet-500" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Date (and optional time) input */}
+      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
+        <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 block">
+          Or pick a specific date{showTime ? " and time" : ""}
+        </label>
+        <div className="flex items-end gap-2 mb-3">
+          <div className="flex-1 min-w-0">
+            <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full h-8 px-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg appearance-none"
+            />
+          </div>
+          {showTime && (
+            <div className="flex-1 min-w-0">
+              <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Time</label>
+              <input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="w-full h-8 px-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg appearance-none"
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onChange(selectedDate, showTime ? selectedTime || null : undefined)}
+            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+          >
+            Set {label.includes("Date") ? "Date" : label}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+
+  // Mobile: BottomSheet
+  if (isMobileView) {
+    return (
+      <BottomSheet isOpen={true} onClose={onClose} height="auto">
+        <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+            {label}
+          </h3>
+          {pickerContent}
+        </div>
+      </BottomSheet>
+    );
+  }
+
+  // Desktop: Portal dropdown
   return createPortal(
     <>
       {/* Backdrop */}
@@ -1161,62 +1247,7 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
           {label}
         </h3>
-
-        {/* Quick options */}
-        <div className="space-y-1 mb-3">
-          {quickOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => onChange(option.value, selectedTime || null)}
-              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
-                value === option.value ? "bg-violet-50 dark:bg-violet-900/20" : ""
-              }`}
-            >
-              {option.label}
-              {value === option.value && (
-                <Check className="w-4 h-4 ml-auto text-violet-500" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Date (and optional time) input */}
-        <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
-          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 block">
-            Or pick a specific date{showTime ? " and time" : ""}
-          </label>
-          <div className={`flex gap-2 mb-3 ${showTime ? "" : ""}`}>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="flex-1 px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
-            />
-            {showTime && (
-              <input
-                type="time"
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-24 px-2 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
-                placeholder="HH:mm"
-              />
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="flex-1 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onChange(selectedDate, showTime ? selectedTime || null : undefined)}
-              className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
-            >
-              Set {label.includes("Date") ? "Date" : label}
-            </button>
-          </div>
-        </div>
+        {pickerContent}
       </div>
     </>,
     document.body

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock, Plus, ChevronDown, Check } from "lucide-react";
+import { Sparkles, Loader2, Repeat, History, Pause, Play, X, Lock, Plus, ChevronDown, ChevronRight, Check } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Task, Step, SuggestedStep, EditSuggestion, DeletionSuggestion, MetadataSuggestion, FocusQueue, Project, AITargetContext, createStep, UserSettings, DrawerType } from "@/lib/types";
 import { formatDuration, formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate }
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
+import BottomSheet from "@/components/shared/BottomSheet";
 import MetadataPill from "@/components/shared/MetadataPill";
 import HealthPill from "@/components/shared/HealthPill";
 import ReminderPicker from "@/components/shared/ReminderPicker";
@@ -94,6 +96,7 @@ interface TaskDetailProps {
   onRejectTitle: () => void;
   onOpenProjectModal: (project?: Project) => void;
   onOpenProjectModalWithCallback?: (callback: (projectId: string) => void) => void;
+  onOpenDatePickerModal?: (callback: (dateStr: string) => void) => void;
   // Inline AI actions
   aiTargetContext?: AITargetContext | null;
   isAILoading?: boolean;  // True when AI request is in flight
@@ -177,6 +180,7 @@ export default function TaskDetail({
   onRejectTitle,
   onOpenProjectModal,
   onOpenProjectModalWithCallback,
+  onOpenDatePickerModal,
   aiTargetContext,
   isAILoading,
   onOpenAIPalette,
@@ -209,6 +213,38 @@ export default function TaskDetail({
   // Waiting On modal state (for bottom actions)
   const [showWaitingOnModal, setShowWaitingOnModal] = useState(false);
   const [waitingOnInput, setWaitingOnInput] = useState(task.waitingOn?.who || '');
+  const [waitingOnFollowUp, setWaitingOnFollowUp] = useState(task.waitingOn?.followUpDate || '');
+  const [showFollowUpDropdown, setShowFollowUpDropdown] = useState(false);
+  const followUpButtonRef = useRef<HTMLButtonElement>(null);
+  const [followUpDropdownPosition, setFollowUpDropdownPosition] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
+  // Defer modal state for custom date
+  const [showDeferCustomDate, setShowDeferCustomDate] = useState(false);
+  const [deferCustomDate, setDeferCustomDate] = useState('');
+  // Mobile view detection
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobileView(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+  // Calculate follow-up dropdown position when it opens
+  useEffect(() => {
+    if (showFollowUpDropdown && followUpButtonRef.current) {
+      const rect = followUpButtonRef.current.getBoundingClientRect();
+      if (isMobileView) {
+        setFollowUpDropdownPosition({
+          bottom: window.innerHeight - rect.top + 4,
+          left: rect.left,
+        });
+      } else {
+        setFollowUpDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+        });
+      }
+    }
+  }, [showFollowUpDropdown, isMobileView]);
   // Add to Focus dropdown state
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   // Mobile kebab menu state
@@ -938,7 +974,9 @@ export default function TaskDetail({
                 </svg>
                 <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
                   Waiting on {task.waitingOn.who}
-                  {task.waitingOn.followUpDate && ` · Follow up ${formatDate(task.waitingOn.followUpDate)}`}
+                  {task.waitingOn.followUpDate && (
+                    <span className="opacity-80"> · follow up {formatDate(task.waitingOn.followUpDate)}</span>
+                  )}
                 </span>
               </div>
               {onClearWaitingOn && (
@@ -1999,12 +2037,14 @@ export default function TaskDetail({
         {/* Actions section */}
         <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Waiting On button with anchored popover (only for one-off tasks when using new UI) */}
+            {/* Waiting On button with anchored popover / BottomSheet (only for one-off tasks when using new UI) */}
             {useNewDetailsUI && !isRecurring && (
               <div className="relative">
                 <button
                   onClick={() => {
                     setWaitingOnInput(task.waitingOn?.who || '');
+                    setWaitingOnFollowUp(task.waitingOn?.followUpDate || '');
+                    setShowFollowUpDropdown(false);
                     setShowWaitingOnModal(true);
                   }}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
@@ -2031,11 +2071,93 @@ export default function TaskDetail({
                   )}
                 </button>
 
-                {/* Anchored Popover */}
-                {showWaitingOnModal && (
+                {/* Mobile: BottomSheet - matches TaskCreationPopover pattern */}
+                {isMobileView && (
+                  <BottomSheet
+                    isOpen={showWaitingOnModal}
+                    onClose={() => setShowWaitingOnModal(false)}
+                    height="auto"
+                  >
+                    <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
+                      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                        Waiting On
+                      </h3>
+                      <input
+                        type="text"
+                        value={waitingOnInput}
+                        onChange={(e) => setWaitingOnInput(e.target.value)}
+                        placeholder="Who or what are you waiting on?"
+                        className="w-full px-3 py-2.5 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        autoFocus
+                      />
+
+                      {/* Follow-up reminder - opens DatePickerModal directly on mobile */}
+                      <div className="mt-4">
+                        <button
+                          onClick={() => {
+                            onOpenDatePickerModal?.((dateStr) => {
+                              setWaitingOnFollowUp(dateStr);
+                            });
+                          }}
+                          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                        >
+                          {waitingOnFollowUp ? (
+                            <>
+                              <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-zinc-700 dark:text-zinc-300">Follow up {formatDate(waitingOnFollowUp)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span>Add follow-up reminder</span>
+                            </>
+                          )}
+                          <ChevronRight
+                            size={14}
+                            className="text-zinc-400"
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-5">
+                        <button
+                          onClick={() => setShowWaitingOnModal(false)}
+                          className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            onUpdateTask(task.id, {
+                              waitingOn: waitingOnInput.trim()
+                                ? {
+                                    who: waitingOnInput.trim(),
+                                    since: task.waitingOn?.since || Date.now(),
+                                    followUpDate: waitingOnFollowUp || null,
+                                    notes: task.waitingOn?.notes || null,
+                                  }
+                                : null,
+                            });
+                            setShowWaitingOnModal(false);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </BottomSheet>
+                )}
+
+                {/* Desktop: Anchored Popover - matches TaskCreationPopover pattern */}
+                {!isMobileView && showWaitingOnModal && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowWaitingOnModal(false)} />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl p-4">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl p-4">
                       <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
                         Waiting On
                       </h3>
@@ -2047,10 +2169,15 @@ export default function TaskDetail({
                         className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                         autoFocus
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === 'Enter' && !e.shiftKey) {
                             onUpdateTask(task.id, {
                               waitingOn: waitingOnInput.trim()
-                                ? { who: waitingOnInput.trim(), since: Date.now(), followUpDate: null, notes: null }
+                                ? {
+                                    who: waitingOnInput.trim(),
+                                    since: task.waitingOn?.since || Date.now(),
+                                    followUpDate: waitingOnFollowUp || null,
+                                    notes: task.waitingOn?.notes || null,
+                                  }
                                 : null,
                             });
                             setShowWaitingOnModal(false);
@@ -2060,7 +2187,40 @@ export default function TaskDetail({
                           }
                         }}
                       />
-                      <div className="flex justify-end gap-2 mt-3">
+
+                      {/* Follow-up reminder - opens DatePickerModal directly */}
+                      <div className="mt-3">
+                        <button
+                          onClick={() => {
+                            onOpenDatePickerModal?.((dateStr) => {
+                              setWaitingOnFollowUp(dateStr);
+                            });
+                          }}
+                          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                        >
+                          {waitingOnFollowUp ? (
+                            <>
+                              <svg className="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-zinc-700 dark:text-zinc-300">Follow up {formatDate(waitingOnFollowUp)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-3.5 h-3.5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span>Add follow-up reminder</span>
+                            </>
+                          )}
+                          <ChevronRight
+                            size={12}
+                            className="text-zinc-400"
+                          />
+                        </button>
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-4">
                         <button
                           onClick={() => setShowWaitingOnModal(false)}
                           className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
@@ -2071,7 +2231,12 @@ export default function TaskDetail({
                           onClick={() => {
                             onUpdateTask(task.id, {
                               waitingOn: waitingOnInput.trim()
-                                ? { who: waitingOnInput.trim(), since: Date.now(), followUpDate: null, notes: null }
+                                ? {
+                                    who: waitingOnInput.trim(),
+                                    since: task.waitingOn?.since || Date.now(),
+                                    followUpDate: waitingOnFollowUp || null,
+                                    notes: task.waitingOn?.notes || null,
+                                  }
                                 : null,
                             });
                             setShowWaitingOnModal(false);
@@ -2125,10 +2290,14 @@ export default function TaskDetail({
                 )}
               </button>
             ) : (
-              /* Defer dropdown for regular tasks */
+              /* Defer dropdown for regular tasks with BottomSheet on mobile */
               <div className="relative">
                 <button
-                  onClick={() => setShowDeferMenu(!showDeferMenu)}
+                  onClick={() => {
+                    setDeferCustomDate('');
+                    setShowDeferCustomDate(false);
+                    setShowDeferMenu(!showDeferMenu);
+                  }}
                   className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2139,37 +2308,140 @@ export default function TaskDetail({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                {showDeferMenu && (
+
+                {/* Mobile: BottomSheet - matches DatePickerDropdown pattern */}
+                {isMobileView && (
+                  <BottomSheet
+                    isOpen={showDeferMenu}
+                    onClose={() => setShowDeferMenu(false)}
+                    height="auto"
+                  >
+                    <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
+                      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                        Defer until
+                      </h3>
+                      {/* Quick options */}
+                      <div className="space-y-1 mb-4">
+                        {[
+                          { label: 'Tomorrow', days: 1 },
+                          { label: 'Next week', days: 7 },
+                          { label: 'Next month', days: 30 },
+                        ].map(({ label, days }) => (
+                          <button
+                            key={label}
+                            onClick={() => {
+                              onDefer(task.id, getDeferDate(days));
+                              setShowDeferMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Custom date section */}
+                      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                          Or pick a specific date
+                        </div>
+                        <div className="mb-3">
+                          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+                          <input
+                            type="date"
+                            value={deferCustomDate}
+                            onChange={(e) => setDeferCustomDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowDeferMenu(false)}
+                            className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (deferCustomDate) {
+                                onDefer(task.id, deferCustomDate);
+                                setShowDeferMenu(false);
+                              }
+                            }}
+                            disabled={!deferCustomDate}
+                            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                          >
+                            Defer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </BottomSheet>
+                )}
+
+                {/* Desktop: Anchored Popover - matches DatePickerDropdown pattern */}
+                {!isMobileView && showDeferMenu && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowDeferMenu(false)} />
-                    <div className="absolute left-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(1));
-                          setShowDeferMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Tomorrow
-                      </button>
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(7));
-                          setShowDeferMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Next week
-                      </button>
-                      <button
-                        onClick={() => {
-                          onDefer(task.id, getDeferDate(30));
-                          setShowDeferMenu(false);
-                        }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
-                      >
-                        Next month
-                      </button>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowDeferMenu(false)} />
+                    <div className="absolute left-0 bottom-full mb-2 w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+                        Defer until
+                      </h3>
+                      {/* Quick options */}
+                      <div className="space-y-1 mb-3">
+                        {[
+                          { label: 'Tomorrow', days: 1 },
+                          { label: 'Next week', days: 7 },
+                          { label: 'Next month', days: 30 },
+                        ].map(({ label, days }) => (
+                          <button
+                            key={label}
+                            onClick={() => {
+                              onDefer(task.id, getDeferDate(days));
+                              setShowDeferMenu(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Custom date section */}
+                      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
+                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                          Or pick a specific date
+                        </div>
+                        <div className="mb-3">
+                          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+                          <input
+                            type="date"
+                            value={deferCustomDate}
+                            onChange={(e) => setDeferCustomDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowDeferMenu(false)}
+                            className="flex-1 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (deferCustomDate) {
+                                onDefer(task.id, deferCustomDate);
+                                setShowDeferMenu(false);
+                              }
+                            }}
+                            disabled={!deferCustomDate}
+                            className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300 dark:disabled:bg-zinc-600 disabled:cursor-not-allowed rounded-lg transition-colors"
+                          >
+                            Defer
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}
@@ -2319,6 +2591,76 @@ export default function TaskDetail({
             </div>
           </div>
         </>
+      )}
+
+      {/* Follow-up reminder dropdown portal (shared between mobile and desktop) */}
+      {showFollowUpDropdown && followUpDropdownPosition && typeof document !== 'undefined' && createPortal(
+        <>
+          <div className="fixed inset-0 z-[60]" onClick={() => setShowFollowUpDropdown(false)} />
+          <div
+            className="fixed z-[70] w-56 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto"
+            style={{
+              left: Math.min(followUpDropdownPosition.left, window.innerWidth - 230),
+              ...(isMobileView
+                ? { bottom: followUpDropdownPosition.bottom }
+                : { top: followUpDropdownPosition.top }
+              ),
+            }}
+          >
+            {/* None option */}
+            <button
+              onClick={() => {
+                setWaitingOnFollowUp('');
+                setShowFollowUpDropdown(false);
+              }}
+              className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+                !waitingOnFollowUp ? "bg-violet-50 dark:bg-violet-900/20" : ""
+              }`}
+            >
+              <span className="text-zinc-600 dark:text-zinc-400">None</span>
+              {!waitingOnFollowUp && <Check className="w-4 h-4 ml-auto text-violet-500" />}
+            </button>
+            {/* Preset options */}
+            {[
+              { label: 'Tomorrow', days: 1 },
+              { label: 'In 3 days', days: 3 },
+              { label: 'Next week', days: 7 },
+            ].map(({ label, days }) => {
+              const date = new Date();
+              date.setDate(date.getDate() + days);
+              const dateStr = date.toISOString().split('T')[0];
+              return (
+                <button
+                  key={label}
+                  onClick={() => {
+                    setWaitingOnFollowUp(dateStr);
+                    setShowFollowUpDropdown(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+                    waitingOnFollowUp === dateStr ? "bg-violet-50 dark:bg-violet-900/20" : ""
+                  }`}
+                >
+                  <span className="text-zinc-900 dark:text-zinc-100">{label}</span>
+                  {waitingOnFollowUp === dateStr && <Check className="w-4 h-4 ml-auto text-violet-500" />}
+                </button>
+              );
+            })}
+            {/* Custom option */}
+            <button
+              onClick={() => {
+                setShowFollowUpDropdown(false);
+                onOpenDatePickerModal?.((dateStr) => {
+                  setWaitingOnFollowUp(dateStr);
+                });
+              }}
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-200 dark:border-zinc-700"
+            >
+              <Plus size={14} />
+              <span>Custom date...</span>
+            </button>
+          </div>
+        </>,
+        document.body
       )}
     </div>
   );
