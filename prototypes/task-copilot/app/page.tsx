@@ -99,6 +99,7 @@ import TasksView from "@/components/tasks/TasksView";
 import SearchView from "@/components/search/SearchView";
 import ProjectsView from "@/components/projects/ProjectsView";
 import ProjectModal from "@/components/shared/ProjectModal";
+import DatePickerModal from "@/components/shared/DatePickerModal";
 import FilterDrawer from "@/components/shared/FilterDrawer";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
 import ToastContainer, { Toast } from "@/components/shared/Toast";
@@ -113,7 +114,7 @@ import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, Col
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
-import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA, supportsNotifications, getNotificationPermission } from "@/lib/notifications";
+import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA, cancelReminder, supportsNotifications, getNotificationPermission } from "@/lib/notifications";
 import NotificationPermissionBanner from "@/components/shared/NotificationPermissionBanner";
 
 // ============================================
@@ -142,6 +143,8 @@ export default function Home() {
   const [previousView, setPreviousView] = useState<ViewType>('focus');
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
+  const [pendingDateCallback, setPendingDateCallback] = useState<((dateStr: string) => void) | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stagingIsNewArrival, setStagingIsNewArrival] = useState(false);
@@ -290,13 +293,16 @@ export default function Home() {
     });
   }, [getPokeSettings, state.userSettings]);
 
-  // Cancel all notifications for a task (when deleted)
+  // Cancel all notifications for a task (when deleted or completed)
   const cancelNotificationForTask = useCallback((taskId: string) => {
     // Cancel in-app notification
     setNotifications((prev) => removeNotificationsForTask(taskId, prev));
 
     // Cancel PWA notification
     cancelStartPokePWA(taskId);
+
+    // Cancel user-set reminders
+    cancelReminder(taskId);
   }, []);
 
   // Helper to map current view to AI context
@@ -2649,6 +2655,23 @@ export default function Home() {
   }, []);
 
   // ============================================
+  // Date Picker Modal Handlers
+  // ============================================
+
+  const handleOpenDatePickerModal = useCallback((callback: (dateStr: string) => void) => {
+    setPendingDateCallback(() => callback);
+    setDatePickerModalOpen(true);
+  }, []);
+
+  const handleSelectDate = useCallback((dateStr: string) => {
+    setDatePickerModalOpen(false);
+    if (pendingDateCallback) {
+      pendingDateCallback(dateStr);
+      setPendingDateCallback(null);
+    }
+  }, [pendingDateCallback]);
+
+  // ============================================
   // Toast Handlers
   // ============================================
 
@@ -3046,6 +3069,9 @@ export default function Home() {
         tasks: prev.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
       };
     });
+
+    // Cancel notifications for this recurring task instance
+    cancelNotificationForTask(taskId);
 
     // Show toast with streak info and undo
     const toastId = generateId();
@@ -3749,6 +3775,7 @@ export default function Home() {
   const handleStepComplete = useCallback((taskId: string, stepId: string, completed: boolean) => {
     let movedToUpcoming = false;
     let movedTaskTitle = '';
+    let taskCompletedViaSteps = false;
 
     setState((prev) => {
       const task = prev.tasks.find((t) => t.id === taskId);
@@ -3817,6 +3844,8 @@ export default function Home() {
         const newQueueItems = prev.focusQueue.items
           .filter((i) => i.taskId !== taskId)
           .map((item, idx) => ({ ...item, order: idx }));
+
+        taskCompletedViaSteps = true;
 
         return {
           ...prev,
@@ -3907,7 +3936,12 @@ export default function Home() {
         type: 'success',
       }]);
     }
-  }, []);
+
+    // Cancel notifications for the completed task
+    if (taskCompletedViaSteps) {
+      cancelNotificationForTask(taskId);
+    }
+  }, [cancelNotificationForTask]);
 
   const handleAddStep = useCallback((taskId: string, text: string, mode?: 'executing' | 'managing') => {
     setState((prev) => {
@@ -5861,6 +5895,7 @@ export default function Home() {
                 onRejectTitle={handleRejectTitle}
                 onOpenProjectModal={handleOpenProjectModal}
                 onOpenProjectModalWithCallback={handleOpenProjectModalWithCallback}
+                onOpenDatePickerModal={handleOpenDatePickerModal}
                 aiTargetContext={aiTargetContext}
                 isAILoading={aiAssistant.state.isLoading}
                 onOpenAIPalette={handleOpenAIPalette}
@@ -5984,6 +6019,18 @@ export default function Home() {
           }
         }}
         onDelete={handleDeleteProject}
+      />
+
+      {/* Date Picker Modal */}
+      <DatePickerModal
+        isOpen={datePickerModalOpen}
+        onClose={() => {
+          setDatePickerModalOpen(false);
+          setPendingDateCallback(null);
+        }}
+        onSelectDate={handleSelectDate}
+        title="Select Follow-up Date"
+        minDate={new Date().toISOString().split('T')[0]}
       />
 
       {/* Toast Notifications - centered within main content area */}
