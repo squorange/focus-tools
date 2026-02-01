@@ -1,7 +1,7 @@
 # Focus Tools — Roadmap
 
 > **Status:** Living document
-> **Last Updated:** January 2026
+> **Last Updated:** February 2026
 > **Purpose:** Track progress and plan future work
 
 ---
@@ -17,7 +17,14 @@
 | PWA & Mobile | ✅ Complete |
 | Nudge System MVP | ✅ Complete |
 | Recurring Tasks | 🔄 In Progress (Phase 1-2 done) |
-| Backend / Persistence | ⏸️ Deferred |
+| IndexedDB Migration | 📋 Planned (Infra Phase 1) |
+| Test Harnesses | 📋 Planned (Infra Phase 2) |
+| Design System Extraction | 📋 Planned (Infra Phase 3) |
+| Auth & User Accounts | 📋 Planned (Infra Phase 4) |
+| Capacitor (Native) | 📋 Planned (Infra Phase 5) |
+| Theming Infrastructure | 📋 Planned (Infra Phase 6) |
+| Orbital Zen Theme | 📋 Planned (Infra Phase 7) |
+| Supabase Sync | ⏸️ Deferred (Infra Phase 8) |
 
 ---
 
@@ -87,32 +94,61 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 | Priority | Item | Status |
 |----------|------|--------|
 | P1 | Recurring Tasks (Phase 3-6) | ⬜ |
-| P1 | Proactive stale task nudge | ⬜ |
+| P1 | IndexedDB Migration (Infra Phase 1) | 📋 Planned |
+| P1 | Test Harnesses (Infra Phase 2) | 📋 Planned |
+| P2 | Design System Extraction (Infra Phase 3) | ⬜ |
+| P2 | Proactive stale task nudge | ⬜ |
 | P2 | Inline AI Actions (Tasks) | ⬜ |
-| P2 | Reflection/journey view | ⬜ |
-| P2 | Voice capture | ⬜ |
-| P3 | Context switch bookmarking | ⬜ |
+| P3 | Auth & Accounts (Infra Phase 4) | ⬜ |
+| P3 | Capacitor + Push (Infra Phase 5) | ⬜ |
 
 ---
 
 ## Upcoming
 
-### Phase 3b: Backend (Deferred)
-- Supabase backend
-- User authentication
-- Cross-device sync
+### Infrastructure Evolution (Planned Sequence)
 
-### Phase 4: Recall & Proactive
+The following improvements build on each other and should be implemented in order:
+
+| Phase | Feature | Purpose | Enables |
+|-------|---------|---------|---------|
+| **1** | [IndexedDB Migration](./features/indexeddb-migration/) | Async storage, larger capacity | Service worker access, offline-first |
+| **2** | Test Harnesses | Integration tests, E2E framework | Safe refactoring, CI/CD |
+| **3** | Design System Extraction | Design tokens, component primitives | Theming, Orbital Zen |
+| **4** | Auth & User Accounts | Supabase auth, sessions | Multi-device, cloud sync prep |
+| **5** | Capacitor (Native) | iOS/Android wrapper | Push notifications, voice APIs |
+| **6** | Theming Infrastructure | Theme provider, switching UI | Multiple visual modes |
+| **7** | [Orbital Zen Theme](./concepts/ORBITAL_ZEN.md) | Planetary visualization | Calming alternative UI |
+| **8** | Supabase Sync | Cross-device sync, backup | Collaboration foundations |
+
+**Why this order:**
+1. **IndexedDB first** — Solves immediate localStorage limits, enables service worker access, foundation for everything else
+2. **Test harnesses second** — Safety net before major refactoring (design system, auth)
+3. **Design system third** — Separates logic from presentation, enables theming
+4. **Auth fourth** — User identity needed before cloud features and native push
+5. **Capacitor fifth** — Native push notifications require auth backend; voice APIs need native shell
+6. **Theming sixth** — Build on design system foundation
+7. **Orbital Zen seventh** — First alternative theme, validates theme architecture
+8. **Supabase sync last** — Optional cloud sync on top of solid local-first foundation
+
+See [ARCHITECTURE_EVOLUTION_GUIDE.md](./ARCHITECTURE_EVOLUTION_GUIDE.md) for decision framework.
+
+### Feature Work (Can Parallel)
+
+These can be worked on alongside infrastructure phases:
+- Recurring Tasks (Phase 3-6)
+- Proactive stale task nudge
+- Inline AI Actions (Tasks)
+- Reflection/journey view
+
+### Later Features
+
 - "What was that thing about X?" recall
 - Stale task detection (drift)
 - Proactive nudges (configurable)
 - Conflict detection
-
-### Phase 5: Polish & Expand
-- Mobile optimization
 - Onboarding flow
-- Settings / preferences
-- Export / backup
+- Settings / preferences improvements
 
 ---
 
@@ -121,10 +157,10 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 | Feature | Notes |
 |---------|-------|
 | Calendar integration | External API required |
-| Voice input | Web Speech API |
+| Voice input | After Capacitor (native APIs preferred) |
 | Email parsing | Extract tasks from email |
-| Collaboration | Shared tasks, family accounts |
-| Orbital Zen UI | Spatial visualization (concept exists) |
+| Collaboration | After Supabase sync |
+| Community theme packs | After Orbital Zen validates theme architecture |
 | AI importance/energy inference | Learn from patterns |
 
 ---
@@ -135,9 +171,12 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 |------|----------|-----------|
 | 2025-12 | Single AI persona | Simpler than dual personas |
 | 2025-12 | Admin ↔ Execution parallel | Matches real usage patterns |
-| 2025-12 | List view for MVP | Orbital Zen deferred |
+| 2025-12 | List view for MVP | Orbital Zen deferred to Phase 7 |
 | 2026-01 | localStorage for now | Validate UX before backend |
 | 2026-01 | PWA → Capacitor path | Code reuse, quick iteration |
+| 2026-02 | 8-phase infrastructure evolution | IndexedDB → Harnesses → Design System → Auth → Capacitor → Theming → Orbital Zen → Supabase |
+| 2026-02 | Harnesses before design system | Safety net for major refactoring |
+| 2026-02 | Auth before Capacitor | Push notifications need user identity |
 
 ---
 

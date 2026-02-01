@@ -90,12 +90,27 @@ Pending:
 
 ---
 
+## Infrastructure Evolution
+
+| Phase | Feature | Status | Documentation |
+|-------|---------|--------|---------------|
+| 1 | [**IndexedDB Migration**](./indexeddb-migration/) | 📋 Planned | [SPEC](./indexeddb-migration/SPEC.md) |
+| 2 | Test Harnesses | 📋 Planned | Not documented |
+| 3 | Design System Extraction | 📋 Planned | Not documented |
+| 4 | Auth & User Accounts | 📋 Planned | Not documented |
+| 5 | Capacitor (Native) | 📋 Planned | Not documented |
+| 6 | Theming Infrastructure | 📋 Planned | Not documented |
+| 7 | Orbital Zen Theme | 📋 Planned | [Concept](../concepts/ORBITAL_ZEN.md) |
+| 8 | Supabase Sync | ⏸️ Deferred | Not documented |
+
+---
+
 ## Planned Features
 
 | Feature | Priority | Documentation |
 |---------|----------|---------------|
-| Voice Capture | P2 | Not documented |
-| Reflection View | P2 | Not documented |
+| Voice Capture | P2 | After Capacitor |
+| Reflection View | P3 | Not documented |
 | Calendar Integration | Future | Not documented |
 | Email Parsing | Future | Not documented |
 

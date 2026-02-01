@@ -183,15 +183,22 @@ const result = await handler.process(input);
 
 ## 5. Focus Tools Phase Mapping
 
-| Phase | Infrastructure Focus | Defer Until Later |
-|-------|---------------------|-------------------|
-| **Phase 0-1** (POC) | Frameworks, basic hooks, mock data | Everything else |
-| **Phase 2** (Multi-task) | State management patterns, PWA setup | Backend, auth, testing |
-| **Phase 3** (Backend) | Supabase, auth middleware, integration tests | Advanced orchestration |
-| **Phase 4** (Polish) | E2E tests, error handling, logging | Agent frameworks |
-| **Phase 5** (Scale) | Performance, monitoring, advanced orchestration | Over-engineering |
+### Infrastructure Evolution (Planned)
 
-### Current Phase Checklist (Phase 1-2)
+| Phase | Focus | Enables |
+|-------|-------|---------|
+| **1. IndexedDB Migration** | Async storage, larger capacity | Service worker access, offline-first |
+| **2. Test Harnesses** | Integration tests, E2E framework | Safe refactoring, CI/CD |
+| **3. Design System Extraction** | Design tokens, component primitives | Theming, Orbital Zen |
+| **4. Auth & User Accounts** | Supabase auth, session management | Multi-device, cloud sync prep |
+| **5. Capacitor (Native)** | iOS/Android wrapper | Push notifications, voice APIs |
+| **6. Theming Infrastructure** | Theme provider, switching UI | Multiple visual modes |
+| **7. Orbital Zen Theme** | Planetary visualization | Calming alternative UI |
+| **8. Supabase Sync** | Cross-device sync, backup | Collaboration foundations |
+
+See [ROADMAP.md](./ROADMAP.md) for detailed status and [features/indexeddb-migration/](./features/indexeddb-migration/) for current work.
+
+### Current Phase Checklist
 
 | Decision | Status | Notes |
 |----------|--------|-------|
@@ -199,8 +206,10 @@ const result = await handler.process(input);
 | AI abstraction | ✅ In place | `useAIAssistant` hook |
 | State machine formalization | 🔶 Optional | If state bugs emerge, formalize |
 | AI domain orchestration | ⏳ Watch | When Admin/Execution prompts diverge significantly |
-| Test harness | ⏳ Phase 3 | Before Supabase integration |
-| Context middleware | ⏳ Phase 3+ | When AI needs persistent user context |
+| IndexedDB migration | 📋 Planned | Phase 1 of infrastructure evolution |
+| Test harnesses | 📋 Planned | Phase 2, before design system work |
+| Design system extraction | 📋 Planned | Phase 3, enables theming |
+| Context middleware | ⏳ Phase 4 | When auth introduces persistent user context |
 
 ---
 
@@ -234,14 +243,18 @@ Track emerging complexity here. When 2+ signals appear, it's time to act.
 |------|------------------|-------|------------------|
 | AI routing | Planning mode (SYSTEM_PROMPT) vs Focus mode (FOCUS_MODE_PROMPT) diverging [Jan 2026] | 1/2 | Extract orchestrator |
 | State management | Queue selection logic + modal state getting complex; FocusSelectionModal simplified [Jan 2026] | 1/2 | Formalize state machine |
-| Testing | queue-reorder.ts has unit tests [Jan 2026] | 0/2 | Add integration tests |
+| Testing | queue-reorder.ts has unit tests [Jan 2026]; priority calculation has 64 tests [Jan 2026] | 1/2 | Add integration tests |
 | Context building | Per-view AI context manageable via useContextualPrompts hook | 0/2 | Add context middleware |
+| Component coupling | UI and logic intertwined; theming would require significant refactoring [Feb 2026] | 1/2 | Extract design system |
+| Storage limits | localStorage pruning logic exists; events truncated to 1000 [Feb 2026] | 1/2 | Migrate to IndexedDB |
 
-**Current Assessment (January 2026):**
+**Current Assessment (February 2026):**
 - **AI routing:** Two distinct prompt modes exist but share same API route. If a third mode emerges (e.g., Triage AI), consider router extraction.
 - **State management:** Recent modal simplification reduced complexity. Watch for coordination bugs between MiniBar ↔ Palette ↔ TaskDetail.
-- **Testing:** Unit tests exist for critical logic (queue-reorder). Integration tests should come before Supabase (Phase 3).
-- **Context building:** Current hook-based approach working well. Middleware needed when AI requires persistent user history.
+- **Testing:** Unit tests exist for critical logic (queue-reorder, priority calculation). Integration tests needed before auth/backend work. Harnesses planned as Phase 2 of infrastructure evolution.
+- **Context building:** Current hook-based approach working well. Middleware needed when auth introduces persistent user history.
+- **Component coupling:** Theming/Orbital Zen requires separation of logic from presentation. Design system extraction planned after IndexedDB migration.
+- **Storage limits:** localStorage reaching practical limits. IndexedDB migration planned as Phase 1 of infrastructure evolution.
 
 **How to update:** When you notice a signal (repeated code, coordination bug, etc.), add it here with date. When count reaches threshold, address it.
 
