@@ -189,12 +189,13 @@ const result = await handler.process(input);
 |-------|-------|---------|
 | **1. IndexedDB Migration** | Async storage, larger capacity | Service worker access, offline-first |
 | **2. Test Harnesses** | Integration tests, E2E framework | Safe refactoring, CI/CD |
-| **3. Design System Extraction** | Design tokens, component primitives | Theming, Orbital Zen |
-| **4. Auth & User Accounts** | Supabase auth, session management | Multi-device, cloud sync prep |
-| **5. Capacitor (Native)** | iOS/Android wrapper | Push notifications, voice APIs |
-| **6. Theming Infrastructure** | Theme provider, switching UI | Multiple visual modes |
-| **7. Orbital Zen Theme** | Planetary visualization | Calming alternative UI |
-| **8. Supabase Sync** | Cross-device sync, backup | Collaboration foundations |
+| **3. AI Guardrails** | Reliability, safety, consistency constraints | Production-ready AI |
+| **4. Design System Extraction** | Design tokens, component primitives | Theming, Orbital Zen |
+| **5. Auth & User Accounts** | Supabase auth, session management | Multi-device, cloud sync prep |
+| **6. Capacitor (Native)** | iOS/Android wrapper | Push notifications, voice APIs |
+| **7. Theming Infrastructure** | Theme provider, switching UI | Multiple visual modes |
+| **8. Orbital Zen Theme** | Planetary visualization | Calming alternative UI |
+| **9. Supabase Sync** | Cross-device sync, backup | Collaboration foundations |
 
 See [ROADMAP.md](./ROADMAP.md) for detailed status and [features/indexeddb-migration/](./features/indexeddb-migration/) for current work.
 
@@ -207,9 +208,10 @@ See [ROADMAP.md](./ROADMAP.md) for detailed status and [features/indexeddb-migra
 | State machine formalization | 🔶 Optional | If state bugs emerge, formalize |
 | AI domain orchestration | ⏳ Watch | When Admin/Execution prompts diverge significantly |
 | IndexedDB migration | 📋 Planned | Phase 1 of infrastructure evolution |
-| Test harnesses | 📋 Planned | Phase 2, before design system work |
-| Design system extraction | 📋 Planned | Phase 3, enables theming |
-| Context middleware | ⏳ Phase 4 | When auth introduces persistent user context |
+| Test harnesses | 📋 Planned | Phase 2, before AI guardrails |
+| AI guardrails | 📋 Planned | Phase 3, reliability/safety/consistency constraints |
+| Design system extraction | 📋 Planned | Phase 4, enables theming |
+| Context middleware | ⏳ Phase 5 | When auth introduces persistent user context |
 
 ---
 

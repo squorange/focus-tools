@@ -96,12 +96,13 @@ Pending:
 |-------|---------|--------|---------------|
 | 1 | [**IndexedDB Migration**](./indexeddb-migration/) | 📋 Planned | [SPEC](./indexeddb-migration/SPEC.md) |
 | 2 | Test Harnesses | 📋 Planned | Not documented |
-| 3 | Design System Extraction | 📋 Planned | Not documented |
-| 4 | Auth & User Accounts | 📋 Planned | Not documented |
-| 5 | Capacitor (Native) | 📋 Planned | Not documented |
-| 6 | Theming Infrastructure | 📋 Planned | Not documented |
-| 7 | Orbital Zen Theme | 📋 Planned | [Concept](../concepts/ORBITAL_ZEN.md) |
-| 8 | Supabase Sync | ⏸️ Deferred | Not documented |
+| 3 | [**AI Guardrails**](./ai-guardrails/) | 📋 Planned | [README](./ai-guardrails/README.md) |
+| 4 | Design System Extraction | 📋 Planned | Not documented |
+| 5 | Auth & User Accounts | 📋 Planned | Not documented |
+| 6 | Capacitor (Native) | 📋 Planned | Not documented |
+| 7 | Theming Infrastructure | 📋 Planned | Not documented |
+| 8 | Orbital Zen Theme | 📋 Planned | [Concept](../concepts/ORBITAL_ZEN.md) |
+| 9 | Supabase Sync | ⏸️ Deferred | Not documented |
 
 ---
 
