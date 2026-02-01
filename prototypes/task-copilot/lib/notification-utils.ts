@@ -841,3 +841,43 @@ export function rescanAllTasksForPokes(
 
   return { notifications: updated, result };
 }
+
+// ============================================
+// Waiting Task Staleness Check
+// ============================================
+
+/**
+ * Check if a task's waitingOn status is stale (>7 days without follow-up date).
+ * Used for generating 'waiting_stale' nudges.
+ *
+ * A waiting task is considered stale when:
+ * 1. waitingOn is set
+ * 2. No followUpDate is set (user hasn't scheduled a reminder)
+ * 3. More than 7 days have passed since waitingOn.since
+ */
+export function isWaitingTaskStale(task: Task, staleDays: number = 7): boolean {
+  if (!task.waitingOn) return false;
+  if (task.waitingOn.followUpDate) return false; // Has a follow-up date, not stale
+  if (task.status === 'complete' || task.status === 'archived') return false;
+  if (task.deletedAt) return false;
+
+  const daysSince = (Date.now() - task.waitingOn.since) / (1000 * 60 * 60 * 24);
+  return daysSince > staleDays;
+}
+
+/**
+ * Get all stale waiting tasks.
+ * Returns tasks that have been waiting >7 days without a follow-up date.
+ */
+export function getStaleWaitingTasks(tasks: Task[], staleDays: number = 7): Task[] {
+  return tasks.filter((task) => isWaitingTaskStale(task, staleDays));
+}
+
+/**
+ * Get the number of days a task has been waiting.
+ * Returns null if the task is not in a waiting state.
+ */
+export function getWaitingDays(task: Task): number | null {
+  if (!task.waitingOn) return null;
+  return Math.floor((Date.now() - task.waitingOn.since) / (1000 * 60 * 60 * 24));
+}

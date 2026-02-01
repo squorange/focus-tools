@@ -22,7 +22,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** January 29, 2026
+**Last Updated:** January 31, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -44,6 +44,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v30 | Waiting On refinements: Follow-up date picker, tasks stay in Staging with pill, BottomSheet modals |
 | v29 | BottomSheet iOS fix: Portal rendering, keyboard detection via visualViewport API |
 | v28 | Nudge System MVP (Phases 0-7): Priority calculation (64 tests), Priority Queue, orchestrator |
 | v27 | Recurring Tasks Phase 1-2: Data model, recurring-utils, RoutineCard + RoutinesGallery |
@@ -270,6 +271,7 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-01-31 | v30 | Waiting On refinements + Defer date picker |
 | 2026-01-29 | v29 | BottomSheet iOS fix |
 | 2026-01-28 | v28 | Nudge System MVP complete |
 | 2026-01-27 | v27 | Recurring Tasks Phase 1-2 |

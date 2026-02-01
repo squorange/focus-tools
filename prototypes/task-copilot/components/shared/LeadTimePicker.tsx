@@ -102,7 +102,7 @@ export default function LeadTimePicker({
       <BottomSheet isOpen={isOpen} onClose={onClose} height="auto">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
             <div>
               <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
                 Set Lead Time
@@ -121,7 +121,10 @@ export default function LeadTimePicker({
           </div>
 
           {/* Options */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-2"
+            style={{ paddingBottom: 'calc(1rem + var(--safe-area-bottom, env(safe-area-inset-bottom)))' }}
+          >
             {PRESET_OPTIONS.map((option) => {
               const isSelected = value === option.value;
               const effectiveDate =

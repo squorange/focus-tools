@@ -400,7 +400,7 @@ export default function SettingsView({
               Minimum time between nudges for the same task.
             </p>
           </div>
-          <div className="border-t border-zinc-200 dark:divide-zinc-800">
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
             <button
               onClick={() => setShowCooldownPicker(true)}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"

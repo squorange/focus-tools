@@ -455,6 +455,7 @@ export type NudgeType =
   | 'deadline_approaching'
   | 'pool_item_stale'
   | 'waiting_followup_due'
+  | 'waiting_stale'           // Waiting tasks without follow-up date that are >7 days old
   | 'deferred_resurfaced';
 
 export type NudgeStatus = 'pending' | 'dismissed' | 'snoozed' | 'actioned';

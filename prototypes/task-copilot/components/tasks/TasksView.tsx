@@ -158,19 +158,21 @@ export default function TasksView({
   const isInQueue = (taskId: string) => queueTaskIds.has(taskId);
 
   // Tab definitions with counts
+  // Note: Waiting tasks now appear in Staging (just with pill), not in Hold tab
   const tabs = useMemo(() => [
-    { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.isRecurring && !queueTaskIds.has(t.id) && !t.waitingOn).length },
+    { id: 'staging' as TasksTab, label: 'Staging', count: inboxTasks.length + poolTasks.filter(t => !t.isRecurring && !queueTaskIds.has(t.id)).length },
     { id: 'routines' as TasksTab, label: 'Routines', count: routinesAll.length },
-    { id: 'on_hold' as TasksTab, label: 'Hold', count: waitingTasksAll.length + deferredTasksAll.length },
+    { id: 'on_hold' as TasksTab, label: 'Hold', count: deferredTasksAll.length },
     { id: 'done' as TasksTab, label: 'Done', count: completedTasksAll.length + archivedTasksAll.length },
-  ], [inboxTasks, poolTasks, queueTaskIds, routinesAll, waitingTasksAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
+  ], [inboxTasks, poolTasks, queueTaskIds, routinesAll, deferredTasksAll, completedTasksAll, archivedTasksAll]);
 
   // Staging tab: Filter tasks - resurfaced, ready (exclude tasks in queue)
   const resurfacedTasks = poolTasks.filter(
     (t) => t.deferredUntil && new Date(t.deferredUntil) <= new Date()
   );
+  // Ready tasks: exclude recurring, deferred, and queued (waiting tasks now appear here with pill)
   const readyTasks = poolTasks.filter(
-    (t) => !t.isRecurring && !t.waitingOn && !t.deferredUntil && !queueTaskIds.has(t.id)
+    (t) => !t.isRecurring && !t.deferredUntil && !queueTaskIds.has(t.id)
   );
 
   // Priority-ranked tasks (for tier sections)
@@ -262,71 +264,38 @@ export default function TasksView({
         />
       )}
 
-      {/* On Hold Tab */}
+      {/* On Hold Tab - Deferred tasks only (waiting tasks appear in Staging with pill) */}
       {activeTab === 'on_hold' && (
         <>
-          {waitingTasksAll.length === 0 && deferredTasksAll.length === 0 ? (
+          {deferredTasksAll.length === 0 ? (
             <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
-              No tasks on hold
+              No deferred tasks
             </div>
           ) : (
-            <>
-              {/* Waiting Section */}
-              {waitingTasksAll.length > 0 && (
-                <section>
-                  <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-                    <span>Waiting</span>
-                    <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
-                      {waitingTasksAll.length}
-                    </span>
-                  </h3>
-                  <div className="space-y-2">
-                    {waitingTasksAll.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        isInQueue={isInQueue(task.id)}
-                        project={getProject(task)}
-                        onOpen={() => onOpenTask(task.id)}
-                        onAddToQueue={() => onAddToQueue(task.id)}
-                        onDefer={onDefer}
-                        onPark={onPark}
-                        onDelete={onDelete}
-                        badge={`Waiting: ${task.waitingOn?.who}`}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {/* Deferred Section */}
-              {deferredTasksAll.length > 0 && (
-                <section className={waitingTasksAll.length > 0 ? "mt-6" : ""}>
-                  <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
-                    <span>Deferred</span>
-                    <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
-                      {deferredTasksAll.length}
-                    </span>
-                  </h3>
-                  <div className="space-y-2">
-                    {deferredTasksAll.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        isInQueue={isInQueue(task.id)}
-                        project={getProject(task)}
-                        onOpen={() => onOpenTask(task.id)}
-                        onAddToQueue={() => onAddToQueue(task.id)}
-                        onDefer={onDefer}
-                        onPark={onPark}
-                        onDelete={onDelete}
-                        badge={`Until ${formatDate(task.deferredUntil!)}`}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
-            </>
+            <section>
+              <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+                <span>Deferred</span>
+                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                  {deferredTasksAll.length}
+                </span>
+              </h3>
+              <div className="space-y-2">
+                {deferredTasksAll.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    isInQueue={isInQueue(task.id)}
+                    project={getProject(task)}
+                    onOpen={() => onOpenTask(task.id)}
+                    onAddToQueue={() => onAddToQueue(task.id)}
+                    onDefer={onDefer}
+                    onPark={onPark}
+                    onDelete={onDelete}
+                    badge={`Until ${formatDate(task.deferredUntil!)}`}
+                  />
+                ))}
+              </div>
+            </section>
           )}
         </>
       )}
@@ -438,7 +407,7 @@ export default function TasksView({
                 onDefer={onDefer}
                 onPark={onPark}
                 onDelete={onDelete}
-                badge="Deferred"
+                badge={task.waitingOn ? `Waiting: ${task.waitingOn.who}` : "Resurfaced"}
               />
             ))}
           </div>
@@ -564,6 +533,7 @@ function TierSection({
               onDefer={onDefer}
               onPark={onPark}
               onDelete={onDelete}
+              badge={task.waitingOn ? `Waiting: ${task.waitingOn.who}` : undefined}
             />
           ))}
         </div>

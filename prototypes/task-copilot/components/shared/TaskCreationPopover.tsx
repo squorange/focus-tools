@@ -56,8 +56,12 @@ export default function TaskCreationPopover({
       // to prevent keyboard from triggering before sheet is visible
       if (isMobileView) {
         const timer = setTimeout(() => {
-          inputRef.current?.focus();
-        }, 350);
+          if (inputRef.current) {
+            inputRef.current.focus();
+            // iOS: trigger click to ensure keyboard appears
+            inputRef.current.click();
+          }
+        }, 400);
         return () => clearTimeout(timer);
       } else {
         // Desktop: focus immediately
