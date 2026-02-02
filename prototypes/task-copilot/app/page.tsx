@@ -115,6 +115,9 @@ import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
 import { resolveStatus, buildStatusContext } from "@/lib/ai-status-rules";
 import { initializeReminders, initializeStartPokes, scheduleStartPokePWA, cancelStartPokePWA, cancelReminder, supportsNotifications, getNotificationPermission } from "@/lib/notifications";
+import { checkRateLimit, recordRequest, getRateLimitMessage, DEFAULT_CONFIG } from "@/lib/rate-limit";
+import { trackAIRequest, trackAIResponse, trackSuggestionAction, AIRequestCategory } from "@/lib/analytics";
+import { isOnline, getOfflineMessage, sanitizeErrorForUser } from "@/lib/ai-safety";
 import NotificationPermissionBanner from "@/components/shared/NotificationPermissionBanner";
 
 // ============================================
@@ -330,6 +333,51 @@ export default function Home() {
     query: string,
     context: AIAssistantContext
   ): Promise<AISubmitResult> => {
+    // --- AI Guardrails: Pre-flight checks ---
+
+    // 1. Check if offline
+    if (!isOnline()) {
+      return {
+        response: {
+          type: 'error',
+          content: { text: getOfflineMessage() },
+          actions: [],
+        },
+      };
+    }
+
+    // 2. Check rate limits
+    const rateLimitStatus = checkRateLimit(DEFAULT_CONFIG);
+    if (!rateLimitStatus.allowed) {
+      return {
+        response: {
+          type: 'error',
+          content: { text: getRateLimitMessage(rateLimitStatus) },
+          actions: [],
+        },
+      };
+    }
+
+    // 3. Infer request category for analytics
+    const requestCategory: AIRequestCategory = (() => {
+      if (context === 'queue') return 'queue_recommend';
+      if (context === 'focusMode') return 'focus_help';
+      const queryLower = query.toLowerCase();
+      if (queryLower.includes('break') || queryLower.includes('steps')) return 'breakdown';
+      if (queryLower.includes('estimate') || queryLower.includes('how long')) return 'estimate';
+      if (queryLower.includes('start') || queryLower.includes('begin')) return 'get_started';
+      return 'question';
+    })();
+
+    // 4. Track request start for analytics
+    const requestStartTime = trackAIRequest(requestCategory, {
+      conversationTurn: state.queueMessages?.length || 0,
+      taskCount: state.tasks.length,
+      queueLength: state.focusQueue.items.filter(i => !i.completed).length,
+    });
+
+    // --- End Guardrails ---
+
     // Track when query was submitted for staging/palette relationship
     setLastQuerySubmittedAt(Date.now());
 
@@ -656,11 +704,32 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new Error(`API error ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+        // Try to get error data from response
+        let errorData: StructureResponse & { errorType?: string };
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = {
+            action: 'none',
+            taskTitle: null,
+            steps: null,
+            suggestions: null,
+            edits: null,
+            deletions: null,
+            message: sanitizeErrorForUser(new Error(`HTTP ${response.status}`)),
+            errorType: 'http_error',
+          };
+        }
+        // Track failed response for analytics
+        trackAIResponse(requestStartTime, false, errorData.errorType);
+        throw new Error(errorData.message || `API error ${response.status}`);
       }
 
       const data: StructureResponse = await response.json();
+
+      // --- AI Guardrails: Record successful request ---
+      recordRequest();
+      trackAIResponse(requestStartTime, true);
 
       // Determine response category (text → Palette, structured → StagingArea)
       // The API returns `action` which maps to tool categories
@@ -867,10 +936,14 @@ export default function Home() {
       }
       return { response: structureToAIResponse(data) };
     } catch (error) {
+      // Analytics already tracked in response handling above for API errors
+      // This catches network/fetch errors
+      const errorMessage = error instanceof Error ? error.message : sanitizeErrorForUser(error);
+
       return {
         response: {
           type: 'error',
-          content: { text: error instanceof Error ? error.message : 'Something went wrong' },
+          content: { text: errorMessage },
           actions: [{ id: 'retry', label: 'Retry', variant: 'primary', onClick: () => {} }],
         },
       };
@@ -4204,6 +4277,28 @@ export default function Home() {
   // ============================================
 
   const handleRequestRecommendation = useCallback(async () => {
+    // --- AI Guardrails: Pre-flight checks ---
+
+    // 1. Check if offline
+    if (!isOnline()) {
+      showToast({ type: 'error', message: getOfflineMessage() });
+      return;
+    }
+
+    // 2. Check rate limits
+    const rateLimitStatus = checkRateLimit(DEFAULT_CONFIG);
+    if (!rateLimitStatus.allowed) {
+      showToast({ type: 'warning', message: getRateLimitMessage(rateLimitStatus) });
+      return;
+    }
+
+    // 3. Track request start for analytics
+    const requestStartTime = trackAIRequest('queue_recommend', {
+      queueLength: state.focusQueue.items.filter(i => !i.completed).length,
+    });
+
+    // --- End Guardrails ---
+
     // Get today items from the focus queue
     const todayLineIndex = state.focusQueue.todayLineIndex;
     const activeItems = state.focusQueue.items
@@ -4275,11 +4370,17 @@ export default function Home() {
       });
 
       if (!response.ok) {
+        // Track failed response for analytics
+        trackAIResponse(requestStartTime, false, 'http_error');
         const errorText = await response.text().catch(() => '');
-        throw new Error(`API error ${response.status}: ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+        throw new Error(sanitizeErrorForUser(new Error(`API error ${response.status}`)));
       }
 
       const data = await response.json();
+
+      // --- AI Guardrails: Record successful request ---
+      recordRequest();
+      trackAIResponse(requestStartTime, true);
 
       if (data.recommendation) {
         // Build AIResponse with recommendation type
@@ -4301,10 +4402,10 @@ export default function Home() {
         });
       }
     } catch (error) {
-      console.error("Recommendation request failed:", error);
-      aiAssistant.setError('Failed to get recommendation. Try again?');
+      console.error("[AI Error] Recommendation request failed:", error);
+      aiAssistant.setError(sanitizeErrorForUser(error));
     }
-  }, [state.focusQueue, state.tasks, excludedTaskIds, aiAssistant]);
+  }, [state.focusQueue, state.tasks, excludedTaskIds, aiAssistant, showToast]);
 
   const handleSkipRecommendation = useCallback((taskId: string) => {
     // Add current recommendation to excluded list and re-query

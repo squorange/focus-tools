@@ -2,7 +2,7 @@
 
 > Index of all implemented and planned features with documentation links.
 
-**Last Updated:** January 2026
+**Last Updated:** February 2026
 
 ---
 
@@ -94,9 +94,9 @@ Pending:
 
 | Phase | Feature | Status | Documentation |
 |-------|---------|--------|---------------|
-| 1 | [**IndexedDB Migration**](./indexeddb-migration/) | 📋 Planned | [SPEC](./indexeddb-migration/SPEC.md) |
-| 2 | Test Harnesses | 📋 Planned | Not documented |
-| 3 | [**AI Guardrails**](./ai-guardrails/) | 📋 Planned | [README](./ai-guardrails/README.md) |
+| 1 | [**IndexedDB Migration**](./indexeddb-migration/) | ✅ Complete | [SPEC](./indexeddb-migration/SPEC.md) |
+| 2 | [**Test Harnesses**](./test-harnesses/) | ✅ Complete | [README](./test-harnesses/README.md) |
+| 3 | [**AI Guardrails**](./ai-guardrails/) | ✅ Complete | [SPEC](./ai-guardrails/SPEC.md) |
 | 4 | Design System Extraction | 📋 Planned | Not documented |
 | 5 | Auth & User Accounts | 📋 Planned | Not documented |
 | 6 | Capacitor (Native) | 📋 Planned | Not documented |
@@ -151,4 +151,5 @@ See [PRINCIPLES.md](../PRINCIPLES.md) for documentation conventions.
 |----------|---------|
 | [ROADMAP.md](../ROADMAP.md) | Development timeline |
 | [PRINCIPLES.md](../PRINCIPLES.md) | Guidelines |
+| [guides/](../guides/) | Testing and workflow guides |
 | [CLAUDE.md](../../prototypes/task-copilot/CLAUDE.md) | Current sprint |

@@ -31,6 +31,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | Nudge System MVP | ✅ Complete | Priority calculation, orchestrator, energy system |
 | P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
 | P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
+| P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |
@@ -46,6 +47,8 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v34 | AI Guardrails Implementation: Rate limiting, analytics, safety, graceful degradation, UI components, 35 tests |
+| v33 | AI Guardrails: SPEC.md complete (Phase 3a: rate limiting, analytics, safety, transparency) |
 | v32 | Test Harnesses: Vitest setup, 98 tests (storage, priority, queue-reorder) |
 | v31 | IndexedDB Migration complete: Bug fix for migration flag reset on save |
 | v30 | Waiting On refinements: Follow-up date picker, tasks stay in Staging with pill, BottomSheet modals |
@@ -103,6 +106,10 @@ task-copilot/
 │   ├── prompts.ts            # AI system prompts
 │   ├── ai-tools.ts           # AI tool definitions
 │   ├── ai-actions.ts         # AI action labels/icons/queries
+│   ├── ai-service.ts         # AI request wrapper with guardrails
+│   ├── ai-safety.ts          # Output sanitization, error handling
+│   ├── rate-limit.ts         # Client-side rate limiting
+│   ├── analytics.ts          # Privacy-preserving AI analytics
 │   ├── queue-reorder.ts      # Visual-first drag/drop
 │   └── utils.ts              # Utility functions
 └── public/
@@ -321,6 +328,10 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-01 | v34 | AI Guardrails Implementation (rate limit, analytics, safety, 35 tests) |
+| 2026-02-01 | v33 | AI Guardrails SPEC complete |
+| 2026-02-01 | v32 | Test Harnesses (Vitest, 98 tests) |
+| 2026-02-01 | v31 | IndexedDB migration bug fix |
 | 2026-01-31 | v30 | Waiting On refinements + Defer date picker |
 | 2026-01-29 | v29 | BottomSheet iOS fix |
 | 2026-01-28 | v28 | Nudge System MVP complete |

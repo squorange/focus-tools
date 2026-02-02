@@ -192,6 +192,141 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// ============================================
+// Graceful Degradation: Retry Logic
+// ============================================
+
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
+
+interface RetryConfig {
+  maxRetries: number;
+  initialDelayMs: number;
+}
+
+/**
+ * Determine if an error is retryable (transient).
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    // Retry on server errors, rate limits, and network issues
+    return (
+      message.includes('500') ||
+      message.includes('502') ||
+      message.includes('503') ||
+      message.includes('504') ||
+      message.includes('overloaded') ||
+      message.includes('timeout') ||
+      message.includes('network') ||
+      message.includes('econnreset') ||
+      message.includes('enotfound')
+    );
+  }
+  return false;
+}
+
+/**
+ * Sleep for a given number of milliseconds.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Execute a function with exponential backoff retry.
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  config: RetryConfig = { maxRetries: MAX_RETRIES, initialDelayMs: INITIAL_RETRY_DELAY_MS }
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // Don't retry on non-retryable errors
+      if (!isRetryableError(error)) {
+        throw error;
+      }
+
+      // Don't sleep after the last attempt
+      if (attempt < config.maxRetries) {
+        const delay = config.initialDelayMs * Math.pow(2, attempt);
+        console.log(`[AI Retry] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+        await sleep(delay);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Categorize error type for logging and response.
+ */
+function categorizeError(error: unknown): { type: string; message: string; status: number } {
+  const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
+
+  if (errorMessage.includes('credit') || errorMessage.includes('billing')) {
+    return {
+      type: 'billing',
+      message: 'AI credits exhausted. Please contact support.',
+      status: 402,
+    };
+  }
+
+  if (errorMessage.includes('invalid_api_key') || errorMessage.includes('401') || errorMessage.includes('authentication')) {
+    return {
+      type: 'auth',
+      message: 'AI service configuration issue. Please contact support.',
+      status: 401,
+    };
+  }
+
+  if (errorMessage.includes('rate_limit') || errorMessage.includes('429')) {
+    return {
+      type: 'rate_limit',
+      message: "You've been busy! AI will be ready again in a moment.",
+      status: 429,
+    };
+  }
+
+  if (errorMessage.includes('overloaded') || errorMessage.includes('503')) {
+    return {
+      type: 'overloaded',
+      message: 'AI is experiencing high demand. Please try again in a moment.',
+      status: 503,
+    };
+  }
+
+  if (errorMessage.includes('timeout')) {
+    return {
+      type: 'timeout',
+      message: "AI is taking longer than expected. Please try again.",
+      status: 504,
+    };
+  }
+
+  if (errorMessage.includes('network') || errorMessage.includes('econnreset') || errorMessage.includes('enotfound')) {
+    return {
+      type: 'network',
+      message: "Can't reach AI service. Please check your connection.",
+      status: 503,
+    };
+  }
+
+  // Generic server error
+  return {
+    type: 'server_error',
+    message: "Something went wrong with AI. The app still works — please try again.",
+    status: 500,
+  };
+}
+
 // Validate and sanitize estimatedMinutes - ensures it's a valid positive number
 // Handles cases where AI returns strings like "~30 min" or invalid values
 function sanitizeEstimatedMinutes(value: unknown): number | null {
@@ -323,15 +458,17 @@ export async function POST(request: NextRequest) {
       content: contextMessage,
     });
 
-    // Call Claude API with tools
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages,
-      tools: tools,
-      tool_choice: { type: "any" }, // Must call one of the tools
-    });
+    // Call Claude API with tools (with retry for transient errors)
+    const response = await withRetry(() =>
+      anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: messages,
+        tools: tools,
+        tool_choice: { type: "any" }, // Must call one of the tools
+      })
+    );
 
     // Find the tool use block
     const toolUse = response.content.find((block) => block.type === "tool_use");
@@ -359,18 +496,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(validatedResponse);
   } catch (error) {
-    console.error("Error in structure API:", error);
+    // Log full error internally (sanitized from user view)
+    console.error("[AI Error]", error);
 
-    let errorMessage = error instanceof Error ? error.message : "Failed to process request";
-
-    // Parse Anthropic API error for more helpful messages
-    if (errorMessage.includes('credit balance is too low')) {
-      errorMessage = 'AI credits exhausted. Please check your Anthropic account billing.';
-    } else if (errorMessage.includes('invalid_api_key') || errorMessage.includes('401')) {
-      errorMessage = 'Invalid API key. Please check your ANTHROPIC_API_KEY.';
-    } else if (errorMessage.includes('rate_limit')) {
-      errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
-    }
+    // Categorize error and get user-friendly message
+    const { type, message, status } = categorizeError(error);
+    console.log(`[AI Error] Type: ${type}, Status: ${status}`);
 
     return NextResponse.json(
       {
@@ -380,9 +511,11 @@ export async function POST(request: NextRequest) {
         suggestions: null,
         edits: null,
         deletions: null,
-        message: `Sorry, something went wrong: ${errorMessage}`,
-      } as StructureResponse,
-      { status: 500 }
+        message,
+        // Include error type for client-side handling (but not raw error)
+        errorType: type,
+      } as StructureResponse & { errorType?: string },
+      { status }
     );
   }
 }
