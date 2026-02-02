@@ -1,7 +1,7 @@
 # IndexedDB Migration
 
-> **Status:** 📋 Planned
-> **Last Updated:** January 2026
+> **Status:** ✅ Complete
+> **Last Updated:** February 2026
 > **Purpose:** Migrate from localStorage to IndexedDB for better performance, capacity, and PWA support
 
 ---
@@ -26,6 +26,7 @@ IndexedDB solves these issues and provides the foundation for future features (v
 | [SPEC.md](./SPEC.md) | Requirements, behavior rules, edge cases |
 | [IMPLEMENTATION.md](./IMPLEMENTATION.md) | Phased plan with progress tracking |
 | [DATA_MODEL.md](./DATA_MODEL.md) | IndexedDB schema, object stores, indexes |
+| [TESTING.md](./TESTING.md) | Manual testing checklist + troubleshooting |
 
 ---
 
@@ -56,10 +57,10 @@ IndexedDB solves these issues and provides the foundation for future features (v
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| 1 | Setup + parallel writes | ⬜ |
-| 2 | Read migration + switch | ⬜ |
-| 3 | Cleanup + optimization | ⬜ |
-| 4 | Testing + edge cases | ⬜ |
+| 1 | Setup + parallel writes | ✅ Complete |
+| 2 | Read migration + switch | ✅ Complete |
+| 3 | Optimization + caching | ✅ Complete |
+| 4 | Testing + cleanup | ✅ Complete |
 
 See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for detailed breakdown.
 

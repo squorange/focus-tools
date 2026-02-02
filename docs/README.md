@@ -15,6 +15,7 @@
 | **Working on a feature** | [features/INDEX.md](./features/INDEX.md) — Feature catalog |
 | **Making design decisions** | [PRINCIPLES.md](./PRINCIPLES.md) — Guidelines and conventions |
 | **Checking progress** | [ROADMAP.md](./ROADMAP.md) — What's done and what's next |
+| **Writing/running tests** | [guides/TESTING.md](./guides/TESTING.md) — Testing best practices |
 
 ---
 
@@ -31,10 +32,15 @@ docs/
 │
 ├── features/          ← Feature documentation
 │   ├── INDEX.md       ← Feature catalog with status
+│   ├── indexeddb-migration/
+│   ├── test-harnesses/
 │   ├── recurring-tasks/
 │   ├── notifications/
-│   ├── nudge-system/
-│   └── start-nudge/
+│   └── nudge-system/
+│
+├── guides/            ← Process & workflow guides
+│   ├── README.md      ← Guide index
+│   └── TESTING.md     ← When/how to use tests
 │
 ├── concepts/          ← Exploration & ideation
 │   └── ...
@@ -54,6 +60,7 @@ docs/
 | [PRINCIPLES.md](./PRINCIPLES.md) | How we build things | Occasionally |
 | [ROADMAP.md](./ROADMAP.md) | Progress and plans | Weekly |
 | [features/INDEX.md](./features/INDEX.md) | Feature status | Per feature |
+| [guides/](./guides/) | Process & workflow | As needed |
 | [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) | Sprint context | Daily/per session |
 
 ---

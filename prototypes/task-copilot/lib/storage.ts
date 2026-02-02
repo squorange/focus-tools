@@ -19,6 +19,24 @@ import {
 import { Notification } from './notification-types';
 import { pruneOldInstances } from './recurring-utils';
 
+// IndexedDB storage (Phase 2 - primary storage)
+import {
+  initializeIDB,
+  saveStateToIDB,
+  saveEventsToIDB,
+  saveSessionsToIDB,
+  saveNudgesToIDB,
+  saveNotificationsToIDB,
+  loadStateFromIDB,
+  loadEventsFromIDB,
+  loadSessionsFromIDB,
+  loadNudgesFromIDB,
+  loadNotificationsFromIDB,
+  isMigrated,
+  migrateFromLocalStorage,
+  isIDBReady,
+} from './storage-idb';
+
 // ============================================
 // Storage Keys
 // ============================================
@@ -36,7 +54,8 @@ const STORAGE_KEYS = {
 // ============================================
 
 /**
- * Load app state from localStorage
+ * Load app state from localStorage (sync fallback)
+ * @deprecated Use loadStateAsync for IndexedDB support
  */
 export function loadState(): AppState {
   if (typeof window === 'undefined') {
@@ -54,6 +73,126 @@ export function loadState(): AppState {
   } catch (error) {
     console.error('Failed to load state:', error);
     return createInitialAppState();
+  }
+}
+
+/**
+ * Load app state asynchronously (Phase 2 - IndexedDB primary)
+ * Handles migration from localStorage on first run
+ */
+export async function loadStateAsync(): Promise<AppState> {
+  if (typeof window === 'undefined') {
+    return createInitialAppState();
+  }
+
+  try {
+    // Initialize IndexedDB
+    await initializeIDB();
+
+    // Check if we need to migrate
+    if (isIDBReady()) {
+      const migrated = await isMigrated();
+
+      if (!migrated) {
+        // Run migration from localStorage
+        console.log('[Storage] Starting migration from localStorage to IndexedDB...');
+        const result = await migrateFromLocalStorage(migrateState);
+        if (result.success) {
+          console.log('[Storage] Migration complete:', {
+            tasks: result.tasksCount,
+            events: result.eventsCount,
+            sessions: result.sessionsCount,
+            notifications: result.notificationsCount,
+          });
+        } else {
+          console.error('[Storage] Migration failed:', result.errors);
+          // Fall back to localStorage
+          return loadState();
+        }
+      }
+
+      // Load from IndexedDB
+      const state = await loadStateFromIDB();
+      if (state) {
+        // Apply any pending app-level migrations
+        return ensureCompleteState(state as Partial<AppState> & Record<string, unknown>);
+      }
+    }
+
+    // Fall back to localStorage if IndexedDB not available or empty
+    return loadState();
+  } catch (error) {
+    console.error('[Storage] Failed to load state async:', error);
+    // Fall back to localStorage
+    return loadState();
+  }
+}
+
+/**
+ * Load events asynchronously (Phase 2 - IndexedDB primary)
+ */
+export async function loadEventsAsync(): Promise<AppState['events']> {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    if (isIDBReady() && await isMigrated()) {
+      return await loadEventsFromIDB();
+    }
+    return loadEvents();
+  } catch (error) {
+    console.error('[Storage] Failed to load events async:', error);
+    return loadEvents();
+  }
+}
+
+/**
+ * Load sessions asynchronously (Phase 2 - IndexedDB primary)
+ */
+export async function loadSessionsAsync(): Promise<AppState['focusSessions']> {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    if (isIDBReady() && await isMigrated()) {
+      return await loadSessionsFromIDB();
+    }
+    return loadSessions();
+  } catch (error) {
+    console.error('[Storage] Failed to load sessions async:', error);
+    return loadSessions();
+  }
+}
+
+/**
+ * Load nudges asynchronously (Phase 2 - IndexedDB primary)
+ */
+export async function loadNudgesAsync(): Promise<{ nudges: Nudge[]; snoozedNudges: SnoozedNudge[] }> {
+  if (typeof window === 'undefined') return { nudges: [], snoozedNudges: [] };
+
+  try {
+    if (isIDBReady() && await isMigrated()) {
+      return await loadNudgesFromIDB();
+    }
+    return loadNudges();
+  } catch (error) {
+    console.error('[Storage] Failed to load nudges async:', error);
+    return loadNudges();
+  }
+}
+
+/**
+ * Load notifications asynchronously (Phase 2 - IndexedDB primary)
+ */
+export async function loadNotificationsAsync(): Promise<Notification[]> {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    if (isIDBReady() && await isMigrated()) {
+      return await loadNotificationsFromIDB();
+    }
+    return loadNotifications();
+  } catch (error) {
+    console.error('[Storage] Failed to load notifications async:', error);
+    return loadNotifications();
   }
 }
 
@@ -126,13 +265,14 @@ export function loadNotifications(): Notification[] {
 // ============================================
 
 /**
- * Save app state to localStorage
+ * Save app state
+ * Phase 4: IndexedDB only (localStorage removed)
  */
 export function saveState(state: AppState): void {
   if (typeof window === 'undefined') return;
 
   try {
-    // Prune recurring instances to prevent unbounded localStorage growth
+    // Prune recurring instances to prevent unbounded growth
     const prunedTasks = state.tasks.map(t => {
       if (t.isRecurring && (t.recurringInstances?.length || 0) > 90) {
         return { ...t, recurringInstances: pruneOldInstances(t.recurringInstances, 90) };
@@ -140,16 +280,26 @@ export function saveState(state: AppState): void {
       return t;
     });
 
-    // Save main state (without events and sessions to prevent size issues)
-    const stateToSave = {
-      ...state,
-      tasks: prunedTasks,
-      events: [], // Events stored separately
-      focusSessions: [], // Sessions stored separately
-      nudges: [], // Nudges stored separately
-      snoozedNudges: [], // Snoozed nudges stored separately
-    };
-    localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(stateToSave));
+    const stateWithPrunedTasks = { ...state, tasks: prunedTasks };
+
+    // Phase 4: IndexedDB is sole storage
+    if (isIDBReady()) {
+      saveStateToIDB(stateWithPrunedTasks).catch(err => {
+        console.error('[IDB] Failed to save state:', err);
+      });
+    } else {
+      // IndexedDB not ready yet - queue for later or use localStorage as temporary fallback
+      // This can happen if saveState is called before initializeIDB completes
+      console.warn('[Storage] IndexedDB not ready, using localStorage fallback');
+      const stateToSave = {
+        ...stateWithPrunedTasks,
+        events: [],
+        focusSessions: [],
+        nudges: [],
+        snoozedNudges: [],
+      };
+      localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(stateToSave));
+    }
   } catch (error) {
     console.error('Failed to save state:', error);
   }
@@ -157,18 +307,30 @@ export function saveState(state: AppState): void {
 
 /**
  * Save events separately
+ * Phase 4: IndexedDB only
  */
 export function saveEvents(events: AppState['events']): void {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(events));
+    if (isIDBReady()) {
+      saveEventsToIDB(events).catch(err => {
+        console.error('[IDB] Failed to save events:', err);
+      });
+    } else {
+      // Fallback to localStorage only if IndexedDB not ready
+      localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(events));
+    }
   } catch (error) {
     console.error('Failed to save events:', error);
     // If events are too large, truncate to most recent
     try {
       const truncated = events.slice(-1000);
-      localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(truncated));
+      if (isIDBReady()) {
+        saveEventsToIDB(truncated).catch(() => {});
+      } else {
+        localStorage.setItem(STORAGE_KEYS.events, JSON.stringify(truncated));
+      }
       console.warn('Events truncated to prevent storage overflow');
     } catch {
       console.error('Failed to save truncated events');
@@ -178,12 +340,19 @@ export function saveEvents(events: AppState['events']): void {
 
 /**
  * Save sessions separately
+ * Phase 4: IndexedDB only
  */
 export function saveSessions(sessions: AppState['focusSessions']): void {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
+    if (isIDBReady()) {
+      saveSessionsToIDB(sessions).catch(err => {
+        console.error('[IDB] Failed to save sessions:', err);
+      });
+    } else {
+      localStorage.setItem(STORAGE_KEYS.sessions, JSON.stringify(sessions));
+    }
   } catch (error) {
     console.error('Failed to save sessions:', error);
   }
@@ -191,12 +360,19 @@ export function saveSessions(sessions: AppState['focusSessions']): void {
 
 /**
  * Save nudges separately
+ * Phase 4: IndexedDB only
  */
 export function saveNudges(nudges: Nudge[], snoozedNudges: SnoozedNudge[]): void {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.nudges, JSON.stringify({ nudges, snoozedNudges }));
+    if (isIDBReady()) {
+      saveNudgesToIDB(nudges, snoozedNudges).catch(err => {
+        console.error('[IDB] Failed to save nudges:', err);
+      });
+    } else {
+      localStorage.setItem(STORAGE_KEYS.nudges, JSON.stringify({ nudges, snoozedNudges }));
+    }
   } catch (error) {
     console.error('Failed to save nudges:', error);
   }
@@ -204,12 +380,19 @@ export function saveNudges(nudges: Nudge[], snoozedNudges: SnoozedNudge[]): void
 
 /**
  * Save notifications separately
+ * Phase 4: IndexedDB only
  */
 export function saveNotifications(notifications: Notification[]): void {
   if (typeof window === 'undefined') return;
 
   try {
-    localStorage.setItem(STORAGE_KEYS.notifications, JSON.stringify(notifications));
+    if (isIDBReady()) {
+      saveNotificationsToIDB(notifications).catch(err => {
+        console.error('[IDB] Failed to save notifications:', err);
+      });
+    } else {
+      localStorage.setItem(STORAGE_KEYS.notifications, JSON.stringify(notifications));
+    }
   } catch (error) {
     console.error('Failed to save notifications:', error);
   }
@@ -1153,6 +1336,73 @@ export function importData(jsonString: string): { success: boolean; error?: stri
     }
 
     const migratedState = migrateState(data.state);
+    saveState(migratedState);
+
+    if (data.events) {
+      saveEvents(data.events);
+    }
+
+    if (data.sessions) {
+      saveSessions(data.sessions);
+    }
+
+    if (data.nudges || data.snoozedNudges) {
+      saveNudges(data.nudges || [], data.snoozedNudges || []);
+    }
+
+    if (data.notifications) {
+      saveNotifications(data.notifications);
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
+ * Export all data as JSON string (async version using IndexedDB)
+ * Phase 3: Uses IndexedDB as primary source
+ */
+export async function exportDataAsync(): Promise<string> {
+  const state = await loadStateAsync();
+  const events = await loadEventsAsync();
+  const sessions = await loadSessionsAsync();
+  const { nudges, snoozedNudges } = await loadNudgesAsync();
+  const notifications = await loadNotificationsAsync();
+
+  return JSON.stringify(
+    {
+      exportedAt: Date.now(),
+      schemaVersion: SCHEMA_VERSION,
+      source: 'indexeddb',
+      state,
+      events,
+      sessions,
+      nudges,
+      snoozedNudges,
+      notifications,
+    },
+    null,
+    2
+  );
+}
+
+/**
+ * Import data from JSON string (async version)
+ * Phase 3: Writes to both IndexedDB and localStorage
+ */
+export async function importDataAsync(jsonString: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const data = JSON.parse(jsonString);
+
+    if (!data.state || !data.schemaVersion) {
+      return { success: false, error: 'Invalid export format' };
+    }
+
+    const migratedState = migrateState(data.state);
+
+    // Save to both storage systems
     saveState(migratedState);
 
     if (data.events) {

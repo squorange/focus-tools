@@ -31,7 +31,7 @@ import {
   createFocusQueueItem,
   generateId,
 } from "@/lib/types";
-import { loadState, saveState, exportData, importData, loadNotifications, saveNotifications } from "@/lib/storage";
+import { loadState, loadStateAsync, saveState, exportData, importData, loadNotifications, loadNotificationsAsync, saveNotifications } from "@/lib/storage";
 import { Notification, ActiveAlert } from "@/lib/notification-types";
 import {
   getUnacknowledgedCount,
@@ -1130,97 +1130,103 @@ export default function Home() {
   // State Persistence
   // ============================================
 
-  // Load state from localStorage after hydration
+  // Load state from IndexedDB (Phase 2) with localStorage fallback
+  // Handles migration from localStorage on first run
   useEffect(() => {
-    try {
-      const loaded = loadState();
-
-      // Handle focus mode restoration
-      let focusMode = initialFocusModeState;
-      if (loaded.focusMode?.active && loaded.focusMode?.paused) {
-        focusMode = {
-          active: true,
-          queueItemId: loaded.focusMode.queueItemId,
-          taskId: loaded.focusMode.taskId,
-          currentStepId: loaded.focusMode.currentStepId,
-          paused: true,
-          startTime: loaded.focusMode.startTime,
-          pausedTime: loaded.focusMode.pausedTime || 0,
-          pauseStartTime: loaded.focusMode.pauseStartTime,
-        };
-      }
-
-      // Determine current view - migrate old view names to new ones
-      let currentView = loaded.currentView || 'focus';
-      // Handle migration from old view names (cast to string for comparison)
-      const viewStr = currentView as string;
-      if (viewStr === 'queue') currentView = 'focus';
-      if (viewStr === 'pool') currentView = 'tasks';
-      if (focusMode.active) {
-        currentView = 'focusMode';
-      }
-
-      // Check for deep link task parameter (from notification click)
-      const urlParams = new URLSearchParams(window.location.search);
-      const taskIdParam = urlParams.get('task');
-      let deepLinkTaskId: string | null = null;
-
-      if (taskIdParam && loaded.tasks.some(t => t.id === taskIdParam)) {
-        deepLinkTaskId = taskIdParam;
-        currentView = 'taskDetail';
-        // Clear the URL param after handling
-        const url = new URL(window.location.href);
-        url.searchParams.delete('task');
-        window.history.replaceState({}, '', url.toString());
-      }
-
-      setState({
-        ...loaded,
-        focusMode,
-        currentView,
-        activeTaskId: deepLinkTaskId || loaded.activeTaskId,
-      });
-
-      // Initialize reminders (check for any due while app was closed)
-      initializeReminders();
-
-      // Load notifications from localStorage FIRST (before initializing start pokes)
-      const loadedNotifications = loadNotifications();
-
-      // Initialize start pokes and track missed ones (for syncing with in-app notification state)
-      const missedPokeNotificationIds: string[] = [];
-      initializeStartPokes((taskId, notificationId) => {
-        missedPokeNotificationIds.push(notificationId);
-      });
-
-      // Mark missed pokes as fired in the notification state
-      const updatedNotifications = missedPokeNotificationIds.length > 0
-        ? loadedNotifications.map(n => {
-            if (missedPokeNotificationIds.includes(n.id)) {
-              return { ...n, firedAt: Date.now() };
-            }
-            return n;
-          })
-        : loadedNotifications;
-
-      setNotifications(updatedNotifications);
-
-      // Load recent task IDs from localStorage
+    const loadData = async () => {
       try {
-        const savedRecentIds = localStorage.getItem('focus-tools-recent-tasks');
-        if (savedRecentIds) {
-          const parsed = JSON.parse(savedRecentIds);
-          if (Array.isArray(parsed)) {
-            setRecentTaskIds(parsed.slice(0, 5));
+        // Phase 2: Load from IndexedDB (handles migration automatically)
+        const loaded = await loadStateAsync();
+
+        // Handle focus mode restoration
+        let focusMode = initialFocusModeState;
+        if (loaded.focusMode?.active && loaded.focusMode?.paused) {
+          focusMode = {
+            active: true,
+            queueItemId: loaded.focusMode.queueItemId,
+            taskId: loaded.focusMode.taskId,
+            currentStepId: loaded.focusMode.currentStepId,
+            paused: true,
+            startTime: loaded.focusMode.startTime,
+            pausedTime: loaded.focusMode.pausedTime || 0,
+            pauseStartTime: loaded.focusMode.pauseStartTime,
+          };
+        }
+
+        // Determine current view - migrate old view names to new ones
+        let currentView = loaded.currentView || 'focus';
+        // Handle migration from old view names (cast to string for comparison)
+        const viewStr = currentView as string;
+        if (viewStr === 'queue') currentView = 'focus';
+        if (viewStr === 'pool') currentView = 'tasks';
+        if (focusMode.active) {
+          currentView = 'focusMode';
+        }
+
+        // Check for deep link task parameter (from notification click)
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskIdParam = urlParams.get('task');
+        let deepLinkTaskId: string | null = null;
+
+        if (taskIdParam && loaded.tasks.some(t => t.id === taskIdParam)) {
+          deepLinkTaskId = taskIdParam;
+          currentView = 'taskDetail';
+          // Clear the URL param after handling
+          const url = new URL(window.location.href);
+          url.searchParams.delete('task');
+          window.history.replaceState({}, '', url.toString());
+        }
+
+        setState({
+          ...loaded,
+          focusMode,
+          currentView,
+          activeTaskId: deepLinkTaskId || loaded.activeTaskId,
+        });
+
+        // Initialize reminders (check for any due while app was closed)
+        initializeReminders();
+
+        // Load notifications (Phase 2: IndexedDB with fallback)
+        const loadedNotifications = await loadNotificationsAsync();
+
+        // Initialize start pokes and track missed ones (for syncing with in-app notification state)
+        const missedPokeNotificationIds: string[] = [];
+        initializeStartPokes((taskId, notificationId) => {
+          missedPokeNotificationIds.push(notificationId);
+        });
+
+        // Mark missed pokes as fired in the notification state
+        const updatedNotifications = missedPokeNotificationIds.length > 0
+          ? loadedNotifications.map(n => {
+              if (missedPokeNotificationIds.includes(n.id)) {
+                return { ...n, firedAt: Date.now() };
+              }
+              return n;
+            })
+          : loadedNotifications;
+
+        setNotifications(updatedNotifications);
+
+        // Load recent task IDs from localStorage (still uses localStorage - not critical data)
+        try {
+          const savedRecentIds = localStorage.getItem('focus-tools-recent-tasks');
+          if (savedRecentIds) {
+            const parsed = JSON.parse(savedRecentIds);
+            if (Array.isArray(parsed)) {
+              setRecentTaskIds(parsed.slice(0, 5));
+            }
           }
+        } catch (e) {
+          console.error("Failed to load recent tasks:", e);
         }
       } catch (e) {
-        console.error("Failed to load recent tasks:", e);
+        console.error("Failed to load saved state:", e);
       }
-    } catch (e) {
-      console.error("Failed to load saved state:", e);
-    }
-    setHasHydrated(true);
+      setHasHydrated(true);
+    };
+
+    loadData();
   }, []);
 
   // Save state changes to localStorage

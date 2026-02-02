@@ -22,13 +22,15 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** January 31, 2026
+**Last Updated:** February 1, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
 | P0 | Inline AI Actions (Steps) | ✅ Complete | Sparkle → Palette with target banner |
 | P0 | Nav/App Restructure | ✅ Complete | Push sidebar, hamburger + plus header |
 | P0 | Nudge System MVP | ✅ Complete | Priority calculation, orchestrator, energy system |
+| P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
+| P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |
@@ -44,6 +46,8 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v32 | Test Harnesses: Vitest setup, 98 tests (storage, priority, queue-reorder) |
+| v31 | IndexedDB Migration complete: Bug fix for migration flag reset on save |
 | v30 | Waiting On refinements: Follow-up date picker, tasks stay in Staging with pill, BottomSheet modals |
 | v29 | BottomSheet iOS fix: Portal rendering, keyboard detection via visualViewport API |
 | v28 | Nudge System MVP (Phases 0-7): Priority calculation (64 tests), Priority Queue, orchestrator |
@@ -93,7 +97,9 @@ task-copilot/
 │   └── StagingArea.tsx       # AI suggestions panel
 ├── lib/
 │   ├── types.ts              # TypeScript interfaces
-│   ├── storage.ts            # localStorage + migration
+│   ├── storage.ts            # Storage API (async load/save)
+│   ├── storage-idb.ts        # IndexedDB operations
+│   ├── indexeddb.ts          # IndexedDB schema + setup
 │   ├── prompts.ts            # AI system prompts
 │   ├── ai-tools.ts           # AI tool definitions
 │   ├── ai-actions.ts         # AI action labels/icons/queries
@@ -132,6 +138,27 @@ task-copilot/
 // For keyboard-aware spacing:
 style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}
 ```
+
+### Storage Architecture (IndexedDB)
+
+Primary storage is **IndexedDB** (`focus-tools` database). localStorage is only used as fallback for unsupported browsers.
+
+| Store | Contents | Indexes |
+|-------|----------|---------|
+| `appState` | Singleton with settings, queue, UI state | — |
+| `tasks` | Individual task records | status, project, recurring, updated, deadline |
+| `events` | Event log entries | timestamp, taskId, type |
+| `sessions` | Focus session records | taskId, startTime |
+| `nudges` | Active nudges | targetId, type, urgency |
+| `notifications` | Scheduled notifications | taskId, scheduledAt, type |
+
+**Key functions:**
+- `loadStateAsync()` — Primary load (handles migration from localStorage)
+- `saveState()` — Writes to IndexedDB
+- `getTaskCached()` — LRU-cached task reads
+- `pruneAllOldDataFromIDB()` — Clean up old events/sessions
+
+See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration/) for details.
 
 ---
 
@@ -186,10 +213,11 @@ When discussing ideas, concepts, or future work (not immediate implementation):
 
 ### Starting Active Work
 
-1. **Check sprint table above** — Identify current priorities (P0 → P1 → P2)
-2. **Review feature docs** — Read `docs/features/{feature}/SPEC.md` before implementing
-3. **Check for existing patterns** — Consult `docs/PRINCIPLES.md` for conventions
-4. **Confirm approach if unclear** — Ask user before starting if requirements are ambiguous
+1. **Run tests first** — `npm run test:run` to verify baseline before making changes
+2. **Check sprint table above** — Identify current priorities (P0 → P1 → P2)
+3. **Review feature docs** — Read `docs/features/{feature}/SPEC.md` before implementing
+4. **Check for existing patterns** — Consult `docs/PRINCIPLES.md` for conventions
+5. **Confirm approach if unclear** — Ask user before starting if requirements are ambiguous
 
 **If starting a new feature:**
 - Check if `docs/features/{feature}/` exists
@@ -203,6 +231,14 @@ When discussing ideas, concepts, or future work (not immediate implementation):
 | Adding UI components | `docs/PRINCIPLES.md` for icon/styling conventions |
 | Implementing feature logic | `docs/features/{feature}/SPEC.md` for requirements |
 | Making architectural decisions | Ask user to confirm approach |
+| Modifying storage/data layer | Run `npm test -- lib/storage.test.ts` in watch mode |
+| Modifying priority/queue logic | Run relevant test file in watch mode |
+
+**Testing during development:**
+- When modifying `lib/storage*.ts` or `lib/indexeddb.ts` → run storage tests
+- When modifying `lib/priority.ts` → run `npm test -- lib/priority.vitest.ts`
+- When modifying `lib/queue-reorder.ts` → run `npm test -- lib/queue-reorder.vitest.ts`
+- Proactively run tests after significant changes, don't wait for user to ask
 
 **When uncertain:** Prompt the user rather than assume. Examples:
 - "This changes the data model — should I update DATA_MODEL.md now?"
@@ -212,6 +248,15 @@ When discussing ideas, concepts, or future work (not immediate implementation):
 ### After Completing Work
 
 **IMPORTANT: Update documentation as part of completing work, not as a separate step.**
+
+#### Testing (Do First)
+
+| When you... | Test action |
+|-------------|-------------|
+| Fix a bug | Write regression test BEFORE confirming fix works |
+| Modify storage/data layer | Run `npm run test:run` and verify all pass |
+| Add new calculation/logic | Add tests covering happy path + edge cases |
+| Complete any code changes | Run `npm run test:run` before considering done |
 
 #### Automatic Updates (Do These Immediately)
 
@@ -262,6 +307,11 @@ Increment version in Recent Completions when:
 | New pattern established | Confirm: "Add to PRINCIPLES.md?" |
 | Feature phase complete | Remind: "Update IMPLEMENTATION.md and ROADMAP.md?" |
 | Session ending with changes | Remind: "Update Recent Completions?" |
+| Starting coding session | Run `npm run test:run` to verify baseline first |
+| About to modify storage/data layer | Run relevant tests in watch mode (`npm test -- lib/storage.test.ts`) |
+| Bug fixed | Write regression test BEFORE confirming fix works |
+| Code changes complete | Run `npm run test:run` to catch regressions |
+| New calculation/logic added | Add tests covering happy path + edge cases |
 
 See [docs/README.md](../../docs/README.md) for full workflow guide.
 

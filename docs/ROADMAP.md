@@ -17,8 +17,8 @@
 | PWA & Mobile | ✅ Complete |
 | Nudge System MVP | ✅ Complete |
 | Recurring Tasks | 🔄 In Progress (Phase 1-2 done) |
-| IndexedDB Migration | 📋 Planned (Infra Phase 1) |
-| Test Harnesses | 📋 Planned (Infra Phase 2) |
+| IndexedDB Migration | ✅ Complete |
+| Test Harnesses | ✅ Complete (Infra Phase 2) |
 | AI Guardrails | 📋 Planned (Infra Phase 3) |
 | Design System Extraction | 📋 Planned (Infra Phase 4) |
 | Auth & User Accounts | 📋 Planned (Infra Phase 5) |
@@ -95,8 +95,8 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 | Priority | Item | Status |
 |----------|------|--------|
 | P1 | Recurring Tasks (Phase 3-6) | ⬜ |
-| P1 | IndexedDB Migration (Infra Phase 1) | 📋 Planned |
-| P1 | Test Harnesses (Infra Phase 2) | 📋 Planned |
+| P1 | IndexedDB Migration (Infra Phase 1) | ✅ Complete |
+| P1 | Test Harnesses (Infra Phase 2) | ✅ Complete |
 | P1 | AI Guardrails (Infra Phase 3) | 📋 Planned |
 | P2 | Design System Extraction (Infra Phase 4) | ⬜ |
 | P2 | Proactive stale task nudge | ⬜ |
@@ -114,8 +114,8 @@ The following improvements build on each other and should be implemented in orde
 
 | Phase | Feature | Purpose | Enables |
 |-------|---------|---------|---------|
-| **1** | [IndexedDB Migration](./features/indexeddb-migration/) | Async storage, larger capacity | Service worker access, offline-first |
-| **2** | Test Harnesses | Integration tests, E2E framework | Safe refactoring, CI/CD |
+| **1** | [IndexedDB Migration](./features/indexeddb-migration/) ✅ | Async storage, larger capacity | Service worker access, offline-first |
+| **2** | [Test Harnesses](./features/test-harnesses/) ✅ | Integration tests, E2E framework | Safe refactoring, CI/CD |
 | **3** | [AI Guardrails](./features/ai-guardrails/) | Reliability, safety, consistency constraints | Production-ready AI |
 | **4** | Design System Extraction | Design tokens, component primitives | Theming, Orbital Zen |
 | **5** | Auth & User Accounts | Supabase auth, sessions | Multi-device, cloud sync prep |
