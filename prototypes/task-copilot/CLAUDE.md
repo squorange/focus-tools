@@ -22,7 +22,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** February 1, 2026
+**Last Updated:** February 5, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -32,6 +32,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
 | P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
 | P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
+| P1 | Design System Integration | 🔄 In Progress | Phase 1: Foundation complete |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |
@@ -47,6 +48,8 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v36 | Design System Integration Phase 1: Added package dependency, imported CSS tokens, bridge variables for gradual migration |
+| v35 | Design System Integration: Documentation (SPEC, COMPONENT_CATALOG), token system aligned with clinic-planner |
 | v34 | AI Guardrails Implementation: Rate limiting, analytics, safety, graceful degradation, UI components, 35 tests |
 | v33 | AI Guardrails: SPEC.md complete (Phase 3a: rate limiting, analytics, safety, transparency) |
 | v32 | Test Harnesses: Vitest setup, 98 tests (storage, priority, queue-reorder) |
@@ -328,6 +331,8 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-05 | v36 | Design System Integration Phase 1: package dependency, CSS token import |
+| 2026-02-04 | v35 | Design System Integration docs (SPEC, COMPONENT_CATALOG, token alignment) |
 | 2026-02-01 | v34 | AI Guardrails Implementation (rate limit, analytics, safety, 35 tests) |
 | 2026-02-01 | v33 | AI Guardrails SPEC complete |
 | 2026-02-01 | v32 | Test Harnesses (Vitest, 98 tests) |

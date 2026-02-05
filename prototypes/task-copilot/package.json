@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@focus-tools/design-system": "file:../../packages/design-system",
     "framer-motion": "^12.24.10",
     "idb": "^8.0.3",
     "lucide-react": "^0.562.0",

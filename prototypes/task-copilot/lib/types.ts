@@ -828,6 +828,9 @@ export type DrawerType =
 // ============================================
 
 export interface UserSettings {
+  // Appearance settings
+  theme: 'light' | 'dark' | 'auto';  // App color scheme
+
   // Start Time Poke settings
   startPokeEnabled: boolean;  // Top-level toggle to enable/disable the feature globally
   startPokeDefault: 'all' | 'routines_only' | 'tasks_only' | 'none';
@@ -1122,6 +1125,7 @@ export function createInitialAppState(): AppState {
 
     // User settings with defaults
     userSettings: {
+      theme: 'auto',                          // System preference by default
       startPokeEnabled: false,                // Feature disabled by default
       startPokeDefault: 'all',                // When enabled, apply to all tasks by default
       startPokeBufferMinutes: 10,             // 10 minute buffer
@@ -1192,6 +1196,9 @@ export function createInitialAppState(): AppState {
 // Create default user settings
 export function createDefaultUserSettings(): UserSettings {
   return {
+    // Appearance
+    theme: 'auto',                          // Default to system preference
+    // Start Time Poke
     startPokeEnabled: false,                // Feature disabled by default
     startPokeDefault: 'all',                // When enabled, apply to all tasks by default
     startPokeBufferMinutes: 10,             // 10 minute buffer

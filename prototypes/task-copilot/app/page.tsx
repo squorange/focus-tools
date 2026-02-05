@@ -110,6 +110,7 @@ import { AIAssistantOverlay, AIDrawer as AIAssistantDrawer } from "@/components/
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
 import { useKeyboardVisible } from "@/hooks/useKeyboardVisible";
+import { useTheme } from "@/hooks/useTheme";
 import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
@@ -169,6 +170,9 @@ export default function Home() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [taskCreationOpen, setTaskCreationOpen] = useState(false);
   const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
+
+  // Apply theme setting (light/dark/auto)
+  useTheme(state.userSettings.theme);
 
   // Centralized drawer state - only one drawer can be open at a time
   // This enables push behavior (content pushes left) and prevents overlapping drawers

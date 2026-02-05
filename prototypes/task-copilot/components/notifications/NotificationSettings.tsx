@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronRight, Download, Upload, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserSettings } from "@/lib/types";
+import SegmentedControl from "@/components/shared/SegmentedControl";
 
 interface SettingsViewProps {
   userSettings: UserSettings;
@@ -84,6 +85,32 @@ export default function SettingsView({
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Appearance section */}
+        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+          <div className="p-4 flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                Appearance
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                Choose light, dark, or match your system
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <SegmentedControl
+                options={[
+                  { value: 'light', label: 'Light' },
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'dark', label: 'Dark' },
+                ]}
+                value={userSettings.theme}
+                onChange={(value) => onUpdateSettings({ theme: value || 'auto' })}
+                allowDeselect={false}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Start Time Poke section */}
         <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}

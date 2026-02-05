@@ -33,6 +33,7 @@
 
 | Feature | Status | Schema | Documentation | Added |
 |---------|--------|--------|---------------|-------|
+| [**AI Assistant**](./ai-assistant/) | ✅ | — | [SPEC](./ai-assistant/SPEC.md) | 2026-01 |
 | [**Notifications**](./notifications/) | ✅ | v3+ | [SPEC](./notifications/SPEC.md) | 2025-12 |
 | [**Start Nudge**](./start-nudge/) | ✅ | v5+ | [SPEC](./start-nudge/SPEC.md) | 2026-01 |
 | [**Nudge System**](./nudge-system/) | ✅ | v15 | [SPEC](./nudge-system/SPEC.md) | 2026-01 |
@@ -41,6 +42,17 @@
 ---
 
 ## Feature Details
+
+### AI Assistant (Minibar/Palette/Drawer)
+**Status:** ✅ Complete
+**Purpose:** Progressive disclosure AI interface with context-aware assistance
+
+Key capabilities:
+- Three-tier interface: MiniBar (collapsed) → Palette (expanded) → Drawer (full chat)
+- Context-aware quick actions based on current view
+- Step/task targeting for focused assistance
+- Alert integration (pokes, runway, reminders)
+- Responsive design with mobile gestures
 
 ### Notifications
 **Status:** ✅ Complete
@@ -97,7 +109,8 @@ Pending:
 | 1 | [**IndexedDB Migration**](./indexeddb-migration/) | ✅ Complete | [SPEC](./indexeddb-migration/SPEC.md) |
 | 2 | [**Test Harnesses**](./test-harnesses/) | ✅ Complete | [README](./test-harnesses/README.md) |
 | 3 | [**AI Guardrails**](./ai-guardrails/) | ✅ Complete | [SPEC](./ai-guardrails/SPEC.md) |
-| 4 | Design System Extraction | 📋 Planned | Not documented |
+| 4 | [**Design System**](../../packages/design-system/) | ✅ Complete | [README](../../packages/design-system/README.md) |
+| 4a | [**Design System Integration**](./design-system-integration/) | 🔄 In Progress | [SPEC](./design-system-integration/SPEC.md) |
 | 5 | Auth & User Accounts | 📋 Planned | Not documented |
 | 6 | Capacitor (Native) | 📋 Planned | Not documented |
 | 7 | Theming Infrastructure | 📋 Planned | Not documented |

@@ -2,16 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design System Token Foundation */
+@import "@focus-tools/design-system/styles";
+
+/*
+ * Bridge variables for existing Tailwind config.
+ * These alias to design-system semantic tokens for gradual migration.
+ * TODO: Remove after updating tailwind.config.ts to use semantic tokens directly.
+ */
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
+  --background: var(--color-bg-neutral-base);
+  --foreground: var(--color-fg-neutral-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #18181b; /* zinc-900 - matches header/sidebar backgrounds */
-    --foreground: #ededed;
-  }
+.dark {
+  --background: var(--color-bg-neutral-base);
+  --foreground: var(--color-fg-neutral-primary);
 }
 
 body {
