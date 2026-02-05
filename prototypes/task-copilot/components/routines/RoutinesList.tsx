@@ -14,7 +14,7 @@ import {
 } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import MetadataPill from "@/components/shared/MetadataPill";
-import ProgressRing from "@/components/shared/ProgressRing";
+import { ProgressRing } from "@design-system/components";
 import { Pause, Repeat, ChevronRight, Zap } from "lucide-react";
 
 interface RoutinesListProps {

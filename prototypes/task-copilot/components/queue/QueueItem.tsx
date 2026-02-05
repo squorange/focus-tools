@@ -6,7 +6,7 @@ import { formatDate, computeHealthStatus } from "@/lib/utils";
 import { getTaskPriorityInfo } from "@/lib/priority";
 import MetadataPill from "@/components/shared/MetadataPill";
 import HealthPill from "@/components/shared/HealthPill";
-import ProgressRing from "@/components/shared/ProgressRing";
+import { ProgressRing } from "@design-system/components";
 import PriorityDisplay from "@/components/shared/PriorityDisplay";
 
 interface QueueItemProps {

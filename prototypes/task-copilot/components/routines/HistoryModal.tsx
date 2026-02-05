@@ -24,8 +24,7 @@ import {
   Trophy,
   Hash,
 } from "lucide-react";
-import BottomSheet from "@/components/shared/BottomSheet";
-import RightDrawer from "@/components/shared/RightDrawer";
+import { BottomSheet, RightDrawer } from "@design-system/components";
 
 interface HistoryModalProps {
   task: Task;

@@ -1,0 +1,633 @@
+/**
+ * Focus Tools Design System - Foundations CSS
+ *
+ * Semantic color system aligned with EHR design tokens structure.
+ * Pattern: --color-{role}-{group}-{level}
+ *
+ * Intensity scale: subtle → low → low-accented → medium → strong → high → high-accented
+ */
+
+:root {
+  /* ============================================
+   * Background Colors - Neutral
+   * ============================================ */
+  --color-bg-neutral-base: #fafafa;
+  --color-bg-neutral-min: #ffffff;
+  --color-bg-neutral-subtle: #f4f4f5;
+  --color-bg-neutral-low: #e4e4e7;
+  --color-bg-neutral-low-accented: #d4d4d8;
+  --color-bg-neutral-medium: #a1a1aa;
+  --color-bg-neutral-inverse: #18181b;
+  --color-bg-neutral-inverse-low: #3f3f46;
+
+  /* ============================================
+   * Background Colors - Transparent
+   * ============================================ */
+  --color-bg-transparent-min: rgba(0, 0, 0, 0.02);
+  --color-bg-transparent-subtle: rgba(0, 0, 0, 0.04);
+  --color-bg-transparent-subtle-accented: rgba(0, 0, 0, 0.06);
+  --color-bg-transparent-low: rgba(0, 0, 0, 0.08);
+  --color-bg-transparent-low-accented: rgba(0, 0, 0, 0.12);
+  --color-bg-transparent-medium: rgba(0, 0, 0, 0.16);
+  --color-bg-transparent-high: rgba(0, 0, 0, 0.40);
+  --color-bg-transparent-inverse-min: rgba(255, 255, 255, 0.04);
+  --color-bg-transparent-inverse-subtle: rgba(255, 255, 255, 0.08);
+  --color-bg-transparent-inverse-low: rgba(255, 255, 255, 0.12);
+  --color-bg-transparent-inverse-low-accented: rgba(255, 255, 255, 0.16);
+  --color-bg-transparent-inverse-medium: rgba(255, 255, 255, 0.24);
+  --color-bg-transparent-inverse-high: rgba(255, 255, 255, 0.48);
+
+  /* Legacy aliases */
+  --color-bg-transparent-neutral: rgba(0, 0, 0, 0.05);
+  --color-bg-transparent-accent: rgba(124, 58, 237, 0.1);
+
+  /* ============================================
+   * Background Colors - Input
+   * ============================================ */
+  --color-bg-input-subtle: #f5f3ff;
+  --color-bg-input-subtle-accented: #ede9fe;
+  --color-bg-input-low: #ede9fe;
+  --color-bg-input-low-accented: #ddd6fe;
+  --color-bg-input-medium: #ddd6fe;
+  --color-bg-input-high: #7c3aed;
+  --color-bg-input-high-accented: #5b21b6;
+  /* Legacy */
+  --color-bg-input-default: #ffffff;
+  --color-bg-input-focus: #f5f3ff;
+  --color-bg-input-disabled: #f4f4f5;
+
+  /* ============================================
+   * Background Colors - Positive (Success/Green)
+   * ============================================ */
+  --color-bg-positive-subtle: #dcfce7;
+  --color-bg-positive-low: #bbf7d0;
+  --color-bg-positive-low-accented: #86efac;
+  --color-bg-positive-medium: #4ade80;
+  --color-bg-positive-strong: #22c55e;
+  --color-bg-positive-high: #16a34a;
+  --color-bg-positive-high-accented: #15803d;
+  /* Legacy */
+  --color-bg-positive-default: #22c55e;
+  --color-bg-positive-bold: #16a34a;
+
+  /* ============================================
+   * Background Colors - Attention (Warning/Amber)
+   * ============================================ */
+  --color-bg-attention-subtle: #fef3c7;
+  --color-bg-attention-low: #fde68a;
+  --color-bg-attention-low-accented: #fcd34d;
+  --color-bg-attention-medium: #fbbf24;
+  --color-bg-attention-high: #f59e0b;
+  --color-bg-attention-high-accented: #d97706;
+  /* Legacy */
+  --color-bg-attention-default: #f59e0b;
+  --color-bg-attention-bold: #d97706;
+
+  /* ============================================
+   * Background Colors - Alert (Error/Red)
+   * ============================================ */
+  --color-bg-alert-subtle: #fee2e2;
+  --color-bg-alert-low: #fecaca;
+  --color-bg-alert-low-accented: #fca5a5;
+  --color-bg-alert-medium: #f87171;
+  --color-bg-alert-high: #ef4444;
+  --color-bg-alert-high-accented: #dc2626;
+  /* Legacy */
+  --color-bg-alert-default: #ef4444;
+  --color-bg-alert-bold: #dc2626;
+
+  /* ============================================
+   * Background Colors - Information (Blue)
+   * ============================================ */
+  --color-bg-information-subtle: #dbeafe;
+  --color-bg-information-low: #bfdbfe;
+  --color-bg-information-low-accented: #93c5fd;
+  --color-bg-information-medium: #60a5fa;
+  --color-bg-information-high: #3b82f6;
+  --color-bg-information-high-accented: #2563eb;
+  /* Legacy (info alias) */
+  --color-bg-info-subtle: #dbeafe;
+  --color-bg-info-default: #3b82f6;
+  --color-bg-info-bold: #2563eb;
+
+  /* ============================================
+   * Background Colors - Accent (Violet/Purple)
+   * ============================================ */
+  --color-bg-accent-subtle: #ede9fe;
+  --color-bg-accent-low: #ddd6fe;
+  --color-bg-accent-low-accented: #c4b5fd;
+  --color-bg-accent-medium: #a78bfa;
+  --color-bg-accent-high: #8b5cf6;
+  --color-bg-accent-high-accented: #7c3aed;
+  /* Legacy */
+  --color-bg-accent-default: #8b5cf6;
+  --color-bg-accent-bold: #7c3aed;
+
+  /* ============================================
+   * Background Colors - Generative (AI)
+   * ============================================ */
+  --color-bg-generative-strong: #7c3aed;
+  --color-bg-generative-high: #8b5cf6;
+  --color-bg-generative-high-accented: #a78bfa;
+
+  /* ============================================
+   * Background Colors - Status
+   * ============================================ */
+  --color-bg-status-completed-subtle: #dcfce7;
+  --color-bg-status-completed-low: #bbf7d0;
+  --color-bg-status-completed-bold: #16a34a;
+
+  --color-bg-status-today-subtle: #ede9fe;
+  --color-bg-status-today-low: #ddd6fe;
+  --color-bg-status-today-bold: #8b5cf6;
+
+  --color-bg-status-focus-subtle: #f5f3ff;
+  --color-bg-status-focus-low: #ede9fe;
+  --color-bg-status-focus-bold: #6d28d9;
+
+  --color-bg-status-waiting-subtle: #ffedd5;
+  --color-bg-status-waiting-low: #fed7aa;
+  --color-bg-status-waiting-bold: #f97316;
+
+  --color-bg-status-deferred-subtle: #e0e7ff;
+  --color-bg-status-deferred-low: #c7d2fe;
+  --color-bg-status-deferred-bold: #6366f1;
+
+  --color-bg-status-ready-subtle: #dbeafe;
+  --color-bg-status-ready-low: #bfdbfe;
+  --color-bg-status-ready-bold: #2563eb;
+
+  --color-bg-status-inbox-subtle: #fef3c7;
+  --color-bg-status-inbox-low: #fde68a;
+  --color-bg-status-inbox-bold: #d97706;
+
+  --color-bg-status-archived-subtle: #f4f4f5;
+  --color-bg-status-archived-low: #e4e4e7;
+  --color-bg-status-archived-bold: #71717a;
+
+  /* ============================================
+   * Foreground Colors - Neutral
+   * ============================================ */
+  --color-fg-neutral-primary: #18181b;
+  --color-fg-neutral-secondary: #3f3f46;
+  --color-fg-neutral-softest: #d4d4d8;
+  --color-fg-neutral-softer: #a1a1aa;
+  --color-fg-neutral-soft: #71717a;
+  --color-fg-neutral-spot-readable: #52525b;
+  --color-fg-neutral-disabled: #a1a1aa;
+  --color-fg-neutral-inverse-primary: #ffffff;
+  --color-fg-neutral-inverse-secondary: #e4e4e7;
+  /* Legacy */
+  --color-fg-neutral-inverse: #ffffff;
+
+  /* ============================================
+   * Foreground Colors - Transparent
+   * ============================================ */
+  --color-fg-transparent-softer: rgba(0, 0, 0, 0.12);
+  --color-fg-transparent-soft: rgba(0, 0, 0, 0.24);
+  --color-fg-transparent-medium: rgba(0, 0, 0, 0.40);
+  --color-fg-transparent-strong: rgba(0, 0, 0, 0.64);
+  --color-fg-transparent-inverse-softer: rgba(255, 255, 255, 0.16);
+  --color-fg-transparent-inverse-soft: rgba(255, 255, 255, 0.32);
+  --color-fg-transparent-inverse-medium: rgba(255, 255, 255, 0.56);
+  --color-fg-transparent-inverse-strong: rgba(255, 255, 255, 0.80);
+
+  /* ============================================
+   * Foreground Colors - Input
+   * ============================================ */
+  --color-fg-input-primary: #5b21b6;
+  --color-fg-input-secondary: #7c3aed;
+  --color-fg-input-spot-readable: #8b5cf6;
+  --color-fg-input-soft: #c4b5fd;
+
+  /* ============================================
+   * Foreground Colors - Positive
+   * ============================================ */
+  --color-fg-positive-primary: #15803d;
+  --color-fg-positive-secondary: #16a34a;
+  --color-fg-positive-spot-readable: #22c55e;
+  --color-fg-positive-inverse-primary: #ffffff;
+  --color-fg-positive-inverse-secondary: #bbf7d0;
+  /* Legacy */
+  --color-fg-positive-default: #15803d;
+  --color-fg-positive-subtle: #16a34a;
+
+  /* ============================================
+   * Foreground Colors - Attention
+   * ============================================ */
+  --color-fg-attention-primary: #92400e;
+  --color-fg-attention-secondary: #b45309;
+  /* Legacy */
+  --color-fg-attention-default: #b45309;
+  --color-fg-attention-subtle: #d97706;
+
+  /* ============================================
+   * Foreground Colors - Alert
+   * ============================================ */
+  --color-fg-alert-primary: #b91c1c;
+  --color-fg-alert-secondary: #dc2626;
+  --color-fg-alert-inverse-primary: #ffffff;
+  --color-fg-alert-inverse-secondary: #fecaca;
+  /* Legacy */
+  --color-fg-alert-default: #b91c1c;
+  --color-fg-alert-subtle: #dc2626;
+
+  /* ============================================
+   * Foreground Colors - Information
+   * ============================================ */
+  --color-fg-information-primary: #1d4ed8;
+  --color-fg-information-secondary: #2563eb;
+  --color-fg-information-spot-readable: #3b82f6;
+  --color-fg-information-inverse-primary: #ffffff;
+  --color-fg-information-inverse-secondary: #bfdbfe;
+  /* Legacy (info alias) */
+  --color-fg-info-default: #1d4ed8;
+  --color-fg-info-subtle: #2563eb;
+
+  /* ============================================
+   * Foreground Colors - Accent
+   * ============================================ */
+  --color-fg-accent-primary: #5b21b6;
+  --color-fg-accent-secondary: #6d28d9;
+  --color-fg-accent-spot-readable: #7c3aed;
+  /* Legacy */
+  --color-fg-accent-default: #6d28d9;
+  --color-fg-accent-subtle: #7c3aed;
+
+  /* ============================================
+   * Foreground Colors - Generative (AI)
+   * ============================================ */
+  --color-fg-generative-spot-readable: #7c3aed;
+  --color-fg-generative-inverse-primary: #ffffff;
+  --color-fg-generative-inverse-secondary: #ddd6fe;
+
+  /* ============================================
+   * Foreground Colors - Status
+   * ============================================ */
+  --color-fg-status-completed: #15803d;
+  --color-fg-status-today: #6d28d9;
+  --color-fg-status-focus: #7c3aed;
+  --color-fg-status-waiting: #c2410c;
+  --color-fg-status-deferred: #4338ca;
+  --color-fg-status-ready: #1d4ed8;
+  --color-fg-status-inbox: #b45309;
+  --color-fg-status-archived: #52525b;
+
+  /* ============================================
+   * Foreground Colors - A11y
+   * ============================================ */
+  --color-fg-a11y-primary: #2563eb;
+
+  /* ============================================
+   * Border Colors - Neutral
+   * ============================================ */
+  --color-border-neutral-subtle: #f4f4f5;
+  --color-border-neutral-low: #e4e4e7;
+  --color-border-neutral-medium: #d4d4d8;
+  --color-border-neutral-default: #e4e4e7;
+  --color-border-neutral-strong: #d4d4d8;
+
+  /* ============================================
+   * Border Colors - Input
+   * ============================================ */
+  --color-border-input-default: #d4d4d8;
+  --color-border-input-high: #7c3aed;
+  --color-border-input-focus: #8b5cf6;
+  --color-border-input-error: #ef4444;
+
+  /* ============================================
+   * Border Colors - Semantic
+   * ============================================ */
+  --color-border-positive: #22c55e;
+  --color-border-positive-high: #16a34a;
+  --color-border-attention: #f59e0b;
+  --color-border-alert: #ef4444;
+  --color-border-alert-high: #dc2626;
+  --color-border-accent: #8b5cf6;
+  --color-border-accent-low: #ddd6fe;
+  --color-border-accent-medium: #c4b5fd;
+  --color-border-info: #3b82f6;
+
+  /* ============================================
+   * Border Colors - A11y
+   * ============================================ */
+  --color-border-a11y-primary: #2563eb;
+
+  /* ============================================
+   * Glass Effects
+   * ============================================ */
+  --glass-floating-bg: rgba(255, 255, 255, 0.85);
+  --glass-floating-blur: blur(12px);
+  --glass-floating-border: 1px solid rgba(0, 0, 0, 0.06);
+
+  --glass-floating-panel-bg: rgba(255, 255, 255, 0.92);
+  --glass-floating-panel-blur: blur(16px);
+  --glass-floating-panel-border: 1px solid rgba(0, 0, 0, 0.08);
+  --glass-floating-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  --glass-secondary-bg: rgba(128, 128, 128, 0.08);
+  --glass-secondary-blur: blur(8px);
+  --glass-secondary-border: 1px solid rgba(0, 0, 0, 0.04);
+  --glass-secondary-hover-bg: rgba(128, 128, 128, 0.14);
+
+  --glass-ghost-bg: rgba(128, 128, 128, 0.04);
+  --glass-ghost-blur: blur(4px);
+  --glass-ghost-hover-bg: rgba(128, 128, 128, 0.10);
+
+  --glass-button-bg: rgba(255, 255, 255, 0.7);
+  --glass-button-blur: blur(8px);
+  --glass-button-border: 1px solid rgba(0, 0, 0, 0.08);
+  --glass-button-hover-bg: rgba(255, 255, 255, 0.85);
+  --glass-button-active-bg: rgba(255, 255, 255, 0.92);
+
+  /* ============================================
+   * Focus Shadows
+   * ============================================ */
+  --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);
+  --shadow-focus-error: 0 0 0 3px var(--color-bg-alert-low);
+  --shadow-focus-success: 0 0 0 3px var(--color-bg-positive-low);
+}
+
+/* ============================================
+ * Dark Mode Overrides
+ * ============================================ */
+.dark {
+  /* Background - Neutral */
+  --color-bg-neutral-base: #18181b;
+  --color-bg-neutral-min: #09090b;
+  --color-bg-neutral-subtle: #27272a;
+  --color-bg-neutral-low: #3f3f46;
+  --color-bg-neutral-low-accented: #52525b;
+  --color-bg-neutral-medium: #71717a;
+  --color-bg-neutral-inverse: #f4f4f5;
+  --color-bg-neutral-inverse-low: #e4e4e7;
+
+  /* Background - Transparent */
+  --color-bg-transparent-min: rgba(255, 255, 255, 0.02);
+  --color-bg-transparent-subtle: rgba(255, 255, 255, 0.04);
+  --color-bg-transparent-subtle-accented: rgba(255, 255, 255, 0.06);
+  --color-bg-transparent-low: rgba(255, 255, 255, 0.08);
+  --color-bg-transparent-low-accented: rgba(255, 255, 255, 0.12);
+  --color-bg-transparent-medium: rgba(255, 255, 255, 0.16);
+  --color-bg-transparent-high: rgba(255, 255, 255, 0.40);
+  --color-bg-transparent-inverse-min: rgba(0, 0, 0, 0.08);
+  --color-bg-transparent-inverse-subtle: rgba(0, 0, 0, 0.16);
+  --color-bg-transparent-inverse-low: rgba(0, 0, 0, 0.24);
+  --color-bg-transparent-inverse-low-accented: rgba(0, 0, 0, 0.32);
+  --color-bg-transparent-inverse-medium: rgba(0, 0, 0, 0.48);
+  --color-bg-transparent-inverse-high: rgba(0, 0, 0, 0.64);
+  /* Legacy */
+  --color-bg-transparent-neutral: rgba(255, 255, 255, 0.05);
+  --color-bg-transparent-accent: rgba(167, 139, 250, 0.15);
+
+  /* Background - Input */
+  --color-bg-input-subtle: rgba(109, 40, 217, 0.2);
+  --color-bg-input-subtle-accented: rgba(109, 40, 217, 0.25);
+  --color-bg-input-low: rgba(109, 40, 217, 0.25);
+  --color-bg-input-low-accented: rgba(109, 40, 217, 0.35);
+  --color-bg-input-medium: rgba(109, 40, 217, 0.35);
+  --color-bg-input-high: #8b5cf6;
+  --color-bg-input-high-accented: #a78bfa;
+  /* Legacy */
+  --color-bg-input-default: #27272a;
+  --color-bg-input-focus: rgba(109, 40, 217, 0.3);
+  --color-bg-input-disabled: #3f3f46;
+
+  /* Background - Positive */
+  --color-bg-positive-subtle: rgba(22, 163, 74, 0.25);
+  --color-bg-positive-low: rgba(22, 163, 74, 0.35);
+  --color-bg-positive-low-accented: rgba(22, 163, 74, 0.45);
+  --color-bg-positive-medium: rgba(34, 197, 94, 0.5);
+  --color-bg-positive-strong: #22c55e;
+  --color-bg-positive-high: #16a34a;
+  --color-bg-positive-high-accented: #22c55e;
+  /* Legacy */
+  --color-bg-positive-default: #16a34a;
+  --color-bg-positive-bold: #22c55e;
+
+  /* Background - Attention */
+  --color-bg-attention-subtle: rgba(245, 158, 11, 0.25);
+  --color-bg-attention-low: rgba(245, 158, 11, 0.35);
+  --color-bg-attention-low-accented: rgba(245, 158, 11, 0.45);
+  --color-bg-attention-medium: rgba(251, 191, 36, 0.5);
+  --color-bg-attention-high: #f59e0b;
+  --color-bg-attention-high-accented: #fbbf24;
+  /* Legacy */
+  --color-bg-attention-default: #f59e0b;
+  --color-bg-attention-bold: #fbbf24;
+
+  /* Background - Alert */
+  --color-bg-alert-subtle: rgba(239, 68, 68, 0.25);
+  --color-bg-alert-low: rgba(239, 68, 68, 0.35);
+  --color-bg-alert-low-accented: rgba(239, 68, 68, 0.45);
+  --color-bg-alert-medium: rgba(248, 113, 113, 0.5);
+  --color-bg-alert-high: #dc2626;
+  --color-bg-alert-high-accented: #ef4444;
+  /* Legacy */
+  --color-bg-alert-default: #dc2626;
+  --color-bg-alert-bold: #ef4444;
+
+  /* Background - Information */
+  --color-bg-information-subtle: rgba(59, 130, 246, 0.25);
+  --color-bg-information-low: rgba(59, 130, 246, 0.35);
+  --color-bg-information-low-accented: rgba(59, 130, 246, 0.45);
+  --color-bg-information-medium: rgba(96, 165, 250, 0.5);
+  --color-bg-information-high: #3b82f6;
+  --color-bg-information-high-accented: #60a5fa;
+  /* Legacy (info alias) */
+  --color-bg-info-subtle: rgba(59, 130, 246, 0.3);
+  --color-bg-info-default: #3b82f6;
+  --color-bg-info-bold: #60a5fa;
+
+  /* Background - Accent */
+  --color-bg-accent-subtle: rgba(139, 92, 246, 0.25);
+  --color-bg-accent-low: rgba(139, 92, 246, 0.35);
+  --color-bg-accent-low-accented: rgba(139, 92, 246, 0.45);
+  --color-bg-accent-medium: rgba(167, 139, 250, 0.5);
+  --color-bg-accent-high: #8b5cf6;
+  --color-bg-accent-high-accented: #a78bfa;
+  /* Legacy */
+  --color-bg-accent-default: #8b5cf6;
+  --color-bg-accent-bold: #a78bfa;
+
+  /* Background - Generative */
+  --color-bg-generative-strong: #8b5cf6;
+  --color-bg-generative-high: #a78bfa;
+  --color-bg-generative-high-accented: #c4b5fd;
+
+  /* Background - Status */
+  --color-bg-status-completed-subtle: rgba(22, 163, 74, 0.25);
+  --color-bg-status-completed-low: rgba(22, 163, 74, 0.35);
+  --color-bg-status-completed-bold: #22c55e;
+
+  --color-bg-status-today-subtle: rgba(139, 92, 246, 0.25);
+  --color-bg-status-today-low: rgba(139, 92, 246, 0.35);
+  --color-bg-status-today-bold: #a78bfa;
+
+  --color-bg-status-focus-subtle: rgba(109, 40, 217, 0.25);
+  --color-bg-status-focus-low: rgba(109, 40, 217, 0.35);
+  --color-bg-status-focus-bold: #8b5cf6;
+
+  --color-bg-status-waiting-subtle: rgba(249, 115, 22, 0.25);
+  --color-bg-status-waiting-low: rgba(249, 115, 22, 0.35);
+  --color-bg-status-waiting-bold: #fb923c;
+
+  --color-bg-status-deferred-subtle: rgba(99, 102, 241, 0.25);
+  --color-bg-status-deferred-low: rgba(99, 102, 241, 0.35);
+  --color-bg-status-deferred-bold: #818cf8;
+
+  --color-bg-status-ready-subtle: rgba(37, 99, 235, 0.25);
+  --color-bg-status-ready-low: rgba(37, 99, 235, 0.35);
+  --color-bg-status-ready-bold: #60a5fa;
+
+  --color-bg-status-inbox-subtle: rgba(217, 119, 6, 0.25);
+  --color-bg-status-inbox-low: rgba(217, 119, 6, 0.35);
+  --color-bg-status-inbox-bold: #fbbf24;
+
+  --color-bg-status-archived-subtle: #27272a;
+  --color-bg-status-archived-low: #3f3f46;
+  --color-bg-status-archived-bold: #a1a1aa;
+
+  /* Foreground - Neutral */
+  --color-fg-neutral-primary: #f4f4f5;
+  --color-fg-neutral-secondary: #d4d4d8;
+  --color-fg-neutral-softest: #3f3f46;
+  --color-fg-neutral-softer: #52525b;
+  --color-fg-neutral-soft: #71717a;
+  --color-fg-neutral-spot-readable: #a1a1aa;
+  --color-fg-neutral-disabled: #52525b;
+  --color-fg-neutral-inverse-primary: #18181b;
+  --color-fg-neutral-inverse-secondary: #3f3f46;
+  /* Legacy */
+  --color-fg-neutral-inverse: #18181b;
+
+  /* Foreground - Transparent */
+  --color-fg-transparent-softer: rgba(255, 255, 255, 0.16);
+  --color-fg-transparent-soft: rgba(255, 255, 255, 0.32);
+  --color-fg-transparent-medium: rgba(255, 255, 255, 0.56);
+  --color-fg-transparent-strong: rgba(255, 255, 255, 0.80);
+  --color-fg-transparent-inverse-softer: rgba(0, 0, 0, 0.12);
+  --color-fg-transparent-inverse-soft: rgba(0, 0, 0, 0.24);
+  --color-fg-transparent-inverse-medium: rgba(0, 0, 0, 0.48);
+  --color-fg-transparent-inverse-strong: rgba(0, 0, 0, 0.72);
+
+  /* Foreground - Input */
+  --color-fg-input-primary: #c4b5fd;
+  --color-fg-input-secondary: #a78bfa;
+  --color-fg-input-spot-readable: #8b5cf6;
+  --color-fg-input-soft: #ddd6fe;
+
+  /* Foreground - Positive */
+  --color-fg-positive-primary: #4ade80;
+  --color-fg-positive-secondary: #86efac;
+  --color-fg-positive-spot-readable: #22c55e;
+  --color-fg-positive-inverse-primary: #18181b;
+  --color-fg-positive-inverse-secondary: #15803d;
+  /* Legacy */
+  --color-fg-positive-default: #4ade80;
+  --color-fg-positive-subtle: #86efac;
+
+  /* Foreground - Attention */
+  --color-fg-attention-primary: #fbbf24;
+  --color-fg-attention-secondary: #fcd34d;
+  /* Legacy */
+  --color-fg-attention-default: #fbbf24;
+  --color-fg-attention-subtle: #fcd34d;
+
+  /* Foreground - Alert */
+  --color-fg-alert-primary: #f87171;
+  --color-fg-alert-secondary: #fca5a5;
+  --color-fg-alert-inverse-primary: #18181b;
+  --color-fg-alert-inverse-secondary: #7f1d1d;
+  /* Legacy */
+  --color-fg-alert-default: #f87171;
+  --color-fg-alert-subtle: #fca5a5;
+
+  /* Foreground - Information */
+  --color-fg-information-primary: #60a5fa;
+  --color-fg-information-secondary: #93c5fd;
+  --color-fg-information-spot-readable: #3b82f6;
+  --color-fg-information-inverse-primary: #18181b;
+  --color-fg-information-inverse-secondary: #1d4ed8;
+  /* Legacy (info alias) */
+  --color-fg-info-default: #60a5fa;
+  --color-fg-info-subtle: #93c5fd;
+
+  /* Foreground - Accent */
+  --color-fg-accent-primary: #a78bfa;
+  --color-fg-accent-secondary: #c4b5fd;
+  --color-fg-accent-spot-readable: #8b5cf6;
+  /* Legacy */
+  --color-fg-accent-default: #a78bfa;
+  --color-fg-accent-subtle: #c4b5fd;
+
+  /* Foreground - Generative */
+  --color-fg-generative-spot-readable: #a78bfa;
+  --color-fg-generative-inverse-primary: #18181b;
+  --color-fg-generative-inverse-secondary: #5b21b6;
+
+  /* Foreground - Status */
+  --color-fg-status-completed: #86efac;
+  --color-fg-status-today: #c4b5fd;
+  --color-fg-status-focus: #a78bfa;
+  --color-fg-status-waiting: #fdba74;
+  --color-fg-status-deferred: #a5b4fc;
+  --color-fg-status-ready: #93c5fd;
+  --color-fg-status-inbox: #fcd34d;
+  --color-fg-status-archived: #a1a1aa;
+
+  /* Foreground - A11y */
+  --color-fg-a11y-primary: #60a5fa;
+
+  /* Border - Neutral */
+  --color-border-neutral-subtle: #27272a;
+  --color-border-neutral-low: #3f3f46;
+  --color-border-neutral-medium: #52525b;
+  --color-border-neutral-default: #3f3f46;
+  --color-border-neutral-strong: #52525b;
+
+  /* Border - Input */
+  --color-border-input-default: #52525b;
+  --color-border-input-high: #a78bfa;
+  --color-border-input-focus: #a78bfa;
+  --color-border-input-error: #f87171;
+
+  /* Border - Semantic */
+  --color-border-positive: #22c55e;
+  --color-border-positive-high: #4ade80;
+  --color-border-attention: #f59e0b;
+  --color-border-alert: #ef4444;
+  --color-border-alert-high: #f87171;
+  --color-border-accent: #a78bfa;
+  --color-border-accent-low: rgba(139, 92, 246, 0.35);
+  --color-border-accent-medium: rgba(167, 139, 250, 0.5);
+  --color-border-info: #3b82f6;
+
+  /* Border - A11y */
+  --color-border-a11y-primary: #60a5fa;
+
+  /* Glass Effects */
+  --glass-floating-bg: rgba(24, 24, 27, 0.85);
+  --glass-floating-border: 1px solid rgba(255, 255, 255, 0.06);
+
+  --glass-floating-panel-bg: rgba(24, 24, 27, 0.92);
+  --glass-floating-panel-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-floating-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
+
+  --glass-secondary-bg: rgba(128, 128, 128, 0.12);
+  --glass-secondary-border: 1px solid rgba(255, 255, 255, 0.04);
+  --glass-secondary-hover-bg: rgba(128, 128, 128, 0.20);
+
+  --glass-ghost-bg: rgba(128, 128, 128, 0.06);
+  --glass-ghost-hover-bg: rgba(128, 128, 128, 0.14);
+
+  --glass-button-bg: rgba(39, 39, 42, 0.7);
+  --glass-button-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-button-hover-bg: rgba(39, 39, 42, 0.85);
+  --glass-button-active-bg: rgba(39, 39, 42, 0.92);
+
+  /* Focus Shadows */
+  --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);
+  --shadow-focus-error: 0 0 0 3px var(--color-bg-alert-low);
+  --shadow-focus-success: 0 0 0 3px var(--color-bg-positive-low);
+}

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { X } from "lucide-react";
 import { Task } from "@/lib/types";
 import { getCompletions, formatMinutes, TaskCompletion } from "@/lib/completions";
-import BottomSheet from "@/components/shared/BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface CompletedDrawerProps {
   isOpen: boolean;

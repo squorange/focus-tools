@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Task } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import MetadataPill from "@/components/shared/MetadataPill";
-import ProgressRing from "@/components/shared/ProgressRing";
+import { ProgressRing } from "@design-system/components";
 
 interface TriageRowProps {
   task: Task;

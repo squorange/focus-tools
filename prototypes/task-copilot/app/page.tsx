@@ -102,7 +102,7 @@ import ProjectModal from "@/components/shared/ProjectModal";
 import DatePickerModal from "@/components/shared/DatePickerModal";
 import FilterDrawer from "@/components/shared/FilterDrawer";
 import FocusSelectionModal from "@/components/shared/FocusSelectionModal";
-import ToastContainer, { Toast } from "@/components/shared/Toast";
+import { ToastContainer, ToastData } from "@design-system/components";
 import NotificationsHub from "@/components/notifications/NotificationsHub";
 import NotificationSettings from "@/components/notifications/NotificationSettings";
 import { usePWA } from "@/lib/usePWA";
@@ -149,7 +149,7 @@ export default function Home() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
   const [pendingDateCallback, setPendingDateCallback] = useState<((dateStr: string) => void) | null>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stagingIsNewArrival, setStagingIsNewArrival] = useState(false);
   const [paletteManuallyOpened, setPaletteManuallyOpened] = useState(false);
@@ -2758,7 +2758,7 @@ export default function Home() {
   // Toast Handlers
   // ============================================
 
-  const showToast = useCallback((toast: Omit<Toast, "id">) => {
+  const showToast = useCallback((toast: Omit<ToastData, "id">) => {
     const id = generateId();
     setToasts((prev) => [...prev, { ...toast, id }]);
     return id;

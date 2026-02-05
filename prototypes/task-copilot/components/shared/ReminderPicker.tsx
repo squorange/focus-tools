@@ -9,7 +9,7 @@ import {
   getNotificationPermission,
   requestNotificationPermission,
 } from "@/lib/notifications";
-import BottomSheet from "./BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface ReminderPickerProps {
   reminder: Reminder | null;

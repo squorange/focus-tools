@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import BottomSheet from "@/components/shared/BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface DatePickerModalProps {
   isOpen: boolean;

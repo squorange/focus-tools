@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { TaskFilters, Project } from "@/lib/types";
-import BottomSheet from "./BottomSheet";
-import RightDrawer from "./RightDrawer";
-import CollapsibleFilterSection from "./CollapsibleFilterSection";
+import { BottomSheet, RightDrawer, CollapsibleSection } from "@design-system/components";
 
 interface FilterDrawerProps {
   isOpen: boolean;
@@ -323,7 +321,7 @@ export default function FilterDrawer({
             Dates
           </h3>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Due Date"
             expanded={sectionExpanded.dueDate ?? false}
             onToggle={() => toggleSection('dueDate')}
@@ -337,9 +335,9 @@ export default function FilterDrawer({
                 dueDateRange: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Target Date"
             expanded={sectionExpanded.targetDate ?? false}
             onToggle={() => toggleSection('targetDate')}
@@ -353,9 +351,9 @@ export default function FilterDrawer({
                 targetDateRange: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Created"
             expanded={sectionExpanded.created ?? false}
             onToggle={() => toggleSection('created')}
@@ -369,7 +367,7 @@ export default function FilterDrawer({
                 createdRange: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
         </div>
 
         <div className="border-t border-zinc-100 dark:border-zinc-800" />
@@ -380,7 +378,7 @@ export default function FilterDrawer({
             Status
           </h3>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Priority"
             expanded={sectionExpanded.priority ?? false}
             onToggle={() => toggleSection('priority')}
@@ -394,9 +392,9 @@ export default function FilterDrawer({
                 priority: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Health"
             expanded={sectionExpanded.health ?? false}
             onToggle={() => toggleSection('health')}
@@ -410,9 +408,9 @@ export default function FilterDrawer({
                 healthStatus: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Staleness"
             expanded={sectionExpanded.staleness ?? false}
             onToggle={() => toggleSection('staleness')}
@@ -426,9 +424,9 @@ export default function FilterDrawer({
                 stalenessRange: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Defer Count"
             expanded={sectionExpanded.deferCount ?? false}
             onToggle={() => toggleSection('deferCount')}
@@ -442,7 +440,7 @@ export default function FilterDrawer({
                 deferCount: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
         </div>
 
         <div className="border-t border-zinc-100 dark:border-zinc-800" />
@@ -453,7 +451,7 @@ export default function FilterDrawer({
             Other
           </h3>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Duration"
             expanded={sectionExpanded.duration ?? false}
             onToggle={() => toggleSection('duration')}
@@ -467,9 +465,9 @@ export default function FilterDrawer({
                 durationRange: values.length > 0 ? values : undefined,
               })}
             />
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
 
-          <CollapsibleFilterSection
+          <CollapsibleSection
             title="Project"
             expanded={sectionExpanded.project ?? false}
             onToggle={() => toggleSection('project')}
@@ -509,7 +507,7 @@ export default function FilterDrawer({
                 />
               ))}
             </div>
-          </CollapsibleFilterSection>
+          </CollapsibleSection>
         </div>
       </div>
 

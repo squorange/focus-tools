@@ -3,7 +3,7 @@
 import React, { useState, useEffect, RefObject } from "react";
 import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
-import BottomSheet from "./BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface LeadTimePickerProps {
   isOpen: boolean;

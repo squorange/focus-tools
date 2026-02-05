@@ -10,21 +10,25 @@ Components already available in `@focus-tools/design-system`:
 
 | Component | Import Path | Usage in task-copilot | Status |
 |-----------|-------------|----------------------|--------|
-| **BottomSheet** | `@design-system/components` | 18 files | Replace local |
-| **RightDrawer** | `@design-system/components` | 5 files | Replace local |
-| **ResponsiveDrawer** | `@design-system/components` | 1 file | Replace local |
-| **ProgressRing** | `@design-system/components` | 5 files | Replace local |
-| **SegmentedControl** | `@design-system/components` | 1 file | Replace local |
+| **BottomSheet** | `@design-system/components` | 18 files | ✅ Replaced |
+| **RightDrawer** | `@design-system/components` | 5 files | ✅ Replaced |
+| **ResponsiveDrawer** | `@design-system/components` | 1 file | ✅ Replaced |
+| **ProgressRing** | `@design-system/components` | 5 files | ✅ Replaced |
+| **SegmentedControl** | `@design-system/components` | 1 file | ✅ Replaced |
 | **Pill** | `@design-system/components` | ~20 files | Available |
+| **Toast** | `@design-system/components` | 1 file | ✅ Extracted (Phase 3) |
+| **CollapsibleSection** | `@design-system/components` | 1 file | ✅ Extracted (Phase 3) |
 
 ### Import Examples
 
 ```tsx
-// Main import
-import { BottomSheet, RightDrawer, ProgressRing } from '@focus-tools/design-system';
+// Via path alias (recommended in task-copilot)
+import { BottomSheet, RightDrawer, ProgressRing } from '@design-system/components';
+import { ToastContainer, ToastData } from '@design-system/components';
+import { CollapsibleSection } from '@design-system/components';
 
-// Or via path alias
-import { BottomSheet } from '@design-system/components';
+// Direct package import
+import { BottomSheet } from '@focus-tools/design-system';
 
 // Hooks
 import { useIsMobile, useReducedMotion } from '@focus-tools/design-system';
@@ -32,40 +36,31 @@ import { useIsMobile, useReducedMotion } from '@focus-tools/design-system';
 
 ---
 
-## To Extract (Phase 3)
+## Extracted (Phase 3 Complete)
 
-Components to move from task-copilot to design-system:
+Components extracted from task-copilot to design-system:
 
-### Toast (HIGH Priority)
+### Toast ✅
 
-**Source:** `components/shared/Toast.tsx`
+**Location:** `packages/design-system/components/Toast/`
 
 | Aspect | Details |
 |--------|---------|
 | **Purpose** | Notification toast with variants (info, success, warning, error) |
-| **Dependencies** | None (pure presentation) |
-| **App-specific?** | No - generic notification pattern |
-| **Complexity** | Low |
+| **Exports** | `ToastItem`, `ToastContainer`, `ToastData` type |
+| **Semantic tokens** | `bg-bg-neutral-inverse`, `bg-bg-positive-high`, `bg-bg-attention-high`, `bg-bg-alert-high` |
+| **Storybook** | ✅ Stories added |
 
-**Token migrations needed:**
-| Current | Semantic |
-|---------|----------|
-| `bg-zinc-800 dark:bg-zinc-700` | `bg-bg-neutral-inverse` |
-| `bg-green-600 dark:bg-green-700` | `bg-bg-positive-high` |
-| `bg-amber-500 dark:bg-amber-600` | `bg-bg-attention-high` |
-| `bg-red-600 dark:bg-red-700` | `bg-bg-alert-high` |
+### CollapsibleSection ✅
 
-### CollapsibleSection (MEDIUM Priority)
-
-**Source:** `components/shared/CollapsibleFilterSection.tsx`
+**Location:** `packages/design-system/components/CollapsibleSection/`
 
 | Aspect | Details |
 |--------|---------|
 | **Purpose** | Collapsible disclosure with title, chevron, optional badge |
-| **Dependencies** | Lucide icons |
-| **App-specific?** | No - generic accordion pattern |
-| **Complexity** | Low |
-| **Rename to** | `CollapsibleSection` (remove "Filter" from name) |
+| **Exports** | `CollapsibleSection`, `CollapsibleSectionProps` type |
+| **Semantic tokens** | `text-fg-neutral-primary`, `text-fg-accent-primary`, `bg-bg-accent-subtle`, `text-fg-neutral-soft` |
+| **Storybook** | ✅ Stories added |
 
 ---
 

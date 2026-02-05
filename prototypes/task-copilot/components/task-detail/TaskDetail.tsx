@@ -11,7 +11,7 @@ import { getTodayISO, ensureInstance, describePattern, getActiveOccurrenceDate }
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
 import StagingArea from "@/components/StagingArea";
 import NotesModule from "@/components/NotesModule";
-import BottomSheet from "@/components/shared/BottomSheet";
+import { BottomSheet } from "@design-system/components";
 import MetadataPill from "@/components/shared/MetadataPill";
 import HealthPill from "@/components/shared/HealthPill";
 import ReminderPicker from "@/components/shared/ReminderPicker";

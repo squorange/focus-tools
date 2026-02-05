@@ -8,7 +8,7 @@ import { getTasksForPriorityQueue, groupTasksByTier, PriorityQueueTask } from "@
 import { applyTaskFilters } from "@/lib/filters";
 import TriageRow from "@/components/shared/TriageRow";
 import MetadataPill from "@/components/shared/MetadataPill";
-import ProgressRing from "@/components/shared/ProgressRing";
+import { ProgressRing } from "@design-system/components";
 import RoutinesList from "@/components/routines/RoutinesList";
 import { Filter, ChevronDown } from "lucide-react";
 

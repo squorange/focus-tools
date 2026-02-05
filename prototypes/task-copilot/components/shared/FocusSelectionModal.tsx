@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Task, SelectionType } from "@/lib/types";
-import BottomSheet from "@/components/shared/BottomSheet";
-import RightDrawer from "@/components/shared/RightDrawer";
+import { BottomSheet, RightDrawer } from "@design-system/components";
 
 interface FocusSelectionModalProps {
   isOpen: boolean;

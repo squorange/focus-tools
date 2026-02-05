@@ -5,7 +5,7 @@ import { Task, FocusQueueItem } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
 import HealthPill from "@/components/shared/HealthPill";
 import MetadataPill from "@/components/shared/MetadataPill";
-import ProgressRing from "@/components/shared/ProgressRing";
+import { ProgressRing } from "@design-system/components";
 
 interface TaskRowProps {
   task: Task;

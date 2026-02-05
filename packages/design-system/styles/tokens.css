@@ -1,0 +1,416 @@
+/**
+ * Focus Tools Design System - CSS Tokens
+ *
+ * These tokens define the visual foundation of the design system.
+ * Import this file in your global CSS to make tokens available.
+ *
+ * Usage: var(--color-primary), var(--duration-fast), etc.
+ */
+
+:root {
+  /* ============================================
+   * Primitive Colors - Zinc Scale
+   * ============================================ */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* ============================================
+   * Primitive Colors - Violet Scale
+   * ============================================ */
+  --color-violet-50: #f5f3ff;
+  --color-violet-100: #ede9fe;
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
+  --color-violet-400: #a78bfa;
+  --color-violet-500: #8b5cf6;
+  --color-violet-600: #7c3aed;
+  --color-violet-700: #6d28d9;
+  --color-violet-800: #5b21b6;
+  --color-violet-900: #4c1d95;
+  --color-violet-950: #2e1065;
+
+  /* ============================================
+   * Primitive Colors - Other Scales
+   * ============================================ */
+  /* Green */
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-900: #14532d;
+
+  /* Red */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-900: #7f1d1d;
+
+  /* Amber */
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-300: #fcd34d;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+  --color-amber-900: #78350f;
+
+  /* Orange */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-900: #7c2d12;
+
+  /* Blue */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-900: #1e3a8a;
+
+  /* Indigo */
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-300: #a5b4fc;
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-900: #312e81;
+
+  /* ============================================
+   * Semantic Colors - Surface
+   * ============================================ */
+  --color-surface: var(--color-zinc-50);
+  --color-surface-elevated: #ffffff;
+  --color-surface-muted: var(--color-zinc-100);
+  --color-surface-inset: var(--color-zinc-200);
+
+  /* ============================================
+   * Semantic Colors - Text
+   * ============================================ */
+  --color-text-primary: var(--color-zinc-900);
+  --color-text-secondary: var(--color-zinc-600);
+  --color-text-tertiary: var(--color-zinc-500);
+  --color-text-muted: var(--color-zinc-400);
+  --color-text-inverse: #ffffff;
+
+  /* ============================================
+   * Semantic Colors - Border
+   * ============================================ */
+  --color-border: var(--color-zinc-200);
+  --color-border-light: var(--color-zinc-100);
+  --color-border-strong: var(--color-zinc-300);
+
+  /* ============================================
+   * Semantic Colors - Brand/Primary
+   * ============================================ */
+  --color-primary: var(--color-violet-600);
+  --color-primary-hover: var(--color-violet-700);
+  --color-primary-light: var(--color-violet-100);
+  --color-primary-muted: var(--color-violet-50);
+
+  /* ============================================
+   * Semantic Colors - Feedback
+   * ============================================ */
+  --color-success: var(--color-green-500);
+  --color-success-light: var(--color-green-100);
+  --color-success-dark: var(--color-green-600);
+
+  --color-error: var(--color-red-500);
+  --color-error-light: var(--color-red-100);
+  --color-error-dark: var(--color-red-600);
+
+  --color-warning: var(--color-amber-500);
+  --color-warning-light: var(--color-amber-100);
+  --color-warning-dark: var(--color-amber-600);
+
+  --color-info: var(--color-blue-500);
+  --color-info-light: var(--color-blue-100);
+  --color-info-dark: var(--color-blue-600);
+
+  /* ============================================
+   * Status Colors - Task Status
+   * ============================================ */
+  --color-status-completed: var(--color-green-600);
+  --color-status-completed-bg: var(--color-green-100);
+  --color-status-completed-text: var(--color-green-700);
+
+  --color-status-today: var(--color-violet-500);
+  --color-status-today-bg: var(--color-violet-100);
+  --color-status-today-text: var(--color-violet-700);
+
+  --color-status-focus: var(--color-violet-700);
+  --color-status-focus-bg: var(--color-violet-50);
+  --color-status-focus-text: var(--color-violet-600);
+
+  --color-status-waiting: var(--color-orange-500);
+  --color-status-waiting-bg: var(--color-orange-100);
+  --color-status-waiting-text: var(--color-orange-700);
+
+  --color-status-deferred: var(--color-indigo-500);
+  --color-status-deferred-bg: var(--color-indigo-100);
+  --color-status-deferred-text: var(--color-indigo-700);
+
+  --color-status-ready: var(--color-blue-600);
+  --color-status-ready-bg: var(--color-blue-100);
+  --color-status-ready-text: var(--color-blue-700);
+
+  --color-status-inbox: var(--color-amber-600);
+  --color-status-inbox-bg: var(--color-amber-100);
+  --color-status-inbox-text: var(--color-amber-700);
+
+  --color-status-archived: var(--color-zinc-500);
+  --color-status-archived-bg: var(--color-zinc-100);
+  --color-status-archived-text: var(--color-zinc-600);
+
+  /* ============================================
+   * Health Status Colors
+   * ============================================ */
+  --color-health-healthy: var(--color-green-600);
+  --color-health-healthy-bg: var(--color-green-100);
+  --color-health-healthy-text: var(--color-green-700);
+
+  --color-health-at-risk: var(--color-amber-500);
+  --color-health-at-risk-bg: var(--color-amber-100);
+  --color-health-at-risk-text: var(--color-amber-700);
+
+  --color-health-critical: var(--color-red-500);
+  --color-health-critical-bg: var(--color-red-100);
+  --color-health-critical-text: var(--color-red-700);
+
+  /* ============================================
+   * Priority Colors
+   * ============================================ */
+  --color-priority-high: var(--color-red-500);
+  --color-priority-high-bg: var(--color-red-100);
+  --color-priority-high-text: var(--color-red-700);
+
+  --color-priority-medium: var(--color-amber-500);
+  --color-priority-medium-bg: var(--color-amber-100);
+  --color-priority-medium-text: var(--color-amber-700);
+
+  --color-priority-low: var(--color-green-500);
+  --color-priority-low-bg: var(--color-green-100);
+  --color-priority-low-text: var(--color-green-700);
+
+  /* ============================================
+   * Spacing Scale (4px base)
+   * ============================================ */
+  --space-0: 0;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ============================================
+   * Typography - Font Sizes
+   * ============================================ */
+  --font-size-xs: 0.75rem;     /* 12px */
+  --font-size-sm: 0.875rem;    /* 14px */
+  --font-size-base: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;    /* 18px */
+  --font-size-xl: 1.25rem;     /* 20px */
+  --font-size-2xl: 1.5rem;     /* 24px */
+  --font-size-3xl: 1.875rem;   /* 30px */
+
+  /* ============================================
+   * Typography - Line Heights
+   * ============================================ */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+
+  /* ============================================
+   * Typography - Font Weights
+   * ============================================ */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ============================================
+   * Animation - Durations
+   * ============================================ */
+  --duration-instant: 0ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+
+  /* ============================================
+   * Animation - Easings
+   * ============================================ */
+  --ease-default: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ============================================
+   * Shadows
+   * ============================================ */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* ============================================
+   * Radii
+   * ============================================ */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+
+  /* ============================================
+   * Layout - Heights
+   * ============================================ */
+  --height-collapsed: 56px;
+  --height-header: 56px;
+  --height-tab-bar: 56px;
+
+  /* ============================================
+   * Layout - Widths
+   * ============================================ */
+  --width-drawer: 400px;
+  --width-minibar: 400px;
+  --width-palette: 400px;
+
+  /* ============================================
+   * Breakpoints (as CSS custom properties)
+   * Note: These are for reference; use media queries for responsive design
+   * ============================================ */
+  --breakpoint-mobile: 640px;
+  --breakpoint-tablet: 1024px;
+  --breakpoint-desktop: 1280px;
+}
+
+/* ============================================
+ * Dark Mode Overrides
+ * ============================================ */
+.dark {
+  /* Surface colors */
+  --color-surface: var(--color-zinc-900);
+  --color-surface-elevated: var(--color-zinc-800);
+  --color-surface-muted: var(--color-zinc-800);
+  --color-surface-inset: var(--color-zinc-950);
+
+  /* Text colors */
+  --color-text-primary: var(--color-zinc-100);
+  --color-text-secondary: var(--color-zinc-400);
+  --color-text-tertiary: var(--color-zinc-500);
+  --color-text-muted: var(--color-zinc-600);
+
+  /* Border colors */
+  --color-border: var(--color-zinc-700);
+  --color-border-light: var(--color-zinc-800);
+  --color-border-strong: var(--color-zinc-600);
+
+  /* Status colors - dark mode backgrounds use opacity */
+  --color-status-completed-bg: rgb(22 163 74 / 0.3);
+  --color-status-completed-text: var(--color-green-300);
+
+  --color-status-today-bg: rgb(139 92 246 / 0.3);
+  --color-status-today-text: var(--color-violet-300);
+
+  --color-status-focus-bg: rgb(109 40 217 / 0.3);
+  --color-status-focus-text: var(--color-violet-400);
+
+  --color-status-waiting-bg: rgb(249 115 22 / 0.3);
+  --color-status-waiting-text: var(--color-orange-300);
+
+  --color-status-deferred-bg: rgb(99 102 241 / 0.3);
+  --color-status-deferred-text: var(--color-indigo-300);
+
+  --color-status-ready-bg: rgb(37 99 235 / 0.3);
+  --color-status-ready-text: var(--color-blue-300);
+
+  --color-status-inbox-bg: rgb(217 119 6 / 0.3);
+  --color-status-inbox-text: var(--color-amber-300);
+
+  --color-status-archived-bg: var(--color-zinc-800);
+  --color-status-archived-text: var(--color-zinc-400);
+
+  /* Health status - dark mode */
+  --color-health-healthy-bg: rgb(22 163 74 / 0.3);
+  --color-health-healthy-text: var(--color-green-300);
+
+  --color-health-at-risk-bg: rgb(245 158 11 / 0.3);
+  --color-health-at-risk-text: var(--color-amber-300);
+
+  --color-health-critical-bg: rgb(239 68 68 / 0.3);
+  --color-health-critical-text: var(--color-red-300);
+
+  /* Priority - dark mode */
+  --color-priority-high-bg: rgb(239 68 68 / 0.3);
+  --color-priority-high-text: var(--color-red-400);
+
+  --color-priority-medium-bg: rgb(245 158 11 / 0.3);
+  --color-priority-medium-text: var(--color-amber-400);
+
+  --color-priority-low-bg: rgb(34 197 94 / 0.3);
+  --color-priority-low-text: var(--color-green-400);
+
+  /* Shadows - darker in dark mode */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.25), 0 2px 4px -2px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.35), 0 8px 10px -6px rgb(0 0 0 / 0.35);
+}
+
+/* ============================================
+ * Reduced Motion Preferences
+ * ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+}

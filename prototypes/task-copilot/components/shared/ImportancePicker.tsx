@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Check, X } from "lucide-react";
 import { ImportanceLevel } from "@/lib/types";
 import { getImportanceLabel } from "@/lib/priority";
-import BottomSheet from "./BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface ImportancePickerProps {
   isOpen: boolean;

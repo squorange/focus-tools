@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Check, X, TrendingUp, Minus, TrendingDown, CircleSlash } from "lucide-react";
 import { EnergyType } from "@/lib/types";
 import { getEnergyTypeLabel } from "@/lib/priority";
-import BottomSheet from "./BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface EnergyTypePickerProps {
   isOpen: boolean;

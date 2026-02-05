@@ -3,7 +3,7 @@
 > Migrating task-copilot from local components to shared design-system package.
 
 **Status:** 🔄 In Progress
-**Phase:** 1 of 5 (Foundation Setup Complete)
+**Phase:** 3 of 6 (Simple Extractions Complete)
 
 ## Quick Links
 
@@ -18,8 +18,9 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 
 1. **Wires up** `@focus-tools/design-system` as a dependency
 2. **Replaces** local components with design-system equivalents
-3. **Extracts** new reusable components (Toast, CollapsibleSection)
+3. **Extracts** simple reusable components (Toast, CollapsibleSection)
 4. **Migrates** raw Tailwind classes to semantic tokens
+5. **Unifies** complex components (TaskCard variants, RoutineCard) with shared APIs
 
 ---
 
@@ -29,10 +30,11 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 |-------|-------------|--------|-------|
 | 0 | Documentation | ✅ | This folder |
 | 1 | Foundation Setup | ✅ | Dependency added, tokens imported |
-| 2 | Component Replacement | ⬜ | 6 components, ~30 files |
-| 3 | Extract New Components | ⬜ | Toast, CollapsibleSection |
+| 2 | Component Replacement | ✅ | 6 components replaced, 5 deleted |
+| 3 | Simple Extractions | ✅ | Toast, CollapsibleSection extracted with semantic tokens |
 | 4 | Token Migration | ⬜ | ~300 high-priority replacements |
-| 5 | Cleanup | ⬜ | Delete old files |
+| 5 | Cleanup | ⬜ | Verification, dead code removal |
+| 6 | Complex Component Unification | ⬜ | Unified TaskCard, RoutineCard (needs design spec) |
 
 ---
 
@@ -40,10 +42,11 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 
 | Metric | Value |
 |--------|-------|
-| Components in design-system | 6 (BottomSheet, RightDrawer, ResponsiveDrawer, ProgressRing, SegmentedControl, Pill) |
-| Local duplicates in task-copilot | 6 |
+| Components in design-system | 8 (BottomSheet, RightDrawer, ResponsiveDrawer, ProgressRing, SegmentedControl, Pill, Toast, CollapsibleSection) |
+| Local duplicates in task-copilot | 0 (all replaced) |
 | Raw Tailwind class occurrences | 1,158 across 75 files |
-| Components to extract | 2 (Toast, CollapsibleSection) |
+| Simple components to extract | 0 (complete) |
+| Complex components to unify | TBD (TaskCard variants, RoutineCard) |
 
 ---
 

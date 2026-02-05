@@ -1,0 +1,11 @@
+/**
+ * Focus Tools Design System - Main CSS Entry Point
+ *
+ * Import this file to get all design system styles.
+ * Or import individual files:
+ *   - @import "@focus-tools/design-system/styles/tokens.css";
+ *   - @import "@focus-tools/design-system/styles/foundations.css";
+ */
+
+@import "./tokens.css";
+@import "./foundations.css";

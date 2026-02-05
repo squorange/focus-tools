@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Project } from "@/lib/types";
-import BottomSheet from "@/components/shared/BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface ProjectModalProps {
   isOpen: boolean;

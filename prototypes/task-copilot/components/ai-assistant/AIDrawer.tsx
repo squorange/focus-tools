@@ -9,7 +9,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { ChatHistory } from './ChatHistory';
 import { ShimmerText } from './ShimmerText';
 import { QuickActions } from './QuickActions';
-import BottomSheet from '@/components/shared/BottomSheet';
+import { BottomSheet } from '@design-system/components';
 
 interface AIDrawerProps {
   messages: AIMessage[];

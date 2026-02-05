@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Project } from "@/lib/types";
 import { ChevronDown, FolderOpen, Plus } from "lucide-react";
-import BottomSheet from "@/components/shared/BottomSheet";
+import { BottomSheet } from "@design-system/components";
 
 interface TaskCreationPopoverProps {
   isOpen: boolean;

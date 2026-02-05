@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronRight, Download, Upload, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserSettings } from "@/lib/types";
-import SegmentedControl from "@/components/shared/SegmentedControl";
+import { SegmentedControl } from "@design-system/components";
 
 interface SettingsViewProps {
   userSettings: UserSettings;

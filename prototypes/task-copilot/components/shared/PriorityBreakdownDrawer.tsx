@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { Info, BarChart3, X } from "lucide-react";
 import DetailsPill from "./DetailsPill";
-import BottomSheet from "./BottomSheet";
+import { BottomSheet } from "@design-system/components";
 import type { Task, EnergyLevel, PriorityTier } from "../../lib/types";
 import {
   getTaskPriorityInfo,
