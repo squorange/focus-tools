@@ -70,7 +70,7 @@ export default function RoutineCard({
           w-full h-[110px] rounded-xl border transition-all
           ${isActiveWindow
             ? "border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20"
-            : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800"
+            : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80"
           }
           hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-sm
         `}
@@ -142,7 +142,7 @@ export default function RoutineCard({
 
             {/* Streak with Zap icon - monochromatic, no unit */}
             {streak > 0 && (
-              <div className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center gap-0.5 text-xs font-medium text-fg-neutral-secondary">
                 <Zap className="w-3.5 h-3.5" />
                 <span>{streak}</span>
               </div>
@@ -150,7 +150,7 @@ export default function RoutineCard({
           </div>
 
           {/* Title row - full width, line-clamp-2 */}
-          <h3 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-tight mt-2">
+          <h3 className="text-sm font-medium text-fg-neutral-primary line-clamp-2 leading-tight mt-2">
             {task.title}
           </h3>
 
@@ -162,7 +162,7 @@ export default function RoutineCard({
             <div className={`flex items-center gap-1.5 text-xs min-w-0 ${
               isPastWindow
                 ? "text-amber-600 dark:text-amber-400"
-                : "text-zinc-500 dark:text-zinc-400"
+                : "text-fg-neutral-secondary"
             }`}>
               <Repeat className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{patternDescription}</span>

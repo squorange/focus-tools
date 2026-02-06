@@ -133,7 +133,7 @@ export default function QueueItem({
             ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
             : isToday
               ? "border-violet-100 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 hover:border-violet-300 dark:hover:border-violet-600"
-              : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+              : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
         }
       `}
     >
@@ -166,7 +166,7 @@ export default function QueueItem({
         <div className="flex-1 text-left min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className={`text-zinc-900 dark:text-zinc-100 truncate ${
+              className={`text-fg-neutral-primary truncate ${
                 isComplete ? "line-through opacity-60" : ""
               }`}
             >
@@ -226,7 +226,7 @@ export default function QueueItem({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
-              <div className={`absolute right-0 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px] ${
+              <div className={`absolute right-0 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-30 min-w-[140px] ${
                 isFirst ? "top-full mt-1" : "bottom-full mb-1"
               }`}>
                 {!isComplete && (
@@ -244,7 +244,7 @@ export default function QueueItem({
                 {!isComplete && onEditFocus && task.steps.length > 0 && (
                   <button
                     onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -252,12 +252,12 @@ export default function QueueItem({
                     Edit Focus
                   </button>
                 )}
-                {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                 {onMoveUp && (
                   <button
                     onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
                     disabled={isFirst}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -269,7 +269,7 @@ export default function QueueItem({
                   <button
                     onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
                     disabled={isLast}
-                    className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -277,10 +277,10 @@ export default function QueueItem({
                     Move Down
                   </button>
                 )}
-                {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                {(onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                 <button
                   onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -308,7 +308,7 @@ export default function QueueItem({
 
           <div className="flex-1 min-w-0 text-left">
             <span
-              className={`text-zinc-900 dark:text-zinc-100 ${
+              className={`text-fg-neutral-primary ${
                 isComplete ? "line-through opacity-60" : ""
               }`}
             >
@@ -340,7 +340,7 @@ export default function QueueItem({
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
-                  <div className={`absolute right-0 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-30 min-w-[140px] ${
+                  <div className={`absolute right-0 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-30 min-w-[140px] ${
                     isFirst ? "top-full mt-1" : "bottom-full mb-1"
                   }`}>
                     {!isComplete && (
@@ -358,7 +358,7 @@ export default function QueueItem({
                     {!isComplete && onEditFocus && task.steps.length > 0 && (
                       <button
                         onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -366,12 +366,12 @@ export default function QueueItem({
                         Edit Focus
                       </button>
                     )}
-                    {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                    {!isComplete && (onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                     {onMoveUp && (
                       <button
                         onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
                         disabled={isFirst}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -383,7 +383,7 @@ export default function QueueItem({
                       <button
                         onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
                         disabled={isLast}
-                        className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -391,10 +391,10 @@ export default function QueueItem({
                         Move Down
                       </button>
                     )}
-                    {(onMoveUp || onMoveDown) && <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />}
+                    {(onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                     <button
                       onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />

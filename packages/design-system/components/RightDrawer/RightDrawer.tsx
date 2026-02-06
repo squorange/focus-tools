@@ -109,7 +109,7 @@ export function RightDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={springConfig}
-            className="fixed top-0 right-0 bottom-0 bg-bg-neutral-min border-l border-border-color-neutral-subtle shadow-elevation-high flex flex-col"
+            className="fixed top-0 right-0 bottom-0 bg-bg-neutral-subtle border-l border-border-color-neutral-subtle shadow-elevation-high flex flex-col"
             style={{
               zIndex,
               width,

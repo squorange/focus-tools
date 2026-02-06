@@ -96,7 +96,7 @@ export function AIDrawer({
         <motion.button
           onClick={onClose}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
-          className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+          className="px-3 py-1 text-xs font-medium text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           aria-label="Close chat"
         >
           Done
@@ -137,7 +137,7 @@ export function AIDrawer({
       {/* Loading indicator - styled as assistant message bubble for consistency */}
       {isLoading && (
         <div className="px-4 py-2 flex justify-start" aria-live="polite">
-          <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-zinc-100 dark:bg-zinc-800">
+          <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-bl-md bg-bg-neutral-subtle">
             <ShimmerText text="Thinking..." className="text-sm" />
           </div>
         </div>
@@ -203,7 +203,7 @@ export function AIDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
-      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 bg-white dark:bg-zinc-900 border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
+      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
       style={{ width: WIDTHS.drawer }}
     >
       {drawerContent}

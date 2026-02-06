@@ -611,7 +611,7 @@
   --glass-floating-border: 1px solid rgba(255, 255, 255, 0.06);
 
   --glass-floating-panel-bg: rgba(24, 24, 27, 0.92);
-  --glass-floating-panel-border: 1px solid rgba(255, 255, 255, 0.08);
+  --glass-floating-panel-border: 1px solid rgba(255, 255, 255, 0.05);
   --glass-floating-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
 
   --glass-secondary-bg: rgba(128, 128, 128, 0.12);

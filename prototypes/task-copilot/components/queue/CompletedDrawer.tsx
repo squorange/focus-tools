@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { Task } from "@/lib/types";
 import { getCompletions, formatMinutes, TaskCompletion } from "@/lib/completions";
 import { BottomSheet } from "@design-system/components";
+import { useDeviceType } from "@/hooks/useMediaQuery";
 
 interface CompletedDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export default function CompletedDrawer({
   dayStartHour = 0,
 }: CompletedDrawerProps) {
   const [daysToShow, setDaysToShow] = useState(7);
+  const deviceType = useDeviceType();
+  const isDesktop = deviceType === 'desktop';
 
   const { groups: completionGroups, hasMore } = useMemo(
     () => getCompletions(tasks, daysToShow, dayStartHour),
@@ -62,7 +65,7 @@ export default function CompletedDrawer({
               />
             </svg>
           </div>
-          <p className="text-zinc-500 dark:text-zinc-400">
+          <p className="text-fg-neutral-secondary">
             No completions yet
           </p>
           <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">
@@ -74,7 +77,7 @@ export default function CompletedDrawer({
           {completionGroups.map((group) => (
             <div key={group.dateKey}>
               {/* Date header */}
-              <div className="px-4 py-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 sticky top-0">
+              <div className="px-4 py-2 text-xs font-medium text-fg-neutral-secondary sticky top-0">
                 {group.displayDate}
               </div>
 
@@ -96,7 +99,7 @@ export default function CompletedDrawer({
             <div className="px-4 py-3">
               <button
                 onClick={handleShowMore}
-                className="w-full py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                className="w-full py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
               >
                 Show more
               </button>
@@ -109,66 +112,70 @@ export default function CompletedDrawer({
 
   return (
     <>
-      {/* Desktop: Side drawer from right */}
-      <div
-        className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200/50 lg:dark:border-zinc-700/30 lg:bg-white lg:dark:bg-zinc-900
-          transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
-          ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
-        `}
-      >
+      {/* Desktop: Side drawer from right - JS conditional to prevent portal leaking */}
+      {isDesktop && (
         <div
-          className={`w-[400px] flex flex-col h-full transition-opacity duration-200 ${
-            isOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`
+            flex flex-col flex-shrink-0 border-l border-zinc-200/50 dark:border-zinc-700/30
+            transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
+            ${isOpen ? "w-[400px]" : "w-0 border-l-0"}
+          `}
         >
-          {/* Header - matches main navbar (no bottom border) */}
-          <div className="h-14 flex items-center justify-between px-2 bg-white dark:bg-zinc-900 flex-shrink-0">
-            <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
-                Completed
-              </h2>
+          <div
+            className={`w-[400px] flex flex-col h-full transition-opacity duration-200 ${
+              isOpen ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {/* Header - matches main navbar (no bottom border) */}
+            <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
+              <div className="px-2">
+                <h2 className="text-base font-medium text-fg-neutral-primary">
+                  Completed
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} className="text-fg-neutral-secondary" />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              aria-label="Close"
-            >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
-            </button>
-          </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {renderContent()}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {renderContent()}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Desktop backdrop (subtle) - always rendered for transition */}
-      <div
-        className={`hidden lg:block fixed inset-0 z-30 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={onClose}
-      />
+      {/* Desktop backdrop (subtle) - JS conditional */}
+      {isDesktop && (
+        <div
+          className={`fixed inset-0 z-30 transition-opacity duration-300 ${
+            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={onClose}
+        />
+      )}
 
-      {/* Mobile: Bottom sheet */}
-      <div className="lg:hidden">
+      {/* Mobile/Tablet: Bottom sheet - JS conditional to prevent dual rendering */}
+      {!isDesktop && (
         <BottomSheet isOpen={isOpen} onClose={onClose} height="50vh">
           {/* Mobile header row - matches main navbar (no bottom border) */}
           <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
             <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Completed
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -179,7 +186,7 @@ export default function CompletedDrawer({
             <div style={{ height: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }} />
           </div>
         </BottomSheet>
-      </div>
+      )}
     </>
   );
 }
@@ -214,7 +221,7 @@ function TaskCompletionItem({
               d="M5 13l4 4L19 7"
             />
           </svg>
-          <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+          <span className="text-sm font-medium text-fg-neutral-primary truncate">
             {task.taskTitle}
           </span>
           {/* Routine indicator */}
@@ -234,11 +241,11 @@ function TaskCompletionItem({
 
       {/* Completed steps as children (only if task not fully completed) */}
       {task.completedSteps.length > 0 && (
-        <div className="mt-1.5 ml-6 pl-3 border-l-2 border-zinc-200 dark:border-zinc-700 space-y-1.5">
+        <div className="mt-1.5 ml-6 pl-3 border-l-2 border-border-color-neutral space-y-1.5">
           {task.completedSteps.map((step) => (
             <div
               key={step.stepId}
-              className="text-sm text-zinc-500 dark:text-zinc-400 truncate"
+              className="text-sm text-fg-neutral-secondary truncate"
             >
               {step.stepText}
             </div>

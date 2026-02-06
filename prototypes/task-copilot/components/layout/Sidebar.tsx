@@ -82,7 +82,7 @@ function NavItem({ icon, label, isActive, onClick, isCollapsed, badge }: NavItem
         transition-all duration-300 ease-in-out
         ${isActive
           ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
-          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          : "text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         }
         ${isCollapsed ? "justify-center relative gap-0" : "gap-3"}
       `}
@@ -133,10 +133,10 @@ function JumpToRow({ icon, label, count, onClick }: JumpToRowProps) {
         e.preventDefault(); // Prevent search input blur
         onClick();
       }}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left group"
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors text-left group"
     >
-      <span className="flex-shrink-0 text-zinc-500 dark:text-zinc-400">{icon}</span>
-      <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <span className="flex-shrink-0 text-fg-neutral-secondary">{icon}</span>
+      <span className="flex-1 text-sm font-medium text-fg-neutral-primary">
         {label}
       </span>
       {count > 0 && (
@@ -169,7 +169,7 @@ function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
     inbox: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
     pool: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
     complete: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
-    archived: "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400",
+    archived: "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary",
   };
 
   return (
@@ -178,13 +178,13 @@ function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
         e.preventDefault(); // Prevent search input blur
         onClick();
       }}
-      className="w-full text-left px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+      className="w-full text-left px-3 py-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
     >
       <div className="flex items-center gap-2">
         <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${statusColors[task.status as keyof typeof statusColors] || statusColors.pool}`}>
           {task.status}
         </span>
-        <span className="text-sm text-zinc-900 dark:text-zinc-100 truncate flex-1">
+        <span className="text-sm text-fg-neutral-primary truncate flex-1">
           {titleHasMatch ? (
             <HighlightedText text={task.title} query={query} />
           ) : (
@@ -193,7 +193,7 @@ function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
         </span>
       </div>
       {preview.text && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate pl-[52px]">
+        <p className="text-xs text-fg-neutral-secondary mt-1 truncate pl-[52px]">
           {preview.type === 'step' && <span className="text-violet-500 dark:text-violet-400 mr-1">→</span>}
           {preview.type === 'snippet' ? (
             <HighlightedText text={preview.text} query={query} />
@@ -244,9 +244,9 @@ function RecentTaskRow({ task, onClick }: RecentTaskRowProps) {
         e.preventDefault(); // Prevent search input blur
         onClick();
       }}
-      className="w-full text-left px-3 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+      className="w-full text-left px-3 py-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
     >
-      <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate block">
+      <span className="text-sm text-fg-neutral-primary truncate block">
         {task.title}
       </span>
     </button>
@@ -351,7 +351,7 @@ export default function Sidebar({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         className={`
-          fixed top-0 left-0 bottom-0 z-50 bg-white dark:bg-zinc-900
+          fixed top-0 left-0 bottom-0 z-50 bg-white dark:bg-[#141417]
           border-r border-zinc-200 dark:border-zinc-800
           transition-all duration-300 ease-in-out
           lg:translate-x-0
@@ -372,19 +372,19 @@ export default function Sidebar({
         <div className="pt-[env(safe-area-inset-top)] h-full flex flex-col">
           {/* Header with drawer toggle (desktop only) - matches main header styling */}
           <div className={`
-            flex-shrink-0 h-14 hidden lg:flex items-center bg-white dark:bg-zinc-900
+            flex-shrink-0 h-14 hidden lg:flex items-center
             ${isCollapsed ? "justify-center" : "px-4"}
           `}>
             {/* Drawer toggle - centered when collapsed, left-aligned when expanded */}
             <button
               onClick={onToggleCollapse}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label={isCollapsed ? "Expand drawer" : "Collapse drawer"}
             >
               {isCollapsed ? (
-                <PanelLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
+                <PanelLeft size={20} className="text-fg-neutral-secondary" />
               ) : (
-                <PanelLeftClose size={20} className="text-zinc-600 dark:text-zinc-400" />
+                <PanelLeftClose size={20} className="text-fg-neutral-secondary" />
               )}
             </button>
           </div>
@@ -401,10 +401,10 @@ export default function Sidebar({
                   onToggleCollapse();
                   setTimeout(() => searchInputRef.current?.focus(), 300);
                 }}
-                className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
                 title="Search"
               >
-                <Search size={20} className="text-zinc-600 dark:text-zinc-400" />
+                <Search size={20} className="text-fg-neutral-secondary" />
               </button>
             ) : (
               /* Expanded: Full search field */
@@ -422,9 +422,9 @@ export default function Sidebar({
                     onChange={(e) => onSearchChange(e.target.value)}
                     onFocus={onSearchInputFocus}
                     onBlur={onSearchInputBlur}
-                    className="w-full pl-10 pr-8 py-2.5 text-sm bg-zinc-100 dark:bg-zinc-800
+                    className="w-full pl-10 pr-8 py-2.5 text-sm bg-bg-neutral-subtle
                       border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500
-                      text-zinc-900 dark:text-zinc-100 placeholder-zinc-500"
+                      text-fg-neutral-primary placeholder-zinc-500"
                   />
                   {/* Clear button - inside input, shows when text exists */}
                   {searchQuery && (
@@ -448,7 +448,7 @@ export default function Sidebar({
                     className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
                     title="Exit search"
                   >
-                    <X size={20} className="text-zinc-500 dark:text-zinc-400" />
+                    <X size={20} className="text-fg-neutral-secondary" />
                   </button>
                 )}
               </>
@@ -465,7 +465,7 @@ export default function Sidebar({
                   <>
                     {searchResults.length > 0 ? (
                       <>
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                        <p className="text-xs font-medium text-fg-neutral-secondary px-3 py-2">
                           Tasks ({searchResults.length})
                         </p>
                         <div className="space-y-1">
@@ -485,7 +485,7 @@ export default function Sidebar({
                         )}
                       </>
                     ) : (
-                      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+                      <div className="text-center py-8 text-fg-neutral-secondary">
                         No tasks found matching "{searchQuery}"
                       </div>
                     )}
@@ -496,7 +496,7 @@ export default function Sidebar({
                     {/* Jump To Filters */}
                     {filterCounts && onJumpToFilter && (
                       <>
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                        <p className="text-xs font-medium text-fg-neutral-secondary px-3 py-2">
                           Jump to
                         </p>
                         <JumpToRow
@@ -524,7 +524,7 @@ export default function Sidebar({
                     {recentTasks && recentTasks.length > 0 && (
                       <>
                         <div className="pt-2" />
-                        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 px-3 py-2">
+                        <p className="text-xs font-medium text-fg-neutral-secondary px-3 py-2">
                           Recent
                         </p>
                         {recentTasks.map((task) => (
@@ -564,7 +564,7 @@ export default function Sidebar({
                 </div>
 
                 {/* Separator - NOT inside space-y-1, so my-4 works */}
-                <div className="my-4 border-t border-zinc-200 dark:border-zinc-700" />
+                <div className="my-4 border-t border-border-color-neutral" />
 
                 {/* Secondary nav: Projects + Notifications */}
                 <div className="space-y-4">

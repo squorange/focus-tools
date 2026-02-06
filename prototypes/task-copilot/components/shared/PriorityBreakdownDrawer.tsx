@@ -47,7 +47,7 @@ const tierConfig: Record<PriorityTier, { label: string; bgColor: string; textCol
   },
   low: {
     label: "Low",
-    bgColor: "bg-zinc-100 dark:bg-zinc-800",
+    bgColor: "bg-bg-neutral-subtle",
     textColor: "text-zinc-700 dark:text-zinc-400",
   },
 };
@@ -144,7 +144,7 @@ export default function PriorityBreakdownDrawer({
           </div>
           <button
             onClick={() => setShowScaleInfo(!showScaleInfo)}
-            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1 mx-auto"
+            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1 mx-auto"
           >
             Score: {totalScore}
             <Info className="w-3.5 h-3.5" />
@@ -155,11 +155,11 @@ export default function PriorityBreakdownDrawer({
       {/* Scale Info (expandable) */}
       {showScaleInfo && (
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-3 text-xs space-y-1">
-          <div className="font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          <div className="font-medium text-fg-neutral-primary mb-2">
             Priority Scale
           </div>
           {SCALE_INFO.map((item) => (
-            <div key={item.tier} className="flex justify-between text-zinc-600 dark:text-zinc-400">
+            <div key={item.tier} className="flex justify-between text-fg-neutral-secondary">
               <span>
                 <span className="font-mono">{item.range}</span> {item.tier}
               </span>
@@ -171,7 +171,7 @@ export default function PriorityBreakdownDrawer({
 
       {/* Contributing Factors */}
       <div>
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <h3 className="text-sm font-medium text-fg-neutral-primary mb-2">
           Contributing factors
         </h3>
         <div className="space-y-2">
@@ -181,7 +181,7 @@ export default function PriorityBreakdownDrawer({
               className="flex items-center justify-between text-sm"
             >
               <div className="flex-1 min-w-0">
-                <span className="text-zinc-700 dark:text-zinc-300">
+                <span className="text-fg-neutral-primary">
                   {factor.label}
                 </span>
                 <span className="text-zinc-400 dark:text-zinc-500 ml-1">
@@ -199,9 +199,9 @@ export default function PriorityBreakdownDrawer({
               </span>
             </div>
           ))}
-          <div className="border-t border-zinc-200 dark:border-zinc-700 pt-2 flex justify-between font-medium text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Total</span>
-            <span className="text-zinc-900 dark:text-zinc-100">
+          <div className="border-t border-border-color-neutral pt-2 flex justify-between font-medium text-sm">
+            <span className="text-fg-neutral-primary">Total</span>
+            <span className="text-fg-neutral-primary">
               {totalScore} → {tierStyle.label}
             </span>
           </div>
@@ -216,7 +216,7 @@ export default function PriorityBreakdownDrawer({
 
       {/* Adjust Inputs */}
       <div>
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <h3 className="text-sm font-medium text-fg-neutral-primary mb-2">
           Adjust inputs
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -280,18 +280,18 @@ export default function PriorityBreakdownDrawer({
           }`}
         >
           {/* Header - matches main navbar (no bottom border) */}
-          <div className="h-14 flex items-center justify-between px-2 bg-white dark:bg-zinc-900 flex-shrink-0">
+          <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
             <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Priority Breakdown
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -316,16 +316,16 @@ export default function PriorityBreakdownDrawer({
           {/* Mobile header - matches main navbar (no bottom border) */}
           <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
             <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Priority Breakdown
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 

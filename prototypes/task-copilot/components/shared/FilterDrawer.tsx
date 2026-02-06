@@ -141,7 +141,7 @@ function MultiSelectPills<T extends string>({
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
               isSelected
                 ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-                : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
+                : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
             }`}
           >
             {option.label}
@@ -277,13 +277,13 @@ export default function FilterDrawer({
 
   // Shared content renderer
   const renderContent = () => (
-    <div className="flex flex-col h-full bg-white dark:bg-zinc-900">
+    <div className="flex flex-col h-full">
       {/* Header - h-14 matches standard */}
       <div className="h-14 flex items-center justify-between px-4 shrink-0">
-        <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">Filters</h2>
+        <h2 className="text-base font-medium text-fg-neutral-primary">Filters</h2>
         <button
           onClick={onClose}
-          className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+          className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -293,7 +293,7 @@ export default function FilterDrawer({
       <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {/* Quick filters (presets) */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-fg-neutral-secondary uppercase tracking-wider mb-2">
             Quick filters
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -304,7 +304,7 @@ export default function FilterDrawer({
                 className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                   activePreset === preset.id
                     ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-                    : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
+                    : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
                 }`}
               >
                 {preset.icon} {preset.label}
@@ -317,7 +317,7 @@ export default function FilterDrawer({
 
         {/* DATES group */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-fg-neutral-secondary uppercase tracking-wider mb-2">
             Dates
           </h3>
 
@@ -374,7 +374,7 @@ export default function FilterDrawer({
 
         {/* STATUS group */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-fg-neutral-secondary uppercase tracking-wider mb-2">
             Status
           </h3>
 
@@ -447,7 +447,7 @@ export default function FilterDrawer({
 
         {/* OTHER group */}
         <div>
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-medium text-fg-neutral-secondary uppercase tracking-wider mb-2">
             Other
           </h3>
 
@@ -517,14 +517,14 @@ export default function FilterDrawer({
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="text-sm text-fg-neutral-secondary">
             {matchCount} {matchCount === 1 ? 'task' : 'tasks'}
           </span>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-fg-neutral-primary rounded-lg transition-colors"
               >
                 Clear all
               </button>
@@ -587,7 +587,7 @@ function FilterChip({ label, selected, onClick, color }: FilterChipProps) {
       className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
         selected
           ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-          : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600'
+          : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
       }`}
       style={color && selected ? { borderColor: color, backgroundColor: `${color}20` } : undefined}
     >
