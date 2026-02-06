@@ -3,7 +3,7 @@
 > Migrating task-copilot from local components to shared design-system package.
 
 **Status:** ✅ Substantially Complete
-**Phase:** 4 of 6 (Token Migration Complete)
+**Phase:** 5 of 6 (Cleanup Complete, Unification Optional)
 
 ## Quick Links
 
@@ -33,7 +33,7 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 | 2 | Component Replacement | ✅ | 6 components replaced, 5 deleted |
 | 3 | Simple Extractions | ✅ | Toast, CollapsibleSection extracted with semantic tokens |
 | 4 | Token Migration | ✅ | Tier 1-2 complete, Tier 3 intentionally kept |
-| 5 | Cleanup | ⬜ | Verification, dead code removal |
+| 5 | Cleanup | ✅ | Build verified, no dead code, 133 tests pass |
 | 6 | Complex Component Unification | ⬜ | Unified TaskCard, RoutineCard (needs design spec) |
 
 ---
