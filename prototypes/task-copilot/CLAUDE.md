@@ -32,7 +32,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
 | P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
 | P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
-| P1 | Design System Integration | 🔄 In Progress | Phase 4: Tier 1 complete (882 tokens), Tier 2-3 pending |
+| P1 | Design System Integration | ✅ Complete | Tier 1-2 migrated, new tokens added, ~341 intentional patterns remain |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |
@@ -48,6 +48,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v37 | Design System Integration complete: Tier 1-2 token migration, new subtle-hover token, hover text patterns |
 | v36 | Design System Integration Phase 1: Added package dependency, imported CSS tokens, bridge variables for gradual migration |
 | v35 | Design System Integration: Documentation (SPEC, COMPONENT_CATALOG), token system aligned with clinic-planner |
 | v34 | AI Guardrails Implementation: Rate limiting, analytics, safety, graceful degradation, UI components, 35 tests |
