@@ -184,7 +184,7 @@ export default function PriorityBreakdownDrawer({
                 <span className="text-fg-neutral-primary">
                   {factor.label}
                 </span>
-                <span className="text-zinc-400 dark:text-zinc-500 ml-1">
+                <span className="text-fg-neutral-soft ml-1">
                   ({factor.description})
                 </span>
               </div>
@@ -192,7 +192,7 @@ export default function PriorityBreakdownDrawer({
                 className={`font-mono text-xs ${
                   factor.points > 0
                     ? "text-green-600 dark:text-green-400"
-                    : "text-zinc-400 dark:text-zinc-500"
+                    : "text-fg-neutral-soft"
                 }`}
               >
                 {factor.points > 0 ? `+${factor.points}` : factor.points}
@@ -257,7 +257,7 @@ export default function PriorityBreakdownDrawer({
             onPress={() => console.log("[Phase 3] Open energy type picker")}
           />
         </div>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 italic">
+        <p className="text-xs text-fg-neutral-soft mt-2 italic">
           Input editing coming in Phase 3
         </p>
       </div>

@@ -154,7 +154,7 @@ export default function NotificationCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${isHighlighted ? sectionColors.text : 'text-zinc-800 dark:text-zinc-200'}`}>
+            <span className={`text-sm font-medium ${isHighlighted ? sectionColors.text : 'text-fg-neutral-primary'}`}>
               {displayTitle}
             </span>
             {isUnread && (
@@ -166,7 +166,7 @@ export default function NotificationCard({
               {notification.body}
             </p>
           )}
-          <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+          <span className="text-xs text-fg-neutral-soft mt-1 block">
             {isFired ? 'Fired' : section === 'missed' ? 'Missed' : 'Scheduled'}: {timeStr}
           </span>
 

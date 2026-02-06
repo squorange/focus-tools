@@ -261,7 +261,7 @@ export default function FocusModeView({
               setEditingTitle(true);
               setTitleText(task.title);
             }}
-            className="text-xl font-medium text-fg-neutral-secondary mb-4 text-center break-words cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
+            className="text-xl font-medium text-fg-neutral-secondary mb-4 text-center break-words cursor-text hover:bg-bg-neutral-subtle px-2 -mx-2 py-1 rounded transition-colors"
           >
             {task.title}
           </h1>
@@ -341,7 +341,7 @@ export default function FocusModeView({
                   setEditingStep(true);
                   setStepText(currentStep.text);
                 }}
-                className="text-lg text-fg-neutral-primary text-center mb-6 cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
+                className="text-lg text-fg-neutral-primary text-center mb-6 cursor-text hover:bg-bg-neutral-subtle px-2 -mx-2 py-1 rounded transition-colors"
               >
                 {currentStep.text}
               </p>
@@ -402,7 +402,7 @@ export default function FocusModeView({
                           setEditingSubstepId(substep.id);
                           setSubstepText(substep.text);
                         }}
-                        className={`flex-1 text-sm cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
+                        className={`flex-1 text-sm cursor-text hover:bg-bg-neutral-subtle px-1 -mx-1 rounded transition-colors ${
                           substep.completed
                             ? "text-zinc-400 line-through"
                             : "text-fg-neutral-secondary"
@@ -452,7 +452,7 @@ export default function FocusModeView({
 
             {/* Estimate */}
             {currentStep.estimatedMinutes && (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500 text-center mb-6">
+              <p className="text-sm text-fg-neutral-soft text-center mb-6">
                 Estimated: ~{currentStep.estimatedMinutes} min
               </p>
             )}
@@ -469,7 +469,7 @@ export default function FocusModeView({
               <div className="relative">
                 <button
                   onClick={() => setShowStuckMenu(!showStuckMenu)}
-                  className="px-6 py-3 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-6 py-3 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   I&apos;m Stuck
                 </button>
@@ -483,7 +483,7 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuckBreakdown();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -495,7 +495,7 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuckFirstStep();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -507,7 +507,7 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuckExplain();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -520,7 +520,7 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuck();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />

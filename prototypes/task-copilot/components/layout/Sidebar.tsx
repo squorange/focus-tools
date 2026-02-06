@@ -140,7 +140,7 @@ function JumpToRow({ icon, label, count, onClick }: JumpToRowProps) {
         {label}
       </span>
       {count > 0 && (
-        <span className="text-sm text-zinc-400 dark:text-zinc-500 tabular-nums">
+        <span className="text-sm text-fg-neutral-soft tabular-nums">
           {count}
         </span>
       )}
@@ -479,7 +479,7 @@ export default function Sidebar({
                           ))}
                         </div>
                         {searchResults.length > 10 && (
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 px-1 mt-2">
+                          <p className="text-xs text-fg-neutral-soft px-1 mt-2">
                             +{searchResults.length - 10} more results
                           </p>
                         )}

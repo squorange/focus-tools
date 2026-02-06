@@ -232,7 +232,7 @@ export default function QueueItem({
                 {!isComplete && (
                   <button
                     onClick={() => { onStartFocus(item.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -244,7 +244,7 @@ export default function QueueItem({
                 {!isComplete && onEditFocus && task.steps.length > 0 && (
                   <button
                     onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -257,7 +257,7 @@ export default function QueueItem({
                   <button
                     onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
                     disabled={isFirst}
-                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -269,7 +269,7 @@ export default function QueueItem({
                   <button
                     onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
                     disabled={isLast}
-                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -280,7 +280,7 @@ export default function QueueItem({
                 {(onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                 <button
                   onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                  className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -346,7 +346,7 @@ export default function QueueItem({
                     {!isComplete && (
                       <button
                         onClick={() => { onStartFocus(item.id); setShowMenu(false); }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -358,7 +358,7 @@ export default function QueueItem({
                     {!isComplete && onEditFocus && task.steps.length > 0 && (
                       <button
                         onClick={() => { onEditFocus(item.id); setShowMenu(false); }}
-                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -371,7 +371,7 @@ export default function QueueItem({
                       <button
                         onClick={() => { onMoveUp(item.id); setShowMenu(false); }}
                         disabled={isFirst}
-                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -383,7 +383,7 @@ export default function QueueItem({
                       <button
                         onClick={() => { onMoveDown(item.id); setShowMenu(false); }}
                         disabled={isLast}
-                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -394,7 +394,7 @@ export default function QueueItem({
                     {(onMoveUp || onMoveDown) && <div className="border-t border-border-color-neutral my-1" />}
                     <button
                       onClick={() => { onRemoveFromQueue(item.id); setShowMenu(false); }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                      className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />

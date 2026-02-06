@@ -81,19 +81,19 @@ export default function TaskRow({
           <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Tomorrow
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Next week
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Next month
           </button>
@@ -103,7 +103,7 @@ export default function TaskRow({
       {onPark && (
         <button
           onClick={() => { onPark(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Archive
         </button>
@@ -111,7 +111,7 @@ export default function TaskRow({
       {onDelete && (
         <button
           onClick={() => { onDelete(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
         >
           Delete
         </button>
@@ -226,7 +226,7 @@ export default function TaskRow({
                 <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                   <button
                     onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
-                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                   >
                     Add to Today
                   </button>
@@ -306,7 +306,7 @@ export default function TaskRow({
                     <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                       <button
                         onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
-                        className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                        className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                       >
                         Add to Today
                       </button>

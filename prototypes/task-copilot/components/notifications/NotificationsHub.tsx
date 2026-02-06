@@ -88,7 +88,7 @@ function NotificationsContent({
     return (
       <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
         <div className="w-16 h-16 rounded-full bg-bg-neutral-subtle flex items-center justify-center mb-4">
-          <Bell size={32} className="text-zinc-400 dark:text-zinc-500" />
+          <Bell size={32} className="text-fg-neutral-soft" />
         </div>
         <h2 className="text-lg font-medium text-fg-neutral-primary mb-2">
           No notifications yet

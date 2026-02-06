@@ -349,7 +349,7 @@ export default function HistoryModal({
               {/* No steps completed message */}
               {selectedInstance.instance.steps.filter(s => s.completed).length === 0 &&
                 selectedInstance.status !== "completed" && (
-                <p className="text-sm text-zinc-400 dark:text-zinc-500 mb-3 italic">
+                <p className="text-sm text-fg-neutral-soft mb-3 italic">
                   No steps completed yet
                 </p>
               )}
@@ -375,7 +375,7 @@ export default function HistoryModal({
                 selectedInstance.status === "today") && (
                 <button
                   onClick={() => handleMarkSkipped(selectedInstance.date)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   <SkipForward className="w-4 h-4" />
                   Skip

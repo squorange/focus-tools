@@ -120,7 +120,7 @@ export default function InboxItem({
           </span>
 
           {/* Time ago */}
-          <span className="flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="flex-shrink-0 text-xs text-fg-neutral-soft">
             {getTimeAgo(task.createdAt)}
           </span>
 
@@ -135,7 +135,7 @@ export default function InboxItem({
 
             <button
               onClick={onToggleExpand}
-              className="px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+              className="px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-bg-neutral-subtle rounded transition-colors"
             >
               Triage
             </button>
@@ -286,7 +286,7 @@ export default function InboxItem({
                         : priority === "medium"
                         ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                         : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-bg-neutral-subtle-hover"
                   }
                 `}
               >
@@ -320,7 +320,7 @@ export default function InboxItem({
           <div className="relative">
             <button
               onClick={() => setShowDeferMenu(!showDeferMenu)}
-              className="px-3 py-1.5 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded transition-colors"
+              className="px-3 py-1.5 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded transition-colors"
             >
               Defer ▾
             </button>
@@ -333,7 +333,7 @@ export default function InboxItem({
                       onDefer(task.id, getDeferDate(option));
                       setShowDeferMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                   >
                     {option.label}
                   </button>
@@ -347,7 +347,7 @@ export default function InboxItem({
           {/* Park */}
           <button
             onClick={() => onPark(task.id)}
-            className="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+            className="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded transition-colors"
           >
             Park
           </button>

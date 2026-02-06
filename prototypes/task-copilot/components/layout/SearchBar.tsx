@@ -50,7 +50,7 @@ export default function SearchBar({
           {value && (
             <button
               onClick={() => onChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-zinc-200 dark:hover:bg-zinc-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-bg-neutral-subtle-hover"
             >
               <svg
                 className="w-4 h-4 text-zinc-400"
@@ -73,7 +73,7 @@ export default function SearchBar({
       {/* Mobile: Just search icon */}
       <button
         onClick={onFocus}
-        className="sm:hidden p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+        className="sm:hidden p-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
         aria-label="Search"
       >
         <svg

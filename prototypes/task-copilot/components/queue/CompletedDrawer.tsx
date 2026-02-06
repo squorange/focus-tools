@@ -68,7 +68,7 @@ export default function CompletedDrawer({
           <p className="text-fg-neutral-secondary">
             No completions yet
           </p>
-          <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">
+          <p className="text-sm text-fg-neutral-soft mt-1">
             Completed tasks and steps will appear here
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function CompletedDrawer({
             <div className="px-4 py-3">
               <button
                 onClick={handleShowMore}
-                className="w-full py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                className="w-full py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
               >
                 Show more
               </button>
@@ -233,7 +233,7 @@ function TaskCompletionItem({
         </div>
         {/* Focus time on right */}
         {task.focusTimeMinutes > 0 && (
-          <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">
+          <span className="text-xs text-fg-neutral-soft flex-shrink-0">
             {formatMinutes(task.focusTimeMinutes)}
           </span>
         )}
@@ -255,7 +255,7 @@ function TaskCompletionItem({
 
       {/* Show completion type label */}
       {task.isTaskCompleted && task.completedSteps.length === 0 && !task.isRoutine && (
-        <div className="mt-0.5 ml-6 text-xs text-zinc-400 dark:text-zinc-500">
+        <div className="mt-0.5 ml-6 text-xs text-fg-neutral-soft">
           Task completed
         </div>
       )}

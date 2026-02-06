@@ -133,7 +133,7 @@ export default function FocusSelectionModal({
       <button
         onClick={handleAllToday}
         className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
-                   bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
+                   bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover
                    rounded-lg transition-colors"
       >
         All for Today
@@ -141,7 +141,7 @@ export default function FocusSelectionModal({
       <button
         onClick={handleAllUpcoming}
         className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
-                   bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
+                   bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover
                    rounded-lg transition-colors"
       >
         All for Upcoming
@@ -166,7 +166,7 @@ export default function FocusSelectionModal({
             <span
               className={`flex-1 text-sm ${
                 isCompleted
-                  ? "text-zinc-400 dark:text-zinc-500 line-through"
+                  ? "text-fg-neutral-soft line-through"
                   : "text-fg-neutral-primary"
               }`}
             >

@@ -100,7 +100,7 @@ export default function StartPokeField({
               <button
                 onClick={() => handleSelect('on')}
                 className={`
-                  w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
+                  w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
                   ${task.startPokeOverride === 'on' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
@@ -109,7 +109,7 @@ export default function StartPokeField({
               <button
                 onClick={() => handleSelect('off')}
                 className={`
-                  w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
+                  w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
                   ${task.startPokeOverride === 'off' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
@@ -119,12 +119,12 @@ export default function StartPokeField({
               <button
                 onClick={() => handleSelect(null)}
                 className={`
-                  w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
+                  w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
                   ${task.startPokeOverride === null ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
                 <span>Use default</span>
-                <span className="text-zinc-400 dark:text-zinc-500 ml-1">
+                <span className="text-fg-neutral-soft ml-1">
                   ({defaultText})
                 </span>
               </button>

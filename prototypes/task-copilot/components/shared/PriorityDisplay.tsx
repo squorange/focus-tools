@@ -54,7 +54,7 @@ export default function PriorityDisplay({
 }: PriorityDisplayProps) {
   const config = tier ? tierConfig[tier] : null;
   const displayLabel = config?.label ?? "—";
-  const colorClass = config?.color ?? "text-zinc-400 dark:text-zinc-500";
+  const colorClass = config?.color ?? "text-fg-neutral-soft";
 
   const handlePriorityClick = (e: React.MouseEvent) => {
     e.stopPropagation();

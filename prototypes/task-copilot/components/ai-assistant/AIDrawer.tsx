@@ -107,7 +107,7 @@ export function AIDrawer({
       <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col min-h-0">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
-            <p className="text-sm text-zinc-400 dark:text-zinc-500">
+            <p className="text-sm text-fg-neutral-soft">
               Start a conversation with AI...
             </p>
             {/* Quick action pills for empty state - horizontal like palette */}

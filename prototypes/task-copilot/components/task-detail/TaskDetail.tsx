@@ -555,7 +555,7 @@ export default function TaskDetail({
                     {currentInstance?.completed && onMarkRoutineIncomplete ? (
                       <button
                         onClick={() => onMarkRoutineIncomplete(task.id)}
-                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                       >
                         Mark Incomplete
                       </button>
@@ -590,7 +590,7 @@ export default function TaskDetail({
                         {!isPaused && onSkipRoutine && (
                           <button
                             onClick={() => onSkipRoutine(task.id)}
-                            className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                           >
                             Skip
                           </button>
@@ -601,7 +601,7 @@ export default function TaskDetail({
                 )}
                 <button
                   onClick={() => setShowHistoryModal(true)}
-                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors flex items-center gap-1.5"
                 >
                   <History className="w-4 h-4" />
                   <span className="hidden lg:inline">History</span>
@@ -630,7 +630,7 @@ export default function TaskDetail({
                 {canMarkIncomplete && (
                   <button
                     onClick={handleMarkTaskIncomplete}
-                    className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                   >
                     Mark Incomplete
                   </button>
@@ -640,7 +640,7 @@ export default function TaskDetail({
                     {task.status === "inbox" && (
                       <button
                         onClick={() => onSendToPool(task.id)}
-                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                       >
                         Move to Ready
                       </button>
@@ -650,14 +650,14 @@ export default function TaskDetail({
                       <div className="flex">
                         <button
                           onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                          className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-l-lg transition-colors"
                         >
                           Add to Focus
                         </button>
                         <div className="w-px" />
                         <button
                           onClick={() => setShowAddDropdown(!showAddDropdown)}
-                          className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                          className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-r-lg transition-colors"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -673,7 +673,7 @@ export default function TaskDetail({
                                 onAddToQueue(task.id, true, 'all_today', []);
                                 setShowAddDropdown(false);
                               }}
-                              className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                              className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                             >
                               Add to Today
                             </button>
@@ -701,7 +701,7 @@ export default function TaskDetail({
                   {currentInstance?.completed && onMarkRoutineIncomplete ? (
                     <button
                       onClick={() => onMarkRoutineIncomplete(task.id)}
-                      className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                     >
                       Mark Incomplete
                     </button>
@@ -736,7 +736,7 @@ export default function TaskDetail({
                       {!isPaused && onSkipRoutine && (
                         <button
                           onClick={() => onSkipRoutine(task.id)}
-                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                         >
                           Skip
                         </button>
@@ -748,7 +748,7 @@ export default function TaskDetail({
               {/* History button - full label in managing mode (only button), icon-only with matched height otherwise */}
               <button
                 onClick={() => setShowHistoryModal(true)}
-                className={`text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors ${
+                className={`text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors ${
                   mode === 'managing'
                     ? 'px-4 py-2 flex items-center gap-1.5'
                     : 'p-2.5'
@@ -782,7 +782,7 @@ export default function TaskDetail({
               {canMarkIncomplete && (
                 <button
                   onClick={handleMarkTaskIncomplete}
-                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   Mark Incomplete
                 </button>
@@ -790,7 +790,7 @@ export default function TaskDetail({
               {!isInQueue && task.status === "inbox" && (
                 <button
                   onClick={() => onSendToPool(task.id)}
-                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   Move to Ready
                 </button>
@@ -803,14 +803,14 @@ export default function TaskDetail({
               <div className="flex">
                 <button
                   onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                  className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-l-lg transition-colors"
                 >
                   Add to Focus
                 </button>
                 <div className="w-px" />
                 <button
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                  className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-r-lg transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -826,7 +826,7 @@ export default function TaskDetail({
                         onAddToQueue(task.id, true, 'all_today', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                     >
                       Add to Today
                     </button>
@@ -840,7 +840,7 @@ export default function TaskDetail({
             <div className="relative">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 title="Add to Focus options"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -856,7 +856,7 @@ export default function TaskDetail({
                         onAddToQueue(task.id, false, 'all_upcoming', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                     >
                       Add to Focus
                     </button>
@@ -865,7 +865,7 @@ export default function TaskDetail({
                         onAddToQueue(task.id, true, 'all_today', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
                     >
                       Add to Today
                     </button>
@@ -1108,7 +1108,7 @@ export default function TaskDetail({
                       <span>{projects.find(p => p.id === task.projectId)?.name || 'No project'}</span>
                       <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                     </div>
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">Edit routine template to change settings</span>
+                    <span className="text-xs text-fg-neutral-soft mt-1 block">Edit routine template to change settings</span>
                   </>
                 ) : (
                   /* Editable: custom dropdown with inline "Add new project" */
@@ -1128,7 +1128,7 @@ export default function TaskDetail({
                           <span className="truncate">{projects.find(p => p.id === task.projectId)?.name || 'Unknown project'}</span>
                         </>
                       ) : (
-                        <span className="text-zinc-400 dark:text-zinc-500">No project</span>
+                        <span className="text-fg-neutral-soft">No project</span>
                       )}
                     </button>
                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
@@ -1295,7 +1295,7 @@ export default function TaskDetail({
                         onClick={() => setShowReminderPicker(!showReminderPicker)}
                         className={`flex-1 h-8 px-2 py-1 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between ${task.reminder ? 'pr-2' : 'pr-8'}`}
                       >
-                        <span className={task.reminder ? "text-fg-neutral-primary" : "text-zinc-400 dark:text-zinc-500"}>
+                        <span className={task.reminder ? "text-fg-neutral-primary" : "text-fg-neutral-soft"}>
                           {task.reminder
                             ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
                             : "None"}
@@ -1313,7 +1313,7 @@ export default function TaskDetail({
                             onUpdateTask(task.id, { reminder: null });
                             cancelReminder(task.id);
                           }}
-                          className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                          className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                           title="Clear reminder"
                         >
                           <X className="w-4 h-4" />
@@ -1378,11 +1378,11 @@ export default function TaskDetail({
                               <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                             </div>
                             {isEnabled && pokeStatus.nudgeTime !== null && (
-                              <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                              <span className="text-xs text-fg-neutral-soft mt-1 block">
                                 Poke at {formatPokeTime(pokeStatus.nudgeTime)}
                               </span>
                             )}
-                            <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                            <span className="text-xs text-fg-neutral-soft mt-1 block">
                               Edit routine template to change
                             </span>
                           </div>
@@ -1418,7 +1418,7 @@ export default function TaskDetail({
                             <span>{task.estimatedDurationMinutes ? `${task.estimatedDurationMinutes} min` : getStepDurationSum(task.steps) > 0 ? `${getStepDurationSum(task.steps)} min` : 'Not set'}</span>
                             <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                           </div>
-                          <span className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 block">
+                          <span className="text-xs text-fg-neutral-soft mt-1 block">
                             {getStepDurationSum(task.steps) > 0 && !task.estimatedDurationMinutes ? 'From steps' : 'Edit routine template to change'}
                           </span>
                         </>
@@ -1542,7 +1542,7 @@ export default function TaskDetail({
                           onClick={() => setShowReminderPicker(!showReminderPicker)}
                           className="flex-1 h-8 px-2 py-1 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
                         >
-                          <span className={task.reminder ? "text-fg-neutral-primary" : "text-zinc-400 dark:text-zinc-500"}>
+                          <span className={task.reminder ? "text-fg-neutral-primary" : "text-fg-neutral-soft"}>
                             {task.reminder
                               ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
                               : "None"}
@@ -1560,7 +1560,7 @@ export default function TaskDetail({
                               onUpdateTask(task.id, { reminder: null });
                               cancelReminder(task.id);
                             }}
-                            className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                            className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                             title="Clear reminder"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1688,7 +1688,7 @@ export default function TaskDetail({
                                   : p === "medium"
                                   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                                   : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                                : "bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-bg-neutral-subtle-hover"
                             }
                           `}
                         >
@@ -2050,7 +2050,7 @@ export default function TaskDetail({
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
                     task.waitingOn
                       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'
-                      : 'text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600'
+                      : 'text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover'
                   }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2126,7 +2126,7 @@ export default function TaskDetail({
                       <div className="flex justify-end gap-2 mt-5">
                         <button
                           onClick={() => setShowWaitingOnModal(false)}
-                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                         >
                           Cancel
                         </button>
@@ -2223,7 +2223,7 @@ export default function TaskDetail({
                       <div className="flex justify-end gap-2 mt-4">
                         <button
                           onClick={() => setShowWaitingOnModal(false)}
-                          className="px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                         >
                           Cancel
                         </button>
@@ -2275,7 +2275,7 @@ export default function TaskDetail({
                     });
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors flex items-center gap-2"
               >
                 {isPaused ? (
                   <>
@@ -2298,7 +2298,7 @@ export default function TaskDetail({
                     setShowDeferCustomDate(false);
                     setShowDeferMenu(!showDeferMenu);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -2333,7 +2333,7 @@ export default function TaskDetail({
                               onDefer(task.id, getDeferDate(days));
                               setShowDeferMenu(false);
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                           >
                             {label}
                           </button>
@@ -2357,7 +2357,7 @@ export default function TaskDetail({
                         <div className="flex gap-2">
                           <button
                             onClick={() => setShowDeferMenu(false)}
-                            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                           >
                             Cancel
                           </button>
@@ -2400,7 +2400,7 @@ export default function TaskDetail({
                               onDefer(task.id, getDeferDate(days));
                               setShowDeferMenu(false);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                           >
                             {label}
                           </button>
@@ -2424,7 +2424,7 @@ export default function TaskDetail({
                         <div className="flex gap-2">
                           <button
                             onClick={() => setShowDeferMenu(false)}
-                            className="flex-1 px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="flex-1 px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                           >
                             Cancel
                           </button>
@@ -2451,7 +2451,7 @@ export default function TaskDetail({
             {/* Archive/Unarchive button */}
             <button
               onClick={() => task.status === 'archived' ? onUnarchive(task.id) : onPark(task.id)}
-              className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {task.status === 'archived' ? (
@@ -2613,7 +2613,7 @@ export default function TaskDetail({
                 setWaitingOnFollowUp('');
                 setShowFollowUpDropdown(false);
               }}
-              className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+              className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-bg-neutral-subtle ${
                 !waitingOnFollowUp ? "bg-violet-50 dark:bg-violet-900/20" : ""
               }`}
             >
@@ -2636,7 +2636,7 @@ export default function TaskDetail({
                     setWaitingOnFollowUp(dateStr);
                     setShowFollowUpDropdown(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm text-left hover:bg-bg-neutral-subtle ${
                     waitingOnFollowUp === dateStr ? "bg-violet-50 dark:bg-violet-900/20" : ""
                   }`}
                 >
@@ -2653,7 +2653,7 @@ export default function TaskDetail({
                   setWaitingOnFollowUp(dateStr);
                 });
               }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-border-color-neutral"
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle border-t border-border-color-neutral"
             >
               <Plus size={14} />
               <span>Custom date...</span>
@@ -2778,7 +2778,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
       )}
 
       {/* Step number */}
-      <span className="flex-shrink-0 w-5 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+      <span className="flex-shrink-0 w-5 text-xs text-fg-neutral-soft mt-0.5">
         {index + 1}.
       </span>
 
@@ -2824,7 +2824,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               className={`px-1 -mx-1 rounded transition-colors ${
                 isAITargetLoading
                   ? "cursor-not-allowed opacity-70"
-                  : "cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  : "cursor-text hover:bg-bg-neutral-subtle"
               } ${step.completed ? "line-through" : ""}`}
             >
               {step.text}
@@ -2836,7 +2836,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   setEstimateValue(step.estimatedMinutes?.toString() || "");
                   setEditingEstimate(true);
                 }}
-                className="ml-2 inline-flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500 hover:text-violet-500 dark:hover:text-violet-400 transition-colors align-middle"
+                className="ml-2 inline-flex items-center gap-1 text-xs text-fg-neutral-soft hover:text-violet-500 dark:hover:text-violet-400 transition-colors align-middle"
               >
                 <span>~{formatDuration(step.estimatedMinutes)}</span>
                 {step.estimateSource === "ai" && (
@@ -2923,7 +2923,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
         <div className="relative">
           <button
             onClick={() => showKebabMenu ? onCloseMenu() : onOpenMenu(`step-${step.id}`)}
-            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded"
+            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded"
             title="Step options"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -2937,7 +2937,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               <button
                 onClick={() => { onMoveUp(); onCloseMenu(); }}
                 disabled={isFirst}
-                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -2947,7 +2947,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               <button
                 onClick={() => { onMoveDown(); onCloseMenu(); }}
                 disabled={isLast}
-                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2958,7 +2958,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               <div className="border-t border-border-color-neutral my-1" />
               <button
                 onClick={() => { setAddingSubstep(true); onCloseMenu(); }}
-                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -2971,7 +2971,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   setEditingEstimate(true);
                   onCloseMenu();
                 }}
-                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -3049,7 +3049,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     setEditingSubstepId(substep.id);
                     setSubstepText(substep.text);
                   }}
-                  className={`flex-1 text-xs cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
+                  className={`flex-1 text-xs cursor-text hover:bg-bg-neutral-subtle px-1 -mx-1 rounded transition-colors ${
                     substep.completed
                       ? "text-zinc-400 line-through"
                       : "text-fg-neutral-secondary"
@@ -3075,7 +3075,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     <button
                       onClick={() => { onMoveSubstepUp(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === 0}
-                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -3085,7 +3085,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     <button
                       onClick={() => { onMoveSubstepDown(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === step.substeps.length - 1}
-                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

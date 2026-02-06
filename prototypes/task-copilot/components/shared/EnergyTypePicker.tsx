@@ -44,7 +44,7 @@ const ENERGY_OPTIONS: {
     value: null,
     label: "Not Set",
     description: "Energy type not specified",
-    icon: <CircleSlash className="w-5 h-5 text-zinc-400 dark:text-zinc-500" />,
+    icon: <CircleSlash className="w-5 h-5 text-fg-neutral-soft" />,
   },
 ];
 
@@ -139,7 +139,7 @@ export default function EnergyTypePicker({
                     <div className="flex items-center gap-3">
                       {option.icon}
                       <div>
-                        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        <span className="text-sm font-medium text-fg-neutral-primary">
                           {option.label}
                         </span>
                         <p className="text-xs text-fg-neutral-secondary mt-0.5">
@@ -189,13 +189,13 @@ export default function EnergyTypePicker({
                 key={option.value ?? "null"}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
                   isSelected ? "bg-violet-50 dark:bg-violet-900/20" : ""
                 }`}
               >
                 {option.icon}
                 <div className="flex-1">
-                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                  <span className="font-medium text-fg-neutral-primary">
                     {option.label}
                   </span>
                   <p className="text-xs text-fg-neutral-secondary mt-0.5">

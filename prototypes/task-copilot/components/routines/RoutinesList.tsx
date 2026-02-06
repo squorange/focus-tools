@@ -140,7 +140,7 @@ export default function RoutinesList({
           <section key={freq}>
             <h2 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
               <span>{FREQUENCY_LABELS[freq]}</span>
-              <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              <span className="text-sm font-normal text-fg-neutral-soft">
                 {freqTasks.length}
               </span>
             </h2>

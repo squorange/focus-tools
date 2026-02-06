@@ -70,7 +70,7 @@ export default function DatePickerModal({
           <button
             key={label}
             onClick={() => handleQuickSelect(days)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           >
             {label}
           </button>
@@ -124,7 +124,7 @@ export default function DatePickerModal({
         <div className="flex items-center justify-end gap-2 px-4 pb-4">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -179,7 +179,7 @@ export default function DatePickerModal({
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border-color-neutral">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
             >
               Cancel
             </button>

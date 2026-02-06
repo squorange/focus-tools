@@ -447,7 +447,7 @@ export default function DetailsSection({
                 expanded ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
             >
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-neutral-soft group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
                 Details
               </h3>
             </button>
@@ -515,7 +515,7 @@ export default function DetailsSection({
                           </span>
                         </>
                       ) : (
-                        <span className="text-sm text-zinc-400 dark:text-zinc-500">None</span>
+                        <span className="text-sm text-fg-neutral-soft">None</span>
                       )}
                       <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
                     </div>
@@ -643,7 +643,7 @@ export default function DetailsSection({
                     Timing
                   </h4>
                   {isReadOnly && (
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    <p className="text-xs text-fg-neutral-soft mt-0.5">
                       Edit routine template to change
                     </p>
                   )}
@@ -774,7 +774,7 @@ export default function DetailsSection({
                     Levels
                   </h4>
                   {isReadOnly && (
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    <p className="text-xs text-fg-neutral-soft mt-0.5">
                       Edit routine template to change
                     </p>
                   )}
@@ -1161,7 +1161,7 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
           <button
             key={option.value}
             onClick={() => onChange(option.value, selectedTime || null)}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
               value === option.value ? "bg-violet-50 dark:bg-violet-900/20" : ""
             }`}
           >
@@ -1203,7 +1203,7 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
           >
             Cancel
           </button>

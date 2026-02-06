@@ -74,7 +74,7 @@ function TierSection({
       >
         <h3 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary">
           <span>{tierLabel}</span>
-          <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+          <span className="text-sm font-normal text-fg-neutral-soft">
             {tasks.length}
           </span>
         </h3>
@@ -249,7 +249,7 @@ export default function PriorityQueueModule({
             ? `No matching tasks (${filteredCount} hidden by energy filter)`
             : "No active tasks to prioritize"}
         </p>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 max-w-[200px] mx-auto">
+        <p className="text-xs text-fg-neutral-soft mt-2 max-w-[200px] mx-auto">
           {filteredCount > 0
             ? "Adjust your energy filter or tap \"Show all\" to see hidden tasks"
             : "Tasks gain priority from deadlines, importance, and staleness"}

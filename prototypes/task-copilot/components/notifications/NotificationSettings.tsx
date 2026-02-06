@@ -525,7 +525,7 @@ export default function SettingsView({
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.startPokeDefault === option.value
                       ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                      : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                     }
                   `}
                 >
@@ -578,7 +578,7 @@ export default function SettingsView({
                       w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                       ${isSelected
                         ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                        : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                        : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                       }
                     `}
                   >
@@ -623,7 +623,7 @@ export default function SettingsView({
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.nudgeCooldownMinutes === option.value
                       ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                      : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                     }
                   `}
                 >

@@ -14,6 +14,7 @@
   --color-bg-neutral-base: #fafafa;
   --color-bg-neutral-min: #ffffff;
   --color-bg-neutral-subtle: #f4f4f5;
+  --color-bg-neutral-subtle-hover: #e4e4e7;
   --color-bg-neutral-low: #e4e4e7;
   --color-bg-neutral-low-accented: #d4d4d8;
   --color-bg-neutral-medium: #a1a1aa;
@@ -356,6 +357,7 @@
   --color-bg-neutral-base: #18181b;
   --color-bg-neutral-min: #09090b;
   --color-bg-neutral-subtle: #27272a;
+  --color-bg-neutral-subtle-hover: #52525b;
   --color-bg-neutral-low: #3f3f46;
   --color-bg-neutral-low-accented: #52525b;
   --color-bg-neutral-medium: #71717a;

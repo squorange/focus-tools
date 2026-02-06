@@ -524,7 +524,7 @@ export default function FilterDrawer({
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-fg-neutral-primary rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover text-fg-neutral-primary rounded-lg transition-colors"
               >
                 Clear all
               </button>

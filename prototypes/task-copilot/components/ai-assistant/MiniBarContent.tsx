@@ -117,7 +117,7 @@ export function MiniBarContent({
           ) : (
             <span
               className={`
-                ${isIdle ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-800 dark:text-zinc-200'}
+                ${isIdle ? 'text-fg-neutral-soft' : 'text-fg-neutral-primary'}
                 ${isNudge || isPrompt ? 'font-medium' : ''}
                 ${isResponse ? 'text-violet-600 dark:text-violet-300' : ''}
                 ${isSuggestionsReady ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}
@@ -269,7 +269,7 @@ export function MiniBarContent({
             height="16"
             viewBox="0 0 16 16"
             fill="none"
-            className="flex-shrink-0 text-zinc-400 dark:text-zinc-500"
+            className="flex-shrink-0 text-fg-neutral-soft"
           >
             <path
               d="M4 10L8 6L12 10"

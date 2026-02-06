@@ -133,7 +133,7 @@ export default function SearchView({
               <h2 className="flex items-center gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
                 <AlertCircle size={16} />
                 <span>Alert</span>
-                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                <span className="text-sm font-normal text-fg-neutral-soft">
                   {alertResults.length}
                 </span>
               </h2>
@@ -162,7 +162,7 @@ export default function SearchView({
               <h2 className="flex items-center gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
                 <Eye size={16} />
                 <span>Watch</span>
-                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                <span className="text-sm font-normal text-fg-neutral-soft">
                   {watchResults.length}
                 </span>
               </h2>

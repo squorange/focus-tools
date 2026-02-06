@@ -26,6 +26,7 @@ module.exports = {
             base: 'var(--color-bg-neutral-base)',
             min: 'var(--color-bg-neutral-min)',
             subtle: 'var(--color-bg-neutral-subtle)',
+            'subtle-hover': 'var(--color-bg-neutral-subtle-hover)',
             low: 'var(--color-bg-neutral-low)',
             'low-accented': 'var(--color-bg-neutral-low-accented)',
             medium: 'var(--color-bg-neutral-medium)',

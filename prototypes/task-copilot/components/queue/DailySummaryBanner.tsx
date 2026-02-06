@@ -118,7 +118,7 @@ export default function DailySummaryBanner({
       <span className={allDone ? "text-green-600 dark:text-green-400 font-medium" : "text-fg-neutral-secondary"}>
         {displayText}
       </span>
-      <ChevronRight className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
+      <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
     </button>
   );
 }

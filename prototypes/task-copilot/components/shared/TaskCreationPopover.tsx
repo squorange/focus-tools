@@ -175,7 +175,7 @@ export default function TaskCreationPopover({
           setProjectId(null);
           setShowProjectDropdown(false);
         }}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle ${
           projectId === null
             ? "bg-violet-50 dark:bg-violet-900/20"
             : ""
@@ -196,7 +196,7 @@ export default function TaskCreationPopover({
             setProjectId(project.id);
             setShowProjectDropdown(false);
           }}
-          className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
+          className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle ${
             projectId === project.id
               ? "bg-violet-50 dark:bg-violet-900/20"
               : ""
@@ -230,7 +230,7 @@ export default function TaskCreationPopover({
             }
             setShowProjectDropdown(false);
           }}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-border-color-neutral"
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle border-t border-border-color-neutral"
         >
           <Plus size={14} />
           <span>Create new project</span>

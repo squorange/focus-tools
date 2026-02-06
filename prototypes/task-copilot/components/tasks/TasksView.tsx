@@ -275,7 +275,7 @@ export default function TasksView({
             <section>
               <h3 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
                 <span>Deferred</span>
-                <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+                <span className="text-sm font-normal text-fg-neutral-soft">
                   {deferredTasksAll.length}
                 </span>
               </h3>
@@ -339,7 +339,7 @@ export default function TasksView({
               </button>
               <button
                 onClick={() => setTriageCollapsed(!triageCollapsed)}
-                className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                className="p-1 rounded hover:bg-bg-neutral-subtle transition-colors"
                 aria-label={triageCollapsed ? "Expand triage section" : "Collapse triage section"}
               >
                 <svg
@@ -391,7 +391,7 @@ export default function TasksView({
         <section>
           <h2 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
             <span>Resurfaced</span>
-            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+            <span className="text-sm font-normal text-fg-neutral-soft">
               {resurfacedTasks.length}
             </span>
           </h2>
@@ -605,7 +605,7 @@ function DoneTab({
           <div className="flex items-center justify-between mb-3">
             <h3 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary">
               <span>Archived</span>
-              <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+              <span className="text-sm font-normal text-fg-neutral-soft">
                 {archivedTasksAll.length}
               </span>
             </h3>
@@ -620,7 +620,7 @@ function DoneTab({
               )}
               <button
                 onClick={() => setArchivedCollapsed(!archivedCollapsed)}
-                className="p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                className="p-1 rounded hover:bg-bg-neutral-subtle transition-colors"
                 aria-label={archivedCollapsed ? "Expand archived section" : "Collapse archived section"}
               >
                 <svg
@@ -659,7 +659,7 @@ function DoneTab({
         <section>
           <h3 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
             <span>Completed</span>
-            <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
+            <span className="text-sm font-normal text-fg-neutral-soft">
               {completedTasksAll.length}
             </span>
           </h3>
@@ -751,19 +751,19 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
           <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Tomorrow
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Next week
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
           >
             Next month
           </button>
@@ -773,7 +773,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
       {onPark && (
         <button
           onClick={() => { onPark(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Archive
         </button>
@@ -781,7 +781,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
       {onDelete && (
         <button
           onClick={() => { onDelete(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
         >
           Delete
         </button>
@@ -846,7 +846,7 @@ function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPa
             <div className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-bg-neutral-subtle transition-colors"
                 title="More actions"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

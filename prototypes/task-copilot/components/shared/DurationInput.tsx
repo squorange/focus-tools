@@ -256,7 +256,7 @@ export function EstimateBadge({ minutes, source, onClick }: EstimateBadgeProps) 
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded transition-colors"
     >
       <span>{formatDisplay()}</span>
       {source === "ai" && (

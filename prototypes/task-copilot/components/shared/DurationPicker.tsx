@@ -164,7 +164,7 @@ export default function DurationPicker({
                       }
                     `}
                   >
-                    <span className={`text-sm font-medium ${isSelected ? "text-violet-700 dark:text-violet-300" : "text-zinc-800 dark:text-zinc-200"}`}>
+                    <span className={`text-sm font-medium ${isSelected ? "text-violet-700 dark:text-violet-300" : "text-fg-neutral-primary"}`}>
                       {option.label}
                     </span>
                   </button>
@@ -274,7 +274,7 @@ export default function DurationPicker({
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className={`px-3 py-2 text-sm text-center hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
+                className={`px-3 py-2 text-sm text-center hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
                   isSelected ? "bg-violet-50 dark:bg-violet-900/20 font-medium text-violet-700 dark:text-violet-300" : "text-fg-neutral-primary"
                 }`}
               >

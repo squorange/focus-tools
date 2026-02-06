@@ -299,7 +299,7 @@ export function PaletteContent({
                 &ldquo;{current.title}&rdquo; — {current.days}d untouched
               </span>
               {total > 1 && (
-                <span className="flex-shrink-0 text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                <span className="flex-shrink-0 text-xs text-fg-neutral-soft mt-0.5">
                   {awareness.currentIndex + 1}/{total}
                 </span>
               )}
@@ -636,7 +636,7 @@ export function PaletteContent({
                     {hasRecommendationResponse && (
                       <div className="space-y-2 text-left overflow-visible">
                         <p className="text-base text-fg-neutral-secondary whitespace-nowrap">I&apos;d suggest...</p>
-                        <p className="text-base font-medium text-zinc-800 dark:text-zinc-200">
+                        <p className="text-base font-medium text-fg-neutral-primary">
                           "{(response.content as RecommendationContent).taskTitle}"
                         </p>
                         <p className="text-base text-zinc-600 dark:text-zinc-300">

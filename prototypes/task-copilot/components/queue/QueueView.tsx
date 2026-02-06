@@ -419,7 +419,7 @@ export default function QueueView({
             {todayItems.length} for today
           </span>
           {todayEstimate && (
-            <span className="text-sm text-zinc-400 dark:text-zinc-500">
+            <span className="text-sm text-fg-neutral-soft">
               {todayEstimate}
             </span>
           )}
@@ -464,7 +464,7 @@ export default function QueueView({
               )}
               <button
                 onClick={() => onOpenDrawer?.('completed')}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
               >
                 Show completed
               </button>
@@ -506,7 +506,7 @@ export default function QueueView({
                       <button
                         onClick={handleMoveLineUp}
                         disabled={visualIndex === 0}
-                        className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-neutral-subtle transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Move line up"
                       >
                         <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -553,7 +553,7 @@ export default function QueueView({
                       <button
                         onClick={handleMoveLineDown}
                         disabled={visualIndex >= visualElements.length - 1}
-                        className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-neutral-subtle transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Move line down"
                       >
                         <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

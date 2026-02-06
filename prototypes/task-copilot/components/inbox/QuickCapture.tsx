@@ -54,7 +54,7 @@ export default function QuickCapture({
             ${
               isFocused
                 ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-                : "bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500"
+                : "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-soft"
             }
           `}
         >

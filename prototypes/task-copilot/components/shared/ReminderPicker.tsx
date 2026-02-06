@@ -259,7 +259,7 @@ export default function ReminderPicker({
                   <button
                     key={idx}
                     onClick={() => handleSelectRelative(option.value)}
-                    className="w-full px-3 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle rounded-lg"
                   >
                     {option.label}
                   </button>
@@ -394,7 +394,7 @@ export default function ReminderPicker({
               <button
                 key={idx}
                 onClick={() => handleSelectRelative(option.value)}
-                className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg"
+                className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle rounded-lg"
               >
                 {option.label}
               </button>

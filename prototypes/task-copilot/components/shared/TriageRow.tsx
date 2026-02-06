@@ -77,7 +77,7 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(1));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Tomorrow
         </button>
@@ -86,7 +86,7 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(7));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Next week
         </button>
@@ -95,7 +95,7 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(30));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Next month
         </button>
@@ -108,7 +108,7 @@ export default function TriageRow({
             onPark(task.id);
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         >
           Archive
         </button>
@@ -119,7 +119,7 @@ export default function TriageRow({
             onDelete(task.id);
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
         >
           Delete
         </button>
@@ -200,7 +200,7 @@ export default function TriageRow({
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-bg-neutral-subtle transition-colors"
               title="More actions"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +241,7 @@ export default function TriageRow({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-bg-neutral-subtle transition-colors"
                 title="More actions"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
