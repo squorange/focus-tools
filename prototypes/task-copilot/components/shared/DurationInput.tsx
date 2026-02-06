@@ -196,7 +196,7 @@ export default function DurationInput({
           <button
             onClick={hasManualOverride ? handleClearOverride : handleClearAll}
             type="button"
-            className="absolute right-2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+            className="absolute right-2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary rounded"
             title={hasManualOverride ? "Reset to auto-calculated" : "Clear estimate"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +256,7 @@ export function EstimateBadge({ minutes, source, onClick }: EstimateBadgeProps) 
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded transition-colors"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-fg-neutral-secondary hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors"
     >
       <span>{formatDisplay()}</span>
       {source === "ai" && (

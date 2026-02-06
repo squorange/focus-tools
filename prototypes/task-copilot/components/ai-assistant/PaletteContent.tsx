@@ -273,7 +273,7 @@ export function PaletteContent({
             <button
               type="button"
               onClick={onClearAITarget}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors flex-shrink-0"
+              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary transition-colors flex-shrink-0"
               aria-label="Clear target"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,7 +373,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -441,7 +441,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -510,7 +510,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -746,7 +746,7 @@ export function PaletteContent({
                           onDismiss();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300
+                          text-fg-neutral-secondary hover:text-fg-neutral-secondary
                           hover:bg-bg-neutral-subtle"
                       >
                         Dismiss
@@ -790,7 +790,7 @@ export function PaletteContent({
                           onDismiss();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300
+                          text-fg-neutral-secondary hover:text-fg-neutral-secondary
                           hover:bg-bg-neutral-subtle"
                       >
                         Dismiss
@@ -854,7 +854,7 @@ export function PaletteContent({
                 <button
                   type="button"
                   onClick={onOpenDrawer}
-                  className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  className="p-2 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                   aria-label="Open expanded chat"
                   title="Open expanded chat"
                 >

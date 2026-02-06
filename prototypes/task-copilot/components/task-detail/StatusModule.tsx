@@ -230,7 +230,7 @@ export default function StatusModule({
               {hasCompletedSteps && instanceCompleted > 0 && !(currentInstance?.completed ?? false) && (
                 <button
                   onClick={onToggleCompletedSteps}
-                  className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                  className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary transition-colors"
                 >
                   <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
                   {completedStepsExpanded ? "Hide completed" : `Show ${instanceCompleted} completed`}
@@ -287,7 +287,7 @@ export default function StatusModule({
           {hasCompletedSteps && completedCount > 0 && !isComplete && (
             <button
               onClick={onToggleCompletedSteps}
-              className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary transition-colors"
             >
               <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
               {completedStepsExpanded ? "Hide completed" : `Show ${completedCount} completed`}

@@ -97,7 +97,7 @@ export default function InboxItem({
           {/* Expand toggle */}
           <button
             onClick={onToggleExpand}
-            className="flex-shrink-0 w-5 h-5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            className="flex-shrink-0 w-5 h-5 text-zinc-400 hover:text-fg-neutral-secondary"
           >
             <svg
               className="w-5 h-5"
@@ -347,7 +347,7 @@ export default function InboxItem({
           {/* Park */}
           <button
             onClick={() => onPark(task.id)}
-            className="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded transition-colors"
+            className="px-3 py-1.5 text-sm text-zinc-500 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors"
           >
             Park
           </button>

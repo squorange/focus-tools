@@ -1313,7 +1313,7 @@ export default function TaskDetail({
                             onUpdateTask(task.id, { reminder: null });
                             cancelReminder(task.id);
                           }}
-                          className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+                          className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                           title="Clear reminder"
                         >
                           <X className="w-4 h-4" />
@@ -1450,7 +1450,7 @@ export default function TaskDetail({
                             <button
                               type="button"
                               onClick={() => onUpdateTask(task.id, { targetDate: null, targetTime: null })}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                               title="Clear date"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -1470,7 +1470,7 @@ export default function TaskDetail({
                               <button
                                 type="button"
                                 onClick={() => onUpdateTask(task.id, { targetTime: null })}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                                 title="Clear time"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -1500,7 +1500,7 @@ export default function TaskDetail({
                             <button
                               type="button"
                               onClick={() => onUpdateTask(task.id, { deadlineDate: null, deadlineTime: null })}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                               title="Clear date"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -1520,7 +1520,7 @@ export default function TaskDetail({
                               <button
                                 type="button"
                                 onClick={() => onUpdateTask(task.id, { deadlineTime: null })}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                                 title="Clear time"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -1560,7 +1560,7 @@ export default function TaskDetail({
                               onUpdateTask(task.id, { reminder: null });
                               cancelReminder(task.id);
                             }}
-                            className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+                            className="h-8 w-8 flex items-center justify-center text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                             title="Clear reminder"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2099,7 +2099,7 @@ export default function TaskDetail({
                               setWaitingOnFollowUp(dateStr);
                             });
                           }}
-                          className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                          className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary flex items-center gap-1.5 transition-colors"
                         >
                           {waitingOnFollowUp ? (
                             <>
@@ -2196,7 +2196,7 @@ export default function TaskDetail({
                               setWaitingOnFollowUp(dateStr);
                             });
                           }}
-                          className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                          className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary flex items-center gap-1.5 transition-colors"
                         >
                           {waitingOnFollowUp ? (
                             <>
@@ -2510,7 +2510,7 @@ export default function TaskDetail({
                 </h2>
                 <button
                   onClick={() => setShowPatternModal(false)}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
+                  className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2923,7 +2923,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
         <div className="relative">
           <button
             onClick={() => showKebabMenu ? onCloseMenu() : onOpenMenu(`step-${step.id}`)}
-            className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded"
+            className="p-1 text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded"
             title="Step options"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -3062,7 +3062,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               <div className="relative opacity-0 group-hover/substep:opacity-100 transition-opacity">
                 <button
                   onClick={() => showSubstepMenu === substep.id ? onCloseMenu() : onOpenMenu(`substep-${substep.id}`)}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"
+                  className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded"
                 >
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />

@@ -299,7 +299,7 @@ export default function TaskCreationPopover({
               <button
                 ref={projectButtonRef}
                 onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary flex items-center gap-1.5 transition-colors"
               >
                 {selectedProject ? (
                   <>
@@ -330,7 +330,7 @@ export default function TaskCreationPopover({
               <button
                 onClick={handleAddAndOpen}
                 disabled={!title.trim()}
-                className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Show details
               </button>
@@ -379,7 +379,7 @@ export default function TaskCreationPopover({
           <button
             ref={projectButtonRef}
             onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+            className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary flex items-center gap-1.5 transition-colors"
           >
             {selectedProject ? (
               <>
@@ -410,7 +410,7 @@ export default function TaskCreationPopover({
           <button
             onClick={handleAddAndOpen}
             disabled={!title.trim()}
-            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Show details
           </button>

@@ -530,7 +530,7 @@ export default function QueueView({
                         {/* Line with drag handle */}
                         <div className="flex items-center gap-3">
                           {/* Drag handle */}
-                          <div className="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                          <div className="flex-shrink-0 text-zinc-400 hover:text-fg-neutral-secondary">
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                               <circle cx="9" cy="7" r="1.5" />
                               <circle cx="15" cy="7" r="1.5" />

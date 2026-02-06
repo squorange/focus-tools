@@ -283,7 +283,7 @@ export default function FilterDrawer({
         <h2 className="text-base font-medium text-fg-neutral-primary">Filters</h2>
         <button
           onClick={onClose}
-          className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+          className="p-1.5 text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
         >
           <X className="w-5 h-5" />
         </button>

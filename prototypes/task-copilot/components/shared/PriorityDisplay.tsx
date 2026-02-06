@@ -81,7 +81,7 @@ export default function PriorityDisplay({
         type="button"
         onClick={handlePriorityClick}
         onKeyDown={handlePriorityKeyDown}
-        className="flex items-center gap-1 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+        className="flex items-center gap-1 text-xs text-fg-neutral-secondary hover:text-fg-neutral-secondary transition-colors"
         title={score != null ? `Score: ${score}` : "View priority breakdown"}
       >
         <BarChart3 className={`w-3.5 h-3.5 ${colorClass}`} />
@@ -93,7 +93,7 @@ export default function PriorityDisplay({
         <button
           type="button"
           onClick={handleChevronClick}
-          className="p-0.5 -m-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          className="p-0.5 -m-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
           aria-label={chevronUp ? "Collapse details" : "Expand details"}
         >
           {chevronUp ? (

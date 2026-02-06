@@ -200,7 +200,7 @@ export default function TriageRow({
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-bg-neutral-subtle transition-colors"
+              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
               title="More actions"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,7 +241,7 @@ export default function TriageRow({
                   e.stopPropagation();
                   setShowMenu(!showMenu);
                 }}
-                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded hover:bg-bg-neutral-subtle transition-colors"
+                className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
                 title="More actions"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -181,7 +181,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
           <button
             type="button"
             onClick={() => updateRule({ time: null })}
-            className="ml-2 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            className="ml-2 text-xs text-zinc-500 hover:text-fg-neutral-secondary"
           >
             Clear
           </button>

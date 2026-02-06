@@ -2,8 +2,8 @@
 
 > Migrating task-copilot from local components to shared design-system package.
 
-**Status:** 🔄 In Progress
-**Phase:** 4 of 6 (Token Migration In Progress)
+**Status:** ✅ Substantially Complete
+**Phase:** 4 of 6 (Token Migration Complete)
 
 ## Quick Links
 
@@ -32,7 +32,7 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 | 1 | Foundation Setup | ✅ | Dependency added, tokens imported |
 | 2 | Component Replacement | ✅ | 6 components replaced, 5 deleted |
 | 3 | Simple Extractions | ✅ | Toast, CollapsibleSection extracted with semantic tokens |
-| 4 | Token Migration | 🔄 | Tier 1 complete (882 semantic tokens), Tier 2-3 pending |
+| 4 | Token Migration | ✅ | Tier 1-2 complete, Tier 3 intentionally kept |
 | 5 | Cleanup | ⬜ | Verification, dead code removal |
 | 6 | Complex Component Unification | ⬜ | Unified TaskCard, RoutineCard (needs design spec) |
 
@@ -44,9 +44,9 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 |--------|-------|
 | Components in design-system | 8 (BottomSheet, RightDrawer, ResponsiveDrawer, ProgressRing, SegmentedControl, Pill, Toast, CollapsibleSection) |
 | Local duplicates in task-copilot | 0 (all replaced) |
-| Semantic tokens in use | 882 (170 bg, 558 text, 154 border) |
-| Raw zinc patterns remaining | 1,140 (578 bg, 416 text, 146 border) |
-| Tier 1 patterns | ✅ Complete |
+| Semantic tokens in use | ~1,100+ |
+| Raw zinc patterns remaining | ~341 (intentional component-specific styling) |
+| Tier 1-2 patterns | ✅ Complete |
 | Complex components to unify | TBD (TaskCard variants, RoutineCard) |
 
 ### Phase 4 Token Migration Detail
@@ -68,12 +68,29 @@ All 10 high-priority patterns migrated (386 replacements):
 | `border-zinc-200 dark:border-zinc-700` | `border-border-color-neutral` | ✅ |
 | `border-zinc-300 dark:border-zinc-600` | `border-border-color-neutral` | ✅ |
 
-**Tier 2-3 (Lower Priority) — Pending**
+**Tier 2 Patterns — Complete ✅**
 
-Remaining raw patterns are mostly:
-- Dark mode standalone classes (`dark:bg-zinc-*`, `dark:text-zinc-*`)
-- Light mode hover/focus states
-- One-off custom styling
+Additional patterns migrated with new tokens:
+
+| Pattern | Target Token | Status |
+|---------|--------------|--------|
+| `text-zinc-800 dark:text-zinc-200` | `text-fg-neutral-primary` | ✅ |
+| `text-zinc-400 dark:text-zinc-500` | `text-fg-neutral-soft` | ✅ |
+| `hover:bg-zinc-100 dark:hover:bg-zinc-700` | `hover:bg-bg-neutral-subtle` | ✅ |
+| `hover:bg-zinc-200 dark:hover:bg-zinc-600` | `hover:bg-bg-neutral-subtle-hover` | ✅ (new token) |
+| `hover:text-zinc-600 dark:hover:text-zinc-300` | `hover:text-fg-neutral-secondary` | ✅ |
+| `hover:text-zinc-700 dark:hover:text-zinc-300` | `hover:text-fg-neutral-secondary` | ✅ |
+
+**New Token Added:**
+- `bg-neutral-subtle-hover` (zinc-200/zinc-600) - For stronger hover states on subtle backgrounds
+
+**Tier 3 (Intentionally Kept) — No Action Needed**
+
+Remaining ~341 raw patterns are intentional component-specific styling:
+- Placeholder text colors (`text-zinc-400`)
+- Segmented control backgrounds (`bg-zinc-100 dark:bg-zinc-700`)
+- Input and card-specific borders
+- Custom visual hierarchy effects
 
 ---
 

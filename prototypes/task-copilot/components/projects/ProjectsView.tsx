@@ -144,7 +144,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
             )}
             <button
               onClick={() => onOpenTask(task.id)}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -267,7 +267,7 @@ export default function ProjectsView({
                   </button>
                   <button
                     onClick={() => onOpenProjectModal(project)}
-                    className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded transition-colors"
+                    className="p-1.5 text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors"
                     title="Edit project"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

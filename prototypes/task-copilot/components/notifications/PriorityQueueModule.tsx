@@ -105,7 +105,7 @@ function TierSection({
             <button
               type="button"
               onClick={() => setShowAll(true)}
-              className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 py-1 pl-1"
+              className="text-xs text-zinc-500 hover:text-fg-neutral-secondary py-1 pl-1"
             >
               Show {tasks.length - maxTasks} more...
             </button>
@@ -194,7 +194,7 @@ function PriorityTaskCard({ item, tier, onTap, userEnergy }: PriorityTaskCardPro
         <div className="flex-shrink-0">
           <Info
             size={14}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            className="text-zinc-400 hover:text-fg-neutral-secondary"
           />
         </div>
       </div>

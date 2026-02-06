@@ -433,7 +433,7 @@ export default function Sidebar({
                         e.preventDefault(); // Prevent input blur
                         onSearchChange('');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
                       title="Clear search"
                     >
                       <XCircle size={16} />

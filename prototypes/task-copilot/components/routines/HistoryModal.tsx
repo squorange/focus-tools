@@ -220,7 +220,7 @@ export default function HistoryModal({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goToPrevMonth}
-          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
+          className="p-2 text-zinc-400 hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -229,7 +229,7 @@ export default function HistoryModal({
         </h3>
         <button
           onClick={goToNextMonth}
-          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
+          className="p-2 text-zinc-400 hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

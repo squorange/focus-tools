@@ -144,7 +144,7 @@ export default function PriorityBreakdownDrawer({
           </div>
           <button
             onClick={() => setShowScaleInfo(!showScaleInfo)}
-            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1 mx-auto"
+            className="text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary flex items-center gap-1 mx-auto"
           >
             Score: {totalScore}
             <Info className="w-3.5 h-3.5" />
