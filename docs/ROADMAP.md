@@ -98,7 +98,7 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 | P1 | IndexedDB Migration (Infra Phase 1) | ✅ Complete |
 | P1 | Test Harnesses (Infra Phase 2) | ✅ Complete |
 | P1 | AI Guardrails (Infra Phase 3) | ✅ Complete |
-| P2 | Design System Integration (Infra Phase 4) | 🔄 Phase 1 complete |
+| P2 | Design System Integration (Infra Phase 4) | 🔄 Phase 4/6: Tier 1 complete |
 | P2 | Proactive stale task nudge | ⬜ |
 | P2 | Inline AI Actions (Tasks) | ⬜ |
 | P3 | Auth & Accounts (Infra Phase 5) | ⬜ |

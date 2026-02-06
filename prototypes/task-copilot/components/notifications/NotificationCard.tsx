@@ -61,9 +61,9 @@ function getSectionColors(section: 'active' | 'missed' | 'upcoming' | 'past'): {
     default:
       return {
         bg: 'bg-zinc-50 dark:bg-zinc-800/80',
-        border: 'border-zinc-200 dark:border-zinc-700',
-        icon: 'text-zinc-500 dark:text-zinc-400',
-        text: 'text-zinc-700 dark:text-zinc-300',
+        border: 'border-border-color-neutral',
+        icon: 'text-fg-neutral-secondary',
+        text: 'text-fg-neutral-primary',
         borderWidth: 'border',
       };
   }
@@ -79,7 +79,7 @@ function getIconColor(type: NotificationType): string {
     case 'reminder':
     case 'system':
     default:
-      return 'text-zinc-500 dark:text-zinc-400';
+      return 'text-fg-neutral-secondary';
   }
 }
 
@@ -162,7 +162,7 @@ export default function NotificationCard({
             )}
           </div>
           {!isStartPoke && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+            <p className="text-sm text-fg-neutral-secondary truncate">
               {notification.body}
             </p>
           )}
@@ -179,7 +179,7 @@ export default function NotificationCard({
                   onClick={(e) => { e.stopPropagation(); onStart(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -192,7 +192,7 @@ export default function NotificationCard({
                   onClick={(e) => { e.stopPropagation(); onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -205,7 +205,7 @@ export default function NotificationCard({
                   onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -218,7 +218,7 @@ export default function NotificationCard({
                   onClick={(e) => { e.stopPropagation(); onCancel(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >

@@ -265,7 +265,7 @@ export function PaletteContent({
               <path d="M4 2v8h8" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
               <path d="M9 7l3 3-3 3" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
+            <span className="text-sm text-fg-neutral-primary truncate">
               Step: {aiTargetContext.label}
             </span>
           </div>
@@ -295,7 +295,7 @@ export function PaletteContent({
             {/* Title row: emoji + full title (wraps) + count */}
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 text-sm mt-0.5">👀</span>
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">
+              <span className="text-sm text-fg-neutral-primary">
                 &ldquo;{current.title}&rdquo; — {current.days}d untouched
               </span>
               {total > 1 && (
@@ -311,7 +311,7 @@ export function PaletteContent({
                 onClick={(e) => { e.stopPropagation(); awareness.onReview(current.taskId); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
                   bg-zinc-900/10 dark:bg-white/10
-                  text-zinc-700 dark:text-zinc-300
+                  text-fg-neutral-primary
                   hover:bg-zinc-900/20 dark:hover:bg-white/20
                   transition-colors"
               >
@@ -322,7 +322,7 @@ export function PaletteContent({
                 onClick={(e) => { e.stopPropagation(); awareness.onDismiss(current.id); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
                   bg-zinc-900/10 dark:bg-white/10
-                  text-zinc-700 dark:text-zinc-300
+                  text-fg-neutral-primary
                   hover:bg-zinc-900/20 dark:hover:bg-white/20
                   transition-colors"
               >
@@ -334,7 +334,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); awareness.onNext(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                   aria-label="Next item"
@@ -366,7 +366,7 @@ export function PaletteContent({
               {/* Title row: pointing emoji + task title + poke time + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">👉🏽</span>
-                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="flex-1 text-sm text-fg-neutral-primary">
                   Start &ldquo;{poke.taskTitle}&rdquo; at {pokeTimeStr}
                 </span>
                 {hasMultiple && (
@@ -380,7 +380,7 @@ export function PaletteContent({
                 )}
               </div>
               {/* Duration + buffer + due time */}
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
+              <div className="text-xs text-fg-neutral-secondary mt-1 ml-6">
                 {poke.usePercentageBuffer
                   ? `~${poke.durationMinutes}m + 15% buffer → due ${dueTimeStr}`
                   : `${poke.durationMinutes} min + ${poke.bufferMinutes} min buffer → due ${dueTimeStr}`}
@@ -392,7 +392,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); onStartPokeAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -403,7 +403,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); poke.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -414,7 +414,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); poke.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -434,7 +434,7 @@ export function PaletteContent({
               {/* Title row: running emoji + task title + date + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">🏃</span>
-                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="flex-1 text-sm text-fg-neutral-primary">
                   Start &ldquo;{runway.taskTitle}&rdquo; soon
                 </span>
                 {hasMultiple && (
@@ -448,7 +448,7 @@ export function PaletteContent({
                 )}
               </div>
               {/* Lead time context */}
-              <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 ml-6">
+              <div className="text-xs text-fg-neutral-secondary mt-1 ml-6">
                 {runway.leadTimeDays}d lead time — start by {dateStr} to finish on time
               </div>
               {/* Actions row - compact filled buttons */}
@@ -458,7 +458,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); runway.onStart(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -469,7 +469,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); runway.onSnooze(60); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -480,7 +480,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); runway.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -503,7 +503,7 @@ export function PaletteContent({
                   size={14}
                   className="flex-shrink-0 mt-0.5 text-violet-500 dark:text-violet-400"
                 />
-                <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+                <span className="flex-1 text-sm text-fg-neutral-primary">
                   &ldquo;{reminder.taskTitle}&rdquo; — Set for {timeStr}
                 </span>
                 {hasMultiple && (
@@ -523,7 +523,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); onReminderAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -534,7 +534,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); reminder.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -545,7 +545,7 @@ export function PaletteContent({
                   onClick={(e) => { e.stopPropagation(); reminder.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
                     bg-zinc-900/10 dark:bg-white/10
-                    text-zinc-700 dark:text-zinc-300
+                    text-fg-neutral-primary
                     hover:bg-zinc-900/20 dark:hover:bg-white/20
                     transition-colors"
                 >
@@ -626,7 +626,7 @@ export function PaletteContent({
                     {/* Suggestions: Show summary text (actual suggestions are in StagingArea) */}
                     {hasSuggestionsResponse && (
                       <div className="py-1">
-                        <p className="text-base text-zinc-600 dark:text-zinc-400 text-left">
+                        <p className="text-base text-fg-neutral-secondary text-left">
                           {(response.content as SuggestionsContent).message}
                         </p>
                       </div>
@@ -635,7 +635,7 @@ export function PaletteContent({
                     {/* Recommendation: Show task suggestion card */}
                     {hasRecommendationResponse && (
                       <div className="space-y-2 text-left overflow-visible">
-                        <p className="text-base text-zinc-500 dark:text-zinc-400 whitespace-nowrap">I&apos;d suggest...</p>
+                        <p className="text-base text-fg-neutral-secondary whitespace-nowrap">I&apos;d suggest...</p>
                         <p className="text-base font-medium text-zinc-800 dark:text-zinc-200">
                           "{(response.content as RecommendationContent).taskTitle}"
                         </p>
@@ -677,7 +677,7 @@ export function PaletteContent({
                           setShowInput(true);
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-600
+                          text-fg-neutral-primary border border-border-color-neutral
                           hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       >
                         Ask AI
@@ -746,8 +746,8 @@ export function PaletteContent({
                           onDismiss();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
-                          hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300
+                          hover:bg-bg-neutral-subtle"
                       >
                         Dismiss
                       </button>
@@ -790,8 +790,8 @@ export function PaletteContent({
                           onDismiss();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300
-                          hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300
+                          hover:bg-bg-neutral-subtle"
                       >
                         Dismiss
                       </button>

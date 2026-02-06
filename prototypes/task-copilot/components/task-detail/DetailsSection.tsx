@@ -477,10 +477,10 @@ export default function DetailsSection({
               {/* Project - iOS Settings style row */}
               {isReadOnly ? (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <span className="text-sm font-medium text-fg-neutral-primary">
                     Project
                   </span>
-                  <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                  <div className="flex items-center gap-2 text-fg-neutral-secondary">
                     <span className="text-sm">
                       {projects.find((p) => p.id === task.projectId)?.name || "No project"}
                     </span>
@@ -493,7 +493,7 @@ export default function DetailsSection({
                     onClick={() => setShowProjectDropdown(!showProjectDropdown)}
                     className="w-full flex items-center justify-between group"
                   >
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    <span className="text-sm font-medium text-fg-neutral-primary">
                       Project
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -509,7 +509,7 @@ export default function DetailsSection({
                               }}
                             />
                           )}
-                          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                          <span className="text-sm text-fg-neutral-secondary">
                             {projects.find((p) => p.id === task.projectId)?.name ||
                               "Unknown project"}
                           </span>
@@ -522,13 +522,13 @@ export default function DetailsSection({
                   </button>
 
                   {showProjectDropdown && (
-                    <div className="absolute z-50 top-full right-0 mt-1 w-56 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden">
+                    <div className="absolute z-50 top-full right-0 mt-1 w-56 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg overflow-hidden">
                       <button
                         onClick={() => {
                           onUpdateTask(task.id, { projectId: null });
                           setShowProjectDropdown(false);
                         }}
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-600 dark:text-zinc-400"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-secondary"
                       >
                         <span>No project</span>
                         {!task.projectId && <Check className="w-4 h-4 text-violet-500" />}
@@ -542,7 +542,7 @@ export default function DetailsSection({
                               onUpdateTask(task.id, { projectId: project.id });
                               setShowProjectDropdown(false);
                             }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-700 dark:text-zinc-300"
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-primary"
                           >
                             <span className="flex items-center gap-2 truncate">
                               {project.color && (
@@ -583,7 +583,7 @@ export default function DetailsSection({
               {/* Recurring Toggle - hide in executing mode */}
               {!(isRecurring && mode === "executing") && (
                 <div className="flex items-center justify-between pt-4">
-                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <span className="text-sm font-medium text-fg-neutral-primary">
                     Recurring
                   </span>
                   <button
@@ -639,7 +639,7 @@ export default function DetailsSection({
               {/* Desktop: label left, pills right. Mobile: stacked */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div className="flex-shrink-0">
-                  <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <h4 className="text-sm font-medium text-fg-neutral-primary">
                     Timing
                   </h4>
                   {isReadOnly && (
@@ -770,7 +770,7 @@ export default function DetailsSection({
               {/* Desktop: label left, pills right. Mobile: stacked */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <div className="flex-shrink-0">
-                  <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <h4 className="text-sm font-medium text-fg-neutral-primary">
                     Levels
                   </h4>
                   {isReadOnly && (
@@ -821,7 +821,7 @@ export default function DetailsSection({
               <div className="pb-2">
                 {/* Desktop: label left, pills right. Mobile: stacked */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 flex-shrink-0">
+                  <h4 className="text-sm font-medium text-fg-neutral-primary flex-shrink-0">
                     Reminders
                   </h4>
                   <div ref={reminderRef} className="relative flex flex-wrap gap-2 items-center md:justify-end">
@@ -881,16 +881,16 @@ export default function DetailsSection({
             {/* Header - matches main navbar (no bottom border) */}
             <div className="h-14 flex items-center justify-between px-2">
               <div className="px-2">
-                <h3 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                <h3 className="text-base font-medium text-fg-neutral-primary">
                   Edit Pattern
                 </h3>
               </div>
               <button
                 onClick={() => setShowPatternModal(false)}
-                className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
                 aria-label="Close"
               >
-                <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+                <X size={20} className="text-fg-neutral-secondary" />
               </button>
             </div>
             {/* Content */}
@@ -914,16 +914,16 @@ export default function DetailsSection({
               {/* Header - matches main navbar (no bottom border) */}
               <div className="h-14 flex items-center justify-between px-2 shrink-0">
                 <div className="px-2">
-                  <h3 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+                  <h3 className="text-base font-medium text-fg-neutral-primary">
                     Edit Pattern
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowPatternModal(false)}
-                  className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
                   aria-label="Close"
                 >
-                  <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+                  <X size={20} className="text-fg-neutral-secondary" />
                 </button>
               </div>
               {/* Content */}
@@ -1174,28 +1174,28 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
       </div>
 
       {/* Date (and optional time) input */}
-      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
-        <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 block">
+      <div className="border-t border-border-color-neutral pt-3">
+        <label className="text-xs text-fg-neutral-secondary mb-2 block">
           Or pick a specific date{showTime ? " and time" : ""}
         </label>
         <div className="flex items-end gap-2 mb-3">
           <div className="flex-1 min-w-0">
-            <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+            <label className="text-xs text-fg-neutral-secondary mb-1 block">Date</label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full h-8 px-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg appearance-none"
+              className="w-full h-8 px-2 text-sm bg-bg-neutral-base border border-border-color-neutral rounded-lg appearance-none"
             />
           </div>
           {showTime && (
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Time</label>
+              <label className="text-xs text-fg-neutral-secondary mb-1 block">Time</label>
               <input
                 type="time"
                 value={selectedTime}
                 onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full h-8 px-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg appearance-none"
+                className="w-full h-8 px-2 text-sm bg-bg-neutral-base border border-border-color-neutral rounded-lg appearance-none"
               />
             </div>
           )}
@@ -1203,7 +1203,7 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -1223,7 +1223,7 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
     return (
       <BottomSheet isOpen={true} onClose={onClose} height="auto">
         <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
-          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+          <h3 className="text-base font-semibold text-fg-neutral-primary mb-4">
             {label}
           </h3>
           {pickerContent}
@@ -1240,10 +1240,10 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
 
       {/* Picker dropdown */}
       <div
-        className="fixed w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4"
+        className="fixed w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 p-4"
         style={{ top: position.top, left: position.left }}
       >
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+        <h3 className="text-sm font-semibold text-fg-neutral-primary mb-3">
           {label}
         </h3>
         {pickerContent}
@@ -1317,12 +1317,12 @@ function CollapsedProjectPicker({
 
       {/* Dropdown */}
       <div
-        className="fixed w-56 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-50 overflow-hidden"
+        className="fixed w-56 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-50 overflow-hidden"
         style={{ top: position.top, left: position.left }}
       >
         <button
           onClick={() => onSelect(null)}
-          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-600 dark:text-zinc-400"
+          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-secondary"
         >
           <span>No project</span>
           {!currentProjectId && <Check className="w-4 h-4 text-violet-500" />}
@@ -1331,7 +1331,7 @@ function CollapsedProjectPicker({
           <button
             key={project.id}
             onClick={() => onSelect(project.id)}
-            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-700 dark:text-zinc-300"
+            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-primary"
           >
             <span className="flex items-center gap-2 truncate">
               {project.color && (

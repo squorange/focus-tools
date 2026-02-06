@@ -220,16 +220,16 @@ export default function HistoryModal({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goToPrevMonth}
-          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-base font-medium text-fg-neutral-primary">
           {monthName}
         </h3>
         <button
           onClick={goToNextMonth}
-          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -240,7 +240,7 @@ export default function HistoryModal({
         {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
           <div
             key={i}
-            className="text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 py-1"
+            className="text-center text-xs font-medium text-fg-neutral-secondary py-1"
           >
             {day}
           </div>
@@ -262,7 +262,7 @@ export default function HistoryModal({
                   ${day === null ? "text-zinc-300 dark:text-zinc-700" : ""}
                   ${day?.isToday ? "ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-zinc-900" : ""}
                   ${selectedDate === day?.date ? "bg-violet-100 dark:bg-violet-900/30" : ""}
-                  ${day && day.status !== "no_occurrence" ? "hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer" : "cursor-default"}
+                  ${day && day.status !== "no_occurrence" ? "hover:bg-bg-neutral-subtle cursor-pointer" : "cursor-default"}
                 `}
               >
                 {day && (
@@ -271,7 +271,7 @@ export default function HistoryModal({
                       className={`text-xs ${
                         day.isToday
                           ? "font-bold text-violet-600 dark:text-violet-400"
-                          : "text-zinc-500 dark:text-zinc-400"
+                          : "text-fg-neutral-secondary"
                       }`}
                     >
                       {parseISO(day.date).getDate()}
@@ -286,43 +286,43 @@ export default function HistoryModal({
       </div>
 
       {/* Legend */}
-      <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700">
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">Legend</p>
+      <div className="mt-4 pt-3 border-t border-border-color-neutral">
+        <p className="text-xs text-fg-neutral-secondary mb-2">Legend</p>
         <div className="flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5">
             <StatusIcon status="completed" />
-            <span className="text-zinc-600 dark:text-zinc-400">Done</span>
+            <span className="text-fg-neutral-secondary">Done</span>
           </div>
           <div className="flex items-center gap-1.5">
             <StatusIcon status="missed" />
-            <span className="text-zinc-600 dark:text-zinc-400">Missed</span>
+            <span className="text-fg-neutral-secondary">Missed</span>
           </div>
           <div className="flex items-center gap-1.5">
             <StatusIcon status="skipped" />
-            <span className="text-zinc-600 dark:text-zinc-400">Skipped</span>
+            <span className="text-fg-neutral-secondary">Skipped</span>
           </div>
           <div className="flex items-center gap-1.5">
             <StatusIcon status="today" />
-            <span className="text-zinc-600 dark:text-zinc-400">Due</span>
+            <span className="text-fg-neutral-secondary">Due</span>
           </div>
           <div className="flex items-center gap-1.5">
             <StatusIcon status="pending" />
-            <span className="text-zinc-600 dark:text-zinc-400">Future</span>
+            <span className="text-fg-neutral-secondary">Future</span>
           </div>
         </div>
       </div>
 
       {/* Selected Date Details Panel */}
       {selectedInstance && (
-        <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">
+        <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-border-color-neutral">
+          <p className="text-sm font-medium text-fg-neutral-primary mb-1">
             {parseISO(selectedInstance.date).toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",
               day: "numeric",
             })}
           </p>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
+          <p className="text-sm text-fg-neutral-secondary mb-3">
             Status: {getStatusLabel(selectedInstance.status)}
           </p>
 
@@ -331,14 +331,14 @@ export default function HistoryModal({
             <>
               {selectedInstance.instance.steps.filter(s => s.completed).length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+                  <p className="text-xs font-medium text-fg-neutral-secondary mb-1.5">
                     Completed Steps
                   </p>
                   <ul className="space-y-1">
                     {selectedInstance.instance.steps
                       .filter(s => s.completed)
                       .map(step => (
-                        <li key={step.id} className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
+                        <li key={step.id} className="flex items-center gap-1.5 text-sm text-fg-neutral-primary">
                           <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                           <span className="truncate">{step.text}</span>
                         </li>
@@ -375,7 +375,7 @@ export default function HistoryModal({
                 selectedInstance.status === "today") && (
                 <button
                   onClick={() => handleMarkSkipped(selectedInstance.date)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
                   <SkipForward className="w-4 h-4" />
                   Skip
@@ -396,39 +396,39 @@ export default function HistoryModal({
           {/* Header - matches main navbar (no bottom border) */}
           <div className="h-14 flex items-center justify-between px-2 shrink-0">
             <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Completion History
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-around py-3 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700 shrink-0">
+          <div className="flex items-center justify-around py-3 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-border-color-neutral shrink-0">
             <div className="flex items-center gap-1.5 text-sm">
               <Flame className="w-4 h-4 text-orange-500" />
-              <span className="text-zinc-600 dark:text-zinc-400">Streak:</span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="text-fg-neutral-secondary">Streak:</span>
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.currentStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
               <Trophy className="w-4 h-4 text-amber-500" />
-              <span className="text-zinc-600 dark:text-zinc-400">Best:</span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="text-fg-neutral-secondary">Best:</span>
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.bestStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
               <Hash className="w-4 h-4 text-violet-500" />
-              <span className="text-zinc-600 dark:text-zinc-400">Total:</span>
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="text-fg-neutral-secondary">Total:</span>
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.totalCompletions}
               </span>
             </div>
@@ -449,36 +449,36 @@ export default function HistoryModal({
           {/* Mobile header - matches main navbar (no bottom border) */}
           <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
             <div className="px-2">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Completion History
               </h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-around py-2.5 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-center justify-around py-2.5 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-border-color-neutral">
             <div className="flex items-center gap-1.5 text-sm">
               <Flame className="w-4 h-4 text-orange-500" />
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.currentStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
               <Trophy className="w-4 h-4 text-amber-500" />
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.bestStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
               <Hash className="w-4 h-4 text-violet-500" />
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              <span className="font-semibold text-fg-neutral-primary">
                 {stats.totalCompletions}
               </span>
             </div>
@@ -542,7 +542,7 @@ function StatusIcon({
       );
     case "pending":
       return (
-        <div className={`${containerSize} rounded-full border-2 border-zinc-300 dark:border-zinc-600 flex items-center justify-center`}>
+        <div className={`${containerSize} rounded-full border-2 border-border-color-neutral flex items-center justify-center`}>
           <Circle className={`${size === "lg" ? "w-2" : "w-1.5"} ${size === "lg" ? "h-2" : "h-1.5"} text-zinc-300 dark:text-zinc-600`} />
         </div>
       );

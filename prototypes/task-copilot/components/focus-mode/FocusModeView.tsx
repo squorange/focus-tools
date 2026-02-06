@@ -186,12 +186,12 @@ export default function FocusModeView({
   return (
     <div className="h-full flex flex-col">
       {/* Focus Mode Header - matches app header styling */}
-      <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-white dark:bg-zinc-900 px-4 lg:px-6">
+      <header className="flex-shrink-0 pt-[env(safe-area-inset-top)] bg-bg-neutral-min px-4 lg:px-6">
         <div className="h-14 flex items-center justify-between">
           {/* Left: Exit button */}
           <button
             onClick={onExit}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -202,14 +202,14 @@ export default function FocusModeView({
           {/* Right: Timer + Pause/Resume */}
           <div className="flex items-center gap-3">
             {/* Timer */}
-            <div className="text-lg font-mono text-zinc-700 dark:text-zinc-300">
+            <div className="text-lg font-mono text-fg-neutral-primary">
               {formatTime(elapsedSeconds)}
             </div>
 
             {/* Pause/Resume */}
             <button
               onClick={focusState.paused ? onResume : onPause}
-              className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
             >
               {focusState.paused ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -251,7 +251,7 @@ export default function FocusModeView({
                 setEditingTitle(false);
               }
             }}
-            className="w-full text-xl font-medium text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-zinc-600 dark:text-zinc-400 mb-4"
+            className="w-full text-xl font-medium text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-fg-neutral-secondary mb-4"
             rows={2}
             autoFocus
           />
@@ -261,7 +261,7 @@ export default function FocusModeView({
               setEditingTitle(true);
               setTitleText(task.title);
             }}
-            className="text-xl font-medium text-zinc-600 dark:text-zinc-400 mb-4 text-center break-words cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
+            className="text-xl font-medium text-fg-neutral-secondary mb-4 text-center break-words cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
           >
             {task.title}
           </h1>
@@ -270,7 +270,7 @@ export default function FocusModeView({
         {/* Step indicator - only show if there are steps */}
         {!hasNoSteps && (
           <>
-            <div className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
+            <div className="text-sm text-fg-neutral-secondary mb-2">
               Step {currentStepIndex + 1} of {stepsInScope.length}
             </div>
 
@@ -306,7 +306,7 @@ export default function FocusModeView({
             </button>
           </div>
         ) : currentStep ? (
-          <div className="w-full p-6 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-sm">
+          <div className="w-full p-6 bg-bg-neutral-min border border-border-color-neutral rounded-2xl shadow-sm">
             {/* Step text - tap to edit */}
             {editingStep ? (
               <textarea
@@ -331,7 +331,7 @@ export default function FocusModeView({
                     setEditingStep(false);
                   }
                 }}
-                className="w-full text-lg text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-zinc-900 dark:text-zinc-100 mb-6"
+                className="w-full text-lg text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-fg-neutral-primary mb-6"
                 rows={2}
                 autoFocus
               />
@@ -341,7 +341,7 @@ export default function FocusModeView({
                   setEditingStep(true);
                   setStepText(currentStep.text);
                 }}
-                className="text-lg text-zinc-900 dark:text-zinc-100 text-center mb-6 cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
+                className="text-lg text-fg-neutral-primary text-center mb-6 cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-2 -mx-2 py-1 rounded transition-colors"
               >
                 {currentStep.text}
               </p>
@@ -349,7 +349,7 @@ export default function FocusModeView({
 
             {/* Substeps */}
             {currentStep.substeps.length > 0 && (
-              <div className="mb-6 space-y-2 pl-4 border-l-2 border-zinc-200 dark:border-zinc-700">
+              <div className="mb-6 space-y-2 pl-4 border-l-2 border-border-color-neutral">
                 {currentStep.substeps.map((substep, idx) => (
                   <div key={substep.id} className="group flex items-center gap-2">
                     <button
@@ -359,7 +359,7 @@ export default function FocusModeView({
                         ${
                           substep.completed
                             ? "bg-green-500 border-green-500 text-white"
-                            : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+                            : "border-border-color-neutral hover:border-violet-400"
                         }
                       `}
                     >
@@ -393,7 +393,7 @@ export default function FocusModeView({
                           }
                           if (e.key === "Escape") setEditingSubstepId(null);
                         }}
-                        className="flex-1 text-sm bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400"
+                        className="flex-1 text-sm bg-transparent border-b border-violet-500 focus:outline-none text-fg-neutral-secondary"
                         autoFocus
                       />
                     ) : (
@@ -405,7 +405,7 @@ export default function FocusModeView({
                         className={`flex-1 text-sm cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
                           substep.completed
                             ? "text-zinc-400 line-through"
-                            : "text-zinc-600 dark:text-zinc-400"
+                            : "text-fg-neutral-secondary"
                         }`}
                       >
                         {substep.text}
@@ -469,7 +469,7 @@ export default function FocusModeView({
               <div className="relative">
                 <button
                   onClick={() => setShowStuckMenu(!showStuckMenu)}
-                  className="px-6 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-6 py-3 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
                   I&apos;m Stuck
                 </button>
@@ -477,13 +477,13 @@ export default function FocusModeView({
                   <>
                     {/* Backdrop to dismiss menu */}
                     <div className="fixed inset-0 z-10" onClick={() => setShowStuckMenu(false)} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[220px]">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 py-2 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[220px]">
                       <button
                       onClick={() => {
                         setShowStuckMenu(false);
                         onStuckBreakdown();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -495,7 +495,7 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuckFirstStep();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -507,20 +507,20 @@ export default function FocusModeView({
                         setShowStuckMenu(false);
                         onStuckExplain();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Explain this step
                     </button>
-                    <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                    <div className="border-t border-border-color-neutral my-1" />
                     <button
                       onClick={() => {
                         setShowStuckMenu(false);
                         onStuck();
                       }}
-                      className="w-full px-4 py-2.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
+                      className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-3"
                     >
                       <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -556,8 +556,8 @@ export default function FocusModeView({
               </button>
             </div>
           ) : (
-            <div className="w-full p-8 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-center">
-              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+            <div className="w-full p-8 bg-bg-neutral-min border border-border-color-neutral rounded-2xl text-center">
+              <p className="text-fg-neutral-secondary mb-6">
                 Ready to complete this task?
               </p>
               <div className="flex justify-center gap-4">
@@ -569,7 +569,7 @@ export default function FocusModeView({
                 </button>
                 <button
                   onClick={onOpenAIDrawer}
-                  className="px-6 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-6 py-3 text-sm font-medium text-fg-neutral-secondary border border-border-color-neutral hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                 >
                   Talk to AI
                 </button>
@@ -577,8 +577,8 @@ export default function FocusModeView({
             </div>
           )
         ) : (
-          <div className="w-full p-6 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl text-center">
-            <p className="text-zinc-500 dark:text-zinc-400">
+          <div className="w-full p-6 bg-zinc-50 dark:bg-zinc-800 border border-border-color-neutral rounded-2xl text-center">
+            <p className="text-fg-neutral-secondary">
               No more steps to complete
             </p>
           </div>

@@ -58,11 +58,11 @@ export default function DetailsPill({
 
   const variantClasses: Record<PillVariant, string> = {
     filled:
-      "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700",
+      "bg-bg-neutral-subtle text-fg-neutral-primary border border-border-color-neutral",
     empty:
-      "bg-transparent text-zinc-500 dark:text-zinc-400 border border-dashed border-zinc-300 dark:border-zinc-600",
+      "bg-transparent text-fg-neutral-secondary border border-dashed border-border-color-neutral",
     locked:
-      "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 opacity-60",
+      "bg-bg-neutral-subtle text-fg-neutral-secondary border border-border-color-neutral opacity-60",
   };
 
   const interactiveClasses = isInteractive

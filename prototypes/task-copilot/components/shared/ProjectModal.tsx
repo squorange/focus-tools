@@ -72,7 +72,7 @@ export default function ProjectModal({
     <div className="space-y-4">
       {/* Name input */}
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+        <label className="block text-sm font-medium text-fg-neutral-primary mb-1">
           Name
         </label>
         <input
@@ -80,7 +80,7 @@ export default function ProjectModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Project name..."
-          className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full px-3 py-2 bg-bg-neutral-base border border-border-color-neutral rounded-lg text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave();
@@ -91,7 +91,7 @@ export default function ProjectModal({
 
       {/* Color picker */}
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
           Color
         </label>
         <div className="flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export default function ProjectModal({
             className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
               color === null
                 ? "border-violet-500 ring-2 ring-violet-500/30"
-                : "border-zinc-300 dark:border-zinc-600 hover:border-zinc-400"
+                : "border-border-color-neutral hover:border-zinc-400"
             }`}
             title="No color"
           >
@@ -160,7 +160,7 @@ export default function ProjectModal({
       <BottomSheet isOpen={true} onClose={onClose} height="auto" zIndex={80}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-3">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-lg font-semibold text-fg-neutral-primary">
             {project ? "Edit Project" : "New Project"}
           </h2>
           <button
@@ -184,7 +184,7 @@ export default function ProjectModal({
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              className="px-4 py-2.5 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -213,12 +213,12 @@ export default function ProjectModal({
       {/* Modal */}
       <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
         <div
-          className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-md"
+          className="bg-bg-neutral-min rounded-xl shadow-xl w-full max-w-md"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-color-neutral">
+            <h2 className="text-lg font-semibold text-fg-neutral-primary">
               {project ? "Edit Project" : "New Project"}
             </h2>
             <button
@@ -237,13 +237,13 @@ export default function ProjectModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border-color-neutral">
             <div>{renderDeleteButton()}</div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
               >
                 Cancel
               </button>

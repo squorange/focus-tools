@@ -123,11 +123,11 @@ export default function DurationPicker({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
             <div>
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Set Duration
               </h2>
               {source && source !== 'manual' && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-fg-neutral-secondary mt-0.5">
                   {source === 'ai' && "✨ Estimated by AI"}
                   {source === 'steps' && "∑ Calculated from steps"}
                 </p>
@@ -135,10 +135,10 @@ export default function DurationPicker({
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -160,7 +160,7 @@ export default function DurationPicker({
                       ${
                         isSelected
                           ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                          : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                          : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
                       }
                     `}
                   >
@@ -173,7 +173,7 @@ export default function DurationPicker({
             </div>
 
             {/* Custom input */}
-            <div className="pt-3 border-t border-zinc-200 dark:border-zinc-700">
+            <div className="pt-3 border-t border-border-color-neutral">
               {!showCustom ? (
                 <button
                   type="button"
@@ -186,7 +186,7 @@ export default function DurationPicker({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Hours</label>
+                      <label className="text-xs text-fg-neutral-secondary mb-1 block">Hours</label>
                       <input
                         type="number"
                         min="0"
@@ -194,12 +194,12 @@ export default function DurationPicker({
                         value={customHours}
                         onChange={(e) => setCustomHours(e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        className="w-full px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                         autoFocus
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Minutes</label>
+                      <label className="text-xs text-fg-neutral-secondary mb-1 block">Minutes</label>
                       <input
                         type="number"
                         min="0"
@@ -207,7 +207,7 @@ export default function DurationPicker({
                         value={customMinutes}
                         onChange={(e) => setCustomMinutes(e.target.value)}
                         placeholder="0"
-                        className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                        className="w-full px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                       />
                     </div>
                   </div>
@@ -228,7 +228,7 @@ export default function DurationPicker({
               <button
                 type="button"
                 onClick={handleClear}
-                className="w-full mt-4 px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                className="w-full mt-4 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-200"
               >
                 {source === 'manual' && calculatedDefault
                   ? `Reset to default (${formatDuration(calculatedDefault)} from steps)`
@@ -251,14 +251,14 @@ export default function DurationPicker({
 
       {/* Dropdown */}
       <div
-        className="fixed w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4"
+        className="fixed w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 p-4"
         style={{ top: position.top, left: position.left }}
       >
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-sm font-semibold text-fg-neutral-primary">
           Set Duration
         </h3>
         {source && source !== 'manual' && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
+          <p className="text-xs text-fg-neutral-secondary mt-1 mb-3">
             {source === 'ai' && "✨ Estimated by AI"}
             {source === 'steps' && "∑ Calculated from steps"}
           </p>
@@ -275,7 +275,7 @@ export default function DurationPicker({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={`px-3 py-2 text-sm text-center hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors ${
-                  isSelected ? "bg-violet-50 dark:bg-violet-900/20 font-medium text-violet-700 dark:text-violet-300" : "text-zinc-700 dark:text-zinc-300"
+                  isSelected ? "bg-violet-50 dark:bg-violet-900/20 font-medium text-violet-700 dark:text-violet-300" : "text-fg-neutral-primary"
                 }`}
               >
                 {option.label}
@@ -285,7 +285,7 @@ export default function DurationPicker({
         </div>
 
         {/* Custom option */}
-        <div className="pt-3 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="pt-3 border-t border-border-color-neutral">
           {!showCustom ? (
             <button
               type="button"
@@ -298,7 +298,7 @@ export default function DurationPicker({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="flex-1">
-                  <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Hours</label>
+                  <label className="text-xs text-fg-neutral-secondary mb-1 block">Hours</label>
                   <input
                     type="number"
                     min="0"
@@ -306,12 +306,12 @@ export default function DurationPicker({
                     value={customHours}
                     onChange={(e) => setCustomHours(e.target.value)}
                     placeholder="0"
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                    className="w-full px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                     autoFocus
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Minutes</label>
+                  <label className="text-xs text-fg-neutral-secondary mb-1 block">Minutes</label>
                   <input
                     type="number"
                     min="0"
@@ -319,7 +319,7 @@ export default function DurationPicker({
                     value={customMinutes}
                     onChange={(e) => setCustomMinutes(e.target.value)}
                     placeholder="0"
-                    className="w-full px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                    className="w-full px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                   />
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function DurationPicker({
           <button
             type="button"
             onClick={handleClear}
-            className="w-full mt-3 px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+            className="w-full mt-3 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-200"
           >
             {source === 'manual' && calculatedDefault
               ? `Reset to default (${formatDuration(calculatedDefault)} from steps)`

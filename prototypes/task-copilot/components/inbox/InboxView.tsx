@@ -65,10 +65,10 @@ export default function InboxView({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          <h3 className="text-lg font-medium text-fg-neutral-primary mb-2">
             All caught up
           </h3>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs">
+          <p className="text-sm text-fg-neutral-secondary max-w-xs">
             No items need triage. Use the + button to capture new thoughts.
           </p>
         </div>

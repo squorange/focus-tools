@@ -97,15 +97,15 @@ export default function ImportancePicker({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="h-14 flex items-center justify-between px-4 flex-shrink-0">
-            <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-base font-medium text-fg-neutral-primary">
               Set Importance
             </h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -126,16 +126,16 @@ export default function ImportancePicker({
                     ${
                       isSelected
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
                     }
                   `}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className={`text-sm font-medium ${option.value === null ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-800 dark:text-zinc-200"}`}>
+                      <span className={`text-sm font-medium ${option.value === null ? "text-fg-neutral-secondary" : "text-zinc-800 dark:text-zinc-200"}`}>
                         {option.label}
                       </span>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <p className="text-xs text-fg-neutral-secondary mt-0.5">
                         {option.description}
                       </p>
                     </div>
@@ -162,10 +162,10 @@ export default function ImportancePicker({
 
       {/* Dropdown */}
       <div
-        className="fixed w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4"
+        className="fixed w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 p-4"
         style={{ top: position.top, left: position.left }}
       >
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+        <h3 className="text-sm font-semibold text-fg-neutral-primary mb-3">
           Set Importance
         </h3>
 
@@ -183,10 +183,10 @@ export default function ImportancePicker({
                 }`}
               >
                 <div className="flex-1">
-                  <span className={`font-medium ${option.value === null ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-800 dark:text-zinc-200"}`}>
+                  <span className={`font-medium ${option.value === null ? "text-fg-neutral-secondary" : "text-zinc-800 dark:text-zinc-200"}`}>
                     {option.label}
                   </span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">
                     {option.description}
                   </p>
                 </div>

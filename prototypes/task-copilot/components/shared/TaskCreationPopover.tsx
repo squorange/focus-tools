@@ -182,7 +182,7 @@ export default function TaskCreationPopover({
         }`}
       >
         <FolderOpen size={14} className="text-zinc-400" />
-        <span className="text-zinc-600 dark:text-zinc-400">
+        <span className="text-fg-neutral-secondary">
           No project
         </span>
       </button>
@@ -208,7 +208,7 @@ export default function TaskCreationPopover({
               style={{ backgroundColor: project.color }}
             />
           )}
-          <span className="text-zinc-900 dark:text-zinc-100">
+          <span className="text-fg-neutral-primary">
             {project.name}
           </span>
         </button>
@@ -230,7 +230,7 @@ export default function TaskCreationPopover({
             }
             setShowProjectDropdown(false);
           }}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-200 dark:border-zinc-700"
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-border-color-neutral"
         >
           <Plus size={14} />
           <span>Create new project</span>
@@ -254,7 +254,7 @@ export default function TaskCreationPopover({
 
         {/* Dropdown */}
         <div
-          className="fixed z-[70] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          className="fixed z-[70] bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto"
           style={{
             left: dropdownPosition.left,
             width: dropdownPosition.width,
@@ -288,7 +288,7 @@ export default function TaskCreationPopover({
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="What needs to be done?"
-                className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                 autoComplete="off"
                 enterKeyHint="done"
               />
@@ -299,7 +299,7 @@ export default function TaskCreationPopover({
               <button
                 ref={projectButtonRef}
                 onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
               >
                 {selectedProject ? (
                   <>
@@ -330,7 +330,7 @@ export default function TaskCreationPopover({
               <button
                 onClick={handleAddAndOpen}
                 disabled={!title.trim()}
-                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Show details
               </button>
@@ -357,10 +357,10 @@ export default function TaskCreationPopover({
     <>
       <div
         ref={popoverRef}
-        className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 overflow-visible animate-in fade-in slide-in-from-top-2 duration-150"
+        className="absolute top-full right-0 mt-2 w-80 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 overflow-visible animate-in fade-in slide-in-from-top-2 duration-150"
       >
         {/* Title input */}
-        <div className="p-3 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="p-3 border-b border-border-color-neutral">
           <input
             ref={inputRef}
             type="text"
@@ -368,7 +368,7 @@ export default function TaskCreationPopover({
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="What needs to be done?"
-            className="w-full px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-900 border-0 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-900 border-0 rounded-lg text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
             autoComplete="off"
             autoFocus
           />
@@ -379,7 +379,7 @@ export default function TaskCreationPopover({
           <button
             ref={projectButtonRef}
             onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
           >
             {selectedProject ? (
               <>
@@ -405,12 +405,12 @@ export default function TaskCreationPopover({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center justify-between p-3 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="flex items-center justify-between p-3 border-t border-border-color-neutral">
           {/* Secondary: Show details */}
           <button
             onClick={handleAddAndOpen}
             disabled={!title.trim()}
-            className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Show details
           </button>

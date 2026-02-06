@@ -114,7 +114,7 @@ export default function RoutinesList({
     return (
       <div className="text-center py-12">
         <Repeat className="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-4" />
-        <h3 className="text-lg font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+        <h3 className="text-lg font-medium text-fg-neutral-secondary mb-2">
           No routines yet
         </h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-500 max-w-xs mx-auto">
@@ -138,7 +138,7 @@ export default function RoutinesList({
 
         return (
           <section key={freq}>
-            <h2 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+            <h2 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
               <span>{FREQUENCY_LABELS[freq]}</span>
               <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
                 {freqTasks.length}
@@ -196,8 +196,8 @@ function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
         hover:border-zinc-300 dark:hover:border-zinc-600
         transition-colors
         ${isPaused
-          ? "border-zinc-200 dark:border-zinc-700 opacity-60"
-          : "border-zinc-200 dark:border-zinc-700"
+          ? "border-border-color-neutral opacity-60"
+          : "border-border-color-neutral"
         }
       `}
     >
@@ -214,14 +214,14 @@ function RoutineRow({ task, project, onOpen, isPaused }: RoutineRowProps) {
         </div>
 
         {/* Title - line wrapping enabled */}
-        <span className="flex-1 min-w-0 text-zinc-900 dark:text-zinc-100 break-words">
+        <span className="flex-1 min-w-0 text-fg-neutral-primary break-words">
           {task.title}
         </span>
 
         {/* Streak + Chevron (upper right) */}
         <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
           {streak > 0 && (
-            <div className="flex items-center gap-0.5 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-0.5 text-xs font-medium text-fg-neutral-secondary">
               <Zap className="w-3.5 h-3.5" />
               <span>{streak}</span>
             </div>

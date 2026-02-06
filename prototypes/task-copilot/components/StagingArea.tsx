@@ -402,7 +402,7 @@ export default function StagingArea({
                     {typeof suggestion.estimatedMinutes === 'number' &&
                      !isNaN(suggestion.estimatedMinutes) &&
                      suggestion.estimatedMinutes > 0 && (
-                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-fg-neutral-secondary">
                         <span>~{formatDuration(suggestion.estimatedMinutes)}</span>
                         <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
                           AI
@@ -452,7 +452,7 @@ export default function StagingArea({
               </button>
               <button
                 onClick={onDismiss}
-                className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
               >
                 Dismiss
               </button>

@@ -115,7 +115,7 @@ export default function InboxItem({
           </button>
 
           {/* Title */}
-          <span className="flex-1 text-zinc-900 dark:text-zinc-100 truncate">
+          <span className="flex-1 text-fg-neutral-primary truncate">
             {task.title}
           </span>
 
@@ -194,13 +194,13 @@ export default function InboxItem({
                 setEditingTitle(false);
               }
             }}
-            className="flex-1 px-2 py-1 text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-600 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="flex-1 px-2 py-1 text-fg-neutral-primary bg-bg-neutral-base border border-zinc-200 dark:border-zinc-600 rounded focus:outline-none focus:ring-2 focus:ring-violet-500"
             autoFocus
           />
         ) : (
           <span
             onClick={() => setEditingTitle(true)}
-            className="flex-1 text-zinc-900 dark:text-zinc-100 cursor-text hover:text-violet-600 dark:hover:text-violet-400"
+            className="flex-1 text-fg-neutral-primary cursor-text hover:text-violet-600 dark:hover:text-violet-400"
           >
             {task.title}
           </span>
@@ -216,7 +216,7 @@ export default function InboxItem({
         {/* Steps section */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            <span className="text-sm font-medium text-fg-neutral-secondary">
               Steps {task.steps.length > 0 && `(${task.steps.length})`}
             </span>
             <button
@@ -238,7 +238,7 @@ export default function InboxItem({
                   <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-700 rounded">
                     {index + 1}
                   </span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{step.text}</span>
+                  <span className="text-fg-neutral-primary">{step.text}</span>
                 </li>
               ))}
             </ul>
@@ -254,7 +254,7 @@ export default function InboxItem({
                 if (e.key === "Enter") handleAddStep();
               }}
               placeholder="Add a step..."
-              className="flex-1 px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="flex-1 px-3 py-2 text-sm bg-bg-neutral-base border border-border-color-neutral rounded placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {newStepText.trim() && (
               <button
@@ -269,7 +269,7 @@ export default function InboxItem({
 
         {/* Priority selector */}
         <div>
-          <span className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2 block">
+          <span className="text-sm font-medium text-fg-neutral-secondary mb-2 block">
             Priority
           </span>
           <div className="flex gap-2">
@@ -298,7 +298,7 @@ export default function InboxItem({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-700 rounded-b-lg">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 bg-bg-neutral-base/50 border-t border-zinc-100 dark:border-zinc-700 rounded-b-lg">
         <div className="flex items-center gap-2">
           {/* Send to Pool */}
           <button
@@ -320,12 +320,12 @@ export default function InboxItem({
           <div className="relative">
             <button
               onClick={() => setShowDeferMenu(!showDeferMenu)}
-              className="px-3 py-1.5 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded transition-colors"
+              className="px-3 py-1.5 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded transition-colors"
             >
               Defer ▾
             </button>
             {showDeferMenu && (
-              <div className="absolute top-full left-0 mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-10 min-w-[140px]">
+              <div className="absolute top-full left-0 mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-10 min-w-[140px]">
                 {DEFER_OPTIONS.map((option) => (
                   <button
                     key={option.label}
@@ -333,7 +333,7 @@ export default function InboxItem({
                       onDefer(task.id, getDeferDate(option));
                       setShowDeferMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     {option.label}
                   </button>

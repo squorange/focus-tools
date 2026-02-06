@@ -86,13 +86,13 @@ export default function SettingsView({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Appearance section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Appearance
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-sm text-fg-neutral-secondary mt-1">
                 Choose light, dark, or match your system
               </p>
             </div>
@@ -112,14 +112,14 @@ export default function SettingsView({
         </div>
 
         {/* Start Time Poke section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Start Time Poke
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-sm text-fg-neutral-secondary mt-1">
                 Calculates when to start to finish on time.{' '}
                 <button
                   onClick={() => setShowMoreInfo(!showMoreInfo)}
@@ -160,9 +160,9 @@ export default function SettingsView({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 text-sm text-zinc-500 dark:text-zinc-400">
+                  <div className="bg-bg-neutral-subtle/50 rounded-lg p-3 text-sm text-fg-neutral-secondary">
                     <p className="mb-2">Start Time Poke calculates when you need to start a task to finish on time:</p>
-                    <div className="font-mono bg-white dark:bg-zinc-950 px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 text-xs">
+                    <div className="font-mono bg-white dark:bg-zinc-950 px-3 py-2 rounded border border-border-color-neutral text-xs">
                       Poke Time = Due Time - Duration - Buffer
                     </div>
                     <p className="mt-2">You'll receive a notification when it's time to start, with quick access to begin focusing.</p>
@@ -186,11 +186,11 @@ export default function SettingsView({
                   {/* Scope row */}
                   <button
                     onClick={() => setShowScopePicker(true)}
-                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
                   >
-                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Poke scope</span>
+                    <span className="text-sm text-fg-neutral-primary">Poke scope</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">{currentScopeLabel}</span>
+                      <span className="text-sm text-fg-neutral-secondary">{currentScopeLabel}</span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </div>
                   </button>
@@ -198,11 +198,11 @@ export default function SettingsView({
                   {/* Buffer row */}
                   <button
                     onClick={() => setShowBufferPicker(true)}
-                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
                   >
-                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Buffer time</span>
+                    <span className="text-sm text-fg-neutral-primary">Buffer time</span>
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">{currentBufferLabel}</span>
+                      <span className="text-sm text-fg-neutral-secondary">{currentBufferLabel}</span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </div>
                   </button>
@@ -213,14 +213,14 @@ export default function SettingsView({
         </div>
 
         {/* Day Offset section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Day Offset
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-sm text-fg-neutral-secondary mt-1">
                 {userSettings.dayStartHour > 0
                   ? `Your day runs ${userSettings.dayStartHour}:00 AM → ${userSettings.dayStartHour}:00 AM.`
                   : 'Your day runs midnight → midnight.'
@@ -266,14 +266,14 @@ export default function SettingsView({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 text-sm text-zinc-500 dark:text-zinc-400 space-y-2">
+                  <div className="bg-bg-neutral-subtle/50 rounded-lg p-3 text-sm text-fg-neutral-secondary space-y-2">
                     <p>This affects:</p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>When routines reset and show as overdue</li>
                       <li>How "All done for today" is calculated</li>
                       <li>Streak tracking for recurring tasks</li>
                     </ul>
-                    <p className="text-xs pt-2 border-t border-zinc-200 dark:border-zinc-700">
+                    <p className="text-xs pt-2 border-t border-border-color-neutral">
                       {userSettings.dayStartHour > 0
                         ? `Tasks completed before ${userSettings.dayStartHour}:00 AM count as yesterday.`
                         : 'Tasks completed after midnight count as the new day.'
@@ -298,11 +298,11 @@ export default function SettingsView({
                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {/* Day start time row */}
                   <div className="px-4 py-3 flex items-center justify-between">
-                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Day starts at</span>
+                    <span className="text-sm text-fg-neutral-primary">Day starts at</span>
                     <select
                       value={userSettings.dayStartHour}
                       onChange={(e) => onUpdateSettings({ dayStartHour: parseInt(e.target.value, 10) })}
-                      className="text-sm text-zinc-500 dark:text-zinc-400 bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
+                      className="text-sm text-fg-neutral-secondary bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
                     >
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((hour) => (
                         <option key={hour} value={hour}>
@@ -318,14 +318,14 @@ export default function SettingsView({
         </div>
 
         {/* Quiet Hours section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Quiet Hours
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+              <p className="text-sm text-fg-neutral-secondary mt-1">
                 Silence non-critical nudges during set hours.{' '}
                 <button
                   onClick={() => setShowQuietHoursMoreInfo(!showQuietHoursMoreInfo)}
@@ -366,7 +366,7 @@ export default function SettingsView({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 text-sm text-zinc-500 dark:text-zinc-400 space-y-2">
+                  <div className="bg-bg-neutral-subtle/50 rounded-lg p-3 text-sm text-fg-neutral-secondary space-y-2">
                     <p>During quiet hours, non-critical nudges are silenced.</p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>Critical priority tasks will still push through</li>
@@ -392,23 +392,23 @@ export default function SettingsView({
                 <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {/* Start time row */}
                   <div className="px-4 py-3 flex items-center justify-between">
-                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Starts at</span>
+                    <span className="text-sm text-fg-neutral-primary">Starts at</span>
                     <input
                       type="time"
                       value={userSettings.quietHoursStart || '22:00'}
                       onChange={(e) => onUpdateSettings({ quietHoursStart: e.target.value })}
-                      className="text-sm text-zinc-500 dark:text-zinc-400 bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
+                      className="text-sm text-fg-neutral-secondary bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
                     />
                   </div>
 
                   {/* End time row */}
                   <div className="px-4 py-3 flex items-center justify-between">
-                    <span className="text-sm text-zinc-900 dark:text-zinc-100">Ends at</span>
+                    <span className="text-sm text-fg-neutral-primary">Ends at</span>
                     <input
                       type="time"
                       value={userSettings.quietHoursEnd || '07:00'}
                       onChange={(e) => onUpdateSettings({ quietHoursEnd: e.target.value })}
-                      className="text-sm text-zinc-500 dark:text-zinc-400 bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
+                      className="text-sm text-fg-neutral-secondary bg-transparent border-none focus:outline-none focus:ring-0 text-right cursor-pointer"
                     />
                   </div>
                 </div>
@@ -418,23 +418,23 @@ export default function SettingsView({
         </div>
 
         {/* Nudge Cooldown section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           <div className="p-4">
-            <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-base font-medium text-fg-neutral-primary">
               Nudge Cooldown
             </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-fg-neutral-secondary mt-1">
               Minimum time between nudges for the same task.
             </p>
           </div>
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
             <button
               onClick={() => setShowCooldownPicker(true)}
-              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
-              <span className="text-sm text-zinc-900 dark:text-zinc-100">Cooldown period</span>
+              <span className="text-sm text-fg-neutral-primary">Cooldown period</span>
               <div className="flex items-center gap-1">
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">{currentCooldownLabel}</span>
+                <span className="text-sm text-fg-neutral-secondary">{currentCooldownLabel}</span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </div>
             </button>
@@ -442,18 +442,18 @@ export default function SettingsView({
         </div>
 
         {/* Data section */}
-        <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800">
           {/* Export row */}
           {onExportData && (
             <button
               onClick={onExportData}
-              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Download className="w-5 h-5 text-zinc-400" />
                 <div>
-                  <span className="text-sm text-zinc-900 dark:text-zinc-100">Export Data</span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Download all tasks and settings as JSON</p>
+                  <span className="text-sm text-fg-neutral-primary">Export Data</span>
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">Download all tasks and settings as JSON</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -464,13 +464,13 @@ export default function SettingsView({
           {onImportData && (
             <button
               onClick={onImportData}
-              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Upload className="w-5 h-5 text-zinc-400" />
                 <div>
-                  <span className="text-sm text-zinc-900 dark:text-zinc-100">Import Data</span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Restore from a previously exported file</p>
+                  <span className="text-sm text-fg-neutral-primary">Import Data</span>
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">Restore from a previously exported file</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -481,13 +481,13 @@ export default function SettingsView({
           {onRescanPokes && (
             <button
               onClick={onRescanPokes}
-              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
                 <RefreshCw className="w-5 h-5 text-zinc-400" />
                 <div>
-                  <span className="text-sm text-zinc-900 dark:text-zinc-100">Rescan Pokes</span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Regenerate all poke notifications based on current settings</p>
+                  <span className="text-sm text-fg-neutral-primary">Rescan Pokes</span>
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">Regenerate all poke notifications based on current settings</p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -503,9 +503,9 @@ export default function SettingsView({
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowScopePicker(false)}
           />
-          <div className="relative bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
-            <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0">
-              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Poke scope</span>
+          <div className="relative bg-bg-neutral-min rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 pt-4 pb-2 border-b border-border-color-neutral flex items-center justify-between shrink-0">
+              <span className="text-lg font-semibold text-fg-neutral-primary">Poke scope</span>
               <button
                 onClick={() => setShowScopePicker(false)}
                 className="text-sm font-medium text-violet-600 dark:text-violet-400"
@@ -525,7 +525,7 @@ export default function SettingsView({
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.startPokeDefault === option.value
                       ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
                     }
                   `}
                 >
@@ -544,9 +544,9 @@ export default function SettingsView({
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowBufferPicker(false)}
           />
-          <div className="relative bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
-            <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0">
-              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Buffer time</span>
+          <div className="relative bg-bg-neutral-min rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 pt-4 pb-2 border-b border-border-color-neutral flex items-center justify-between shrink-0">
+              <span className="text-lg font-semibold text-fg-neutral-primary">Buffer time</span>
               <button
                 onClick={() => setShowBufferPicker(false)}
                 className="text-sm font-medium text-violet-600 dark:text-violet-400"
@@ -578,7 +578,7 @@ export default function SettingsView({
                       w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                       ${isSelected
                         ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                        : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
                       }
                     `}
                   >
@@ -587,7 +587,7 @@ export default function SettingsView({
                 );
               })}
             </div>
-            <p className="px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
+            <p className="px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-fg-neutral-secondary border-t border-border-color-neutral shrink-0">
               Buffer is extra time before the deadline to account for transitions.
             </p>
           </div>
@@ -601,9 +601,9 @@ export default function SettingsView({
             className="absolute inset-0 bg-black/40"
             onClick={() => setShowCooldownPicker(false)}
           />
-          <div className="relative bg-white dark:bg-zinc-900 rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
-            <div className="px-6 pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between shrink-0">
-              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Nudge cooldown</span>
+          <div className="relative bg-bg-neutral-min rounded-t-2xl sm:rounded-xl w-full sm:max-w-sm max-h-[70vh] overflow-hidden flex flex-col">
+            <div className="px-6 pt-4 pb-2 border-b border-border-color-neutral flex items-center justify-between shrink-0">
+              <span className="text-lg font-semibold text-fg-neutral-primary">Nudge cooldown</span>
               <button
                 onClick={() => setShowCooldownPicker(false)}
                 className="text-sm font-medium text-violet-600 dark:text-violet-400"
@@ -623,7 +623,7 @@ export default function SettingsView({
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.nudgeCooldownMinutes === option.value
                       ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700'
                     }
                   `}
                 >
@@ -631,7 +631,7 @@ export default function SettingsView({
                 </button>
               ))}
             </div>
-            <p className="px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 shrink-0">
+            <p className="px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-xs text-fg-neutral-secondary border-t border-border-color-neutral shrink-0">
               Prevents repeated nudges for the same task within this period.
             </p>
           </div>

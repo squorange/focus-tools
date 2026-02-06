@@ -97,20 +97,20 @@ export default function StartPokePicker({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
             <div>
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Start Time Poke
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-fg-neutral-secondary mt-0.5">
                 Reminds you when to start so you can finish on time.
                 {calculatedNudgeTime && hasRequiredData && ` Will notify at: ${calculatedNudgeTime}`}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -138,7 +138,7 @@ export default function StartPokePicker({
                     ${
                       isSelected
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
                     }
                   `}
                 >
@@ -147,7 +147,7 @@ export default function StartPokePicker({
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {option.label}
                       </span>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <p className="text-xs text-fg-neutral-secondary mt-0.5">
                         {option.description}
                       </p>
                     </div>
@@ -174,13 +174,13 @@ export default function StartPokePicker({
 
       {/* Dropdown */}
       <div
-        className="fixed w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4"
+        className="fixed w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 p-4"
         style={{ top: position.top, left: position.left }}
       >
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <h3 className="text-sm font-semibold text-fg-neutral-primary">
           Start Time Poke
         </h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
+        <p className="text-xs text-fg-neutral-secondary mt-1 mb-3">
           Reminds you when to start so you can finish on time.
           {calculatedNudgeTime && hasRequiredData && ` Will notify at: ${calculatedNudgeTime}`}
         </p>
@@ -209,7 +209,7 @@ export default function StartPokePicker({
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">
                     {option.label}
                   </span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">
                     {option.description}
                   </p>
                 </div>

@@ -32,7 +32,7 @@ export default function MetadataPill({
 
   const variantClasses: Record<PillVariant, string> = {
     default:
-      "bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-400",
+      "bg-black/5 dark:bg-white/10 text-fg-neutral-secondary",
     "priority-high":
       "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
     "priority-medium":
@@ -42,7 +42,7 @@ export default function MetadataPill({
     due: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
     overdue:
       "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    project: "bg-black/5 dark:bg-white/10 text-zinc-600 dark:text-zinc-400", // Monochrome like default
+    project: "bg-black/5 dark:bg-white/10 text-fg-neutral-secondary", // Monochrome like default
     paused: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
     waiting: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
     deferred: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",

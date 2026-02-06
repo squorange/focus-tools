@@ -68,7 +68,7 @@ export default function StartPokeField({
   return (
     <div>
       {/* Label */}
-      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">
+      <span className="text-xs text-fg-neutral-secondary mb-1 block">
         Start Time Poke
       </span>
 
@@ -77,13 +77,13 @@ export default function StartPokeField({
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="w-full h-8 px-2 py-1 text-sm text-left
-            bg-white dark:bg-zinc-800
-            border border-zinc-200 dark:border-zinc-700 rounded-lg
+            bg-bg-neutral-min
+            border border-border-color-neutral rounded-lg
             hover:border-zinc-300 dark:hover:border-zinc-600
             focus:outline-none focus:ring-2 focus:ring-violet-500
             flex items-center justify-between"
         >
-          <span className={status.enabled ? 'text-violet-600 dark:text-violet-400' : 'text-zinc-700 dark:text-zinc-300'}>
+          <span className={status.enabled ? 'text-violet-600 dark:text-violet-400' : 'text-fg-neutral-primary'}>
             {getDisplayValue()}
           </span>
           <ChevronDown
@@ -96,12 +96,12 @@ export default function StartPokeField({
         {isDropdownOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-            <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg py-1">
+            <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg py-1">
               <button
                 onClick={() => handleSelect('on')}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
-                  ${task.startPokeOverride === 'on' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-zinc-700 dark:text-zinc-300'}
+                  ${task.startPokeOverride === 'on' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
                 On
@@ -110,17 +110,17 @@ export default function StartPokeField({
                 onClick={() => handleSelect('off')}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
-                  ${task.startPokeOverride === 'off' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-zinc-700 dark:text-zinc-300'}
+                  ${task.startPokeOverride === 'off' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
                 Off
               </button>
-              <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+              <div className="border-t border-border-color-neutral my-1" />
               <button
                 onClick={() => handleSelect(null)}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-zinc-100 dark:hover:bg-zinc-700
-                  ${task.startPokeOverride === null ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-zinc-700 dark:text-zinc-300'}
+                  ${task.startPokeOverride === null ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
                 `}
               >
                 <span>Use default</span>
@@ -150,7 +150,7 @@ export default function StartPokeField({
 
           {/* State 2: Missing duration - instructional */}
           {status.missingReason === 'no_duration' && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-fg-neutral-secondary">
               Add duration estimate to calculate start time
             </span>
           )}
@@ -159,12 +159,12 @@ export default function StartPokeField({
           {status.nudgeTime !== null && status.durationMinutes !== null && status.bufferMinutes !== null && status.anchorTime !== null && (
             <>
               {/* Primary: emoji + start time (plain text) */}
-              <span className="text-xs text-zinc-700 dark:text-zinc-300">
+              <span className="text-xs text-fg-neutral-primary">
                 👉🏽 Start at {formatPokeTime(status.nudgeTime)}
               </span>
 
               {/* Secondary line: calculation breakdown */}
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-fg-neutral-secondary">
                 {settings.startPokeBufferPercentage
                   ? `~${status.durationMinutes}m + 15% buffer → ${formatAnchorTime(status.anchorTime, true)}`
                   : `${formatDurationForPoke(status.durationMinutes)} + ${formatDurationForPoke(status.bufferMinutes)} buffer → ${formatAnchorTime(status.anchorTime, true)}`}

@@ -87,13 +87,13 @@ function NotificationsContent({
   if (isEmpty) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-full bg-bg-neutral-subtle flex items-center justify-center mb-4">
           <Bell size={32} className="text-zinc-400 dark:text-zinc-500" />
         </div>
-        <h2 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <h2 className="text-lg font-medium text-fg-neutral-primary mb-2">
           No notifications yet
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-[280px]">
+        <p className="text-sm text-fg-neutral-secondary max-w-[280px]">
           Start Nudges and reminders will appear here when they're scheduled or triggered.
         </p>
       </div>
@@ -105,7 +105,7 @@ function NotificationsContent({
       {/* Missed section: notifications that were never fired (app was closed) */}
       {missedNotifications.length > 0 && (
         <div>
-          <h2 className="text-base font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+          <h2 className="text-base font-medium text-fg-neutral-primary mb-3">
             Missed
           </h2>
           <div className="space-y-2">
@@ -127,7 +127,7 @@ function NotificationsContent({
       {/* Active section: fired but not acknowledged */}
       {activeNotifications.length > 0 && (
         <div>
-          <h2 className="text-base font-medium text-zinc-700 dark:text-zinc-300 mb-3">
+          <h2 className="text-base font-medium text-fg-neutral-primary mb-3">
             Active
           </h2>
           <div className="space-y-2">
@@ -149,7 +149,7 @@ function NotificationsContent({
       {/* Upcoming section */}
       {upcomingNotifications.length > 0 && (
         <div>
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+          <h2 className="text-base font-medium text-fg-neutral-secondary mb-3">
             Upcoming
           </h2>
           <div className="space-y-2">
@@ -179,7 +179,7 @@ function NotificationsContent({
 
           return (
             <div key={group.date}>
-              <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+              <h2 className="text-base font-medium text-fg-neutral-secondary mb-3">
                 {group.label}
               </h2>
               <div className="space-y-2">

@@ -48,7 +48,7 @@ function LargeProgressRing({
   if (total === 0) {
     return (
       <div
-        className="rounded-full border-2 border-zinc-300 dark:border-zinc-600 flex items-center justify-center flex-shrink-0"
+        className="rounded-full border-2 border-border-color-neutral flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       />
     );
@@ -86,7 +86,7 @@ function LargeProgressRing({
       </svg>
       {/* Center text - fraction only */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+        <span className="text-sm font-semibold text-fg-neutral-primary">
           {completed}/{total}
         </span>
       </div>
@@ -169,7 +169,7 @@ export default function StatusModule({
             <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
           </div>
           {streak > 0 && (
-            <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+            <div className="flex items-center gap-1 text-sm text-fg-neutral-secondary font-medium">
               <Zap className="w-3.5 h-3.5" />
               <span>{streak}</span>
             </div>
@@ -211,12 +211,12 @@ export default function StatusModule({
                 currentInstance?.completed ? (
                   <span className="text-sm leading-5 text-green-600 dark:text-green-400">Completed</span>
                 ) : (
-                  <span className="text-sm leading-5 text-zinc-500 dark:text-zinc-400">No steps</span>
+                  <span className="text-sm leading-5 text-fg-neutral-secondary">No steps</span>
                 )
               ) : (
                 <span className={`text-sm leading-5 ${currentInstance?.completed
                   ? "text-green-600 dark:text-green-400"
-                  : "text-zinc-600 dark:text-zinc-400"
+                  : "text-fg-neutral-secondary"
                 }`}>
                   {instanceCompleted} of {instanceTotal} steps{currentInstance?.completed && " complete"}
                 </span>
@@ -230,7 +230,7 @@ export default function StatusModule({
               {hasCompletedSteps && instanceCompleted > 0 && !(currentInstance?.completed ?? false) && (
                 <button
                   onClick={onToggleCompletedSteps}
-                  className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                  className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                 >
                   <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
                   {completedStepsExpanded ? "Hide completed" : `Show ${instanceCompleted} completed`}
@@ -239,7 +239,7 @@ export default function StatusModule({
             </div>
             {/* Streak - right-aligned */}
             {streak > 0 && (
-              <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 font-medium flex-shrink-0 ml-2">
+              <div className="flex items-center gap-1 text-sm text-fg-neutral-secondary font-medium flex-shrink-0 ml-2">
                 <Zap className="w-3.5 h-3.5" />
                 <span>{streak}</span>
               </div>
@@ -272,7 +272,7 @@ export default function StatusModule({
       <div className="flex-1 min-w-0">
         <div className="space-y-0.5">
           {/* Step count - today-aware for queued tasks */}
-          <div className="text-sm text-zinc-600 dark:text-zinc-400">
+          <div className="text-sm text-fg-neutral-secondary">
             {hasTodaySteps ? (
               <>
                 {todayCompletedCount} of {todayTotalCount} for today
@@ -287,7 +287,7 @@ export default function StatusModule({
           {hasCompletedSteps && completedCount > 0 && !isComplete && (
             <button
               onClick={onToggleCompletedSteps}
-              className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
             >
               <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
               {completedStepsExpanded ? "Hide completed" : `Show ${completedCount} completed`}

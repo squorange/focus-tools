@@ -104,19 +104,19 @@ export default function LeadTimePicker({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
             <div>
-              <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-base font-medium text-fg-neutral-primary">
                 Set Lead Time
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-fg-neutral-secondary mt-0.5">
                 Runway needed before a deadline.{deadlineDate && ` Deadline: ${deadlineDate}`}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <X size={20} className="text-fg-neutral-secondary" />
             </button>
           </div>
 
@@ -142,7 +142,7 @@ export default function LeadTimePicker({
                     ${
                       isSelected
                         ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
                     }
                   `}
                 >
@@ -151,7 +151,7 @@ export default function LeadTimePicker({
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         {option.label}
                       </span>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <p className="text-xs text-fg-neutral-secondary mt-0.5">
                         {effectiveDate
                           ? `Start by ${effectiveDate}`
                           : option.description}
@@ -166,7 +166,7 @@ export default function LeadTimePicker({
             })}
 
             {/* Custom option */}
-            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700">
+            <div className="pt-2 border-t border-border-color-neutral">
               {!showCustom ? (
                 <button
                   type="button"
@@ -184,7 +184,7 @@ export default function LeadTimePicker({
                     value={customValue}
                     onChange={(e) => setCustomValue(e.target.value)}
                     placeholder="Days"
-                    className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                    className="flex-1 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                     autoFocus
                   />
                   <button
@@ -214,15 +214,15 @@ export default function LeadTimePicker({
 
       {/* Dropdown */}
       <div
-        className="fixed w-80 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 max-h-[70vh] overflow-hidden flex flex-col"
+        className="fixed w-80 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 max-h-[70vh] overflow-hidden flex flex-col"
         style={{ top: position.top, left: position.left }}
       >
         {/* Header */}
         <div className="p-4 pb-0 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+          <h3 className="text-sm font-semibold text-fg-neutral-primary">
             Set Lead Time
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-3">
+          <p className="text-xs text-fg-neutral-secondary mt-1 mb-3">
             Runway needed before a deadline.{deadlineDate && ` Deadline: ${deadlineDate}`}
           </p>
         </div>
@@ -249,7 +249,7 @@ export default function LeadTimePicker({
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">
                     {option.label}
                   </span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-xs text-fg-neutral-secondary mt-0.5">
                     {effectiveDate
                       ? `Start by ${effectiveDate}`
                       : option.description}
@@ -264,7 +264,7 @@ export default function LeadTimePicker({
         </div>
 
         {/* Custom option */}
-        <div className="px-4 py-3 border-t border-zinc-200 dark:border-zinc-700 flex-shrink-0">
+        <div className="px-4 py-3 border-t border-border-color-neutral flex-shrink-0">
           {!showCustom ? (
             <button
               type="button"
@@ -282,7 +282,7 @@ export default function LeadTimePicker({
                 value={customValue}
                 onChange={(e) => setCustomValue(e.target.value)}
                 placeholder="Days"
-                className="flex-1 px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                className="flex-1 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary"
                 autoFocus
               />
               <button

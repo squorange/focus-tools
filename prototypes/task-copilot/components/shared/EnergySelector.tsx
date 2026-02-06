@@ -62,7 +62,7 @@ export default function EnergySelector({
   return (
     <div className="flex items-center gap-1">
       {!compact && (
-        <span className="text-xs text-zinc-500 dark:text-zinc-400 mr-1">
+        <span className="text-xs text-fg-neutral-secondary mr-1">
           Energy:
         </span>
       )}
@@ -79,7 +79,7 @@ export default function EnergySelector({
                 ${
                   isActive
                     ? level.activeColor
-                    : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    : "border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 }
               `}
               title={`${level.label} energy${isActive ? " (click to clear)" : ""}`}

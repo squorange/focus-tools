@@ -70,7 +70,7 @@ export default function DatePickerModal({
           <button
             key={label}
             onClick={() => handleQuickSelect(days)}
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
             {label}
           </button>
@@ -78,18 +78,18 @@ export default function DatePickerModal({
       </div>
 
       {/* Custom date section */}
-      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
-        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+      <div className="border-t border-border-color-neutral pt-3">
+        <div className="text-xs text-fg-neutral-secondary mb-2">
           Or pick a specific date
         </div>
         <div>
-          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+          <label className="text-xs text-fg-neutral-secondary mb-1 block">Date</label>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             min={minDate}
-            className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full px-3 py-2 text-sm bg-bg-neutral-base border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function DatePickerModal({
       <BottomSheet isOpen={true} onClose={onClose} height="auto" zIndex={80}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 pb-3">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-lg font-semibold text-fg-neutral-primary">
             {title}
           </h2>
           <button
@@ -124,7 +124,7 @@ export default function DatePickerModal({
         <div className="flex items-center justify-end gap-2 px-4 pb-4">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -152,12 +152,12 @@ export default function DatePickerModal({
       {/* Modal */}
       <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
         <div
-          className="bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-sm"
+          className="bg-bg-neutral-min rounded-xl shadow-xl w-full max-w-sm"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-color-neutral">
+            <h2 className="text-lg font-semibold text-fg-neutral-primary">
               {title}
             </h2>
             <button
@@ -176,10 +176,10 @@ export default function DatePickerModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-zinc-200 dark:border-zinc-700">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border-color-neutral">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
             >
               Cancel
             </button>

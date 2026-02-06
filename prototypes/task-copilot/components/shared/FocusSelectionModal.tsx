@@ -114,16 +114,16 @@ export default function FocusSelectionModal({
   const Header = () => (
     <div className="h-14 flex items-center justify-between px-2 shrink-0">
       <div className="px-2">
-        <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">
+        <h2 className="text-base font-medium text-fg-neutral-primary">
           Edit Focus
         </h2>
       </div>
       <button
         onClick={onClose}
-        className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
         aria-label="Close"
       >
-        <X size={20} className="text-zinc-600 dark:text-zinc-400" />
+        <X size={20} className="text-fg-neutral-secondary" />
       </button>
     </div>
   );
@@ -132,7 +132,7 @@ export default function FocusSelectionModal({
     <div className="flex gap-2 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
       <button
         onClick={handleAllToday}
-        className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300
+        className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
                    bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
                    rounded-lg transition-colors"
       >
@@ -140,7 +140,7 @@ export default function FocusSelectionModal({
       </button>
       <button
         onClick={handleAllUpcoming}
-        className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300
+        className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
                    bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600
                    rounded-lg transition-colors"
       >
@@ -167,7 +167,7 @@ export default function FocusSelectionModal({
               className={`flex-1 text-sm ${
                 isCompleted
                   ? "text-zinc-400 dark:text-zinc-500 line-through"
-                  : "text-zinc-900 dark:text-zinc-100"
+                  : "text-fg-neutral-primary"
               }`}
             >
               {index + 1}. {step.text}
@@ -183,7 +183,7 @@ export default function FocusSelectionModal({
                   className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     isSelected
                       ? "bg-violet-600 text-white shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400"
+                      : "text-fg-neutral-secondary"
                   }`}
                 >
                   Today
@@ -192,7 +192,7 @@ export default function FocusSelectionModal({
                   className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     !isSelected
                       ? "bg-white dark:bg-zinc-600 text-zinc-700 dark:text-zinc-200 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400"
+                      : "text-fg-neutral-secondary"
                   }`}
                 >
                   Upcoming
@@ -211,7 +211,7 @@ export default function FocusSelectionModal({
       className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
-      <span className="text-sm text-zinc-500 dark:text-zinc-400">
+      <span className="text-sm text-fg-neutral-secondary">
         {todayCount} for today · {upcomingCount} for upcoming
       </span>
     </div>

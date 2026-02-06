@@ -122,7 +122,7 @@ export function MiniBarContent({
                 ${isResponse ? 'text-violet-600 dark:text-violet-300' : ''}
                 ${isSuggestionsReady ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}
                 ${isConfirmation ? 'text-green-600 dark:text-green-400' : ''}
-                ${isCancelled ? 'text-zinc-500 dark:text-zinc-400' : ''}
+                ${isCancelled ? 'text-fg-neutral-secondary' : ''}
               `}
             >
               {content.text}

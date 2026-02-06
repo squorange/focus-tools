@@ -14,7 +14,7 @@ export function ShimmerText({ text, className = '', delay = 0 }: ShimmerTextProp
   // Reduced motion: plain text with slightly lower opacity
   if (prefersReducedMotion) {
     return (
-      <span className={`text-zinc-500 dark:text-zinc-400 opacity-70 ${className}`}>
+      <span className={`text-fg-neutral-secondary opacity-70 ${className}`}>
         {text}
       </span>
     );

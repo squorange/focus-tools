@@ -55,8 +55,8 @@ export default function TaskRow({
           <span
             className={`text-sm truncate ${
               isCompleted
-                ? "text-zinc-500 dark:text-zinc-400 line-through"
-                : "text-zinc-900 dark:text-zinc-100"
+                ? "text-fg-neutral-secondary line-through"
+                : "text-fg-neutral-primary"
             }`}
           >
             {task.title}

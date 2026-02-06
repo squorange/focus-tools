@@ -69,7 +69,7 @@ function ExplanationResponse({ content }: { content: ExplanationContent }) {
   return (
     <div className="space-y-2 text-left">
       <h4 className="text-base font-medium text-zinc-800 dark:text-zinc-200">{content.title}</h4>
-      <p className="text-base text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap leading-relaxed">
+      <p className="text-base text-fg-neutral-secondary whitespace-pre-wrap leading-relaxed">
         {content.explanation}
       </p>
     </div>

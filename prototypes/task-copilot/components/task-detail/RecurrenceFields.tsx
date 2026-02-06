@@ -95,7 +95,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
 
       {/* Frequency */}
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
           Frequency
         </label>
         <div className="grid grid-cols-4 gap-2">
@@ -135,7 +135,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
                 px-3 py-2 text-sm font-medium rounded-lg transition-colors
                 ${rule.frequency === freq.value
                   ? "bg-violet-600 text-white"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  : "bg-bg-neutral-subtle text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 }
               `}
             >
@@ -147,7 +147,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
 
       {/* Interval */}
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
           Repeat Every
         </label>
         <div className="flex items-center gap-2">
@@ -158,9 +158,9 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
             value={intervalInput}
             onChange={handleIntervalChange}
             onBlur={handleIntervalBlur}
-            className="w-20 px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className="w-20 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+          <span className="text-sm text-fg-neutral-secondary">
             {getIntervalUnit()}
           </span>
         </div>
@@ -168,14 +168,14 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
 
       {/* Time */}
       <div>
-        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+        <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
           Time <span className="text-zinc-400 font-normal">(optional)</span>
         </label>
         <input
           type="time"
           value={rule.time || ""}
           onChange={(e) => updateRule({ time: e.target.value || null })}
-          className="w-32 px-3 py-2 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-32 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         />
         {rule.time && (
           <button
@@ -191,7 +191,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
       {/* Weekly: Days of Week */}
       {rule.frequency === "weekly" && (
         <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
             On These Days
           </label>
           <div className="flex gap-1">
@@ -207,7 +207,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
                     w-9 h-9 text-sm font-medium rounded-lg transition-colors
                     ${isSelected
                       ? "bg-violet-600 text-white"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      : "bg-bg-neutral-subtle text-fg-neutral-secondary hover:bg-zinc-200 dark:hover:bg-zinc-700"
                     }
                   `}
                 >
@@ -227,7 +227,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
       {/* Monthly: Day of Month OR Week + Day */}
       {rule.frequency === "monthly" && (
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label className="block text-sm font-medium text-fg-neutral-primary">
             Repeat On
           </label>
 
@@ -247,7 +247,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               }}
               className="w-4 h-4 text-violet-600"
             />
-            <label htmlFor="monthly-day" className="text-sm text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="monthly-day" className="text-sm text-fg-neutral-primary">
               Day
             </label>
             <input
@@ -257,7 +257,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               value={rule.dayOfMonth || ""}
               onChange={(e) => updateRule({ dayOfMonth: parseInt(e.target.value) || 1 })}
               disabled={rule.dayOfMonth === null}
-              className="w-16 px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-16 px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             />
             <span className="text-sm text-zinc-500">of the month</span>
           </div>
@@ -278,14 +278,14 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               }}
               className="w-4 h-4 text-violet-600"
             />
-            <label htmlFor="monthly-week" className="text-sm text-zinc-700 dark:text-zinc-300">
+            <label htmlFor="monthly-week" className="text-sm text-fg-neutral-primary">
               The
             </label>
             <select
               value={rule.weekOfMonth || 1}
               onChange={(e) => updateRule({ weekOfMonth: parseInt(e.target.value) })}
               disabled={rule.weekOfMonth === null}
-              className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             >
               {WEEK_OF_MONTH.map((week) => (
                 <option key={week.value} value={week.value}>
@@ -297,7 +297,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               value={rule.daysOfWeek?.[0] ?? 0}
               onChange={(e) => updateRule({ daysOfWeek: [parseInt(e.target.value)] })}
               disabled={rule.weekOfMonth === null}
-              className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             >
               {DAYS_OF_WEEK.map((day) => (
                 <option key={day.value} value={day.value}>
@@ -310,7 +310,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
       )}
 
       {/* Rollover Setting */}
-      <div className="pt-2 border-t border-zinc-200 dark:border-zinc-700">
+      <div className="pt-2 border-t border-border-color-neutral">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -319,10 +319,10 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
             className="w-4 h-4 mt-0.5 text-violet-600 rounded focus:ring-violet-500"
           />
           <div>
-            <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="block text-sm font-medium text-fg-neutral-primary">
               Persist if missed
             </span>
-            <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="block text-xs text-fg-neutral-secondary">
               Stays visible until completed or skipped
             </span>
           </div>

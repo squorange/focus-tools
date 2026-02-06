@@ -681,10 +681,10 @@ export function getTierColors(tier: PriorityTier): {
     case 'low':
     default:
       return {
-        bg: 'bg-zinc-50 dark:bg-zinc-800/50',
-        border: 'border-zinc-200 dark:border-zinc-700',
-        text: 'text-zinc-600 dark:text-zinc-400',
-        badge: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400',
+        bg: 'bg-bg-neutral-base',
+        border: 'border-border-color-neutral',
+        text: 'text-fg-neutral-secondary',
+        badge: 'bg-bg-neutral-subtle text-fg-neutral-secondary',
       };
   }
 }

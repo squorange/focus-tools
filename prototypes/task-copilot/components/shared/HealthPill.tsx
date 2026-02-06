@@ -99,20 +99,20 @@ export default function HealthPill({
           className={`
             absolute z-50 top-full mt-1 left-0
             min-w-[180px] max-w-[240px]
-            bg-white dark:bg-zinc-800
-            border border-zinc-200 dark:border-zinc-700
+            bg-bg-neutral-min
+            border border-border-color-neutral
             rounded-lg shadow-lg
             p-2.5
           `}
         >
-          <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
+          <div className="text-xs font-medium text-fg-neutral-secondary mb-1.5">
             Why this status?
           </div>
           <ul className="space-y-1">
             {health.reasons.map((reason, i) => (
               <li
                 key={i}
-                className="text-sm text-zinc-700 dark:text-zinc-300 flex items-start gap-1.5"
+                className="text-sm text-fg-neutral-primary flex items-start gap-1.5"
               >
                 <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                   health.status === 'critical' ? 'bg-red-500' :

@@ -180,14 +180,14 @@ export default function DurationInput({
           placeholder={placeholder}
           className={`
             w-full px-3 py-1.5 pr-8 text-sm
-            bg-white dark:bg-zinc-800
+            bg-bg-neutral-min
             border rounded-lg
             focus:outline-none focus:ring-2 focus:ring-violet-500
             ${hasError
               ? "border-red-400 dark:border-red-500"
-              : "border-zinc-200 dark:border-zinc-700"
+              : "border-border-color-neutral"
             }
-            ${isUsingAutoValue ? "text-zinc-500 dark:text-zinc-400" : ""}
+            ${isUsingAutoValue ? "text-fg-neutral-secondary" : ""}
           `}
         />
 
@@ -215,7 +215,7 @@ export default function DurationInput({
 
       {/* Source indicator - only shows context, not the value */}
       {!hasError && effectiveValue != null && (
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="text-xs text-fg-neutral-secondary">
           {source === "steps" && "From steps"}
           {source === "ai" && (
             <span className="inline-flex items-center gap-1">
@@ -256,7 +256,7 @@ export function EstimateBadge({ minutes, source, onClick }: EstimateBadgeProps) 
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded transition-colors"
     >
       <span>{formatDisplay()}</span>
       {source === "ai" && (

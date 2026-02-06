@@ -650,8 +650,8 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
     archived: {
       label: 'Archived',
       color: '#71717a', // zinc-500
-      bgClass: 'bg-zinc-100 dark:bg-zinc-800',
-      textClass: 'text-zinc-600 dark:text-zinc-400',
+      bgClass: 'bg-bg-neutral-subtle',
+      textClass: 'text-fg-neutral-secondary',
     },
     today: {
       label: 'Today',

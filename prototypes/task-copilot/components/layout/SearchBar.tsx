@@ -43,9 +43,9 @@ export default function SearchBar({
             placeholder="Search tasks..."
             className={`w-full pl-9 pr-4 py-2 text-sm rounded-lg border transition-colors ${
               isSearchView
-                ? "bg-white dark:bg-zinc-800 border-blue-500 ring-1 ring-blue-500"
-                : "bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-            } text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+                ? "bg-bg-neutral-min border-blue-500 ring-1 ring-blue-500"
+                : "bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral hover:border-zinc-300 dark:hover:border-zinc-600"
+            } text-fg-neutral-primary placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
           />
           {value && (
             <button
@@ -77,7 +77,7 @@ export default function SearchBar({
         aria-label="Search"
       >
         <svg
-          className="w-5 h-5 text-zinc-600 dark:text-zinc-400"
+          className="w-5 h-5 text-fg-neutral-secondary"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

@@ -35,13 +35,13 @@ export default function QuickCapture({
       <div
         className={`
           flex items-center gap-3 px-4 py-3
-          bg-white dark:bg-zinc-800
+          bg-bg-neutral-min
           border rounded-lg
           transition-all duration-200
           ${
             isFocused
               ? "border-violet-400 dark:border-violet-500 shadow-md shadow-violet-100 dark:shadow-violet-900/20"
-              : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+              : "border-border-color-neutral hover:border-zinc-300 dark:hover:border-zinc-600"
           }
         `}
       >
@@ -84,7 +84,7 @@ export default function QuickCapture({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           data-capture-input
-          className="flex-1 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none text-sm"
+          className="flex-1 bg-transparent text-fg-neutral-primary placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none text-sm"
         />
 
         {/* Submit button - always rendered to prevent height change */}

@@ -72,7 +72,7 @@ export default function Header({
   const plusButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className={`relative z-10 flex-shrink-0 pt-[env(safe-area-inset-top)] bg-zinc-50 dark:bg-zinc-900 px-4 lg:px-6 transition-shadow duration-200 ${
+    <header className={`relative z-10 flex-shrink-0 pt-[env(safe-area-inset-top)] bg-bg-neutral-base px-4 lg:px-6 transition-shadow duration-200 ${
       isScrolled ? 'shadow-sm' : ''
     }`}>
       <div className="h-14 flex items-center gap-2 relative">
@@ -82,19 +82,19 @@ export default function Header({
           {showBackButton && onBack ? (
             <button
               onClick={onBack}
-              className="p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Go back"
             >
-              <ArrowLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <ArrowLeft size={20} className="text-fg-neutral-secondary" />
             </button>
           ) : !hideNavigation ? (
             /* Drawer toggle button (mobile only - desktop toggle is in sidebar) */
             <button
               onClick={onToggleSidebar}
-              className="lg:hidden p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="lg:hidden p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
               aria-label="Toggle drawer"
             >
-              <PanelLeft size={20} className="text-zinc-600 dark:text-zinc-400" />
+              <PanelLeft size={20} className="text-fg-neutral-secondary" />
             </button>
           ) : null}
 
@@ -113,14 +113,14 @@ export default function Header({
 
         {/* Center: View title for non-tab views */}
         {viewTitle && (
-          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-medium text-zinc-900 dark:text-zinc-100">
+          <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-medium text-fg-neutral-primary">
             {viewTitle}
           </h1>
         )}
 
         {/* Desktop-only: Show Focus/Tasks title when sidebar is expanded */}
         {!viewTitle && isSidebarOpen && (currentView === 'focus' || currentView === 'tasks') && (
-          <h1 className="hidden lg:block absolute left-1/2 -translate-x-1/2 text-base font-medium text-zinc-900 dark:text-zinc-100">
+          <h1 className="hidden lg:block absolute left-1/2 -translate-x-1/2 text-base font-medium text-fg-neutral-primary">
             {currentView === 'focus' ? 'Focus' : 'Tasks'}
           </h1>
         )}

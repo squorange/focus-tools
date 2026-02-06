@@ -108,7 +108,7 @@ export default function RoutinesGallery({
     <div className="mb-6">
       {/* Section header - matching QueueView pattern */}
       <div className="flex items-center justify-between px-1 mb-3">
-        <span className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+        <span className="text-base font-medium text-fg-neutral-secondary">
           {dueRoutines.length} {dueRoutines.length === 1 ? "routine" : "routines"}
         </span>
       </div>

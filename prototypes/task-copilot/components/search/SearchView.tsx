@@ -130,7 +130,7 @@ export default function SearchView({
           {/* Alert Section (critical) */}
           {alertResults.length > 0 && (
             <div>
-              <h2 className="flex items-center gap-2 text-base font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+              <h2 className="flex items-center gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
                 <AlertCircle size={16} />
                 <span>Alert</span>
                 <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
@@ -146,7 +146,7 @@ export default function SearchView({
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
-                      <span className="text-zinc-900 dark:text-zinc-100">
+                      <span className="text-fg-neutral-primary">
                         {task.title}
                       </span>
                     </div>
@@ -159,7 +159,7 @@ export default function SearchView({
           {/* Watch Section (at_risk) */}
           {watchResults.length > 0 && (
             <div>
-              <h2 className="flex items-center gap-2 text-base font-medium text-zinc-600 dark:text-zinc-400 mb-3">
+              <h2 className="flex items-center gap-2 text-base font-medium text-fg-neutral-secondary mb-3">
                 <Eye size={16} />
                 <span>Watch</span>
                 <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
@@ -175,7 +175,7 @@ export default function SearchView({
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
-                      <span className="text-zinc-900 dark:text-zinc-100">
+                      <span className="text-fg-neutral-primary">
                         {task.title}
                       </span>
                     </div>
@@ -187,7 +187,7 @@ export default function SearchView({
 
           {/* Empty state */}
           {alertResults.length === 0 && watchResults.length === 0 && (
-            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-8 text-fg-neutral-secondary">
               No tasks need attention
             </div>
           )}
@@ -197,7 +197,7 @@ export default function SearchView({
       {/* Other Filter Results */}
       {!query.trim() && activeFilter && activeFilter !== "needs_attention" && (
         <section>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
+          <p className="text-sm text-fg-neutral-secondary mb-3">
             {filterResults.length} task{filterResults.length !== 1 ? 's' : ''}
           </p>
           {filterResults.length > 0 ? (
@@ -210,7 +210,7 @@ export default function SearchView({
                 >
                   <div className="flex items-center gap-2">
                     <StatusBadge status={task.status} />
-                    <span className="text-zinc-900 dark:text-zinc-100">
+                    <span className="text-fg-neutral-primary">
                       {task.title}
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export default function SearchView({
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-8 text-fg-neutral-secondary">
               No tasks found
             </div>
           )}
@@ -238,7 +238,7 @@ export default function SearchView({
       {/* Search Results */}
       {query.trim() && (
         <section>
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-3">
+          <h2 className="text-base font-medium text-fg-neutral-secondary mb-3">
             Results ({searchResults.length})
           </h2>
           {searchResults.length > 0 ? (
@@ -257,7 +257,7 @@ export default function SearchView({
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-8 text-fg-neutral-secondary">
               No tasks found matching "{query}"
             </div>
           )}
@@ -273,7 +273,7 @@ function StatusBadge({ status }: { status: string }) {
     inbox: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
     pool: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
     complete: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
-    archived: "bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400",
+    archived: "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary",
   };
 
   return (
@@ -333,7 +333,7 @@ function SearchResultItem({ result, query, preview, onClick }: SearchResultItemP
       {/* Title row with status badge */}
       <div className="flex items-center gap-2">
         <StatusBadge status={task.status} />
-        <span className="text-zinc-900 dark:text-zinc-100 flex-1 truncate">
+        <span className="text-fg-neutral-primary flex-1 truncate">
           {titleHasMatch ? (
             <HighlightedText text={task.title} query={query} />
           ) : (
@@ -344,7 +344,7 @@ function SearchResultItem({ result, query, preview, onClick }: SearchResultItemP
 
       {/* Preview line */}
       {preview.text && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-1">
+        <p className="text-sm text-fg-neutral-secondary mt-1 line-clamp-1">
           {previewIcon}
           {preview.type === 'snippet' ? (
             <HighlightedText text={preview.text} query={query} />

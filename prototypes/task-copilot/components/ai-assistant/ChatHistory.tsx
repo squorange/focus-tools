@@ -24,7 +24,7 @@ export function ChatHistory({ messages }: ChatHistoryProps) {
               max-w-[85%] px-3 py-2 rounded-2xl text-sm
               ${message.role === 'user'
                 ? 'bg-violet-600 text-white rounded-br-md'
-                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-bl-md'
+                : 'bg-bg-neutral-subtle text-zinc-800 dark:text-zinc-200 rounded-bl-md'
               }
             `}
           >

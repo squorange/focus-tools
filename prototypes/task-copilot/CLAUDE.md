@@ -32,7 +32,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
 | P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
 | P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
-| P1 | Design System Integration | 🔄 In Progress | Phase 1: Foundation complete |
+| P1 | Design System Integration | 🔄 In Progress | Phase 4: Tier 1 complete (882 tokens), Tier 2-3 pending |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |

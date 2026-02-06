@@ -528,14 +528,14 @@ export default function TaskDetail({
                     target.style.height = 'auto';
                     target.style.height = target.scrollHeight + 'px';
                   }}
-                  className="flex-1 min-w-0 text-xl font-semibold text-zinc-900 dark:text-zinc-100 bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none overflow-hidden min-h-[1.75rem]"
+                  className="flex-1 min-w-0 text-xl font-semibold text-fg-neutral-primary bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none overflow-hidden min-h-[1.75rem]"
                   autoFocus
                   rows={1}
                 />
               ) : (
                 <h1
                   onClick={() => setEditingTitle(true)}
-                  className="flex-1 min-w-0 text-xl font-semibold text-zinc-900 dark:text-zinc-100 break-words cursor-text hover:text-violet-600 dark:hover:text-violet-400"
+                  className="flex-1 min-w-0 text-xl font-semibold text-fg-neutral-primary break-words cursor-text hover:text-violet-600 dark:hover:text-violet-400"
                 >
                   {task.title || "Untitled Task"}
                 </h1>
@@ -555,7 +555,7 @@ export default function TaskDetail({
                     {currentInstance?.completed && onMarkRoutineIncomplete ? (
                       <button
                         onClick={() => onMarkRoutineIncomplete(task.id)}
-                        className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                       >
                         Mark Incomplete
                       </button>
@@ -590,7 +590,7 @@ export default function TaskDetail({
                         {!isPaused && onSkipRoutine && (
                           <button
                             onClick={() => onSkipRoutine(task.id)}
-                            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                           >
                             Skip
                           </button>
@@ -601,7 +601,7 @@ export default function TaskDetail({
                 )}
                 <button
                   onClick={() => setShowHistoryModal(true)}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-1.5"
                 >
                   <History className="w-4 h-4" />
                   <span className="hidden lg:inline">History</span>
@@ -630,7 +630,7 @@ export default function TaskDetail({
                 {canMarkIncomplete && (
                   <button
                     onClick={handleMarkTaskIncomplete}
-                    className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                   >
                     Mark Incomplete
                   </button>
@@ -640,7 +640,7 @@ export default function TaskDetail({
                     {task.status === "inbox" && (
                       <button
                         onClick={() => onSendToPool(task.id)}
-                        className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                       >
                         Move to Ready
                       </button>
@@ -650,14 +650,14 @@ export default function TaskDetail({
                       <div className="flex">
                         <button
                           onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                          className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
                         >
                           Add to Focus
                         </button>
                         <div className="w-px" />
                         <button
                           onClick={() => setShowAddDropdown(!showAddDropdown)}
-                          className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                          className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -667,13 +667,13 @@ export default function TaskDetail({
                       {showAddDropdown && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setShowAddDropdown(false)} />
-                          <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                          <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[160px]">
                             <button
                               onClick={() => {
                                 onAddToQueue(task.id, true, 'all_today', []);
                                 setShowAddDropdown(false);
                               }}
-                              className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                              className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                             >
                               Add to Today
                             </button>
@@ -701,7 +701,7 @@ export default function TaskDetail({
                   {currentInstance?.completed && onMarkRoutineIncomplete ? (
                     <button
                       onClick={() => onMarkRoutineIncomplete(task.id)}
-                      className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                     >
                       Mark Incomplete
                     </button>
@@ -736,7 +736,7 @@ export default function TaskDetail({
                       {!isPaused && onSkipRoutine && (
                         <button
                           onClick={() => onSkipRoutine(task.id)}
-                          className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                         >
                           Skip
                         </button>
@@ -748,7 +748,7 @@ export default function TaskDetail({
               {/* History button - full label in managing mode (only button), icon-only with matched height otherwise */}
               <button
                 onClick={() => setShowHistoryModal(true)}
-                className={`text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors ${
+                className={`text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors ${
                   mode === 'managing'
                     ? 'px-4 py-2 flex items-center gap-1.5'
                     : 'p-2.5'
@@ -782,7 +782,7 @@ export default function TaskDetail({
               {canMarkIncomplete && (
                 <button
                   onClick={handleMarkTaskIncomplete}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
                   Mark Incomplete
                 </button>
@@ -790,7 +790,7 @@ export default function TaskDetail({
               {!isInQueue && task.status === "inbox" && (
                 <button
                   onClick={() => onSendToPool(task.id)}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 >
                   Move to Ready
                 </button>
@@ -803,14 +803,14 @@ export default function TaskDetail({
               <div className="flex">
                 <button
                   onClick={() => onAddToQueue(task.id, false, 'all_upcoming', [])}
-                  className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-l-lg transition-colors"
                 >
                   Add to Focus
                 </button>
                 <div className="w-px" />
                 <button
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
-                  className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
+                  className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-r-lg transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -820,13 +820,13 @@ export default function TaskDetail({
               {showMobileMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[160px]">
                     <button
                       onClick={() => {
                         onAddToQueue(task.id, true, 'all_today', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                     >
                       Add to Today
                     </button>
@@ -840,7 +840,7 @@ export default function TaskDetail({
             <div className="relative">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                className="px-2 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                 title="Add to Focus options"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -850,13 +850,13 @@ export default function TaskDetail({
               {showMobileMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMobileMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[160px]">
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[160px]">
                     <button
                       onClick={() => {
                         onAddToQueue(task.id, false, 'all_upcoming', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                     >
                       Add to Focus
                     </button>
@@ -865,7 +865,7 @@ export default function TaskDetail({
                         onAddToQueue(task.id, true, 'all_today', []);
                         setShowMobileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                     >
                       Add to Today
                     </button>
@@ -1022,7 +1022,7 @@ export default function TaskDetail({
           onClick={() => setDetailsExpanded(!detailsExpanded)}
           className="w-full flex items-center justify-between mb-2 group"
         >
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-base font-medium text-fg-neutral-secondary">
             Details
           </h2>
           <svg
@@ -1100,11 +1100,11 @@ export default function TaskDetail({
               <div className="grid grid-cols-2 gap-x-4 gap-y-3 min-w-0">
               {/* LINE 1: Project - full width */}
               <div className="col-span-2">
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Project</span>
+                <span className="text-xs text-fg-neutral-secondary mb-1 block">Project</span>
                 {isReadOnlyDetails ? (
                   /* Read-only: static display with lock icon */
                   <>
-                    <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                    <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-border-color-neutral rounded-lg flex items-center justify-between text-fg-neutral-secondary">
                       <span>{projects.find(p => p.id === task.projectId)?.name || 'No project'}</span>
                       <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                     </div>
@@ -1115,7 +1115,7 @@ export default function TaskDetail({
                   <div ref={projectDropdownRef} className="relative">
                     <button
                       onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                      className="w-full h-8 px-2 pr-8 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-zinc-700 dark:text-zinc-300 flex items-center"
+                      className="w-full h-8 px-2 pr-8 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-fg-neutral-primary flex items-center"
                     >
                       {task.projectId ? (
                         <>
@@ -1135,14 +1135,14 @@ export default function TaskDetail({
 
                     {/* Dropdown menu */}
                     {showProjectDropdown && (
-                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg overflow-hidden">
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg overflow-hidden">
                         {/* No project option */}
                         <button
                           onClick={() => {
                             onUpdateTask(task.id, { projectId: null });
                             setShowProjectDropdown(false);
                           }}
-                          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-600 dark:text-zinc-400"
+                          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-secondary"
                         >
                           <span>No project</span>
                           {!task.projectId && <Check className="w-4 h-4 text-violet-500" />}
@@ -1156,7 +1156,7 @@ export default function TaskDetail({
                               onUpdateTask(task.id, { projectId: project.id });
                               setShowProjectDropdown(false);
                             }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-zinc-700 dark:text-zinc-300"
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-primary"
                           >
                             <span className="flex items-center gap-2 truncate">
                               {project.color && (
@@ -1202,7 +1202,7 @@ export default function TaskDetail({
               {!(isRecurring && mode === 'executing') && (
                 <div className={`col-span-2 pt-3 mt-1 ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Recurring</span>
+                    <span className="text-sm font-medium text-fg-neutral-primary">Recurring</span>
                     <button
                       onClick={() => {
                         if (task.isRecurring) {
@@ -1266,17 +1266,17 @@ export default function TaskDetail({
                     ? 'opacity-100 max-h-20'
                     : 'opacity-0 max-h-0 overflow-hidden'
                 } ${isReadOnlyDetails ? 'pointer-events-none opacity-50' : ''}`}>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Pattern</span>
+                  <span className="text-xs text-fg-neutral-secondary mb-1 block">Pattern</span>
                   <button
                     onClick={() => setShowPatternModal(true)}
-                    className="w-full h-8 px-3 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 flex items-center justify-between transition-colors"
+                    className="w-full h-8 px-3 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 flex items-center justify-between transition-colors"
                   >
-                    <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+                    <span className="flex items-center gap-2 text-fg-neutral-primary">
                       <Repeat className="w-4 h-4 text-violet-500 flex-shrink-0" />
                       <span>
                         {patternDescription || 'Set pattern'}
                         {task.recurrence?.rolloverIfMissed && (
-                          <span className="text-zinc-500 dark:text-zinc-400"> · Persists</span>
+                          <span className="text-fg-neutral-secondary"> · Persists</span>
                         )}
                       </span>
                     </span>
@@ -1289,13 +1289,13 @@ export default function TaskDetail({
               {isRecurring ? (
                 <>
                   <div className="col-span-2 pb-1">
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
+                    <span className="text-xs text-fg-neutral-secondary mb-1 block">Reminder</span>
                     <div className="relative flex gap-1.5">
                       <button
                         onClick={() => setShowReminderPicker(!showReminderPicker)}
-                        className={`flex-1 h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between ${task.reminder ? 'pr-2' : 'pr-8'}`}
+                        className={`flex-1 h-8 px-2 py-1 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between ${task.reminder ? 'pr-2' : 'pr-8'}`}
                       >
-                        <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
+                        <span className={task.reminder ? "text-fg-neutral-primary" : "text-zinc-400 dark:text-zinc-500"}>
                           {task.reminder
                             ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
                             : "None"}
@@ -1372,8 +1372,8 @@ export default function TaskDetail({
 
                         return (
                           <div>
-                            <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Start Time Poke</span>
-                            <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                            <span className="text-xs text-fg-neutral-secondary mb-1 block">Start Time Poke</span>
+                            <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-border-color-neutral rounded-lg flex items-center justify-between text-fg-neutral-secondary">
                               <span>{isEnabled ? 'On' : 'Off'}</span>
                               <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                             </div>
@@ -1393,7 +1393,7 @@ export default function TaskDetail({
 
                     {/* Duration */}
                     <div className="min-w-0">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Duration</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Duration</span>
                       {mode === 'managing' ? (
                         <DurationInput
                           value={task.estimatedDurationMinutes}
@@ -1414,7 +1414,7 @@ export default function TaskDetail({
                       ) : (
                         /* Executing mode: read-only display */
                         <>
-                          <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg flex items-center justify-between text-zinc-500 dark:text-zinc-400">
+                          <div className="w-full h-8 px-2 text-sm bg-zinc-100 dark:bg-zinc-900 border border-border-color-neutral rounded-lg flex items-center justify-between text-fg-neutral-secondary">
                             <span>{task.estimatedDurationMinutes ? `${task.estimatedDurationMinutes} min` : getStepDurationSum(task.steps) > 0 ? `${getStepDurationSum(task.steps)} min` : 'Not set'}</span>
                             <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
                           </div>
@@ -1433,7 +1433,7 @@ export default function TaskDetail({
                   <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 min-w-0">
                     {/* Target Date + Time */}
                     <div className="min-w-0">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Target</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Target</span>
                       <div className="flex gap-1.5">
                         <div className="relative flex-1 min-w-0">
                           <input
@@ -1444,7 +1444,7 @@ export default function TaskDetail({
                               // Clear time if date is cleared
                               ...(e.target.value ? {} : { targetTime: null })
                             })}
-                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                           />
                           {task.targetDate && (
                             <button
@@ -1463,7 +1463,7 @@ export default function TaskDetail({
                               type="time"
                               value={task.targetTime || ""}
                               onChange={(e) => onUpdateTask(task.id, { targetTime: e.target.value || null })}
-                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                               placeholder="Time"
                             />
                             {task.targetTime && (
@@ -1483,7 +1483,7 @@ export default function TaskDetail({
 
                     {/* Deadline + Time */}
                     <div className="min-w-0">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Deadline</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Deadline</span>
                       <div className="flex gap-1.5">
                         <div className="relative flex-1 min-w-0">
                           <input
@@ -1494,7 +1494,7 @@ export default function TaskDetail({
                               // Clear time if date is cleared
                               ...(e.target.value ? {} : { deadlineTime: null })
                             })}
-                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            className="w-full min-w-0 h-8 px-2 py-1 pr-7 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                           />
                           {task.deadlineDate && (
                             <button
@@ -1513,7 +1513,7 @@ export default function TaskDetail({
                               type="time"
                               value={task.deadlineTime || ""}
                               onChange={(e) => onUpdateTask(task.id, { deadlineTime: e.target.value || null })}
-                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                              className="w-[8.5rem] h-8 px-2 py-1 pr-7 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                               placeholder="Time"
                             />
                             {task.deadlineTime && (
@@ -1536,13 +1536,13 @@ export default function TaskDetail({
                   <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     {/* Reminder */}
                     <div>
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Reminder</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Reminder</span>
                       <div className="relative flex gap-1">
                         <button
                           onClick={() => setShowReminderPicker(!showReminderPicker)}
-                          className="flex-1 h-8 px-2 py-1 text-sm text-left bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
+                          className="flex-1 h-8 px-2 py-1 text-sm text-left bg-bg-neutral-min border border-border-color-neutral rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-violet-500 flex items-center justify-between"
                         >
-                          <span className={task.reminder ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}>
+                          <span className={task.reminder ? "text-fg-neutral-primary" : "text-zinc-400 dark:text-zinc-500"}>
                             {task.reminder
                               ? formatReminder(task.reminder, task.targetDate, task.deadlineDate)
                               : "None"}
@@ -1596,7 +1596,7 @@ export default function TaskDetail({
 
                     {/* Waiting On */}
                     <div>
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Waiting On</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Waiting On</span>
                       <input
                         type="text"
                         value={task.waitingOn?.who || ""}
@@ -1608,7 +1608,7 @@ export default function TaskDetail({
                           })
                         }
                         placeholder="Nobody"
-                        className="w-full h-8 px-2 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        className="w-full h-8 px-2 py-1 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
                       />
                     </div>
                   </div>
@@ -1628,7 +1628,7 @@ export default function TaskDetail({
 
                     {/* Duration */}
                     <div className="min-w-0">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Duration</span>
+                      <span className="text-xs text-fg-neutral-secondary mb-1 block">Duration</span>
                       <DurationInput
                         value={task.estimatedDurationMinutes}
                         autoValue={getStepDurationSum(task.steps) > 0 ? getStepDurationSum(task.steps) : null}
@@ -1650,7 +1650,7 @@ export default function TaskDetail({
 
                   {/* LINE 5: Status | Priority */}
                   <div>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Status</span>
+                    <span className="text-xs text-fg-neutral-secondary mb-1 block">Status</span>
                     <div className="h-8 flex items-center gap-1.5">
                       {(() => {
                         const displayStatus = getDisplayStatus(task, queueItem, queue.todayLineIndex);
@@ -1673,7 +1673,7 @@ export default function TaskDetail({
                   </div>
 
                   <div>
-                    <span className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Priority</span>
+                    <span className="text-xs text-fg-neutral-secondary mb-1 block">Priority</span>
                     <div className="h-8 flex items-center gap-1.5">
                       {(["high", "medium", "low"] as const).map((p) => (
                         <button
@@ -1747,7 +1747,7 @@ export default function TaskDetail({
               return (
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                    <h2 className="text-base font-medium text-fg-neutral-secondary">
                       Steps
                     </h2>
                     {/* Reset from Template - direct button in executing mode */}
@@ -1798,7 +1798,7 @@ export default function TaskDetail({
             /* REGULAR TASKS or RECURRING TASKS IN MANAGING MODE: Single steps section */
             <>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+                <h2 className="text-base font-medium text-fg-neutral-secondary">
                   {isRecurring && mode === 'managing' ? 'Recurring Steps' : 'Steps'}
                 </h2>
                 <div className="flex items-center gap-3">
@@ -1922,7 +1922,7 @@ export default function TaskDetail({
                   {upcomingSteps.length > 0 && (
                     <>
                       <div className="mt-4 mb-1 pl-1">
-                        <span className="px-2 py-0.5 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded">
+                        <span className="px-2 py-0.5 text-xs text-fg-neutral-secondary bg-bg-neutral-subtle rounded">
                           Upcoming
                         </span>
                       </div>
@@ -2008,7 +2008,7 @@ export default function TaskDetail({
               value={newStepText}
               onChange={(e) => setNewStepText(e.target.value)}
               placeholder="Add a step..."
-              className="flex-1 px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="flex-1 px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             {newStepText.trim() && (
               <button
@@ -2023,7 +2023,7 @@ export default function TaskDetail({
 
         {/* Notes section */}
         <div className="mt-6">
-          <h2 className="text-base font-medium text-zinc-500 dark:text-zinc-400 mb-2">
+          <h2 className="text-base font-medium text-fg-neutral-secondary mb-2">
             Notes
           </h2>
           <NotesModule
@@ -2035,7 +2035,7 @@ export default function TaskDetail({
         </div>
 
         {/* Actions section */}
-        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="mt-8 pt-6 border-t border-border-color-neutral">
           <div className="flex items-center gap-3 flex-wrap">
             {/* Waiting On button with anchored popover / BottomSheet (only for one-off tasks when using new UI) */}
             {useNewDetailsUI && !isRecurring && (
@@ -2050,7 +2050,7 @@ export default function TaskDetail({
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
                     task.waitingOn
                       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50'
-                      : 'text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600'
+                      : 'text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600'
                   }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2079,7 +2079,7 @@ export default function TaskDetail({
                     height="auto"
                   >
                     <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
-                      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                      <h3 className="text-base font-semibold text-fg-neutral-primary mb-4">
                         Waiting On
                       </h3>
                       <input
@@ -2087,7 +2087,7 @@ export default function TaskDetail({
                         value={waitingOnInput}
                         onChange={(e) => setWaitingOnInput(e.target.value)}
                         placeholder="Who or what are you waiting on?"
-                        className="w-full px-3 py-2.5 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        className="w-full px-3 py-2.5 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                         autoFocus
                       />
 
@@ -2099,14 +2099,14 @@ export default function TaskDetail({
                               setWaitingOnFollowUp(dateStr);
                             });
                           }}
-                          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                          className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
                         >
                           {waitingOnFollowUp ? (
                             <>
                               <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <span className="text-zinc-700 dark:text-zinc-300">Follow up {formatDate(waitingOnFollowUp)}</span>
+                              <span className="text-fg-neutral-primary">Follow up {formatDate(waitingOnFollowUp)}</span>
                             </>
                           ) : (
                             <>
@@ -2126,7 +2126,7 @@ export default function TaskDetail({
                       <div className="flex justify-end gap-2 mt-5">
                         <button
                           onClick={() => setShowWaitingOnModal(false)}
-                          className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                         >
                           Cancel
                         </button>
@@ -2157,8 +2157,8 @@ export default function TaskDetail({
                 {!isMobileView && showWaitingOnModal && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowWaitingOnModal(false)} />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl p-4">
-                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-xl p-4">
+                      <h3 className="text-sm font-semibold text-fg-neutral-primary mb-3">
                         Waiting On
                       </h3>
                       <input
@@ -2166,7 +2166,7 @@ export default function TaskDetail({
                         value={waitingOnInput}
                         onChange={(e) => setWaitingOnInput(e.target.value)}
                         placeholder="Who or what are you waiting on?"
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        className="w-full px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -2196,14 +2196,14 @@ export default function TaskDetail({
                               setWaitingOnFollowUp(dateStr);
                             });
                           }}
-                          className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
+                          className="text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1.5 transition-colors"
                         >
                           {waitingOnFollowUp ? (
                             <>
                               <svg className="w-3.5 h-3.5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              <span className="text-zinc-700 dark:text-zinc-300">Follow up {formatDate(waitingOnFollowUp)}</span>
+                              <span className="text-fg-neutral-primary">Follow up {formatDate(waitingOnFollowUp)}</span>
                             </>
                           ) : (
                             <>
@@ -2223,7 +2223,7 @@ export default function TaskDetail({
                       <div className="flex justify-end gap-2 mt-4">
                         <button
                           onClick={() => setShowWaitingOnModal(false)}
-                          className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                          className="px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                         >
                           Cancel
                         </button>
@@ -2275,7 +2275,7 @@ export default function TaskDetail({
                     });
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
               >
                 {isPaused ? (
                   <>
@@ -2298,7 +2298,7 @@ export default function TaskDetail({
                     setShowDeferCustomDate(false);
                     setShowDeferMenu(!showDeferMenu);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -2317,7 +2317,7 @@ export default function TaskDetail({
                     height="auto"
                   >
                     <div className="px-4 pt-2 pb-4" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom))' }}>
-                      <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                      <h3 className="text-base font-semibold text-fg-neutral-primary mb-4">
                         Defer until
                       </h3>
                       {/* Quick options */}
@@ -2333,31 +2333,31 @@ export default function TaskDetail({
                               onDefer(task.id, getDeferDate(days));
                               setShowDeferMenu(false);
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                           >
                             {label}
                           </button>
                         ))}
                       </div>
                       {/* Custom date section */}
-                      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                      <div className="border-t border-border-color-neutral pt-4">
+                        <div className="text-xs text-fg-neutral-secondary mb-2">
                           Or pick a specific date
                         </div>
                         <div className="mb-3">
-                          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+                          <label className="text-xs text-fg-neutral-secondary mb-1 block">Date</label>
                           <input
                             type="date"
                             value={deferCustomDate}
                             onChange={(e) => setDeferCustomDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                            className="w-full px-3 py-2.5 text-sm bg-bg-neutral-base border border-border-color-neutral rounded-lg"
                           />
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setShowDeferMenu(false)}
-                            className="flex-1 px-3 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                           >
                             Cancel
                           </button>
@@ -2383,8 +2383,8 @@ export default function TaskDetail({
                 {!isMobileView && showDeferMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowDeferMenu(false)} />
-                    <div className="absolute left-0 bottom-full mb-2 w-72 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 p-4">
-                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
+                    <div className="absolute left-0 bottom-full mb-2 w-72 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 p-4">
+                      <h3 className="text-sm font-semibold text-fg-neutral-primary mb-3">
                         Defer until
                       </h3>
                       {/* Quick options */}
@@ -2407,24 +2407,24 @@ export default function TaskDetail({
                         ))}
                       </div>
                       {/* Custom date section */}
-                      <div className="border-t border-zinc-200 dark:border-zinc-700 pt-3">
-                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                      <div className="border-t border-border-color-neutral pt-3">
+                        <div className="text-xs text-fg-neutral-secondary mb-2">
                           Or pick a specific date
                         </div>
                         <div className="mb-3">
-                          <label className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 block">Date</label>
+                          <label className="text-xs text-fg-neutral-secondary mb-1 block">Date</label>
                           <input
                             type="date"
                             value={deferCustomDate}
                             onChange={(e) => setDeferCustomDate(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                            className="w-full px-3 py-2 text-sm bg-bg-neutral-base border border-border-color-neutral rounded-lg"
                           />
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setShowDeferMenu(false)}
-                            className="flex-1 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                            className="flex-1 px-3 py-1.5 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
                           >
                             Cancel
                           </button>
@@ -2451,7 +2451,7 @@ export default function TaskDetail({
             {/* Archive/Unarchive button */}
             <button
               onClick={() => task.status === 'archived' ? onUnarchive(task.id) : onPark(task.id)}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {task.status === 'archived' ? (
@@ -2502,15 +2502,15 @@ export default function TaskDetail({
               onClick={() => setShowPatternModal(false)}
             />
             {/* Modal - z-[70] above backdrop */}
-            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl shadow-2xl z-[70] flex flex-col max-h-[85vh]">
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-bg-neutral-min rounded-xl shadow-2xl z-[70] flex flex-col max-h-[85vh]">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="flex items-center justify-between p-4 border-b border-border-color-neutral">
+                <h2 className="text-lg font-semibold text-fg-neutral-primary">
                   Edit Pattern
                 </h2>
                 <button
                   onClick={() => setShowPatternModal(false)}
-                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-bg-neutral-subtle"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2568,12 +2568,12 @@ export default function TaskDetail({
 
               {/* Mobile header */}
               <div className="flex items-center justify-between px-4 pb-2 border-b border-zinc-200 dark:border-transparent flex-shrink-0">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                <h2 className="text-base font-semibold text-fg-neutral-primary">
                   Edit Pattern
                 </h2>
                 <button
                   onClick={() => setShowPatternModal(false)}
-                  className="px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="px-3 py-1 text-xs font-medium text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                 >
                   Done
                 </button>
@@ -2598,7 +2598,7 @@ export default function TaskDetail({
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setShowFollowUpDropdown(false)} />
           <div
-            className="fixed z-[70] w-56 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto"
+            className="fixed z-[70] w-56 bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto"
             style={{
               left: Math.min(followUpDropdownPosition.left, window.innerWidth - 230),
               ...(isMobileView
@@ -2617,7 +2617,7 @@ export default function TaskDetail({
                 !waitingOnFollowUp ? "bg-violet-50 dark:bg-violet-900/20" : ""
               }`}
             >
-              <span className="text-zinc-600 dark:text-zinc-400">None</span>
+              <span className="text-fg-neutral-secondary">None</span>
               {!waitingOnFollowUp && <Check className="w-4 h-4 ml-auto text-violet-500" />}
             </button>
             {/* Preset options */}
@@ -2640,7 +2640,7 @@ export default function TaskDetail({
                     waitingOnFollowUp === dateStr ? "bg-violet-50 dark:bg-violet-900/20" : ""
                   }`}
                 >
-                  <span className="text-zinc-900 dark:text-zinc-100">{label}</span>
+                  <span className="text-fg-neutral-primary">{label}</span>
                   {waitingOnFollowUp === dateStr && <Check className="w-4 h-4 ml-auto text-violet-500" />}
                 </button>
               );
@@ -2653,7 +2653,7 @@ export default function TaskDetail({
                   setWaitingOnFollowUp(dateStr);
                 });
               }}
-              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-200 dark:border-zinc-700"
+              className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-border-color-neutral"
             >
               <Plus size={14} />
               <span>Custom date...</span>
@@ -2740,7 +2740,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
             ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50"
             : isToday
             ? "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800 hover:border-violet-300 dark:hover:border-violet-700"
-            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 hover:border-violet-300 dark:hover:border-violet-700"
+            : "bg-bg-neutral-min border-border-color-neutral hover:border-violet-300 dark:hover:border-violet-700"
         }
       `}
     >
@@ -2760,7 +2760,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               ${
                 step.completed
                   ? "bg-green-500 border-green-500 text-white"
-                  : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+                  : "border-border-color-neutral hover:border-violet-400"
               }
             `}
           >
@@ -2802,15 +2802,15 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               el.style.height = el.scrollHeight + 'px';
             }}
             rows={1}
-            className="w-full text-sm bg-transparent border-b border-violet-500 focus:outline-none text-zinc-900 dark:text-zinc-100 px-1 -mx-1 resize-none overflow-hidden"
+            className="w-full text-sm bg-transparent border-b border-violet-500 focus:outline-none text-fg-neutral-primary px-1 -mx-1 resize-none overflow-hidden"
             ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; el.focus(); } }}
           />
         ) : (
           <span
             className={`min-h-[1.5rem] text-sm leading-relaxed ${
               step.completed
-                ? "text-zinc-500 dark:text-zinc-400"
-                : "text-zinc-900 dark:text-zinc-100"
+                ? "text-fg-neutral-secondary"
+                : "text-fg-neutral-primary"
             }`}
           >
             {/* Step text - clickable to edit */}
@@ -2847,7 +2847,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               </button>
             )}
             {step.origin && ['template', 'ai'].includes(step.origin) && mode === 'executing' && (
-              <span className="ml-1 inline-flex items-center px-1 py-0.5 text-[10px] leading-none font-medium bg-zinc-500/20 dark:bg-zinc-400/20 text-zinc-500 dark:text-zinc-400 rounded align-middle">
+              <span className="ml-1 inline-flex items-center px-1 py-0.5 text-[10px] leading-none font-medium bg-zinc-500/20 dark:bg-zinc-400/20 text-fg-neutral-secondary rounded align-middle">
                 {step.origin === 'template' ? 'from template' : 'AI'}
               </span>
             )}
@@ -2878,7 +2878,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 }
               }}
               placeholder="mins"
-              className="w-16 px-1 py-0.5 text-xs bg-white dark:bg-zinc-800 border border-violet-400 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="w-16 px-1 py-0.5 text-xs bg-bg-neutral-min border border-violet-400 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
               autoFocus
               min="1"
             />
@@ -2933,11 +2933,11 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
           {showKebabMenu && (
             <>
             <div className="fixed inset-0 z-10" onClick={() => onCloseMenu()} />
-            <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+            <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
               <button
                 onClick={() => { onMoveUp(); onCloseMenu(); }}
                 disabled={isFirst}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -2947,7 +2947,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               <button
                 onClick={() => { onMoveDown(); onCloseMenu(); }}
                 disabled={isLast}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2955,10 +2955,10 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 Move Down
               </button>
               {/* Add Substep - always available (templates can have substeps too) */}
-              <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+              <div className="border-t border-border-color-neutral my-1" />
               <button
                 onClick={() => { setAddingSubstep(true); onCloseMenu(); }}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -2971,14 +2971,14 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   setEditingEstimate(true);
                   onCloseMenu();
                 }}
-                className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {step.estimatedMinutes ? "Edit Estimate" : "Set Estimate"}
               </button>
-              <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+              <div className="border-t border-border-color-neutral my-1" />
               <button
                 onClick={() => { onDelete(); onCloseMenu(); }}
                 className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
@@ -2998,7 +2998,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
 
       {/* Substeps - rendered outside inner flex for full width */}
       {step.substeps.length > 0 && (
-        <div className="mt-2 ml-16 pl-2 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-700">
+        <div className="mt-2 ml-16 pl-2 space-y-1 border-l-2 border-border-color-neutral">
           {step.substeps.map((substep, substepIndex) => (
             <div key={substep.id} className="flex items-center gap-3 group/substep">
               {/* Substep checkbox - hidden in managing mode */}
@@ -3010,7 +3010,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     ${
                       substep.completed
                         ? "bg-green-500 border-green-500 text-white"
-                        : "border-zinc-300 dark:border-zinc-600 hover:border-violet-400"
+                        : "border-border-color-neutral hover:border-violet-400"
                     }
                   `}
                 >
@@ -3040,7 +3040,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     el.style.height = el.scrollHeight + 'px';
                   }}
                   rows={1}
-                  className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-zinc-600 dark:text-zinc-400 resize-none overflow-hidden"
+                  className="flex-1 text-xs bg-transparent border-b border-violet-500 focus:outline-none text-fg-neutral-secondary resize-none overflow-hidden"
                   ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; el.focus(); } }}
                 />
               ) : (
@@ -3052,7 +3052,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                   className={`flex-1 text-xs cursor-text hover:bg-zinc-100 dark:hover:bg-zinc-700 px-1 -mx-1 rounded transition-colors ${
                     substep.completed
                       ? "text-zinc-400 line-through"
-                      : "text-zinc-600 dark:text-zinc-400"
+                      : "text-fg-neutral-secondary"
                   }`}
                 >
                   {substep.text}
@@ -3071,11 +3071,11 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                 {showSubstepMenu === substep.id && (
                   <>
                   <div className="fixed inset-0 z-10" onClick={() => onCloseMenu()} />
-                  <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+                  <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                     <button
                       onClick={() => { onMoveSubstepUp(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === 0}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -3085,14 +3085,14 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
                     <button
                       onClick={() => { onMoveSubstepDown(substep.id); onCloseMenu(); }}
                       disabled={substepIndex === step.substeps.length - 1}
-                      className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       Move Down
                     </button>
-                    <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+                    <div className="border-t border-border-color-neutral my-1" />
                     <button
                       onClick={() => { onDeleteSubstep(substep.id); onCloseMenu(); }}
                       className="w-full px-3 py-2 text-sm text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
@@ -3113,7 +3113,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
 
       {/* Add substep form */}
       {addingSubstep && (
-        <div className="mt-2 ml-16 pl-2 border-l-2 border-zinc-200 dark:border-zinc-700">
+        <div className="mt-2 ml-16 pl-2 border-l-2 border-border-color-neutral">
           <input
             type="text"
             value={newSubstepText}
@@ -3137,7 +3137,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
               }
             }}
             placeholder="Add substep..."
-            className="w-full text-xs px-2 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="w-full text-xs px-2 py-1 bg-bg-neutral-min border border-border-color-neutral rounded focus:outline-none focus:ring-1 focus:ring-violet-500"
             autoFocus
           />
         </div>

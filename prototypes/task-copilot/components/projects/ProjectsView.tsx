@@ -104,7 +104,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
           >
             <button
               onClick={() => onOpenTask(task.id)}
-              className="flex-1 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 truncate"
+              className="flex-1 text-left text-sm text-fg-neutral-primary hover:text-zinc-900 dark:hover:text-zinc-100 truncate"
             >
               {task.title || "Untitled"}
             </button>
@@ -116,7 +116,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
                   <span className={`text-xs whitespace-nowrap ${
                     isPastDue
                       ? 'text-red-500 dark:text-red-400 font-medium'
-                      : 'text-zinc-500 dark:text-zinc-400'
+                      : 'text-fg-neutral-secondary'
                   }`}>
                     {isPastDue ? `Past Due: ${text}` : `Next: ${text}`}
                   </span>
@@ -228,7 +228,7 @@ export default function ProjectsView({
             return (
               <div
                 key={project.id}
-                className="bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden"
+                className="bg-zinc-50 dark:bg-zinc-800/80 border border-border-color-neutral rounded-lg overflow-hidden"
               >
                 {/* Project header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50">
@@ -250,7 +250,7 @@ export default function ProjectsView({
                         style={{ backgroundColor: project.color }}
                       />
                     )}
-                    <span className="text-zinc-900 dark:text-zinc-100">
+                    <span className="text-fg-neutral-primary">
                       {project.name}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -325,7 +325,7 @@ export default function ProjectsView({
                 )}
 
                 {isExpanded && taskCount === 0 && (
-                  <div className="px-4 py-6 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+                  <div className="px-4 py-6 text-center text-fg-neutral-secondary text-sm">
                     No tasks in this project
                   </div>
                 )}
@@ -341,7 +341,7 @@ export default function ProjectsView({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
           </div>
-          <p className="text-zinc-500 dark:text-zinc-400 mb-4">No projects yet</p>
+          <p className="text-fg-neutral-secondary mb-4">No projects yet</p>
           <button
             onClick={() => onOpenProjectModal()}
             className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"

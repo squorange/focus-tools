@@ -73,7 +73,7 @@ export default function TaskRow({
   // Shared menu dropdown
   const MenuDropdown = () => (
     <div
-      className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
+      className="absolute right-0 bottom-full mb-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
       onClick={(e) => e.stopPropagation()}
     >
       {onDefer && (
@@ -81,29 +81,29 @@ export default function TaskRow({
           <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
           >
             Tomorrow
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
           >
             Next week
           </button>
           <button
             onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
           >
             Next month
           </button>
-          <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+          <div className="border-t border-border-color-neutral my-1" />
         </>
       )}
       {onPark && (
         <button
           onClick={() => { onPark(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
         >
           Archive
         </button>
@@ -129,7 +129,7 @@ export default function TaskRow({
         ${
           isComplete
             ? "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 opacity-60"
-            : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800"
+            : "border-zinc-200 dark:border-zinc-800 bg-bg-neutral-min"
         }
       `}
       onClick={() => onOpenTask(task.id)}
@@ -159,8 +159,8 @@ export default function TaskRow({
         {/* Title */}
         <span className={`flex-1 truncate ${
           isComplete
-            ? "text-zinc-500 dark:text-zinc-400 line-through"
-            : "text-zinc-900 dark:text-zinc-100"
+            ? "text-fg-neutral-secondary line-through"
+            : "text-fg-neutral-primary"
         }`}>
           {task.title || "Untitled"}
         </span>
@@ -181,7 +181,7 @@ export default function TaskRow({
 
         {/* Target Date */}
         {task.targetDate && (
-          <span className="flex-shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="flex-shrink-0 text-xs text-fg-neutral-secondary">
             Target {formatDate(task.targetDate)}
           </span>
         )}
@@ -223,10 +223,10 @@ export default function TaskRow({
             {showFocusDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowFocusDropdown(false)} />
-                <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+                <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                   <button
                     onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
-                    className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     Add to Today
                   </button>
@@ -268,8 +268,8 @@ export default function TaskRow({
           </div>
           <span className={`flex-1 min-w-0 ${
             isComplete
-              ? "text-zinc-500 dark:text-zinc-400 line-through"
-              : "text-zinc-900 dark:text-zinc-100"
+              ? "text-fg-neutral-secondary line-through"
+              : "text-fg-neutral-primary"
           }`}>
             {task.title || "Untitled"}
           </span>
@@ -303,10 +303,10 @@ export default function TaskRow({
                 {showFocusDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowFocusDropdown(false)} />
-                    <div className="absolute right-0 top-full mt-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]">
+                    <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                       <button
                         onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
-                        className="w-full px-3 py-2 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                        className="w-full px-3 py-2 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
                       >
                         Add to Today
                       </button>
@@ -332,7 +332,7 @@ export default function TaskRow({
         </div>
 
         {/* Row 2: Metadata */}
-        <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-center gap-2 mt-2 flex-wrap text-xs text-fg-neutral-secondary">
           {/* Health pill (leading position for non-healthy) */}
           {showHealthPill && health && (
             <HealthPill health={health} size="sm" />

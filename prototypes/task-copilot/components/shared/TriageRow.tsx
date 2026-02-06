@@ -65,7 +65,7 @@ export default function TriageRow({
         onClick={() => setShowMenu(false)}
       />
       <div
-        className="absolute right-0 bottom-full mb-1 py-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-20 min-w-[140px]"
+        className="absolute right-0 bottom-full mb-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Defer options */}
@@ -77,7 +77,7 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(1));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
         >
           Tomorrow
         </button>
@@ -86,7 +86,7 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(7));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
         >
           Next week
         </button>
@@ -95,12 +95,12 @@ export default function TriageRow({
             onDefer(task.id, getDeferDate(30));
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
         >
           Next month
         </button>
 
-        <div className="border-t border-zinc-200 dark:border-zinc-700 my-1" />
+        <div className="border-t border-border-color-neutral my-1" />
 
         {/* Park */}
         <button
@@ -108,7 +108,7 @@ export default function TriageRow({
             onPark(task.id);
             setShowMenu(false);
           }}
-          className="w-full px-3 py-1.5 text-sm text-left text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-zinc-100 dark:hover:bg-zinc-700"
         >
           Archive
         </button>
@@ -148,7 +148,7 @@ export default function TriageRow({
           className="flex-1 text-left min-w-0"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-zinc-900 dark:text-zinc-100 line-clamp-1">
+            <span className="text-fg-neutral-primary line-clamp-1">
               {task.title}
             </span>
             {/* Priority pill (only high) */}
@@ -163,7 +163,7 @@ export default function TriageRow({
             )}
           </div>
           {!isCompact && (
-            <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <span className="block text-xs text-fg-neutral-secondary mt-0.5">
               {formatRelativeTime(task.createdAt)}
             </span>
           )}
@@ -177,7 +177,7 @@ export default function TriageRow({
               e.stopPropagation();
               onSendToPool(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-fg-neutral-primary hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Ready
           </button>
@@ -188,7 +188,7 @@ export default function TriageRow({
               e.stopPropagation();
               onAddToQueue(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-fg-neutral-primary hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Focus
           </button>
@@ -229,7 +229,7 @@ export default function TriageRow({
             onClick={() => onOpenTask(task.id)}
             className="flex-1 text-left min-w-0"
           >
-            <span className="text-zinc-900 dark:text-zinc-100">
+            <span className="text-fg-neutral-primary">
               {task.title}
             </span>
           </button>
@@ -265,7 +265,7 @@ export default function TriageRow({
               </MetadataPill>
             )}
             {!isCompact && (
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-fg-neutral-secondary">
                 {formatRelativeTime(task.createdAt)}
               </span>
             )}
@@ -279,7 +279,7 @@ export default function TriageRow({
               e.stopPropagation();
               onSendToPool(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-fg-neutral-primary hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Ready
           </button>
@@ -288,7 +288,7 @@ export default function TriageRow({
               e.stopPropagation();
               onAddToQueue(task.id);
             }}
-            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
+            className="text-xs px-2 py-1 rounded bg-black/5 dark:bg-white/10 text-fg-neutral-primary hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
           >
             → Focus
           </button>

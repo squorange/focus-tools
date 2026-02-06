@@ -60,11 +60,11 @@ export default function ReadOnlyInfoPopover({
 
       {/* Popover */}
       <div
-        className="fixed w-[220px] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-50 overflow-hidden"
+        className="fixed w-[220px] bg-bg-neutral-min border border-border-color-neutral rounded-xl shadow-lg z-50 overflow-hidden"
         style={{ top: position.top, left: position.left }}
       >
         <div className="p-3">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-fg-neutral-secondary">
             {message}
           </p>
         </div>

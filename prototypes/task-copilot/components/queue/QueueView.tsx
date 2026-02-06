@@ -415,7 +415,7 @@ export default function QueueView({
       {/* Header with today estimate */}
       {todayItems.length > 0 && (
         <div className="flex items-baseline gap-2 px-1 mb-3">
-          <span className="text-base font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="text-base font-medium text-fg-neutral-secondary">
             {todayItems.length} for today
           </span>
           {todayEstimate && (
@@ -445,10 +445,10 @@ export default function QueueView({
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+            <h3 className="text-lg font-medium text-fg-neutral-primary mb-2">
               Queue is clear
             </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-xs mb-6">
+            <p className="text-sm text-fg-neutral-secondary max-w-xs mb-6">
               {inboxCount > 0
                 ? "Triage your inbox items first, or capture a new task above"
                 : "Capture a new task above to begin"}
@@ -464,7 +464,7 @@ export default function QueueView({
               )}
               <button
                 onClick={() => onOpenDrawer?.('completed')}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-600 rounded-lg transition-colors"
               >
                 Show completed
               </button>
@@ -544,7 +544,7 @@ export default function QueueView({
                           <div className="flex-1 h-px bg-gradient-to-r from-violet-400 via-violet-500 to-violet-400 dark:from-violet-600 dark:via-violet-500 dark:to-violet-600" />
                         </div>
                         {/* Label - absolutely centered over the line with opaque background */}
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-white dark:bg-zinc-900 border border-violet-300 dark:border-violet-700 rounded select-none">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-bg-neutral-min border border-violet-300 dark:border-violet-700 rounded select-none">
                           Today
                         </span>
                       </div>

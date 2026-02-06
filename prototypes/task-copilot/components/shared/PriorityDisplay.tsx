@@ -34,7 +34,7 @@ const tierConfig: Record<PriorityTier, { label: string; color: string }> = {
   },
   low: {
     label: "Low",
-    color: "text-zinc-500 dark:text-zinc-400",
+    color: "text-fg-neutral-secondary",
   },
 };
 
@@ -81,7 +81,7 @@ export default function PriorityDisplay({
         type="button"
         onClick={handlePriorityClick}
         onKeyDown={handlePriorityKeyDown}
-        className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+        className="flex items-center gap-1 text-xs text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
         title={score != null ? `Score: ${score}` : "View priority breakdown"}
       >
         <BarChart3 className={`w-3.5 h-3.5 ${colorClass}`} />

@@ -72,7 +72,7 @@ function TierSection({
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center justify-between w-full py-2"
       >
-        <h3 className="flex items-baseline gap-2 text-base font-medium text-zinc-500 dark:text-zinc-400">
+        <h3 className="flex items-baseline gap-2 text-base font-medium text-fg-neutral-secondary">
           <span>{tierLabel}</span>
           <span className="text-sm font-normal text-zinc-400 dark:text-zinc-500">
             {tasks.length}
@@ -133,7 +133,7 @@ function getTierBadgeColors(tier: PriorityTier): string {
     case "medium":
       return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400";
     case "low":
-      return "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400";
+      return "bg-bg-neutral-subtle text-fg-neutral-secondary";
   }
 }
 
@@ -159,7 +159,7 @@ function PriorityTaskCard({ item, tier, onTap, userEnergy }: PriorityTaskCardPro
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-zinc-900 dark:text-zinc-100 truncate">
+            <span className="text-fg-neutral-primary truncate">
               {task.title}
             </span>
             {/* Priority score badge */}
@@ -244,7 +244,7 @@ export default function PriorityQueueModule({
     return (
       <div className="py-8 text-center">
         <BarChart3 size={32} className="mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-fg-neutral-secondary">
           {filteredCount > 0
             ? `No matching tasks (${filteredCount} hidden by energy filter)`
             : "No active tasks to prioritize"}

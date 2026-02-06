@@ -5699,7 +5699,7 @@ export default function Home() {
 
   if (!hasHydrated) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
+      <div className="min-h-screen bg-bg-neutral-base flex items-center justify-center">
         <div className="text-zinc-500">Loading...</div>
       </div>
     );
@@ -5709,7 +5709,7 @@ export default function Home() {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   return (
-    <div className="fixed inset-0 flex bg-zinc-50 dark:bg-zinc-900">
+    <div className="fixed inset-0 flex bg-bg-neutral-base">
       {/* Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -6157,14 +6157,14 @@ export default function Home() {
       </div>
 
       {/* AI Assistant (MiniBar/Palette/Drawer) - Session 1 integration */}
-      {/* Hide when: in drawer mode, settings view, modals open, filter drawer open (mobile), or keyboard visible */}
+      {/* Hide when: in drawer mode, settings view, modals open, or keyboard visible */}
+      {/* On mobile: also hide when any drawer is open (drawers overlay content) */}
+      {/* On desktop: show even when filter/completed drawers are open (they push content) */}
       {aiAssistant.state.mode !== 'drawer' &&
        state.currentView !== 'settings' &&
        !taskCreationOpen &&
        !projectModalOpen &&
-       activeDrawer !== 'focus-selection' &&
-       activeDrawer !== 'filter' &&
-       activeDrawer !== 'completed' &&
+       (isDesktop || !activeDrawer) &&
        !isKeyboardVisible && (
         <div className={`
           fixed bottom-6 left-6 right-6 z-40 flex justify-center items-end
@@ -6218,7 +6218,10 @@ export default function Home() {
       )}
 
       {/* AI Assistant Drawer (full chat) - hidden in settings view */}
-      <AnimatePresence>
+      {/* onExitComplete clears activeDrawer after exit animation to sync margin with drawer */}
+      <AnimatePresence onExitComplete={() => {
+        if (activeDrawer === 'ai') setActiveDrawer(null);
+      }}>
         {aiAssistant.state.mode === 'drawer' && state.currentView !== 'settings' && (
           <>
             {/* Backdrop - hidden on desktop (side-by-side), visible on tablet/mobile */}
