@@ -2,8 +2,8 @@
 
 > Migrating task-copilot from local components to shared design-system package.
 
-**Status:** ✅ Phases 1-5 Complete | Phase 6a-6d Complete
-**Phase:** 6d of 6 (Notifications & Routines Complete)
+**Status:** ✅ Complete
+**Phase:** All phases complete (6e Cleanup done)
 
 ## Quick Links
 
@@ -40,7 +40,7 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 | 6b | First Migration | ✅ | PoolTaskCard, TriageTaskCard (673 lines deleted) |
 | 6c | Queue & Done | ✅ | QueueTaskCard, DoneTaskCard (636 lines deleted) |
 | 6d | Notifications & Routines | ✅ | NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
-| 6e | Cleanup | 📋 Planned | See [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md) |
+| 6e | Cleanup | ✅ | Files deleted, imports updated, 133 tests pass |
 
 ---
 

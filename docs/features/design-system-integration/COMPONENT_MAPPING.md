@@ -8,18 +8,18 @@
 
 ## Summary Table
 
-| Current Component | Location | Lines | ActionableCard Config | Priority |
-|-------------------|----------|-------|----------------------|----------|
-| TaskRow (pool) | `components/pool/TaskRow.tsx` | 374 | `standard` / `default` | P1 |
-| TriageRow | `components/shared/TriageRow.tsx` | 299 | `standard` / `default` | P1 |
-| QueueItem | `components/queue/QueueItem.tsx` | 441 | `standard` / `default` or `highlighted` | P2 |
-| TaskRow (done) | `components/tasks/TasksView.tsx:719-913` | 195 | `standard` / `muted` + `isComplete` | P2 |
+| Current Component | Location | Lines | ActionableCard Config | Status |
+|-------------------|----------|-------|----------------------|--------|
+| ~~TaskRow (pool)~~ | ~~`components/pool/TaskRow.tsx`~~ | ~~374~~ | `PoolTaskCard.tsx` | ✅ Done |
+| ~~TriageRow~~ | ~~`components/shared/TriageRow.tsx`~~ | ~~299~~ | `TriageTaskCard.tsx` | ✅ Done |
+| ~~QueueItem~~ | ~~`components/queue/QueueItem.tsx`~~ | ~~441~~ | `QueueTaskCard.tsx` | ✅ Done |
+| ~~TaskRow (done)~~ | ~~`components/tasks/TasksView.tsx:719-913`~~ | ~~195~~ | `DoneTaskCard.tsx` | ✅ Done |
 | ~~NotificationCard~~ | ~~`components/notifications/NotificationCard.tsx`~~ | ~~235~~ | Migrated to ActionableCard | ✅ Done |
 | ~~RoutineRow~~ | ~~`components/routines/RoutinesList.tsx:176-285`~~ | ~~110~~ | `RoutineRowCard.tsx` | ✅ Done |
 | ~~RoutineCard~~ | ~~`components/routines/RoutineCard.tsx`~~ | ~~177~~ | `RoutineGalleryCard.tsx` | ✅ Done |
 | ~~InboxItem~~ | ~~`components/inbox/InboxItem.tsx`~~ | ~~366~~ | Deleted (dead code) | — |
 
-**Total current:** ~1,831 lines → **Target:** ~400 lines (78% reduction)
+**Migration complete:** ~1,831 lines → ~400 lines (78% reduction) ✅
 
 ---
 
@@ -346,9 +346,9 @@ These sub-components should also move to design-system:
 - [x] Migrate `RoutineRow` to use ActionableCard → `RoutineRowCard.tsx`
 - [x] Migrate `RoutineCard` to use ActionableCard (compact variant) → `RoutineGalleryCard.tsx`
 
-### Phase 6e: Cleanup
-- [ ] Remove deleted component files
-- [ ] Update all imports
-- [ ] Visual regression testing
-- [ ] Update documentation
-- [ ] Run full test suite
+### Phase 6e: Cleanup ✅
+- [x] Remove deleted component files
+- [x] Update all imports
+- [x] Visual regression testing (manual)
+- [x] Update documentation
+- [x] Run full test suite (133 tests pass)
