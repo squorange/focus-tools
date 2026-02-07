@@ -22,7 +22,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** February 5, 2026
+**Last Updated:** February 6, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -32,10 +32,11 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | IndexedDB Migration | ✅ Complete | Infra Phase 1 |
 | P0 | Test Harnesses | ✅ Complete | Infra Phase 2: Vitest, 98 tests |
 | P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
-| P1 | Design System Integration | ✅ Complete | Tier 1-2 migrated, new tokens added, ~341 intentional patterns remain |
+| P1 | Design System Integration | ✅ Complete | Phases 1-5 done, Phase 6 spec ready |
+| P1 | ActionableCard Unification | 🔄 Phase 6d Complete | Notifications & Routines migrated |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
-| P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow, InboxItem |
+| P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow |
 | P2 | Reflection/journey view | ⬜ Not Started | "What did I accomplish this week?" |
 | P2 | Voice capture | ⬜ Not Started | Web Speech API |
 | P3 | Context switch bookmarking | ⬜ Not Started | AI summarizes state on pause |
@@ -48,6 +49,11 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
+| v41 | ActionableCard Phase 6c: QueueTaskCard, DoneTaskCard migrated (636 lines deleted) |
+| v40 | ActionableCard Phase 6b: PoolTaskCard, TriageTaskCard migrated (673 lines deleted) |
+| v39 | ActionableCard Phase 6a: Component + tokens extracted to design-system, Storybook stories |
+| v38 | ActionableCard Phase 6 spec: Unified card system for tasks/notifications/routines, deleted dead InboxItem.tsx |
 | v37 | Design System Integration complete: Tier 1-2 token migration, new subtle-hover token, hover text patterns |
 | v36 | Design System Integration Phase 1: Added package dependency, imported CSS tokens, bridge variables for gradual migration |
 | v35 | Design System Integration: Documentation (SPEC, COMPONENT_CATALOG), token system aligned with clinic-planner |
@@ -92,7 +98,7 @@ task-copilot/
 │   └── api/structure/route.ts # Claude API endpoint
 ├── components/
 │   ├── layout/               # Header, Sidebar, TabCluster
-│   ├── inbox/                # InboxView, InboxItem
+│   ├── inbox/                # InboxView (uses TriageRow)
 │   ├── queue/                # QueueView, QueueItem
 │   ├── tasks/                # TasksView
 │   ├── task-detail/          # TaskDetail
@@ -332,6 +338,12 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-06 | v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
+| 2026-02-06 | v41 | ActionableCard Phase 6c: QueueTaskCard, DoneTaskCard migrated |
+| 2026-02-06 | v40 | ActionableCard Phase 6b: PoolTaskCard, TriageTaskCard migrated |
+| 2026-02-06 | v39 | ActionableCard Phase 6a: Component + tokens extracted to design-system |
+| 2026-02-06 | v38 | ActionableCard Phase 6 spec complete, deleted dead InboxItem.tsx |
+| 2026-02-05 | v37 | Design System Integration Phases 1-5 complete (token migration, cleanup) |
 | 2026-02-05 | v36 | Design System Integration Phase 1: package dependency, CSS token import |
 | 2026-02-04 | v35 | Design System Integration docs (SPEC, COMPONENT_CATALOG, token alignment) |
 | 2026-02-01 | v34 | AI Guardrails Implementation (rate limit, analytics, safety, 35 tests) |

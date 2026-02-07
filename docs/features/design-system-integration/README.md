@@ -2,13 +2,15 @@
 
 > Migrating task-copilot from local components to shared design-system package.
 
-**Status:** ✅ Substantially Complete
-**Phase:** 5 of 6 (Cleanup Complete, Unification Optional)
+**Status:** ✅ Phases 1-5 Complete | Phase 6a-6d Complete
+**Phase:** 6d of 6 (Notifications & Routines Complete)
 
 ## Quick Links
 
 - [SPEC.md](./SPEC.md) - Migration requirements and rules
 - [COMPONENT_CATALOG.md](./COMPONENT_CATALOG.md) - Component inventory
+- [PHASE6_SPEC.md](./PHASE6_SPEC.md) - ActionableCard unification spec
+- [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md) - Current → ActionableCard mapping
 
 ---
 
@@ -34,7 +36,11 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 | 3 | Simple Extractions | ✅ | Toast, CollapsibleSection extracted with semantic tokens |
 | 4 | Token Migration | ✅ | Tier 1-2 complete, Tier 3 intentionally kept |
 | 5 | Cleanup | ✅ | Build verified, no dead code, 133 tests pass |
-| 6 | Complex Component Unification | ⬜ | Unified TaskCard, RoutineCard (needs design spec) |
+| 6a | Primitives Extraction | ✅ | ActionableCard component + tokens in design-system |
+| 6b | First Migration | ✅ | PoolTaskCard, TriageTaskCard (673 lines deleted) |
+| 6c | Queue & Done | ✅ | QueueTaskCard, DoneTaskCard (636 lines deleted) |
+| 6d | Notifications & Routines | ✅ | NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
+| 6e | Cleanup | 📋 Planned | See [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md) |
 
 ---
 
@@ -47,7 +53,7 @@ Task-copilot previously had local copies of UI components with raw Tailwind clas
 | Semantic tokens in use | ~1,100+ |
 | Raw zinc patterns remaining | ~341 (intentional component-specific styling) |
 | Tier 1-2 patterns | ✅ Complete |
-| Complex components to unify | TBD (TaskCard variants, RoutineCard) |
+| Complex components to unify | 7 components → ActionableCard (see [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md)) |
 
 ### Phase 4 Token Migration Detail
 
@@ -109,10 +115,45 @@ Remaining ~341 raw patterns are intentional component-specific styling:
 
 ---
 
+## Phase 6: ActionableCard System
+
+Phase 6 introduces a unified `ActionableCard` component to replace 7 similar card implementations (~1,831 lines → ~400 lines target).
+
+### Scope
+
+| Component | Lines | Status |
+|-----------|-------|--------|
+| TaskRow (pool) | 374 | To migrate |
+| TriageRow | 299 | To migrate |
+| QueueItem | 441 | To migrate |
+| TaskRow (done/inline) | 195 | To migrate |
+| NotificationCard | 235 | To migrate |
+| RoutineRow | 110 | To migrate |
+| RoutineCard | 177 | To migrate |
+| **Total** | **1,831** | **~78% reduction** |
+
+### Key Concepts
+
+- **Slot-based composition**: Leading, Body (Title + Meta + InlineActions), Trailing
+- **Constrained appearances**: `default`, `highlighted`, `muted` (no ad-hoc styling)
+- **Variants**: `standard` (horizontal/responsive), `compact` (stacked/fixed height)
+- **Modifiers**: `isComplete`, `showQueuedIndicator` for cross-cutting states
+
+### Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [PHASE6_SPEC.md](./PHASE6_SPEC.md) | Full component API and design tokens |
+| [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md) | Per-component migration details |
+
+---
+
 ## Related Documents
 
 | Document | Purpose |
 |----------|---------|
+| [PHASE6_SPEC.md](./PHASE6_SPEC.md) | ActionableCard component specification |
+| [COMPONENT_MAPPING.md](./COMPONENT_MAPPING.md) | Migration mapping for each component |
 | [packages/design-system/README.md](../../../packages/design-system/README.md) | Design system overview |
 | [Design System Storybook](../../../packages/design-system/stories/) | Component documentation |
 | [PRINCIPLES.md](../../PRINCIPLES.md) | Design guidelines |

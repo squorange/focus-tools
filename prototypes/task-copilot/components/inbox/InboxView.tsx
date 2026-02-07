@@ -1,7 +1,7 @@
 "use client";
 
 import { Task } from "@/lib/types";
-import TriageRow from "@/components/shared/TriageRow";
+import TriageTaskCard from "@/components/shared/TriageTaskCard";
 
 interface InboxViewProps {
   tasks: Task[];
@@ -75,7 +75,7 @@ export default function InboxView({
       ) : (
         <div className="flex-1 space-y-3 overflow-y-auto">
           {sortedTasks.map((task) => (
-            <TriageRow
+            <TriageTaskCard
               key={task.id}
               task={task}
               onOpenTask={onOpenTask}

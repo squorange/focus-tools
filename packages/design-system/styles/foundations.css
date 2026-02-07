@@ -347,6 +347,51 @@
   --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);
   --shadow-focus-error: 0 0 0 3px var(--color-bg-alert-low);
   --shadow-focus-success: 0 0 0 3px var(--color-bg-positive-low);
+
+  /* ============================================
+   * ActionableCard Component Tokens
+   * ============================================ */
+  /* Geometry */
+  --actionable-card-radius: 0.5rem;
+  --actionable-card-compact-radius: 0.75rem;
+  --actionable-card-padding-x: 0.75rem;
+  --actionable-card-padding-x-sm: 1rem;
+  --actionable-card-padding-y: 0.75rem;
+  --actionable-card-gap: 0.5rem;
+
+  /* Typography */
+  --actionable-card-title-size: 0.875rem;
+  --actionable-card-title-weight: 400;
+  --actionable-card-compact-title-weight: 500;
+  --actionable-card-title-line-height: 1.25rem;
+  --actionable-card-meta-size: 0.75rem;
+  --actionable-card-meta-line-height: 1rem;
+  --actionable-card-action-size: 0.75rem;
+
+  /* Compact variant */
+  --actionable-card-compact-height: 110px;
+  --actionable-card-compact-title-clamp: 2;
+
+  /* Appearance: default */
+  --actionable-card-bg-default: #fafafa;
+  --actionable-card-border-default: #e4e4e7;
+  --actionable-card-hover-bg-default: #f4f4f5;
+  --actionable-card-hover-border-default: #d4d4d8;
+
+  /* Appearance: highlighted */
+  --actionable-card-bg-highlighted: #faf5ff;
+  --actionable-card-border-highlighted: #ede9fe;
+  --actionable-card-hover-bg-highlighted: #f5f3ff;
+  --actionable-card-hover-border-highlighted: #c4b5fd;
+
+  /* Appearance: muted */
+  --actionable-card-bg-muted: rgba(244, 244, 245, 0.6);
+  --actionable-card-border-muted: var(--color-border-neutral-default);
+  --actionable-card-opacity-muted: 0.7;
+
+  /* Modifiers */
+  --actionable-card-queued-indicator: var(--color-border-accent);
+  --actionable-card-complete-opacity: 0.6;
 }
 
 /* ============================================
@@ -632,4 +677,18 @@
   --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);
   --shadow-focus-error: 0 0 0 3px var(--color-bg-alert-low);
   --shadow-focus-success: 0 0 0 3px var(--color-bg-positive-low);
+
+  /* ActionableCard Component Tokens */
+  --actionable-card-bg-default: rgba(39, 39, 42, 0.8);
+  --actionable-card-border-default: #27272a;
+  --actionable-card-hover-bg-default: rgba(39, 39, 42, 0.9);
+  --actionable-card-hover-border-default: #3f3f46;
+
+  --actionable-card-bg-highlighted: rgba(76, 29, 149, 0.2);
+  --actionable-card-border-highlighted: #5b21b6;
+  --actionable-card-hover-bg-highlighted: rgba(76, 29, 149, 0.25);
+  --actionable-card-hover-border-highlighted: #7c3aed;
+
+  --actionable-card-bg-muted: rgba(39, 39, 42, 0.4);
+  --actionable-card-border-muted: var(--color-border-neutral-default);
 }

@@ -7,7 +7,7 @@ import {
   deriveStateFromVisual,
   VisualElement,
 } from "@/lib/queue-reorder";
-import QueueItem from "./QueueItem";
+import QueueTaskCard from "./QueueTaskCard";
 import DailySummaryBanner from "./DailySummaryBanner";
 import RoutinesGallery from "@/components/routines/RoutinesGallery";
 
@@ -590,7 +590,7 @@ export default function QueueView({
                         isTouchDragging ? "touch-none" : "touch-auto"
                       } ${isBeingDragged ? "opacity-50" : ""}`}
                     >
-                      <QueueItem
+                      <QueueTaskCard
                         item={el.item}
                         task={task}
                         projects={projects}

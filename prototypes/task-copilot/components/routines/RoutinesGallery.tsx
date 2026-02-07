@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { Task } from "@/lib/types";
 import { filterDueToday, sortByTime } from "@/lib/recurring-utils";
 import { RecurrenceRuleExtended } from "@/lib/recurring-types";
-import RoutineCard from "./RoutineCard";
+import RoutineGalleryCard from "./RoutineGalleryCard";
 
 interface RoutinesGalleryProps {
   tasks: Task[];
@@ -150,7 +150,7 @@ export default function RoutinesGallery({
               key={task.id}
               className="flex-shrink-0 w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)]"
             >
-              <RoutineCard
+              <RoutineGalleryCard
                 task={task}
                 onComplete={onCompleteRoutine}
                 onSkip={onSkipRoutine}

@@ -6,9 +6,8 @@ import { formatDate } from "@/lib/utils";
 import { filterRecurringTasks } from "@/lib/recurring-utils";
 import { getTasksForPriorityQueue, groupTasksByTier, PriorityQueueTask } from "@/lib/priority";
 import { applyTaskFilters } from "@/lib/filters";
-import TriageRow from "@/components/shared/TriageRow";
-import MetadataPill from "@/components/shared/MetadataPill";
-import { ProgressRing } from "@design-system/components";
+import TriageTaskCard from "@/components/shared/TriageTaskCard";
+import DoneTaskCard from "./DoneTaskCard";
 import RoutinesList from "@/components/routines/RoutinesList";
 import { Filter, ChevronDown } from "lucide-react";
 
@@ -281,7 +280,7 @@ export default function TasksView({
               </h3>
               <div className="space-y-2">
                 {deferredTasksAll.map((task) => (
-                  <TaskRow
+                  <DoneTaskCard
                     key={task.id}
                     task={task}
                     isInQueue={isInQueue(task.id)}
@@ -358,7 +357,7 @@ export default function TasksView({
             <>
               <div className="space-y-2">
                 {triageItems.map((task) => (
-                  <TriageRow
+                  <TriageTaskCard
                     key={task.id}
                     task={task}
                     onOpenTask={onOpenTask}
@@ -397,7 +396,7 @@ export default function TasksView({
           </h2>
           <div className="space-y-2">
             {resurfacedTasks.map((task) => (
-              <TaskRow
+              <DoneTaskCard
                 key={task.id}
                 task={task}
                 isInQueue={isInQueue(task.id)}
@@ -523,7 +522,7 @@ function TierSection({
       {expanded && (
         <div className="space-y-2">
           {tasks.map(({ task }) => (
-            <TaskRow
+            <DoneTaskCard
               key={task.id}
               task={task}
               isInQueue={isInQueue(task.id)}
@@ -637,7 +636,7 @@ function DoneTab({
           {!archivedCollapsed && (
             <div className="space-y-2">
               {visibleArchived.map((task) => (
-                <TaskRow
+                <DoneTaskCard
                   key={task.id}
                   task={task}
                   isInQueue={isInQueue(task.id)}
@@ -671,7 +670,7 @@ function DoneTab({
                 </h4>
                 <div className="space-y-2">
                   {tasks.map(task => (
-                    <TaskRow
+                    <DoneTaskCard
                       key={task.id}
                       task={task}
                       isInQueue={false}
@@ -708,209 +707,6 @@ function formatCompletedDate(dateStr: string): string {
   });
 }
 
-// Check if date is overdue
-function isOverdue(dateStr: string | null): boolean {
-  if (!dateStr) return false;
-  const today = new Date().toISOString().split("T")[0];
-  return dateStr < today;
-}
-
-// Task Row Component
-interface TaskRowProps {
-  task: Task;
-  isInQueue: boolean;
-  project?: Project | null;
-  onOpen: () => void;
-  onAddToQueue?: () => void;
-  onDefer?: (taskId: string, until: string) => void;
-  onPark?: (taskId: string) => void;
-  onDelete?: (taskId: string) => void;
-  badge?: string;
-}
-
-function TaskRow({ task, isInQueue, project, onOpen, onAddToQueue, onDefer, onPark, onDelete, badge }: TaskRowProps) {
-  const [showMenu, setShowMenu] = React.useState(false);
-  const completedSteps = task.steps.filter((s) => s.completed).length;
-  const totalSteps = task.steps.length;
-
-  // Calculate defer dates
-  const getDeferDate = (days: number) => {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
-  };
-
-  // Shared menu dropdown
-  const MenuDropdown = () => (
-    <div
-      className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {onDefer && (
-        <>
-          <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
-          <button
-            onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
-          >
-            Tomorrow
-          </button>
-          <button
-            onClick={() => { onDefer(task.id, getDeferDate(7)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
-          >
-            Next week
-          </button>
-          <button
-            onClick={() => { onDefer(task.id, getDeferDate(30)); setShowMenu(false); }}
-            className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
-          >
-            Next month
-          </button>
-          <div className="border-t border-border-color-neutral my-1" />
-        </>
-      )}
-      {onPark && (
-        <button
-          onClick={() => { onPark(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
-        >
-          Archive
-        </button>
-      )}
-      {onDelete && (
-        <button
-          onClick={() => { onDelete(task.id); setShowMenu(false); }}
-          className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
-        >
-          Delete
-        </button>
-      )}
-    </div>
-  );
-
-  // Metadata pills component
-  const MetadataPills = () => (
-    <>
-      {totalSteps > 0 && (
-        <MetadataPill>{completedSteps}/{totalSteps} steps</MetadataPill>
-      )}
-      {task.targetDate && (
-        <MetadataPill>Target {formatDate(task.targetDate)}</MetadataPill>
-      )}
-      {task.deadlineDate && (
-        <MetadataPill variant={isOverdue(task.deadlineDate) ? "overdue" : "due"}>
-          Due {formatDate(task.deadlineDate)}
-        </MetadataPill>
-      )}
-      {project && (
-        <MetadataPill variant="project" color={project.color || "#9ca3af"}>
-          {project.name}
-        </MetadataPill>
-      )}
-      {badge && <MetadataPill>{badge}</MetadataPill>}
-    </>
-  );
-
-  return (
-    <div className="group bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
-      {/* Desktop layout */}
-      <div className="hidden sm:flex sm:items-center sm:gap-2">
-        {/* Progress ring */}
-        <ProgressRing
-          completed={completedSteps}
-          total={totalSteps}
-          isComplete={task.status === 'complete'}
-          variant="solid"
-        />
-        <button onClick={onOpen} className="flex-1 text-left min-w-0">
-          <span className="text-fg-neutral-primary truncate block">
-            {task.title}
-          </span>
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <MetadataPills />
-          </div>
-        </button>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {onAddToQueue && (isInQueue ? (
-            <span className="text-xs text-green-600 dark:text-green-400">In Focus</span>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
-              className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900"
-            >
-              → Focus
-            </button>
-          ))}
-          {(onDelete || onDefer || onPark) && (
-            <div className="relative">
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
-                title="More actions"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
-              {showMenu && <MenuDropdown />}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile layout */}
-      <div className="sm:hidden">
-        {/* Row 1: Ring + Title + Actions */}
-        <div className="flex items-start gap-2">
-          {/* Progress ring */}
-          <div className="flex-shrink-0 mt-0.5">
-            <ProgressRing
-              completed={completedSteps}
-              total={totalSteps}
-              isComplete={task.status === 'complete'}
-              variant="solid"
-            />
-          </div>
-          <button onClick={onOpen} className="flex-1 min-w-0 text-left">
-            <span className="text-fg-neutral-primary">
-              {task.title}
-            </span>
-          </button>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {onAddToQueue && (isInQueue ? (
-              <span className="text-xs text-green-600 dark:text-green-400 px-1">In Focus</span>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
-                className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
-              >
-                → Focus
-              </button>
-            ))}
-            {(onDelete || onDefer || onPark) && (
-              <div className="relative">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                  className="p-1 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-                {showMenu && <MenuDropdown />}
-              </div>
-            )}
-          </div>
-        </div>
-        {/* Row 2: Metadata pills */}
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          <MetadataPills />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Helper function
 function formatRelativeTime(timestamp: number): string {

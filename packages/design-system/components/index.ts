@@ -4,6 +4,21 @@
  * Re-exports all components for convenient access.
  */
 
+// Card components
+export { ActionableCard } from './ActionableCard';
+export type {
+  ActionableCardProps,
+  ActionableCardVariant,
+  ActionableCardAppearance,
+  ActionableCardEmphasis,
+  LeadingProps,
+  BodyProps,
+  TitleProps,
+  MetaProps,
+  InlineActionsProps,
+  TrailingProps,
+} from './ActionableCard';
+
 // Primitive components
 export { Pill } from './Pill';
 export type { PillProps, PillVariant, PillSize } from './Pill';

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Task, FocusQueue, FocusQueueItem } from "@/lib/types";
 import { computeFocusScore } from "@/lib/utils";
-import TaskRow from "./TaskRow";
+import PoolTaskCard from "./PoolTaskCard";
 
 interface PoolViewProps {
   tasks: Task[];
@@ -181,7 +181,7 @@ export default function PoolView({
             </div>
             <div className="space-y-2">
               {resurfacedTasks.map((task) => (
-                <TaskRow
+                <PoolTaskCard
                   key={task.id}
                   task={task}
                   queueItem={getQueueItem(task.id)}
@@ -230,7 +230,7 @@ export default function PoolView({
           ) : (
             <div className="space-y-2">
               {regularTasks.map((task) => (
-                <TaskRow
+                <PoolTaskCard
                   key={task.id}
                   task={task}
                   queueItem={getQueueItem(task.id)}
