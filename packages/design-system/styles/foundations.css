@@ -685,9 +685,9 @@
   --actionable-card-hover-border-default: #3f3f46;
 
   --actionable-card-bg-highlighted: rgba(76, 29, 149, 0.2);
-  --actionable-card-border-highlighted: #5b21b6;
+  --actionable-card-border-highlighted: rgba(139, 92, 246, 0.35);
   --actionable-card-hover-bg-highlighted: rgba(76, 29, 149, 0.25);
-  --actionable-card-hover-border-highlighted: #7c3aed;
+  --actionable-card-hover-border-highlighted: rgba(167, 139, 250, 0.5);
 
   --actionable-card-bg-muted: rgba(39, 39, 42, 0.4);
   --actionable-card-border-muted: var(--color-border-neutral-default);

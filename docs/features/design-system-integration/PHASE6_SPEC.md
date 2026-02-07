@@ -146,7 +146,7 @@ Mobile responsive (< 640px):
 --actionable-card-bg-highlighted: rgba(139, 92, 246, 0.08);       /* violet-50 equivalent */
 --actionable-card-bg-highlighted-dark: rgba(139, 92, 246, 0.15);
 --actionable-card-border-highlighted: #c4b5fd;                    /* violet-300 */
---actionable-card-border-highlighted-dark: #5b21b6;               /* violet-800 */
+--actionable-card-border-highlighted-dark: rgba(139, 92, 246, 0.35); /* violet-500/35 - subtle */
 
 /* Appearance: muted */
 --actionable-card-bg-muted: rgba(244, 244, 245, 0.6);             /* zinc-50/60 */
