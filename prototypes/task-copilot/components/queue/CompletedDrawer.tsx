@@ -50,9 +50,9 @@ export default function CompletedDrawer({
     <>
       {totalTasks === 0 ? (
         <div className="py-12 text-center px-4">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-bg-neutral-subtle flex items-center justify-center">
             <svg
-              className="w-6 h-6 text-zinc-400"
+              className="w-6 h-6 text-fg-neutral-soft"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -116,7 +116,7 @@ export default function CompletedDrawer({
       {isDesktop && (
         <div
           className={`
-            flex flex-col flex-shrink-0 border-l border-zinc-200/50 dark:border-zinc-700/30
+            flex flex-col flex-shrink-0 border-l border-border-color-neutral
             transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
             ${isOpen ? "w-[400px]" : "w-0 border-l-0"}
           `}
@@ -202,14 +202,14 @@ function TaskCompletionItem({
   return (
     <button
       onClick={onClick}
-      className="w-full px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors text-left"
+      className="w-full px-4 py-3 hover:bg-bg-neutral-subtle transition-colors text-left"
     >
       {/* Task header row */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {/* Checkmark icon */}
           <svg
-            className="w-4 h-4 text-green-500 flex-shrink-0"
+            className="w-4 h-4 text-fg-positive flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -226,7 +226,7 @@ function TaskCompletionItem({
           </span>
           {/* Routine indicator */}
           {task.isRoutine && (
-            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-bg-accent-subtle text-fg-accent-primary">
               Routine
             </span>
           )}

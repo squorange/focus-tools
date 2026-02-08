@@ -121,7 +121,7 @@ export default function PoolView({
           <p className="text-sm text-fg-neutral-secondary">
             {tasks.length} tasks available
             {waitingCount > 0 && (
-              <span className="ml-2 text-amber-500">
+              <span className="ml-2 text-fg-attention">
                 ({waitingCount} waiting)
               </span>
             )}
@@ -137,10 +137,10 @@ export default function PoolView({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search tasks..."
-            className="w-full pl-9 pr-4 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder:text-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
           />
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-neutral-soft"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -156,7 +156,7 @@ export default function PoolView({
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg focus:outline-none focus:ring-2 focus:ring-focus"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -172,10 +172,10 @@ export default function PoolView({
         {resurfacedTasks.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-medium text-amber-600 dark:text-amber-400">
+              <h3 className="text-sm font-medium text-fg-attention">
                 Resurfaced
               </h3>
-              <span className="text-xs text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-fg-attention bg-bg-attention-subtle px-2 py-0.5 rounded-full">
                 {resurfacedTasks.length}
               </span>
             </div>
@@ -205,7 +205,7 @@ export default function PoolView({
             <div className="flex flex-col items-center justify-center text-center py-12">
               <div className="w-16 h-16 mb-4 rounded-full bg-bg-neutral-subtle flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-zinc-400"
+                  className="w-8 h-8 text-fg-neutral-soft"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

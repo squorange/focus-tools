@@ -23,21 +23,21 @@ export default function TaskRow({
   const isTaskDueSoon = isDueSoon(task);
   const isCompleted = variant === "completed";
 
-  // Priority colors
+  // Priority colors using semantic tokens
   const priorityColors = {
-    high: "bg-red-500",
-    medium: "bg-yellow-500",
-    low: "bg-blue-500",
+    high: "bg-bg-alert-high",
+    medium: "bg-bg-attention-high",
+    low: "bg-bg-accent-high",
   };
 
   return (
     <div
       className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
         ${isCompleted
-          ? "bg-zinc-100/50 dark:bg-zinc-900/50"
-          : "bg-zinc-50 dark:bg-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700"
+          ? "bg-bg-neutral-subtle"
+          : "bg-bg-neutral-subtle hover:border-border-color-neutral-hover"
         }
-        border border-zinc-200 dark:border-zinc-800
+        border border-border-color-neutral
       `}
       onClick={onClick}
     >
@@ -68,7 +68,7 @@ export default function TaskRow({
               {task.tags.slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400 rounded"
+                  className="text-xs px-1.5 py-0.5 bg-bg-neutral-subtle text-fg-neutral-secondary rounded"
                 >
                   {tag}
                 </span>
@@ -83,13 +83,13 @@ export default function TaskRow({
           {hasSteps && !isCompleted && (
             <div className="flex items-center gap-1.5">
               {/* Progress bar */}
-              <div className="w-16 h-1 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+              <div className="w-16 h-1 bg-bg-neutral-low rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-500 rounded-full transition-all"
+                  className="h-full bg-bg-positive-high rounded-full transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <span className="text-xs text-neutral-400 dark:text-neutral-500">
+              <span className="text-xs text-fg-neutral-soft">
                 {completedSteps}/{task.steps.length}
               </span>
             </div>
@@ -100,10 +100,10 @@ export default function TaskRow({
             <span
               className={`text-xs ${
                 isTaskOverdue
-                  ? "text-red-500"
+                  ? "text-fg-alert"
                   : isTaskDueSoon
-                  ? "text-amber-500"
-                  : "text-neutral-400 dark:text-neutral-500"
+                  ? "text-fg-attention"
+                  : "text-fg-neutral-soft"
               }`}
             >
               {isTaskOverdue ? "Overdue" : formatDate(task.deadlineDate)}
@@ -112,7 +112,7 @@ export default function TaskRow({
 
           {/* Effort indicator */}
           {task.effort && !isCompleted && (
-            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+            <span className="text-xs text-fg-neutral-soft">
               {task.effort === "quick" && "⚡"}
               {task.effort === "medium" && "📋"}
               {task.effort === "deep" && "🎯"}
@@ -128,7 +128,7 @@ export default function TaskRow({
             e.stopPropagation();
             onFocusClick();
           }}
-          className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-2 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+          className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-2 text-fg-neutral-soft hover:text-fg-accent-primary hover:bg-bg-accent-subtle rounded-lg transition-all"
           title="Enter focus mode"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,7 +144,7 @@ export default function TaskRow({
 
       {/* Completed checkmark */}
       {isCompleted && (
-        <div className="flex-shrink-0 text-green-500">
+        <div className="flex-shrink-0 text-fg-positive">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"

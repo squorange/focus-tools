@@ -23,11 +23,11 @@ export default function QuickCapture({ onCreateTask }: QuickCaptureProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative">
-      <div className="flex items-center gap-3 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+      <div className="flex items-center gap-3 bg-bg-neutral-min rounded-xl border border-border-color-neutral shadow-sm focus-within:border-border-input-focus focus-within:ring-1 focus-within:ring-focus transition-all">
         {/* Plus icon */}
         <div className="pl-4">
           <svg
-            className="w-5 h-5 text-neutral-400"
+            className="w-5 h-5 text-fg-neutral-soft"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -48,14 +48,14 @@ export default function QuickCapture({ onCreateTask }: QuickCaptureProps) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Add a task..."
-          className="flex-1 py-3.5 pr-4 bg-transparent border-0 outline-none text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500"
+          className="flex-1 py-3.5 pr-4 bg-transparent border-0 outline-none text-fg-neutral-primary placeholder:text-fg-neutral-soft"
         />
 
         {/* Submit button - only visible when there's input */}
         {value.trim() && (
           <button
             type="submit"
-            className="mr-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="mr-2 px-4 py-1.5 bg-bg-accent-high hover:bg-bg-accent-high-hover text-fg-neutral-inverse-primary text-sm font-medium rounded-lg transition-colors"
           >
             Add
           </button>

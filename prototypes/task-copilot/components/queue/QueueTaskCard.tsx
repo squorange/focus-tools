@@ -129,7 +129,7 @@ export default function QueueTaskCard({
               isComplete={isComplete}
             />
           </div>
-          <div className="hidden group-hover:block sm:group-hover:block text-zinc-400 cursor-grab active:cursor-grabbing">
+          <div className="hidden group-hover:block sm:group-hover:block text-fg-neutral-soft cursor-grab active:cursor-grabbing">
             <GripVertical className="w-4 h-4" />
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function QueueTaskCard({
         <ActionableCard.Title strikethrough={isComplete}>
           {task.title || "Untitled"}
           {hasReminder && (
-            <Bell className="inline-block w-3 h-3 ml-1.5 text-violet-500" />
+            <Bell className="inline-block w-3 h-3 ml-1.5 text-fg-accent-primary" />
           )}
         </ActionableCard.Title>
 
@@ -197,7 +197,7 @@ export default function QueueTaskCard({
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-1 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+            className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
             title="More actions"
           >
             <MoreVertical className="w-4 h-4" />
@@ -211,7 +211,7 @@ export default function QueueTaskCard({
                 {!isComplete && (
                   <button
                     onClick={() => { onStartFocus(item.id); setShowMenu(false); }}
-                    className="w-full px-3 py-1.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle flex items-center gap-2"
+                    className="w-full px-3 py-1.5 text-sm text-left text-fg-accent-primary hover:bg-bg-neutral-subtle flex items-center gap-2"
                   >
                     <Play className="w-4 h-4" />
                     Start Focus

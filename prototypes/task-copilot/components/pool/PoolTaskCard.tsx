@@ -85,7 +85,7 @@ export default function PoolTaskCard({
 
           {/* Reminder indicator */}
           {hasReminder && (
-            <Bell className="w-3.5 h-3.5 text-violet-500" />
+            <Bell className="w-3.5 h-3.5 text-fg-accent-primary" />
           )}
 
           {/* Waiting indicator */}
@@ -119,19 +119,19 @@ export default function PoolTaskCard({
         {isInQueue ? (
           <Pill variant="status-focus">In Focus</Pill>
         ) : isComplete ? (
-          <span className="text-xs text-green-600 dark:text-green-400">Done</span>
+          <span className="text-xs text-fg-positive">Done</span>
         ) : (
           <div className="relative opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             <div className="flex">
               <button
                 onClick={() => onAddToQueue(task.id, false)}
-                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-l px-2 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
+                className="text-xs bg-bg-accent-subtle text-fg-accent-primary rounded-l px-2 py-1 hover:bg-bg-accent-subtle-hover"
               >
                 → Focus
               </button>
               <button
                 onClick={() => setShowFocusDropdown(!showFocusDropdown)}
-                className="text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-r border-l border-violet-200 dark:border-violet-700 px-1 py-1 hover:bg-violet-200 dark:hover:bg-violet-900/50"
+                className="text-xs bg-bg-accent-subtle text-fg-accent-primary rounded-r border-l border-border-accent px-1 py-1 hover:bg-bg-accent-subtle-hover"
               >
                 <ChevronDown className="w-3 h-3" />
               </button>
@@ -157,7 +157,7 @@ export default function PoolTaskCard({
           <div className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+              className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
               title="More actions"
             >
               <MoreVertical className="w-4 h-4" />
@@ -171,7 +171,7 @@ export default function PoolTaskCard({
                 >
                   {onDefer && (
                     <>
-                      <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
+                      <div className="px-3 py-1 text-xs font-medium text-fg-neutral-soft uppercase">Defer</div>
                       <button
                         onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
                         className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
@@ -204,7 +204,7 @@ export default function PoolTaskCard({
                   {onDelete && (
                     <button
                       onClick={() => { onDelete(task.id); setShowMenu(false); }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
+                      className="w-full px-3 py-1.5 text-sm text-left text-fg-alert hover:bg-bg-neutral-subtle"
                     >
                       Delete
                     </button>

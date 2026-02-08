@@ -17,7 +17,7 @@
 | 2 | Fix DS + Color Maps | SegmentedControl + lib/color-maps.ts | ✅ | | Fixed 2 raw colors, created 5 color maps |
 | 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | ✅ | | ~25 raw colors replaced |
 | 4 | Picker Components | 8 picker/input components | ✅ | | 8 files migrated |
-| 5 | Cards + Views | Task cards + view containers (~11 files) | 🔲 | | |
+| 5 | Cards + Views | Task cards + view containers (~11 files) | ✅ | | 13 files migrated |
 | 6 | Medium Components | Selectors, displays, focus mode (~8 files) | 🔲 | | |
 | 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | 🔲 | | |
 | 8 | TaskDetail | Largest component + sub-components | 🔲 | | |
@@ -156,17 +156,17 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 | Component | Raw Colors | Status | Session |
 |-----------|-----------|--------|---------|
-| QueueTaskCard | 2 | 🔲 | 5 |
-| PoolTaskCard | 2 | 🔲 | 5 |
-| DoneTaskCard | 8 | 🔲 | 5 |
-| TriageTaskCard | 6 | 🔲 | 5 |
-| TaskRow | 15 | 🔲 | 5 |
-| QueueView | 4 | 🔲 | 5 |
-| PoolView | 6 | 🔲 | 5 |
-| InboxView | 4 | 🔲 | 5 |
-| QuickCapture | 10 | 🔲 | 5 |
-| DailySummaryBanner | 0 | 🔲 | 5 |
-| CompletedDrawer | 0 | 🔲 | 5 |
+| QueueTaskCard | 0 | ✅ | 5 |
+| PoolTaskCard | 0 | ✅ | 5 |
+| DoneTaskCard | 0 | ✅ | 5 |
+| TriageTaskCard | 0 | ✅ | 5 |
+| TaskRow | 0 | ✅ | 5 |
+| QueueView | 0 | ✅ | 5 |
+| PoolView | 0 | ✅ | 5 |
+| InboxView | 0 | ✅ | 5 |
+| QuickCapture | 0 | ✅ | 5 |
+| DailySummaryBanner | 0 | ✅ | 5 |
+| CompletedDrawer | 0 | ✅ | 5 |
 
 ### Medium Components
 

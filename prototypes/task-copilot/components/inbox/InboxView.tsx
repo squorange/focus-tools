@@ -40,7 +40,7 @@ export default function InboxView({
         <div className="flex justify-end mb-4">
           <button
             onClick={handleProcessAll}
-            className="px-4 py-2 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover rounded-lg transition-colors"
           >
             Move all to Ready
           </button>
@@ -50,9 +50,9 @@ export default function InboxView({
       {/* Inbox items */}
       {sortedTasks.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-          <div className="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 flex items-center justify-center">
+          <div className="w-20 h-20 mb-4 rounded-full bg-bg-positive-subtle flex items-center justify-center">
             <svg
-              className="w-10 h-10 text-green-500"
+              className="w-10 h-10 text-fg-positive"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

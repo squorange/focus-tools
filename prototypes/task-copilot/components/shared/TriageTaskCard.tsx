@@ -110,7 +110,7 @@ export default function TriageTaskCard({
               e.stopPropagation();
               setShowMenu(!showMenu);
             }}
-            className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
+            className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
             title="More actions"
           >
             <MoreVertical className="w-4 h-4" />
@@ -123,7 +123,7 @@ export default function TriageTaskCard({
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Defer options */}
-                <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">
+                <div className="px-3 py-1 text-xs font-medium text-fg-neutral-soft uppercase">
                   Defer
                 </div>
                 <button
@@ -158,7 +158,7 @@ export default function TriageTaskCard({
                 {/* Delete */}
                 <button
                   onClick={() => { onDelete(task.id); setShowMenu(false); }}
-                  className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
+                  className="w-full px-3 py-1.5 text-sm text-left text-fg-alert hover:bg-bg-neutral-subtle"
                 >
                   Delete
                 </button>

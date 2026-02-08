@@ -105,11 +105,11 @@ export default function DoneTaskCard({
         {/* Queue status or Add button */}
         {onAddToQueue && (
           isInQueue ? (
-            <span className="text-xs text-green-600 dark:text-green-400">In Focus</span>
+            <span className="text-xs text-fg-positive">In Focus</span>
           ) : (
             <button
               onClick={(e) => { e.stopPropagation(); onAddToQueue(); }}
-              className="text-xs px-2 py-1 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900"
+              className="text-xs px-2 py-1 rounded bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover"
             >
               → Focus
             </button>
@@ -121,7 +121,7 @@ export default function DoneTaskCard({
           <div className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
+              className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
               title="More actions"
             >
               <MoreVertical className="w-4 h-4" />
@@ -134,7 +134,7 @@ export default function DoneTaskCard({
                 >
                   {onDefer && (
                     <>
-                      <div className="px-3 py-1 text-xs font-medium text-zinc-400 uppercase">Defer</div>
+                      <div className="px-3 py-1 text-xs font-medium text-fg-neutral-soft uppercase">Defer</div>
                       <button
                         onClick={() => { onDefer(task.id, getDeferDate(1)); setShowMenu(false); }}
                         className="w-full px-3 py-1.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle"
@@ -167,7 +167,7 @@ export default function DoneTaskCard({
                   {onDelete && (
                     <button
                       onClick={() => { onDelete(task.id); setShowMenu(false); }}
-                      className="w-full px-3 py-1.5 text-sm text-left text-red-600 dark:text-red-400 hover:bg-bg-neutral-subtle"
+                      className="w-full px-3 py-1.5 text-sm text-left text-fg-alert hover:bg-bg-neutral-subtle"
                     >
                       Delete
                     </button>

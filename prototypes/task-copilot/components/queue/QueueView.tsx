@@ -24,8 +24,8 @@ function DropPlaceholder({ variant = 'item' }: { variant?: 'item' | 'line' }) {
     <div
       className={`h-14 rounded-lg border-2 border-dashed transition-all ${
         variant === 'line'
-          ? 'border-violet-400 dark:border-violet-600 bg-violet-50/50 dark:bg-violet-900/10'
-          : 'border-violet-400 dark:border-violet-600 bg-violet-50/50 dark:bg-violet-900/10'
+          ? 'border-border-accent bg-bg-accent-subtle/50'
+          : 'border-border-accent bg-bg-accent-subtle/50'
       }`}
     />
   );
@@ -430,9 +430,9 @@ export default function QueueView({
       <div>
         {totalItems === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-12">
-            <div className="w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-violet-100 to-violet-200 dark:from-violet-900/30 dark:to-violet-800/30 flex items-center justify-center">
+            <div className="w-20 h-20 mb-4 rounded-full bg-bg-accent-subtle flex items-center justify-center">
               <svg
-                className="w-10 h-10 text-violet-500"
+                className="w-10 h-10 text-fg-accent-primary"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -457,14 +457,14 @@ export default function QueueView({
               {inboxCount > 0 && (
                 <button
                   onClick={onGoToInbox}
-                  className="px-4 py-2 text-sm font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover rounded-lg transition-colors"
                 >
                   Go to Inbox ({inboxCount})
                 </button>
               )}
               <button
                 onClick={() => onOpenDrawer?.('completed')}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-bg-neutral-subtle text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
               >
                 Show completed
               </button>
@@ -509,7 +509,7 @@ export default function QueueView({
                         className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-neutral-subtle transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Move line up"
                       >
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-fg-neutral-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                         </svg>
                       </button>
@@ -530,7 +530,7 @@ export default function QueueView({
                         {/* Line with drag handle */}
                         <div className="flex items-center gap-3">
                           {/* Drag handle */}
-                          <div className="flex-shrink-0 text-zinc-400 hover:text-fg-neutral-secondary">
+                          <div className="flex-shrink-0 text-fg-neutral-soft hover:text-fg-neutral-secondary">
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                               <circle cx="9" cy="7" r="1.5" />
                               <circle cx="15" cy="7" r="1.5" />
@@ -541,10 +541,10 @@ export default function QueueView({
                             </svg>
                           </div>
                           {/* Full-width line */}
-                          <div className="flex-1 h-px bg-gradient-to-r from-violet-400 via-violet-500 to-violet-400 dark:from-violet-600 dark:via-violet-500 dark:to-violet-600" />
+                          <div className="flex-1 h-px bg-border-accent" />
                         </div>
                         {/* Label - absolutely centered over the line with opaque background */}
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-bg-neutral-min border border-violet-300 dark:border-violet-700 rounded select-none">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-fg-accent-primary bg-bg-neutral-min border border-border-accent rounded select-none">
                           Today
                         </span>
                       </div>
@@ -556,7 +556,7 @@ export default function QueueView({
                         className="absolute -bottom-5 left-1/2 -translate-x-1/2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-neutral-subtle transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                         aria-label="Move line down"
                       >
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-fg-neutral-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>

@@ -241,12 +241,12 @@ export default function TasksView({
         {activeTab === 'staging' && (
           <button
             onClick={() => onOpenFilterDrawer?.()}
-            className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 text-xs font-medium text-fg-neutral-secondary hover:text-zinc-900 dark:hover:text-zinc-200 bg-bg-neutral-subtle/50 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+            className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-2.5 text-xs font-medium text-fg-neutral-secondary hover:text-fg-neutral-primary bg-bg-neutral-subtle/50 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
           >
             <Filter className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Filter</span>
             {countActiveFilters(filters) > 0 && (
-              <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold bg-violet-600 text-white rounded-full">
+              <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold bg-bg-accent-high text-fg-neutral-inverse-primary rounded-full">
                 {countActiveFilters(filters)}
               </span>
             )}
@@ -332,7 +332,7 @@ export default function TasksView({
             <div className="flex items-center gap-2">
               <button
                 onClick={onGoToInbox}
-                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                className="text-sm text-fg-accent-primary hover:text-fg-accent-secondary transition-colors"
               >
                 Show All
               </button>
@@ -342,7 +342,7 @@ export default function TasksView({
                 aria-label={triageCollapsed ? "Expand triage section" : "Collapse triage section"}
               >
                 <svg
-                  className={`w-4 h-4 text-zinc-400 transition-transform ${triageCollapsed ? '' : 'rotate-180'}`}
+                  className={`w-4 h-4 text-fg-neutral-soft transition-transform ${triageCollapsed ? '' : 'rotate-180'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -374,7 +374,7 @@ export default function TasksView({
                 <div className="text-center mt-3">
                   <button
                     onClick={onGoToInbox}
-                    className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                    className="text-sm text-fg-accent-primary hover:text-fg-accent-secondary transition-colors"
                   >
                     +{remainingInboxCount} More
                   </button>
@@ -438,7 +438,7 @@ export default function TasksView({
               <p>No tasks match your filters.</p>
               <button
                 onClick={() => setFilters({})}
-                className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 mt-2"
+                className="text-sm text-fg-accent-primary hover:text-fg-accent-secondary mt-2"
               >
                 Clear filters
               </button>
@@ -515,7 +515,7 @@ function TierSection({
           </span>
         </h2>
         <ChevronDown
-          className={`w-4 h-4 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-fg-neutral-soft transition-transform ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -612,7 +612,7 @@ function DoneTab({
               {sortedArchived.length > 5 && (
                 <button
                   onClick={() => { setArchivedCollapsed(false); setArchivedShowAll(true); }}
-                  className="text-sm text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors"
+                  className="text-sm text-fg-accent-primary hover:text-fg-accent-secondary transition-colors"
                 >
                   Show All
                 </button>
@@ -623,7 +623,7 @@ function DoneTab({
                 aria-label={archivedCollapsed ? "Expand archived section" : "Collapse archived section"}
               >
                 <svg
-                  className={`w-4 h-4 text-zinc-400 transition-transform ${archivedCollapsed ? '' : 'rotate-180'}`}
+                  className={`w-4 h-4 text-fg-neutral-soft transition-transform ${archivedCollapsed ? '' : 'rotate-180'}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

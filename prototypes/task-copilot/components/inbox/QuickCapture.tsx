@@ -40,8 +40,8 @@ export default function QuickCapture({
           transition-all duration-200
           ${
             isFocused
-              ? "border-violet-400 dark:border-violet-500 shadow-md shadow-violet-100 dark:shadow-violet-900/20"
-              : "border-border-color-neutral hover:border-zinc-300 dark:hover:border-zinc-600"
+              ? "border-border-input-focus shadow-md ring-1 ring-focus"
+              : "border-border-color-neutral hover:border-border-color-neutral-hover"
           }
         `}
       >
@@ -53,8 +53,8 @@ export default function QuickCapture({
             transition-colors
             ${
               isFocused
-                ? "bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400"
-                : "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-soft"
+                ? "bg-bg-accent-subtle text-fg-accent-primary"
+                : "bg-bg-neutral-subtle text-fg-neutral-soft"
             }
           `}
         >
@@ -84,13 +84,13 @@ export default function QuickCapture({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           data-capture-input
-          className="flex-1 bg-transparent text-fg-neutral-primary placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none text-sm"
+          className="flex-1 bg-transparent text-fg-neutral-primary placeholder:text-fg-neutral-soft focus:outline-none text-sm"
         />
 
         {/* Submit button - always rendered to prevent height change */}
         <button
           type="submit"
-          className={`flex-shrink-0 px-3 py-1 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-all ${
+          className={`flex-shrink-0 px-3 py-1 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-md transition-all ${
             input.trim() ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >

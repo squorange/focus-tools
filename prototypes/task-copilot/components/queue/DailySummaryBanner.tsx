@@ -113,9 +113,9 @@ export default function DailySummaryBanner({
   return (
     <button
       onClick={onOpenCompleted}
-      className="w-full flex items-center justify-between px-4 py-2.5 mb-4 text-sm rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 hover:shadow-lg transition-all"
+      className="w-full flex items-center justify-between px-4 py-2.5 mb-4 text-sm rounded-2xl bg-bg-neutral-min/95 backdrop-blur-lg border border-border-color-neutral shadow-xl shadow-black/10 dark:shadow-black/30 hover:shadow-lg transition-all"
     >
-      <span className={allDone ? "text-green-600 dark:text-green-400 font-medium" : "text-fg-neutral-secondary"}>
+      <span className={allDone ? "text-fg-positive font-medium" : "text-fg-neutral-secondary"}>
         {displayText}
       </span>
       <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
