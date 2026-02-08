@@ -83,7 +83,7 @@ export function SegmentedControl<T extends string>({
   return (
     <div className={`flex overflow-x-auto no-scrollbar ${className}`}>
       <div
-        className={`inline-flex bg-black/[0.06] dark:bg-white/[0.08] rounded-lg ${containerSizeClasses[size]} ${
+        className={`inline-flex bg-bg-transparent-subtle-accented rounded-lg ${containerSizeClasses[size]} ${
           fullWidth ? 'w-full' : ''
         }`}
       >
@@ -104,7 +104,7 @@ export function SegmentedControl<T extends string>({
                 ${fullWidth ? 'flex-1' : ''}
                 ${
                   isSelected
-                    ? 'bg-white dark:bg-[#141417] text-fg-neutral-primary shadow-sm'
+                    ? 'bg-bg-neutral-min text-fg-neutral-primary shadow-sm'
                     : 'text-fg-neutral-spot-readable hover:text-fg-neutral-primary'
                 }
                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}

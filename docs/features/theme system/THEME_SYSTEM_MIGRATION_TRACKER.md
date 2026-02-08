@@ -14,7 +14,7 @@
 | # | Session | Scope | Status | Commit | Notes |
 |---|---------|-------|--------|--------|-------|
 | 1 | Add New Tokens | ~35 new tokens across 5 categories | ✅ | | 40 tokens added |
-| 2 | Fix DS + Color Maps | SegmentedControl + lib/color-maps.ts | 🔲 | | |
+| 2 | Fix DS + Color Maps | SegmentedControl + lib/color-maps.ts | ✅ | | Fixed 2 raw colors, created 5 color maps |
 | 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | 🔲 | | |
 | 4 | Picker Components | 8 picker/input components | 🔲 | | |
 | 5 | Cards + Views | Task cards + view containers (~11 files) | 🔲 | | |
@@ -106,11 +106,11 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 | Map | File | Used By | Status |
 |-----|------|---------|--------|
-| PRIORITY_COLORS | lib/color-maps.ts | PriorityDisplay, PriorityBreakdownDrawer, TaskRow | 🔲 |
-| ENERGY_COLORS | lib/color-maps.ts | EnergySelector | 🔲 |
-| STATUS_BADGE_COLORS | lib/color-maps.ts | Sidebar, Pill | 🔲 |
-| NOTIFICATION_TYPE_COLORS | lib/color-maps.ts | NotificationCard | 🔲 |
-| SUGGESTION_TYPE_COLORS | lib/color-maps.ts | StagingArea | 🔲 |
+| PRIORITY_COLORS | lib/color-maps.ts | PriorityDisplay, PriorityBreakdownDrawer, TaskRow | ✅ Created |
+| ENERGY_COLORS | lib/color-maps.ts | EnergySelector | ✅ Created |
+| STATUS_BADGE_COLORS | lib/color-maps.ts | Sidebar, Pill | ✅ Created |
+| NOTIFICATION_TYPE_COLORS | lib/color-maps.ts | NotificationCard | ✅ Created |
+| SUGGESTION_TYPE_COLORS | lib/color-maps.ts | StagingArea | ✅ Created |
 
 ---
 
@@ -128,7 +128,7 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 | RightDrawer | 0 | ✅ Already clean | — |
 | ResponsiveDrawer | 0 | ✅ Already clean | — |
 | CollapsibleSection | 0 | ✅ Already clean | — |
-| SegmentedControl | 2 | 🔲 | 2 |
+| SegmentedControl | 0 | ✅ | 2 |
 
 ### Layout
 
