@@ -28,13 +28,13 @@ export default function TabCluster({
     (currentView === "taskDetail" && (previousView === "tasks" || previousView === "inbox"));
 
   return (
-    <div className="inline-flex items-center bg-black/[0.06] dark:bg-white/[0.08] rounded-lg p-0.5 gap-0">
+    <div className="inline-flex items-center bg-bg-transparent-subtle-accented rounded-lg p-0.5 gap-0">
       {/* Focus Tab */}
       <button
         onClick={() => onViewChange("focus")}
         className={`px-4 py-2.5 text-sm rounded-md transition-colors ${
           isFocusActive
-            ? "bg-white dark:bg-[#141417] text-fg-neutral-primary shadow-sm font-semibold"
+            ? "bg-bg-neutral-min text-fg-neutral-primary shadow-sm font-semibold"
             : "text-fg-neutral-spot-readable hover:text-fg-neutral-primary font-medium"
         }`}
       >
@@ -46,14 +46,14 @@ export default function TabCluster({
         onClick={() => onViewChange("tasks")}
         className={`px-4 py-2.5 text-sm rounded-md transition-colors flex items-center gap-1 ${
           isTasksActive
-            ? "bg-white dark:bg-[#141417] text-fg-neutral-primary shadow-sm font-semibold"
+            ? "bg-bg-neutral-min text-fg-neutral-primary shadow-sm font-semibold"
             : "text-fg-neutral-spot-readable hover:text-fg-neutral-primary font-medium"
         }`}
       >
         Tasks
         {/* Badge for inbox count */}
         {inboxCount > 0 && (
-          <span className="min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-semibold rounded-full bg-violet-500 text-white">
+          <span className="min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-semibold rounded-full bg-bg-accent-high text-fg-neutral-inverse-primary">
             {inboxCount > 99 ? "99+" : inboxCount}
           </span>
         )}

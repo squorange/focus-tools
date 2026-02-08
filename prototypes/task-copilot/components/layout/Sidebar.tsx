@@ -81,7 +81,7 @@ function NavItem({ icon, label, isActive, onClick, isCollapsed, badge }: NavItem
         w-full flex items-center px-3 py-2.5 rounded-lg
         transition-all duration-300 ease-in-out
         ${isActive
-          ? "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+          ? "bg-bg-accent-subtle text-fg-accent-primary"
           : "text-fg-neutral-primary hover:bg-bg-neutral-subtle"
         }
         ${isCollapsed ? "justify-center relative gap-0" : "gap-3"}
@@ -102,7 +102,7 @@ function NavItem({ icon, label, isActive, onClick, isCollapsed, badge }: NavItem
       {hasBadge && (
         <span
           className={`
-            flex-shrink-0 bg-violet-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center
+            flex-shrink-0 bg-bg-accent-high text-fg-neutral-inverse-primary text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center
             transition-opacity duration-200
             ${isCollapsed ? "opacity-0 absolute" : "opacity-100"}
           `}
@@ -112,7 +112,7 @@ function NavItem({ icon, label, isActive, onClick, isCollapsed, badge }: NavItem
       )}
       {/* Collapsed badge indicator dot */}
       {isCollapsed && hasBadge && (
-        <span className="absolute top-1 right-1 w-2 h-2 bg-violet-500 rounded-full" />
+        <span className="absolute top-1 right-1 w-2 h-2 bg-bg-accent-high rounded-full" />
       )}
     </button>
   );
@@ -146,7 +146,7 @@ function JumpToRow({ icon, label, count, onClick }: JumpToRowProps) {
       )}
       <ChevronRight
         size={16}
-        className="text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-400 dark:group-hover:text-zinc-500 transition-colors"
+        className="text-fg-neutral-softest group-hover:text-fg-neutral-soft transition-colors"
       />
     </button>
   );
@@ -164,12 +164,12 @@ function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
   const preview = getSearchPreview(result, query);
   const titleHasMatch = matchLocations.includes('title');
 
-  // Status badge colors
+  // Status badge colors - using semantic tokens
   const statusColors = {
-    inbox: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
-    pool: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
-    complete: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
-    archived: "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary",
+    inbox: "bg-bg-status-inbox-subtle text-fg-status-inbox",
+    pool: "bg-bg-status-ready-subtle text-fg-status-ready",
+    complete: "bg-bg-status-completed-subtle text-fg-status-completed",
+    archived: "bg-bg-status-archived-subtle text-fg-status-archived",
   };
 
   return (
@@ -194,7 +194,7 @@ function SearchResultRow({ result, query, onClick }: SearchResultRowProps) {
       </div>
       {preview.text && (
         <p className="text-xs text-fg-neutral-secondary mt-1 truncate pl-[52px]">
-          {preview.type === 'step' && <span className="text-violet-500 dark:text-violet-400 mr-1">→</span>}
+          {preview.type === 'step' && <span className="text-fg-accent-primary mr-1">→</span>}
           {preview.type === 'snippet' ? (
             <HighlightedText text={preview.text} query={query} />
           ) : (
@@ -223,7 +223,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   return (
     <>
       {before}
-      <mark className="bg-yellow-200 dark:bg-yellow-800/50 text-inherit rounded-sm px-0.5">
+      <mark className="bg-bg-attention-subtle text-inherit rounded-sm px-0.5">
         {match}
       </mark>
       {after}
@@ -351,8 +351,8 @@ export default function Sidebar({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         className={`
-          fixed top-0 left-0 bottom-0 z-50 bg-white dark:bg-[#141417]
-          border-r border-zinc-200 dark:border-zinc-800
+          fixed top-0 left-0 bottom-0 z-50 bg-bg-neutral-min
+          border-r border-border-color-neutral-subtle
           transition-all duration-300 ease-in-out
           lg:translate-x-0
           ${/* Mobile: slide in/out based on isOpen, wider to show less content */
@@ -412,7 +412,7 @@ export default function Sidebar({
                 <div className="relative flex-1">
                   <Search
                     size={20}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-400"
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-neutral-soft"
                   />
                   <input
                     ref={searchInputRef}
@@ -423,8 +423,8 @@ export default function Sidebar({
                     onFocus={onSearchInputFocus}
                     onBlur={onSearchInputBlur}
                     className="w-full pl-10 pr-8 py-2.5 text-sm bg-bg-neutral-subtle
-                      border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500
-                      text-fg-neutral-primary placeholder-zinc-500"
+                      border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-focus
+                      text-fg-neutral-primary placeholder:text-fg-neutral-soft"
                   />
                   {/* Clear button - inside input, shows when text exists */}
                   {searchQuery && (
@@ -433,7 +433,7 @@ export default function Sidebar({
                         e.preventDefault(); // Prevent input blur
                         onSearchChange('');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
                       title="Clear search"
                     >
                       <XCircle size={16} />
@@ -445,7 +445,7 @@ export default function Sidebar({
                 {isSearchActive && (
                   <button
                     onClick={onBackToMenu}
-                    className="p-1.5 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex-shrink-0"
+                    className="p-1.5 rounded-lg hover:bg-bg-neutral-subtle-hover transition-colors flex-shrink-0"
                     title="Exit search"
                   >
                     <X size={20} className="text-fg-neutral-secondary" />

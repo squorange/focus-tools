@@ -15,7 +15,7 @@
 |---|---------|-------|--------|--------|-------|
 | 1 | Add New Tokens | ~35 new tokens across 5 categories | ✅ | | 40 tokens added |
 | 2 | Fix DS + Color Maps | SegmentedControl + lib/color-maps.ts | ✅ | | Fixed 2 raw colors, created 5 color maps |
-| 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | 🔲 | | |
+| 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | ✅ | | ~25 raw colors replaced |
 | 4 | Picker Components | 8 picker/input components | 🔲 | | |
 | 5 | Cards + Views | Task cards + view containers (~11 files) | 🔲 | | |
 | 6 | Medium Components | Selectors, displays, focus mode (~8 files) | 🔲 | | |

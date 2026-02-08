@@ -23,7 +23,7 @@ export default function SearchBar({
       <div className="hidden sm:block">
         <div className="relative">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-neutral-soft"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -43,9 +43,9 @@ export default function SearchBar({
             placeholder="Search tasks..."
             className={`w-full pl-9 pr-4 py-2 text-sm rounded-lg border transition-colors ${
               isSearchView
-                ? "bg-bg-neutral-min border-blue-500 ring-1 ring-blue-500"
-                : "bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral hover:border-zinc-300 dark:hover:border-zinc-600"
-            } text-fg-neutral-primary placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500`}
+                ? "bg-bg-neutral-min border-border-input-focus ring-1 ring-focus"
+                : "bg-bg-neutral-subtle border-border-color-neutral hover:border-border-color-neutral-hover"
+            } text-fg-neutral-primary placeholder:text-fg-neutral-soft focus:outline-none focus:border-border-input-focus focus:ring-1 focus:ring-focus`}
           />
           {value && (
             <button
@@ -53,7 +53,7 @@ export default function SearchBar({
               className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-bg-neutral-subtle-hover"
             >
               <svg
-                className="w-4 h-4 text-zinc-400"
+                className="w-4 h-4 text-fg-neutral-soft"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
