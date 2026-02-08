@@ -28,6 +28,7 @@ module.exports = {
             subtle: 'var(--color-bg-neutral-subtle)',
             'subtle-hover': 'var(--color-bg-neutral-subtle-hover)',
             low: 'var(--color-bg-neutral-low)',
+            'low-hover': 'var(--color-bg-neutral-low-hover)',
             'low-accented': 'var(--color-bg-neutral-low-accented)',
             medium: 'var(--color-bg-neutral-medium)',
             inverse: 'var(--color-bg-neutral-inverse)',
@@ -66,6 +67,7 @@ module.exports = {
           },
           positive: {
             subtle: 'var(--color-bg-positive-subtle)',
+            'subtle-hover': 'var(--color-bg-positive-subtle-hover)',
             low: 'var(--color-bg-positive-low)',
             'low-accented': 'var(--color-bg-positive-low-accented)',
             medium: 'var(--color-bg-positive-medium)',
@@ -78,6 +80,7 @@ module.exports = {
           },
           attention: {
             subtle: 'var(--color-bg-attention-subtle)',
+            'subtle-hover': 'var(--color-bg-attention-subtle-hover)',
             low: 'var(--color-bg-attention-low)',
             'low-accented': 'var(--color-bg-attention-low-accented)',
             medium: 'var(--color-bg-attention-medium)',
@@ -89,6 +92,7 @@ module.exports = {
           },
           alert: {
             subtle: 'var(--color-bg-alert-subtle)',
+            'subtle-hover': 'var(--color-bg-alert-subtle-hover)',
             low: 'var(--color-bg-alert-low)',
             'low-accented': 'var(--color-bg-alert-low-accented)',
             medium: 'var(--color-bg-alert-medium)',
@@ -108,10 +112,12 @@ module.exports = {
           },
           accent: {
             subtle: 'var(--color-bg-accent-subtle)',
+            'subtle-hover': 'var(--color-bg-accent-subtle-hover)',
             low: 'var(--color-bg-accent-low)',
             'low-accented': 'var(--color-bg-accent-low-accented)',
             medium: 'var(--color-bg-accent-medium)',
             high: 'var(--color-bg-accent-high)',
+            'high-hover': 'var(--color-bg-accent-high-hover)',
             'high-accented': 'var(--color-bg-accent-high-accented)',
             // Legacy
             DEFAULT: 'var(--color-bg-accent-default)',
@@ -121,6 +127,25 @@ module.exports = {
             strong: 'var(--color-bg-generative-strong)',
             high: 'var(--color-bg-generative-high)',
             'high-accented': 'var(--color-bg-generative-high-accented)',
+          },
+          // Priority tier colors
+          priority: {
+            'critical-subtle': 'var(--color-bg-priority-critical-subtle)',
+            'high-subtle': 'var(--color-bg-priority-high-subtle)',
+            'medium-subtle': 'var(--color-bg-priority-medium-subtle)',
+            'low-subtle': 'var(--color-bg-priority-low-subtle)',
+          },
+          // Energy level colors
+          energy: {
+            'high-subtle': 'var(--color-bg-energy-high-subtle)',
+            'medium-subtle': 'var(--color-bg-energy-medium-subtle)',
+            'low-subtle': 'var(--color-bg-energy-low-subtle)',
+          },
+          // Overlay colors
+          overlay: {
+            light: 'var(--color-bg-overlay-light)',
+            medium: 'var(--color-bg-overlay-medium)',
+            heavy: 'var(--color-bg-overlay-heavy)',
           },
           // Legacy info alias
           info: {
@@ -235,6 +260,19 @@ module.exports = {
             'inverse-primary': 'var(--color-fg-generative-inverse-primary)',
             'inverse-secondary': 'var(--color-fg-generative-inverse-secondary)',
           },
+          // Priority tier foreground colors
+          priority: {
+            critical: 'var(--color-fg-priority-critical)',
+            high: 'var(--color-fg-priority-high)',
+            medium: 'var(--color-fg-priority-medium)',
+            low: 'var(--color-fg-priority-low)',
+          },
+          // Energy level foreground colors
+          energy: {
+            high: 'var(--color-fg-energy-high)',
+            medium: 'var(--color-fg-energy-medium)',
+            low: 'var(--color-fg-energy-low)',
+          },
           a11y: {
             primary: 'var(--color-fg-a11y-primary)',
           },
@@ -265,6 +303,7 @@ module.exports = {
             medium: 'var(--color-border-neutral-medium)',
             DEFAULT: 'var(--color-border-neutral-default)',
             strong: 'var(--color-border-neutral-strong)',
+            hover: 'var(--color-border-neutral-hover)',
           },
           input: {
             DEFAULT: 'var(--color-border-input-default)',
@@ -315,6 +354,20 @@ module.exports = {
             'hover-bg': 'var(--glass-button-hover-bg)',
             'active-bg': 'var(--glass-button-active-bg)',
           },
+          // AI Glass effects
+          ai: {
+            border: 'var(--glass-ai-border)',
+            shadow: 'var(--glass-ai-shadow)',
+            'input-bg': 'var(--glass-ai-input-bg)',
+            'input-border': 'var(--glass-ai-input-border)',
+            'input-focus': 'var(--glass-ai-input-focus)',
+            'fade-from': 'var(--glass-ai-fade-from)',
+          },
+        },
+
+        // Ring colors for focus states
+        ringColor: {
+          focus: 'var(--color-ring-focus)',
         },
 
         // ========================================
@@ -509,6 +562,13 @@ module.exports = {
         'glass-secondary': '8px',
         'glass-ghost': '4px',
         'glass-button': '8px',
+        'glass-ai': 'var(--glass-ai-blur)',
+      },
+
+      // Font family
+      fontFamily: {
+        sans: 'var(--font-family-sans)',
+        mono: 'var(--font-family-mono)',
       },
     },
   },

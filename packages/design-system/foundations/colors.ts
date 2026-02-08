@@ -89,6 +89,22 @@ export const bg = {
       bold: 'var(--color-bg-status-archived-bold)',
     },
   },
+  priority: {
+    critical: { subtle: 'var(--color-bg-priority-critical-subtle)' },
+    high: { subtle: 'var(--color-bg-priority-high-subtle)' },
+    medium: { subtle: 'var(--color-bg-priority-medium-subtle)' },
+    low: { subtle: 'var(--color-bg-priority-low-subtle)' },
+  },
+  energy: {
+    high: { subtle: 'var(--color-bg-energy-high-subtle)' },
+    medium: { subtle: 'var(--color-bg-energy-medium-subtle)' },
+    low: { subtle: 'var(--color-bg-energy-low-subtle)' },
+  },
+  overlay: {
+    light: 'var(--color-bg-overlay-light)',
+    medium: 'var(--color-bg-overlay-medium)',
+    heavy: 'var(--color-bg-overlay-heavy)',
+  },
 } as const;
 
 // ============================================================================
@@ -132,6 +148,17 @@ export const fg = {
     inbox: 'var(--color-fg-status-inbox)',
     archived: 'var(--color-fg-status-archived)',
   },
+  priority: {
+    critical: 'var(--color-fg-priority-critical)',
+    high: 'var(--color-fg-priority-high)',
+    medium: 'var(--color-fg-priority-medium)',
+    low: 'var(--color-fg-priority-low)',
+  },
+  energy: {
+    high: 'var(--color-fg-energy-high)',
+    medium: 'var(--color-fg-energy-medium)',
+    low: 'var(--color-fg-energy-low)',
+  },
 } as const;
 
 // ============================================================================
@@ -156,12 +183,37 @@ export const border = {
 } as const;
 
 // ============================================================================
+// Glass Effects
+// ============================================================================
+export const glass = {
+  ai: {
+    bg: 'var(--glass-ai-bg)',
+    border: 'var(--glass-ai-border)',
+    shadow: 'var(--glass-ai-shadow)',
+    blur: 'var(--glass-ai-blur)',
+    inputBg: 'var(--glass-ai-input-bg)',
+    inputBorder: 'var(--glass-ai-input-border)',
+    inputFocus: 'var(--glass-ai-input-focus)',
+    fadeFrom: 'var(--glass-ai-fade-from)',
+  },
+} as const;
+
+// ============================================================================
+// Ring Colors (Focus)
+// ============================================================================
+export const ring = {
+  focus: 'var(--color-ring-focus)',
+} as const;
+
+// ============================================================================
 // Combined Colors Export
 // ============================================================================
 export const colors = {
   bg,
   fg,
   border,
+  glass,
+  ring,
 } as const;
 
 // ============================================================================
@@ -401,5 +453,9 @@ export const colorValues = {
 export type BgColors = typeof bg;
 export type FgColors = typeof fg;
 export type BorderColors = typeof border;
+export type GlassColors = typeof glass;
+export type RingColors = typeof ring;
 export type Colors = typeof colors;
 export type StatusName = keyof typeof bg.status;
+export type PriorityName = keyof typeof bg.priority;
+export type EnergyName = keyof typeof bg.energy;

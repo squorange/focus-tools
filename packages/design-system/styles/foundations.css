@@ -342,6 +342,63 @@
   --glass-button-active-bg: rgba(255, 255, 255, 0.92);
 
   /* ============================================
+   * Interactive State Colors - Hover
+   * ============================================ */
+  --color-bg-accent-high-hover: #6d28d9;
+  --color-bg-accent-subtle-hover: #ede9fe;
+  --color-bg-neutral-low-hover: #d4d4d8;
+  --color-bg-positive-subtle-hover: #dcfce7;
+  --color-bg-alert-subtle-hover: #fee2e2;
+  --color-bg-attention-subtle-hover: #fef3c7;
+  --color-border-neutral-hover: #d4d4d8;
+
+  /* ============================================
+   * Interactive State Colors - Focus
+   * ============================================ */
+  --color-ring-focus: #8b5cf6;
+
+  /* ============================================
+   * Priority Tier Colors
+   * ============================================ */
+  --color-bg-priority-critical-subtle: #fee2e2;
+  --color-fg-priority-critical: #dc2626;
+  --color-bg-priority-high-subtle: #ffedd5;
+  --color-fg-priority-high: #ea580c;
+  --color-bg-priority-medium-subtle: #fef3c7;
+  --color-fg-priority-medium: #d97706;
+  --color-bg-priority-low-subtle: var(--color-bg-neutral-subtle);
+  --color-fg-priority-low: var(--color-fg-neutral-secondary);
+
+  /* ============================================
+   * Energy Level Colors
+   * ============================================ */
+  --color-bg-energy-high-subtle: #dbeafe;
+  --color-fg-energy-high: #3b82f6;
+  --color-bg-energy-medium-subtle: #dcfce7;
+  --color-fg-energy-medium: #22c55e;
+  --color-bg-energy-low-subtle: #fef3c7;
+  --color-fg-energy-low: #f59e0b;
+
+  /* ============================================
+   * Overlay Colors
+   * ============================================ */
+  --color-bg-overlay-light: rgba(0, 0, 0, 0.2);
+  --color-bg-overlay-medium: rgba(0, 0, 0, 0.4);
+  --color-bg-overlay-heavy: rgba(0, 0, 0, 0.6);
+
+  /* ============================================
+   * AI Glass Effects
+   * ============================================ */
+  --glass-ai-bg: linear-gradient(to bottom right, rgba(245, 243, 255, 0.5), rgba(237, 233, 254, 0.4), rgba(245, 243, 255, 0.5));
+  --glass-ai-border: rgba(221, 214, 254, 0.3);
+  --glass-ai-shadow: rgba(167, 139, 250, 0.04);
+  --glass-ai-blur: 16px;
+  --glass-ai-input-bg: rgba(245, 243, 255, 0.3);
+  --glass-ai-input-border: rgba(221, 214, 254, 0.3);
+  --glass-ai-input-focus: #8b5cf6;
+  --glass-ai-fade-from: rgba(255, 255, 255, 0.95);
+
+  /* ============================================
    * Focus Shadows
    * ============================================ */
   --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);
@@ -672,6 +729,51 @@
   --glass-button-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-button-hover-bg: rgba(39, 39, 42, 0.85);
   --glass-button-active-bg: rgba(39, 39, 42, 0.92);
+
+  /* Interactive State Colors - Hover */
+  --color-bg-accent-high-hover: #a78bfa;
+  --color-bg-accent-subtle-hover: rgba(91, 33, 182, 0.3);
+  --color-bg-neutral-low-hover: #3f3f46;
+  --color-bg-positive-subtle-hover: rgba(20, 83, 45, 0.3);
+  --color-bg-alert-subtle-hover: rgba(127, 29, 29, 0.3);
+  --color-bg-attention-subtle-hover: rgba(120, 53, 15, 0.3);
+  --color-border-neutral-hover: #52525b;
+
+  /* Interactive State Colors - Focus */
+  --color-ring-focus: #8b5cf6;
+
+  /* Priority Tier Colors */
+  --color-bg-priority-critical-subtle: rgba(127, 29, 29, 0.3);
+  --color-fg-priority-critical: #f87171;
+  --color-bg-priority-high-subtle: rgba(124, 45, 18, 0.3);
+  --color-fg-priority-high: #fb923c;
+  --color-bg-priority-medium-subtle: rgba(120, 53, 15, 0.3);
+  --color-fg-priority-medium: #fbbf24;
+  --color-bg-priority-low-subtle: var(--color-bg-neutral-subtle);
+  --color-fg-priority-low: var(--color-fg-neutral-secondary);
+
+  /* Energy Level Colors */
+  --color-bg-energy-high-subtle: rgba(30, 58, 138, 0.3);
+  --color-fg-energy-high: #60a5fa;
+  --color-bg-energy-medium-subtle: rgba(20, 83, 45, 0.3);
+  --color-fg-energy-medium: #4ade80;
+  --color-bg-energy-low-subtle: rgba(120, 53, 15, 0.3);
+  --color-fg-energy-low: #fbbf24;
+
+  /* Overlay Colors */
+  --color-bg-overlay-light: rgba(0, 0, 0, 0.3);
+  --color-bg-overlay-medium: rgba(0, 0, 0, 0.5);
+  --color-bg-overlay-heavy: rgba(0, 0, 0, 0.7);
+
+  /* AI Glass Effects */
+  --glass-ai-bg: linear-gradient(to bottom right, rgba(46, 16, 101, 0.3), rgba(46, 16, 101, 0.2), rgba(46, 16, 101, 0.3));
+  --glass-ai-border: rgba(91, 33, 182, 0.3);
+  --glass-ai-shadow: rgba(46, 16, 101, 0.2);
+  --glass-ai-blur: 16px;
+  --glass-ai-input-bg: rgba(46, 16, 101, 0.1);
+  --glass-ai-input-border: rgba(91, 33, 182, 0.3);
+  --glass-ai-input-focus: #8b5cf6;
+  --glass-ai-fade-from: rgba(46, 16, 101, 0.95);
 
   /* Focus Shadows */
   --shadow-focus: 0 0 0 3px var(--color-bg-accent-low);

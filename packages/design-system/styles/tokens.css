@@ -241,6 +241,12 @@
   --space-20: 80px;
 
   /* ============================================
+   * Typography - Font Family
+   * ============================================ */
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ============================================
    * Typography - Font Sizes
    * ============================================ */
   --font-size-xs: 0.75rem;     /* 12px */
