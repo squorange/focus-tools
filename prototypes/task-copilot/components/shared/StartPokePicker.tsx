@@ -116,7 +116,7 @@ export default function StartPokePicker({
 
           {/* Missing data warning */}
           {!hasRequiredData && missingDataMessage && (
-            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs">
+            <div className="px-4 py-3 bg-bg-attention-subtle text-fg-attention text-xs">
               ⚠️ {missingDataMessage}
             </div>
           )}
@@ -137,8 +137,8 @@ export default function StartPokePicker({
                     w-full text-left p-3 rounded-lg border transition-colors
                     ${
                       isSelected
-                        ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        ? "border-border-accent bg-bg-accent-subtle"
+                        : "border-border-color-neutral bg-bg-neutral-subtle hover:border-border-color-neutral-hover"
                     }
                   `}
                 >
@@ -152,7 +152,7 @@ export default function StartPokePicker({
                       </p>
                     </div>
                     {isSelected && (
-                      <Check size={18} className="text-violet-500 flex-shrink-0" />
+                      <Check size={18} className="text-fg-accent-primary flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -187,7 +187,7 @@ export default function StartPokePicker({
 
         {/* Missing data warning */}
         {!hasRequiredData && missingDataMessage && (
-          <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs rounded-lg">
+          <div className="mb-3 p-2 bg-bg-attention-subtle text-fg-attention text-xs rounded-lg">
             ⚠️ {missingDataMessage}
           </div>
         )}
@@ -202,7 +202,7 @@ export default function StartPokePicker({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
-                  isSelected ? "bg-violet-50 dark:bg-violet-900/20" : ""
+                  isSelected ? "bg-bg-accent-subtle" : ""
                 }`}
               >
                 <div className="flex-1">
@@ -214,7 +214,7 @@ export default function StartPokePicker({
                   </p>
                 </div>
                 {isSelected && (
-                  <Check size={16} className="text-violet-500 flex-shrink-0" />
+                  <Check size={16} className="text-fg-accent-primary flex-shrink-0" />
                 )}
               </button>
             );

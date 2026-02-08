@@ -159,12 +159,12 @@ export default function DurationPicker({
                       p-3 rounded-lg border transition-colors text-center
                       ${
                         isSelected
-                          ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                          : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                          ? "border-border-accent bg-bg-accent-subtle"
+                          : "border-border-color-neutral bg-bg-neutral-subtle hover:border-border-color-neutral-hover"
                       }
                     `}
                   >
-                    <span className={`text-sm font-medium ${isSelected ? "text-violet-700 dark:text-violet-300" : "text-fg-neutral-primary"}`}>
+                    <span className={`text-sm font-medium ${isSelected ? "text-fg-accent-primary" : "text-fg-neutral-primary"}`}>
                       {option.label}
                     </span>
                   </button>
@@ -178,7 +178,7 @@ export default function DurationPicker({
                 <button
                   type="button"
                   onClick={() => setShowCustom(true)}
-                  className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                  className="text-sm text-fg-accent-primary hover:underline"
                 >
                   Custom duration...
                 </button>
@@ -215,7 +215,7 @@ export default function DurationPicker({
                     type="button"
                     onClick={handleCustomSubmit}
                     disabled={(parseInt(customHours, 10) || 0) * 60 + (parseInt(customMinutes, 10) || 0) <= 0}
-                    className="w-full px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2 text-sm font-medium bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Set Duration
                   </button>
@@ -228,7 +228,7 @@ export default function DurationPicker({
               <button
                 type="button"
                 onClick={handleClear}
-                className="w-full mt-4 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-200"
+                className="w-full mt-4 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
               >
                 {source === 'manual' && calculatedDefault
                   ? `Reset to default (${formatDuration(calculatedDefault)} from steps)`
@@ -275,7 +275,7 @@ export default function DurationPicker({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={`px-3 py-2 text-sm text-center hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
-                  isSelected ? "bg-violet-50 dark:bg-violet-900/20 font-medium text-violet-700 dark:text-violet-300" : "text-fg-neutral-primary"
+                  isSelected ? "bg-bg-accent-subtle font-medium text-fg-accent-primary" : "text-fg-neutral-primary"
                 }`}
               >
                 {option.label}
@@ -290,7 +290,7 @@ export default function DurationPicker({
             <button
               type="button"
               onClick={() => setShowCustom(true)}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+              className="text-sm text-fg-accent-primary hover:underline"
             >
               Custom duration...
             </button>
@@ -327,7 +327,7 @@ export default function DurationPicker({
                 type="button"
                 onClick={handleCustomSubmit}
                 disabled={(parseInt(customHours, 10) || 0) * 60 + (parseInt(customMinutes, 10) || 0) <= 0}
-                className="w-full px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 text-sm font-medium bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Set
               </button>
@@ -340,7 +340,7 @@ export default function DurationPicker({
           <button
             type="button"
             onClick={handleClear}
-            className="w-full mt-3 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-700 dark:hover:text-zinc-200"
+            className="w-full mt-3 px-3 py-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
           >
             {source === 'manual' && calculatedDefault
               ? `Reset to default (${formatDuration(calculatedDefault)} from steps)`

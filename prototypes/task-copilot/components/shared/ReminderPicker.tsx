@@ -171,14 +171,14 @@ export default function ReminderPicker({
               {permissionState === "default" && (
                 <button
                   onClick={handleRequestPermission}
-                  className="w-full px-3 py-2.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                  className="w-full px-3 py-2.5 text-sm bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover transition-colors"
                 >
                   Enable Notifications
                 </button>
               )}
               <button
                 onClick={onClose}
-                className="w-full px-3 py-2 mt-2 text-sm text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200"
+                className="w-full px-3 py-2 mt-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
               >
                 Cancel
               </button>
@@ -215,7 +215,7 @@ export default function ReminderPicker({
               </p>
               <button
                 onClick={onClose}
-                className="w-full px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200"
+                className="w-full px-3 py-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
               >
                 Close
               </button>
@@ -254,7 +254,7 @@ export default function ReminderPicker({
           >
             {/* Relative shortcuts - only if target/deadline exists */}
             {hasAnyDate && relativeOptions.length > 0 && (
-              <div className="pb-3 mb-3 border-b border-zinc-100 dark:border-zinc-700 space-y-1">
+              <div className="pb-3 mb-3 border-b border-border-color-neutral space-y-1">
                 {relativeOptions.map((option, idx) => (
                   <button
                     key={idx}
@@ -295,7 +295,7 @@ export default function ReminderPicker({
 
               <button
                 onClick={handleSetCustomTime}
-                className="w-full px-3 py-2.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                className="w-full px-3 py-2.5 text-sm bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover transition-colors"
               >
                 Set Reminder
               </button>
@@ -327,14 +327,14 @@ export default function ReminderPicker({
           {permissionState === "default" && (
             <button
               onClick={handleRequestPermission}
-              className="w-full px-3 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              className="w-full px-3 py-2 text-sm bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover transition-colors"
             >
               Enable Notifications
             </button>
           )}
           <button
             onClick={onClose}
-            className="w-full px-3 py-2 mt-2 text-sm text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="w-full px-3 py-2 mt-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
           >
             Cancel
           </button>
@@ -360,7 +360,7 @@ export default function ReminderPicker({
           </p>
           <button
             onClick={onClose}
-            className="w-full px-3 py-2 text-sm text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="w-full px-3 py-2 text-sm text-fg-neutral-secondary hover:text-fg-neutral-primary"
           >
             Close
           </button>
@@ -389,7 +389,7 @@ export default function ReminderPicker({
 
         {/* Relative shortcuts - only if target/deadline exists */}
         {hasAnyDate && relativeOptions.length > 0 && (
-          <div className="pb-2 mb-2 border-b border-zinc-100 dark:border-zinc-700 space-y-1">
+          <div className="pb-2 mb-2 border-b border-border-color-neutral space-y-1">
             {relativeOptions.map((option, idx) => (
               <button
                 key={idx}
@@ -430,7 +430,7 @@ export default function ReminderPicker({
 
           <button
             onClick={handleSetCustomTime}
-            className="w-full px-3 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+            className="w-full px-3 py-2 text-sm bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover transition-colors"
           >
             Set Reminder
           </button>

@@ -16,7 +16,7 @@
 | 1 | Add New Tokens | ~35 new tokens across 5 categories | ✅ | | 40 tokens added |
 | 2 | Fix DS + Color Maps | SegmentedControl + lib/color-maps.ts | ✅ | | Fixed 2 raw colors, created 5 color maps |
 | 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | ✅ | | ~25 raw colors replaced |
-| 4 | Picker Components | 8 picker/input components | 🔲 | | |
+| 4 | Picker Components | 8 picker/input components | ✅ | | 8 files migrated |
 | 5 | Cards + Views | Task cards + view containers (~11 files) | 🔲 | | |
 | 6 | Medium Components | Selectors, displays, focus mode (~8 files) | 🔲 | | |
 | 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | 🔲 | | |
@@ -143,14 +143,14 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 | Component | Raw Colors | Status | Session |
 |-----------|-----------|--------|---------|
-| DurationPicker | 12 | 🔲 | 4 |
-| DurationInput | 6 | 🔲 | 4 |
-| ImportancePicker | 8 | 🔲 | 4 |
-| LeadTimePicker | 8 | 🔲 | 4 |
-| StartPokePicker | 12 | 🔲 | 4 |
-| ReminderPicker | 10 | 🔲 | 4 |
-| EnergyTypePicker | 8 | 🔲 | 4 |
-| DatePickerModal | 6 | 🔲 | 4 |
+| DurationPicker | 0 | ✅ | 4 |
+| DurationInput | 0 | ✅ | 4 |
+| ImportancePicker | 0 | ✅ | 4 |
+| LeadTimePicker | 0 | ✅ | 4 |
+| StartPokePicker | 0 | ✅ | 4 |
+| ReminderPicker | 0 | ✅ | 4 |
+| EnergyTypePicker | 0 | ✅ | 4 |
+| DatePickerModal | 0 | ✅ | 4 |
 
 ### Cards + Views
 

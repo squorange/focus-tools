@@ -141,8 +141,8 @@ export default function LeadTimePicker({
                     w-full text-left p-3 rounded-lg border transition-colors
                     ${
                       isSelected
-                        ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        ? "border-border-accent bg-bg-accent-subtle"
+                        : "border-border-color-neutral bg-bg-neutral-subtle hover:border-border-color-neutral-hover"
                     }
                   `}
                 >
@@ -158,7 +158,7 @@ export default function LeadTimePicker({
                       </p>
                     </div>
                     {isSelected && (
-                      <Check size={18} className="text-violet-500 flex-shrink-0" />
+                      <Check size={18} className="text-fg-accent-primary flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -171,7 +171,7 @@ export default function LeadTimePicker({
                 <button
                   type="button"
                   onClick={() => setShowCustom(true)}
-                  className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+                  className="text-sm text-fg-accent-primary hover:underline"
                 >
                   Custom days...
                 </button>
@@ -191,7 +191,7 @@ export default function LeadTimePicker({
                     type="button"
                     onClick={handleCustomSubmit}
                     disabled={!customValue || parseInt(customValue, 10) <= 0}
-                    className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Set
                   </button>
@@ -242,7 +242,7 @@ export default function LeadTimePicker({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
-                  isSelected ? "bg-violet-50 dark:bg-violet-900/20" : ""
+                  isSelected ? "bg-bg-accent-subtle" : ""
                 }`}
               >
                 <div className="flex-1">
@@ -256,7 +256,7 @@ export default function LeadTimePicker({
                   </p>
                 </div>
                 {isSelected && (
-                  <Check size={16} className="text-violet-500 flex-shrink-0" />
+                  <Check size={16} className="text-fg-accent-primary flex-shrink-0" />
                 )}
               </button>
             );
@@ -269,7 +269,7 @@ export default function LeadTimePicker({
             <button
               type="button"
               onClick={() => setShowCustom(true)}
-              className="text-sm text-violet-600 dark:text-violet-400 hover:underline"
+              className="text-sm text-fg-accent-primary hover:underline"
             >
               Custom days...
             </button>
@@ -289,7 +289,7 @@ export default function LeadTimePicker({
                 type="button"
                 onClick={handleCustomSubmit}
                 disabled={!customValue || parseInt(customValue, 10) <= 0}
-                className="px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium bg-bg-accent-high text-fg-neutral-inverse-primary rounded-lg hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Set
               </button>

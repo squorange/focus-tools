@@ -130,8 +130,8 @@ export default function EnergyTypePicker({
                     w-full text-left p-3 rounded-lg border transition-colors
                     ${
                       isSelected
-                        ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : "border-border-color-neutral bg-zinc-50 dark:bg-zinc-800/50 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        ? "border-border-accent bg-bg-accent-subtle"
+                        : "border-border-color-neutral bg-bg-neutral-subtle hover:border-border-color-neutral-hover"
                     }
                   `}
                 >
@@ -148,7 +148,7 @@ export default function EnergyTypePicker({
                       </div>
                     </div>
                     {isSelected && (
-                      <Check size={18} className="text-violet-500 flex-shrink-0" />
+                      <Check size={18} className="text-fg-accent-primary flex-shrink-0" />
                     )}
                   </div>
                 </button>
@@ -190,7 +190,7 @@ export default function EnergyTypePicker({
                 type="button"
                 onClick={() => handleSelect(option.value)}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
-                  isSelected ? "bg-violet-50 dark:bg-violet-900/20" : ""
+                  isSelected ? "bg-bg-accent-subtle" : ""
                 }`}
               >
                 {option.icon}
@@ -203,7 +203,7 @@ export default function EnergyTypePicker({
                   </p>
                 </div>
                 {isSelected && (
-                  <Check size={16} className="text-violet-500 flex-shrink-0" />
+                  <Check size={16} className="text-fg-accent-primary flex-shrink-0" />
                 )}
               </button>
             );

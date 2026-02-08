@@ -182,9 +182,9 @@ export default function DurationInput({
             w-full px-3 py-1.5 pr-8 text-sm
             bg-bg-neutral-min
             border rounded-lg
-            focus:outline-none focus:ring-2 focus:ring-violet-500
+            focus:outline-none focus:ring-2 focus:ring-focus
             ${hasError
-              ? "border-red-400 dark:border-red-500"
+              ? "border-border-alert"
               : "border-border-color-neutral"
             }
             ${isUsingAutoValue ? "text-fg-neutral-secondary" : ""}
@@ -196,7 +196,7 @@ export default function DurationInput({
           <button
             onClick={hasManualOverride ? handleClearOverride : handleClearAll}
             type="button"
-            className="absolute right-2 p-0.5 text-zinc-400 hover:text-fg-neutral-secondary rounded"
+            className="absolute right-2 p-0.5 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded"
             title={hasManualOverride ? "Reset to auto-calculated" : "Clear estimate"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,7 +208,7 @@ export default function DurationInput({
 
       {/* Error hint */}
       {hasError && (
-        <span className="text-xs text-red-500 dark:text-red-400">
+        <span className="text-xs text-fg-alert">
           Invalid format. Try: 45m, 1h, or 1h 30m
         </span>
       )}
@@ -220,7 +220,7 @@ export default function DurationInput({
           {source === "ai" && (
             <span className="inline-flex items-center gap-1">
               AI estimate
-              <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
+              <span className="px-1 py-0.5 text-[10px] font-medium bg-bg-accent-subtle text-fg-accent-primary rounded">
                 AI
               </span>
             </span>
@@ -260,7 +260,7 @@ export function EstimateBadge({ minutes, source, onClick }: EstimateBadgeProps) 
     >
       <span>{formatDisplay()}</span>
       {source === "ai" && (
-        <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
+        <span className="px-1 py-0.5 text-[10px] font-medium bg-bg-accent-subtle text-fg-accent-primary rounded">
           AI
         </span>
       )}
