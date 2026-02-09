@@ -177,11 +177,11 @@ export default function TaskCreationPopover({
         }}
         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle ${
           projectId === null
-            ? "bg-violet-50 dark:bg-violet-900/20"
+            ? "bg-bg-accent-subtle"
             : ""
         }`}
       >
-        <FolderOpen size={14} className="text-zinc-400" />
+        <FolderOpen size={14} className="text-fg-neutral-soft" />
         <span className="text-fg-neutral-secondary">
           No project
         </span>
@@ -198,7 +198,7 @@ export default function TaskCreationPopover({
           }}
           className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle ${
             projectId === project.id
-              ? "bg-violet-50 dark:bg-violet-900/20"
+              ? "bg-bg-accent-subtle"
               : ""
           }`}
         >
@@ -230,7 +230,7 @@ export default function TaskCreationPopover({
             }
             setShowProjectDropdown(false);
           }}
-          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-violet-600 dark:text-violet-400 hover:bg-bg-neutral-subtle border-t border-border-color-neutral"
+          className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-fg-accent-primary hover:bg-bg-neutral-subtle border-t border-border-color-neutral"
         >
           <Plus size={14} />
           <span>Create new project</span>
@@ -288,7 +288,7 @@ export default function TaskCreationPopover({
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="What needs to be done?"
-                className="w-full px-4 py-3 text-base bg-zinc-100 dark:bg-zinc-900 border-0 rounded-xl text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 text-base bg-bg-neutral-subtle border-0 rounded-xl text-fg-neutral-primary placeholder:text-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
                 autoComplete="off"
                 enterKeyHint="done"
               />
@@ -311,13 +311,13 @@ export default function TaskCreationPopover({
                   </>
                 ) : (
                   <>
-                    <FolderOpen size={14} className="text-zinc-400" />
+                    <FolderOpen size={14} className="text-fg-neutral-soft" />
                     <span>Add to project</span>
                   </>
                 )}
                 <ChevronDown
                   size={14}
-                  className={`text-zinc-400 transition-transform ${
+                  className={`text-fg-neutral-soft transition-transform ${
                     showProjectDropdown ? "rotate-180" : ""
                   }`}
                 />
@@ -338,7 +338,7 @@ export default function TaskCreationPopover({
               <button
                 onClick={handleQuickAdd}
                 disabled={!title.trim()}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                className="px-4 py-2.5 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 Add
               </button>
@@ -368,7 +368,7 @@ export default function TaskCreationPopover({
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="What needs to be done?"
-            className="w-full px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-900 border-0 rounded-lg text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full px-3 py-2 text-sm bg-bg-neutral-subtle border-0 rounded-lg text-fg-neutral-primary placeholder:text-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
             autoComplete="off"
             autoFocus
           />
@@ -391,13 +391,13 @@ export default function TaskCreationPopover({
               </>
             ) : (
               <>
-                <FolderOpen size={14} className="text-zinc-400" />
+                <FolderOpen size={14} className="text-fg-neutral-soft" />
                 <span>Add to project</span>
               </>
             )}
             <ChevronDown
               size={14}
-              className={`text-zinc-400 transition-transform ${
+              className={`text-fg-neutral-soft transition-transform ${
                 showProjectDropdown ? "rotate-180" : ""
               }`}
             />
@@ -418,7 +418,7 @@ export default function TaskCreationPopover({
           <button
             onClick={handleQuickAdd}
             disabled={!title.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             Add
           </button>

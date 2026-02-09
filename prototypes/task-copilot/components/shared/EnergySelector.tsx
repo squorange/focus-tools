@@ -40,22 +40,22 @@ export default function EnergySelector({
       value: "high",
       icon: <Zap size={compact ? 14 : 16} />,
       label: "High",
-      color: "text-amber-500 dark:text-amber-400",
-      activeColor: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700",
+      color: "text-fg-energy-high",
+      activeColor: "bg-bg-energy-high-subtle text-fg-energy-high border-border-energy-high",
     },
     {
       value: "medium",
       icon: <Battery size={compact ? 14 : 16} />,
       label: "Medium",
-      color: "text-green-500 dark:text-green-400",
-      activeColor: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700",
+      color: "text-fg-energy-medium",
+      activeColor: "bg-bg-energy-medium-subtle text-fg-energy-medium border-border-energy-medium",
     },
     {
       value: "low",
       icon: <BatteryLow size={compact ? 14 : 16} />,
       label: "Low",
-      color: "text-blue-500 dark:text-blue-400",
-      activeColor: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+      color: "text-fg-energy-low",
+      activeColor: "bg-bg-energy-low-subtle text-fg-energy-low border-border-energy-low",
     },
   ];
 
@@ -79,7 +79,7 @@ export default function EnergySelector({
                 ${
                   isActive
                     ? level.activeColor
-                    : "border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    : "border-border-color-neutral text-fg-neutral-secondary hover:border-border-color-neutral-hover hover:bg-bg-neutral-subtle"
                 }
               `}
               title={`${level.label} energy${isActive ? " (click to clear)" : ""}`}

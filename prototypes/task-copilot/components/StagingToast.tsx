@@ -31,8 +31,8 @@ export default function StagingToast({
     <div
       className={`
         fixed left-0 right-0 z-35
-        bg-amber-50 dark:bg-amber-900/30
-        border-t border-amber-200 dark:border-amber-700
+        bg-bg-attention-subtle
+        border-t border-border-attention
         shadow-[0_-2px_10px_rgba(0,0,0,0.08)]
         transition-all duration-300 ease-out
         ${isDrawerOpen ? "bottom-[70vh]" : "bottom-14"}
@@ -42,7 +42,7 @@ export default function StagingToast({
         {/* Left side - info */}
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-lg flex-shrink-0">💡</span>
-          <span className="font-medium text-amber-800 dark:text-amber-200 truncate">
+          <span className="font-medium text-fg-attention-primary truncate">
             {totalItems} suggested {totalItems === 1 ? "change" : "changes"}
           </span>
         </div>
@@ -52,8 +52,8 @@ export default function StagingToast({
           <button
             onClick={onReview}
             className="px-3 py-1.5 text-sm font-medium
-                       text-amber-700 dark:text-amber-300
-                       hover:bg-amber-100 dark:hover:bg-amber-800/30
+                       text-fg-attention-primary
+                       hover:bg-bg-attention-subtle-hover
                        rounded-lg transition-colors"
           >
             Review
@@ -61,15 +61,15 @@ export default function StagingToast({
           <button
             onClick={onAcceptAll}
             className="px-3 py-1.5 text-sm font-medium
-                       bg-green-600 hover:bg-green-700
-                       text-white rounded-lg transition-colors"
+                       bg-bg-positive-high hover:bg-bg-positive-high-hover
+                       text-fg-neutral-inverse-primary rounded-lg transition-colors"
           >
             Accept all
           </button>
           <button
             onClick={onDismiss}
-            className="p-1.5 text-amber-600 dark:text-amber-400
-                       hover:bg-amber-100 dark:hover:bg-amber-800/30
+            className="p-1.5 text-fg-attention-primary
+                       hover:bg-bg-attention-subtle-hover
                        rounded-lg transition-colors"
             aria-label="Dismiss"
           >

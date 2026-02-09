@@ -22,15 +22,15 @@ interface PriorityDisplayProps {
 const tierConfig: Record<PriorityTier, { label: string; color: string }> = {
   critical: {
     label: "Critical",
-    color: "text-red-600 dark:text-red-400",
+    color: "text-fg-priority-critical",
   },
   high: {
     label: "High",
-    color: "text-orange-600 dark:text-orange-400",
+    color: "text-fg-priority-high",
   },
   medium: {
     label: "Medium",
-    color: "text-amber-600 dark:text-amber-400",
+    color: "text-fg-priority-medium",
   },
   low: {
     label: "Low",
@@ -93,7 +93,7 @@ export default function PriorityDisplay({
         <button
           type="button"
           onClick={handleChevronClick}
-          className="p-0.5 -m-0.5 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+          className="p-0.5 -m-0.5 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
           aria-label={chevronUp ? "Collapse details" : "Expand details"}
         >
           {chevronUp ? (

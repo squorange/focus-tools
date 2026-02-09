@@ -27,29 +27,29 @@ export default function NotificationPermissionBanner({
   };
 
   return (
-    <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-xl p-4 mb-4">
+    <div className="bg-bg-accent-subtle border border-border-accent rounded-xl p-4 mb-4">
       <div className="flex items-start gap-3">
-        <div className="p-2 bg-violet-100 dark:bg-violet-900/40 rounded-lg flex-shrink-0">
-          <Bell size={20} className="text-violet-600 dark:text-violet-400" />
+        <div className="p-2 bg-bg-accent-subtle rounded-lg flex-shrink-0">
+          <Bell size={20} className="text-fg-accent-secondary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-violet-900 dark:text-violet-100 mb-1">
+          <h3 className="text-sm font-medium text-fg-accent-primary mb-1">
             Enable Notifications
           </h3>
-          <p className="text-xs text-violet-700 dark:text-violet-300 mb-3">
+          <p className="text-xs text-fg-accent-primary mb-3">
             Get reminders and start-time pokes to stay on track with your tasks.
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={handleEnable}
               disabled={isRequesting}
-              className="px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 rounded-lg transition-colors"
             >
               {isRequesting ? "Requesting..." : "Enable"}
             </button>
             <button
               onClick={onDismiss}
-              className="px-3 py-1.5 text-sm font-medium text-violet-700 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-100 transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-fg-accent-primary hover:text-fg-accent-primary transition-colors"
             >
               Not now
             </button>
@@ -57,7 +57,7 @@ export default function NotificationPermissionBanner({
         </div>
         <button
           onClick={onDismiss}
-          className="p-1 text-violet-400 hover:text-violet-600 dark:hover:text-violet-300 transition-colors flex-shrink-0"
+          className="p-1 text-fg-accent-secondary hover:text-fg-accent-primary transition-colors flex-shrink-0"
           aria-label="Dismiss"
         >
           <X size={16} />

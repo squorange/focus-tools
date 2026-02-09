@@ -87,8 +87,8 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
   return (
     <div className="space-y-4">
       {/* Pattern Preview */}
-      <div className="px-3 py-2 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-200 dark:border-violet-800">
-        <p className="text-sm font-medium text-violet-700 dark:text-violet-300">
+      <div className="px-3 py-2 bg-bg-accent-subtle rounded-lg border border-border-color-accent">
+        <p className="text-sm font-medium text-fg-accent-primary">
           {patternDescription}
         </p>
       </div>
@@ -134,8 +134,8 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               className={`
                 px-3 py-2 text-sm font-medium rounded-lg transition-colors
                 ${rule.frequency === freq.value
-                  ? "bg-violet-600 text-white"
-                  : "bg-bg-neutral-subtle text-fg-neutral-primary hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  ? "bg-bg-accent-high text-fg-neutral-inverse-primary"
+                  : "bg-bg-neutral-subtle text-fg-neutral-primary hover:bg-bg-neutral-low-hover"
                 }
               `}
             >
@@ -158,7 +158,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
             value={intervalInput}
             onChange={handleIntervalChange}
             onBlur={handleIntervalBlur}
-            className="w-20 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            className="w-20 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-focus focus:border-transparent"
           />
           <span className="text-sm text-fg-neutral-secondary">
             {getIntervalUnit()}
@@ -169,19 +169,19 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
       {/* Time */}
       <div>
         <label className="block text-sm font-medium text-fg-neutral-primary mb-2">
-          Time <span className="text-zinc-400 font-normal">(optional)</span>
+          Time <span className="text-fg-neutral-soft font-normal">(optional)</span>
         </label>
         <input
           type="time"
           value={rule.time || ""}
           onChange={(e) => updateRule({ time: e.target.value || null })}
-          className="w-32 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-32 px-3 py-2 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary focus:ring-2 focus:ring-focus focus:border-transparent"
         />
         {rule.time && (
           <button
             type="button"
             onClick={() => updateRule({ time: null })}
-            className="ml-2 text-xs text-zinc-500 hover:text-fg-neutral-secondary"
+            className="ml-2 text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary"
           >
             Clear
           </button>
@@ -206,8 +206,8 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
                   className={`
                     w-9 h-9 text-sm font-medium rounded-lg transition-colors
                     ${isSelected
-                      ? "bg-violet-600 text-white"
-                      : "bg-bg-neutral-subtle text-fg-neutral-secondary hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      ? "bg-bg-accent-high text-fg-neutral-inverse-primary"
+                      : "bg-bg-neutral-subtle text-fg-neutral-secondary hover:bg-bg-neutral-low-hover"
                     }
                   `}
                 >
@@ -217,7 +217,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
             })}
           </div>
           {(!rule.daysOfWeek || rule.daysOfWeek.length === 0) && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            <p className="mt-1 text-xs text-fg-attention-primary">
               Select at least one day
             </p>
           )}
@@ -245,7 +245,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
                   daysOfWeek: null,
                 });
               }}
-              className="w-4 h-4 text-violet-600"
+              className="w-4 h-4 text-fg-accent-secondary"
             />
             <label htmlFor="monthly-day" className="text-sm text-fg-neutral-primary">
               Day
@@ -257,9 +257,9 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               value={rule.dayOfMonth || ""}
               onChange={(e) => updateRule({ dayOfMonth: parseInt(e.target.value) || 1 })}
               disabled={rule.dayOfMonth === null}
-              className="w-16 px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="w-16 px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-focus focus:border-transparent"
             />
-            <span className="text-sm text-zinc-500">of the month</span>
+            <span className="text-sm text-fg-neutral-soft">of the month</span>
           </div>
 
           {/* Option 2: Week + Day */}
@@ -276,7 +276,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
                   daysOfWeek: [new Date().getDay()],
                 });
               }}
-              className="w-4 h-4 text-violet-600"
+              className="w-4 h-4 text-fg-accent-secondary"
             />
             <label htmlFor="monthly-week" className="text-sm text-fg-neutral-primary">
               The
@@ -285,7 +285,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               value={rule.weekOfMonth || 1}
               onChange={(e) => updateRule({ weekOfMonth: parseInt(e.target.value) })}
               disabled={rule.weekOfMonth === null}
-              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-focus focus:border-transparent"
             >
               {WEEK_OF_MONTH.map((week) => (
                 <option key={week.value} value={week.value}>
@@ -297,7 +297,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
               value={rule.daysOfWeek?.[0] ?? 0}
               onChange={(e) => updateRule({ daysOfWeek: [parseInt(e.target.value)] })}
               disabled={rule.weekOfMonth === null}
-              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              className="px-2 py-1 text-sm border border-border-color-neutral rounded-lg bg-bg-neutral-min text-fg-neutral-primary disabled:opacity-50 focus:ring-2 focus:ring-focus focus:border-transparent"
             >
               {DAYS_OF_WEEK.map((day) => (
                 <option key={day.value} value={day.value}>
@@ -316,7 +316,7 @@ export default function RecurrenceFields({ rule, onChange }: RecurrenceFieldsPro
             type="checkbox"
             checked={rule.rolloverIfMissed}
             onChange={(e) => updateRule({ rolloverIfMissed: e.target.checked })}
-            className="w-4 h-4 mt-0.5 text-violet-600 rounded focus:ring-violet-500"
+            className="w-4 h-4 mt-0.5 text-fg-accent-secondary rounded focus:ring-focus"
           />
           <div>
             <span className="block text-sm font-medium text-fg-neutral-primary">

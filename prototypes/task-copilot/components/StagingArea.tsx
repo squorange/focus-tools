@@ -111,33 +111,33 @@ export default function StagingArea({
   return (
     <div
       className={`
-        bg-violet-50 dark:bg-violet-900/20 border rounded-lg overflow-hidden transition-all
+        bg-bg-accent-subtle border rounded-lg overflow-hidden transition-all
         ${isPulsing
-          ? 'border-violet-400 dark:border-violet-500 shadow-lg shadow-violet-200/50 dark:shadow-violet-900/30 animate-pulse-glow'
-          : 'border-violet-200/60 dark:border-violet-700/40'}
+          ? 'border-border-accent shadow-lg shadow-accent-glow animate-pulse-glow'
+          : 'border-border-accent/60'}
       `}
     >
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between gap-2 p-4 hover:bg-violet-100/50 dark:hover:bg-violet-900/30 transition-colors"
+        className="w-full flex items-center justify-between gap-2 p-4 hover:bg-bg-accent-subtle-hover transition-colors"
       >
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg">💡</span>
-          <span className="font-medium text-violet-800 dark:text-violet-300">
+          <span className="font-medium text-fg-accent-primary">
             Suggested Changes
           </span>
           {targetStep && (
-            <span className="text-sm text-violet-600 dark:text-violet-400">
+            <span className="text-sm text-fg-accent-secondary">
               → Step {targetStep.stepNumber}: {targetStep.text.length > 25 ? targetStep.text.slice(0, 25) + '...' : targetStep.text}
             </span>
           )}
-          <span className="text-sm text-violet-600 dark:text-violet-400">
+          <span className="text-sm text-fg-accent-secondary">
             ({totalItems} {totalItems === 1 ? "item" : "items"})
           </span>
         </div>
         <svg
-          className={`w-4 h-4 text-violet-600 dark:text-violet-400 transition-transform duration-200 ${
+          className={`w-4 h-4 text-fg-accent-secondary transition-transform duration-200 ${
             isExpanded ? "rotate-180" : ""
           }`}
           fill="none"
@@ -156,19 +156,19 @@ export default function StagingArea({
           <div className="px-4 pb-4">
           {/* Title suggestion */}
           {hasTitleSuggestion && (
-            <div className="mb-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg border border-violet-300 dark:border-violet-600">
+            <div className="mb-3 py-2 px-3 bg-bg-neutral-min rounded-lg border border-border-accent">
               <div className="flex items-start gap-3">
                 {/* Title badge */}
-                <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-bg-accent-subtle text-fg-accent-primary rounded">
                   TITLE
                 </span>
 
                 {/* Content: old → new */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-neutral-400 dark:text-neutral-500 line-through text-sm">
+                  <p className="text-fg-neutral-soft line-through text-sm">
                     {currentTitle}
                   </p>
-                  <p className="text-neutral-700 dark:text-neutral-200 mt-1">
+                  <p className="text-fg-neutral-primary mt-1">
                     {suggestedTitle}
                   </p>
                 </div>
@@ -178,8 +178,8 @@ export default function StagingArea({
                   <button
                     onClick={onAcceptTitle}
                     className="px-2 py-1 text-sm font-medium
-                               text-green-600 dark:text-green-400
-                               hover:bg-green-50 dark:hover:bg-green-900/20
+                               text-fg-positive-primary
+                               hover:bg-bg-positive-subtle-hover
                                rounded transition-colors"
                   >
                     Accept
@@ -187,8 +187,8 @@ export default function StagingArea({
                   <button
                     onClick={onRejectTitle}
                     className="px-2 py-1 text-sm font-medium
-                               text-neutral-500 dark:text-neutral-400
-                               hover:bg-neutral-100 dark:hover:bg-neutral-700
+                               text-fg-neutral-soft
+                               hover:bg-bg-neutral-subtle-hover
                                rounded transition-colors"
                   >
                     Reject
@@ -204,27 +204,27 @@ export default function StagingArea({
               {safeEdits.map((edit) => (
                 <li
                   key={`edit-${edit.targetId}`}
-                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-violet-300 dark:border-violet-600"
+                  className="flex items-start gap-3 py-2 px-3 bg-bg-neutral-min rounded-lg
+                             border border-border-accent"
                 >
                   {/* Edit badge */}
-                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-bg-info-subtle text-fg-info-primary rounded">
                     EDIT
                   </span>
 
                   {/* Step/substep indicator - only show if it's a valid display ID format */}
                   {/^(\d+[a-z]?|\d+)$/.test(edit.targetId) && (
-                    <span className="w-6 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                    <span className="w-6 text-sm font-medium text-fg-neutral-soft flex-shrink-0">
                       {edit.targetId}.
                     </span>
                   )}
 
                   {/* Content: old → new */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-neutral-400 dark:text-neutral-500 line-through">
+                    <p className="text-fg-neutral-soft line-through">
                       {edit.originalText}
                     </p>
-                    <p className="text-neutral-700 dark:text-neutral-200 mt-1">
+                    <p className="text-fg-neutral-primary mt-1">
                       {edit.newText}
                       {/* Display time estimate if provided */}
                       {edit.estimatedMinutes !== undefined && edit.estimatedMinutes > 0 && (
@@ -240,8 +240,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onAcceptEdit(edit)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-green-600 dark:text-green-400
-                                 hover:bg-green-50 dark:hover:bg-green-900/20
+                                 text-fg-positive-primary
+                                 hover:bg-bg-positive-subtle-hover
                                  rounded transition-colors"
                     >
                       Accept
@@ -249,8 +249,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onRejectEdit(edit)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-neutral-500 dark:text-neutral-400
-                                 hover:bg-neutral-100 dark:hover:bg-neutral-700
+                                 text-fg-neutral-soft
+                                 hover:bg-bg-neutral-subtle-hover
                                  rounded transition-colors"
                     >
                       Reject
@@ -267,25 +267,25 @@ export default function StagingArea({
               {safeDeletions.map((deletion) => (
                 <li
                   key={`delete-${deletion.targetId}`}
-                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-violet-300 dark:border-violet-600"
+                  className="flex items-start gap-3 py-2 px-3 bg-bg-neutral-min rounded-lg
+                             border border-border-accent"
                 >
                   {/* Delete badge */}
-                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-bg-alert-subtle text-fg-alert-primary rounded">
                     DELETE
                   </span>
 
                   {/* Step/substep indicator */}
-                  <span className="w-8 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                  <span className="w-8 text-sm font-medium text-fg-neutral-soft flex-shrink-0">
                     {deletion.targetId}.
                   </span>
 
                   {/* Content: show the text being deleted + reason */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-neutral-700 dark:text-neutral-200 line-through">
+                    <p className="text-fg-neutral-primary line-through">
                       {deletion.originalText || `Remove ${deletion.targetType}`}
                     </p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 italic">
+                    <p className="text-sm text-fg-neutral-soft mt-1 italic">
                       {deletion.reason}
                     </p>
                   </div>
@@ -295,8 +295,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onAcceptDeletion(deletion)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-red-600 dark:text-red-400
-                                 hover:bg-red-50 dark:hover:bg-red-900/20
+                                 text-fg-alert-primary
+                                 hover:bg-bg-alert-subtle-hover
                                  rounded transition-colors"
                     >
                       Delete
@@ -304,8 +304,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onRejectDeletion(deletion)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-neutral-500 dark:text-neutral-400
-                                 hover:bg-neutral-100 dark:hover:bg-neutral-700
+                                 text-fg-neutral-soft
+                                 hover:bg-bg-neutral-subtle-hover
                                  rounded transition-colors"
                     >
                       Keep
@@ -322,27 +322,27 @@ export default function StagingArea({
               {safeMetadataSuggestions.map((meta, index) => (
                 <li
                   key={`meta-${meta.field}-${index}`}
-                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-violet-300 dark:border-violet-600"
+                  className="flex items-start gap-3 py-2 px-3 bg-bg-neutral-min rounded-lg
+                             border border-border-accent"
                 >
                   {/* Metadata badge */}
-                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded">
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-bg-attention-subtle text-fg-attention-primary rounded">
                     SET
                   </span>
 
                   {/* Content: field → value + reason */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-neutral-700 dark:text-neutral-200">
+                      <span className="font-medium text-fg-neutral-primary">
                         {FIELD_LABELS[meta.field]}:
                       </span>
-                      <span className="px-2 py-0.5 text-sm bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 rounded">
+                      <span className="px-2 py-0.5 text-sm bg-bg-accent-subtle text-fg-accent-primary rounded">
                         {typeof meta.value === 'number'
                           ? `${meta.value} day${meta.value !== 1 ? 's' : ''}`
                           : VALUE_LABELS[meta.value as string] || meta.value}
                       </span>
                     </div>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                    <p className="text-sm text-fg-neutral-soft mt-1">
                       {meta.reason}
                     </p>
                   </div>
@@ -352,8 +352,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onAcceptMetadata?.(meta)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-green-600 dark:text-green-400
-                                 hover:bg-green-50 dark:hover:bg-green-900/20
+                                 text-fg-positive-primary
+                                 hover:bg-bg-positive-subtle-hover
                                  rounded transition-colors"
                     >
                       Accept
@@ -361,8 +361,8 @@ export default function StagingArea({
                     <button
                       onClick={() => onRejectMetadata?.(meta)}
                       className="px-2 py-1 text-sm font-medium
-                                 text-neutral-500 dark:text-neutral-400
-                                 hover:bg-neutral-100 dark:hover:bg-neutral-700
+                                 text-fg-neutral-soft
+                                 hover:bg-bg-neutral-subtle-hover
                                  rounded transition-colors"
                     >
                       Skip
@@ -379,22 +379,22 @@ export default function StagingArea({
               {safeSuggestions.map((suggestion) => (
                 <li
                   key={suggestion.id}
-                  className="flex items-start gap-3 py-2 px-3 bg-white dark:bg-neutral-800 rounded-lg
-                             border border-violet-300 dark:border-violet-600"
+                  className="flex items-start gap-3 py-2 px-3 bg-bg-neutral-min rounded-lg
+                             border border-border-accent"
                 >
                   {/* New badge */}
-                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">
+                  <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-bg-positive-subtle text-fg-positive-primary rounded">
                     NEW
                   </span>
 
                   {/* Step number */}
-                  <span className="w-6 text-sm font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+                  <span className="w-6 text-sm font-medium text-fg-neutral-soft flex-shrink-0">
                     {suggestion.id}.
                   </span>
 
                   {/* Content */}
                   <div className="flex-1">
-                    <span className="text-neutral-700 dark:text-neutral-200">
+                    <span className="text-fg-neutral-primary">
                       {suggestion.text}
                     </span>
 
@@ -404,7 +404,7 @@ export default function StagingArea({
                      suggestion.estimatedMinutes > 0 && (
                       <span className="ml-2 inline-flex items-center gap-1 text-xs text-fg-neutral-secondary">
                         <span>~{formatDuration(suggestion.estimatedMinutes)}</span>
-                        <span className="px-1 py-0.5 text-[10px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded">
+                        <span className="px-1 py-0.5 text-[10px] font-medium bg-bg-accent-subtle text-fg-accent-secondary rounded">
                           AI
                         </span>
                       </span>
@@ -416,9 +416,9 @@ export default function StagingArea({
                         {suggestion.substeps.map((sub) => (
                           <li
                             key={sub.id}
-                            className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400"
+                            className="flex items-center gap-2 text-sm text-fg-neutral-soft"
                           >
-                            <div className="w-3 h-3 rounded border border-neutral-300 dark:border-neutral-600 flex-shrink-0" />
+                            <div className="w-3 h-3 rounded border border-border-color-neutral flex-shrink-0" />
                             <span>{sub.id}. {sub.text}</span>
                           </li>
                         ))}
@@ -430,8 +430,8 @@ export default function StagingArea({
                   <button
                     onClick={() => onAcceptOne(suggestion)}
                     className="flex-shrink-0 px-3 py-1 text-sm font-medium
-                               text-green-600 dark:text-green-400
-                               hover:bg-green-50 dark:hover:bg-green-900/20
+                               text-fg-positive-primary
+                               hover:bg-bg-positive-subtle-hover
                                rounded transition-colors"
                   >
                     + Add
@@ -442,17 +442,17 @@ export default function StagingArea({
           )}
 
           {/* Actions */}
-          <div className="pt-2 border-t border-violet-200 dark:border-violet-700">
+          <div className="pt-2 border-t border-border-accent">
             <div className="flex items-center gap-3">
               <button
                 onClick={onAcceptAll}
-                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-lg transition-colors"
               >
                 Accept all
               </button>
               <button
                 onClick={onDismiss}
-                className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-secondary hover:text-fg-neutral-primary hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
               >
                 Dismiss
               </button>

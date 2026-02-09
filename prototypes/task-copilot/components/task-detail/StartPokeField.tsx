@@ -79,16 +79,16 @@ export default function StartPokeField({
           className="w-full h-8 px-2 py-1 text-sm text-left
             bg-bg-neutral-min
             border border-border-color-neutral rounded-lg
-            hover:border-zinc-300 dark:hover:border-zinc-600
-            focus:outline-none focus:ring-2 focus:ring-violet-500
+            hover:border-border-color-neutral-hover
+            focus:outline-none focus:ring-2 focus:ring-focus
             flex items-center justify-between"
         >
-          <span className={status.enabled ? 'text-violet-600 dark:text-violet-400' : 'text-fg-neutral-primary'}>
+          <span className={status.enabled ? 'text-fg-accent-secondary' : 'text-fg-neutral-primary'}>
             {getDisplayValue()}
           </span>
           <ChevronDown
             size={16}
-            className={`text-zinc-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+            className={`text-fg-neutral-soft transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
           />
         </button>
 
@@ -101,7 +101,7 @@ export default function StartPokeField({
                 onClick={() => handleSelect('on')}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
-                  ${task.startPokeOverride === 'on' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
+                  ${task.startPokeOverride === 'on' ? 'text-fg-accent-secondary bg-bg-accent-subtle' : 'text-fg-neutral-primary'}
                 `}
               >
                 On
@@ -110,7 +110,7 @@ export default function StartPokeField({
                 onClick={() => handleSelect('off')}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
-                  ${task.startPokeOverride === 'off' ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
+                  ${task.startPokeOverride === 'off' ? 'text-fg-accent-secondary bg-bg-accent-subtle' : 'text-fg-neutral-primary'}
                 `}
               >
                 Off
@@ -120,7 +120,7 @@ export default function StartPokeField({
                 onClick={() => handleSelect(null)}
                 className={`
                   w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle
-                  ${task.startPokeOverride === null ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20' : 'text-fg-neutral-primary'}
+                  ${task.startPokeOverride === null ? 'text-fg-accent-secondary bg-bg-accent-subtle' : 'text-fg-neutral-primary'}
                 `}
               >
                 <span>Use default</span>
@@ -138,7 +138,7 @@ export default function StartPokeField({
         <div className="mt-1.5 flex flex-col gap-0.5">
           {/* State 1: Missing anchor time */}
           {status.missingReason === 'no_anchor' && (
-            <div className="flex items-start gap-1.5 text-amber-600 dark:text-amber-400">
+            <div className="flex items-start gap-1.5 text-fg-attention-primary">
               <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
               <span className="text-xs">
                 {task.isRecurring
@@ -174,7 +174,7 @@ export default function StartPokeField({
               {onAdjustEstimate && (
                 <button
                   onClick={onAdjustEstimate}
-                  className="text-xs text-violet-600 dark:text-violet-400 hover:underline text-left w-fit"
+                  className="text-xs text-fg-accent-secondary hover:underline text-left w-fit"
                 >
                   Adjust estimate
                 </button>

@@ -25,18 +25,18 @@ function LargeProgressRing({
   const offset = circumference - progress * circumference;
 
   // Determine colors based on state
-  const bgColor = "text-zinc-200 dark:text-zinc-700";
+  const bgColor = "text-border-color-neutral";
   const progressColor = isComplete
-    ? "text-green-500"
+    ? "text-fg-positive-primary"
     : overdue
-    ? "text-amber-500"
-    : "text-violet-500";
+    ? "text-fg-attention-primary"
+    : "text-fg-accent-primary";
 
   // Completed state - green fill with checkmark
   if (isComplete) {
     return (
       <div
-        className="rounded-full bg-green-500 flex items-center justify-center flex-shrink-0"
+        className="rounded-full bg-bg-positive-high flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
         <Check className="w-6 h-6 text-white" />
@@ -147,7 +147,7 @@ export default function StatusModule({
           isComplete={isComplete}
         />
         <div className="flex-1 min-w-0">
-          <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+          <span className="text-sm text-fg-positive-primary font-medium">
             Completed
           </span>
         </div>
@@ -164,8 +164,8 @@ export default function StatusModule({
     if (mode === 'managing') {
       return (
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-            <Repeat className="w-3 h-3 text-violet-500" />
+          <div className="flex items-center gap-1.5 text-sm text-fg-neutral-soft">
+            <Repeat className="w-3 h-3 text-fg-accent-primary" />
             <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
           </div>
           {streak > 0 && (
@@ -203,27 +203,27 @@ export default function StatusModule({
             <div className="space-y-0.5">
               {/* Step count OR Skipped message - all use leading-5 for consistent height */}
               {wasSkippedToday ? (
-                <span className="inline-flex items-center gap-1.5 text-sm leading-5 text-amber-600 dark:text-amber-400">
+                <span className="inline-flex items-center gap-1.5 text-sm leading-5 text-fg-attention-primary">
                   <SkipForward className="w-3 h-3" />
                   Skipped today
                 </span>
               ) : instanceTotal === 0 ? (
                 currentInstance?.completed ? (
-                  <span className="text-sm leading-5 text-green-600 dark:text-green-400">Completed</span>
+                  <span className="text-sm leading-5 text-fg-positive-primary">Completed</span>
                 ) : (
                   <span className="text-sm leading-5 text-fg-neutral-secondary">No steps</span>
                 )
               ) : (
                 <span className={`text-sm leading-5 ${currentInstance?.completed
-                  ? "text-green-600 dark:text-green-400"
+                  ? "text-fg-positive-primary"
                   : "text-fg-neutral-secondary"
                 }`}>
                   {instanceCompleted} of {instanceTotal} steps{currentInstance?.completed && " complete"}
                 </span>
               )}
               {/* Pattern - stacked under step count/skipped */}
-              <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-                <Repeat className="w-3 h-3 text-violet-500" />
+              <div className="flex items-center gap-1.5 text-sm text-fg-neutral-soft">
+                <Repeat className="w-3 h-3 text-fg-accent-primary" />
                 <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
               </div>
               {/* Toggle - stacked under pattern */}

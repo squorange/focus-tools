@@ -140,8 +140,8 @@ function MultiSelectPills<T extends string>({
             onClick={() => toggleValue(option.value)}
             className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
               isSelected
-                ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-                : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
+                ? 'bg-bg-accent-subtle border-border-accent text-fg-accent-primary'
+                : 'bg-bg-neutral-subtle border-border-color-neutral text-fg-neutral-secondary hover:border-border-color-neutral-hover'
             }`}
           >
             {option.label}
@@ -283,7 +283,7 @@ export default function FilterDrawer({
         <h2 className="text-base font-medium text-fg-neutral-primary">Filters</h2>
         <button
           onClick={onClose}
-          className="p-1.5 text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+          className="p-1.5 text-fg-neutral-soft hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -303,8 +303,8 @@ export default function FilterDrawer({
                 onClick={() => handlePresetClick(preset)}
                 className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                   activePreset === preset.id
-                    ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-                    : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
+                    ? 'bg-bg-accent-subtle border-border-accent text-fg-accent-primary'
+                    : 'bg-bg-neutral-subtle border-border-color-neutral text-fg-neutral-secondary hover:border-border-color-neutral-hover'
                 }`}
               >
                 {preset.icon} {preset.label}
@@ -313,7 +313,7 @@ export default function FilterDrawer({
           </div>
         </div>
 
-        <div className="border-t border-zinc-100 dark:border-zinc-800" />
+        <div className="border-t border-border-color-neutral" />
 
         {/* DATES group */}
         <div>
@@ -370,7 +370,7 @@ export default function FilterDrawer({
           </CollapsibleSection>
         </div>
 
-        <div className="border-t border-zinc-100 dark:border-zinc-800" />
+        <div className="border-t border-border-color-neutral" />
 
         {/* STATUS group */}
         <div>
@@ -443,7 +443,7 @@ export default function FilterDrawer({
           </CollapsibleSection>
         </div>
 
-        <div className="border-t border-zinc-100 dark:border-zinc-800" />
+        <div className="border-t border-border-color-neutral" />
 
         {/* OTHER group */}
         <div>
@@ -513,7 +513,7 @@ export default function FilterDrawer({
 
       {/* Footer with count and actions */}
       <div
-        className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0"
+        className="px-4 py-3 border-t border-border-color-neutral shrink-0"
         style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-center justify-between">
@@ -524,7 +524,7 @@ export default function FilterDrawer({
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="px-4 py-2 text-sm font-medium bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover text-fg-neutral-primary rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-bg-neutral-subtle hover:bg-bg-neutral-subtle-hover text-fg-neutral-primary rounded-lg transition-colors"
               >
                 Clear all
               </button>
@@ -533,7 +533,7 @@ export default function FilterDrawer({
             {isMobile && (
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-bg-accent-high hover:bg-bg-accent-high-hover text-fg-neutral-inverse-primary rounded-lg transition-colors"
               >
                 Done
               </button>
@@ -586,8 +586,8 @@ function FilterChip({ label, selected, onClick, color }: FilterChipProps) {
       onClick={onClick}
       className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
         selected
-          ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-300 dark:border-violet-700 text-violet-700 dark:text-violet-300'
-          : 'bg-zinc-50 dark:bg-zinc-800 border-border-color-neutral text-fg-neutral-secondary hover:border-zinc-300 dark:hover:border-zinc-600'
+          ? 'bg-bg-accent-subtle border-border-accent text-fg-accent-primary'
+          : 'bg-bg-neutral-subtle border-border-color-neutral text-fg-neutral-secondary hover:border-border-color-neutral-hover'
       }`}
       style={color && selected ? { borderColor: color, backgroundColor: `${color}20` } : undefined}
     >

@@ -191,7 +191,7 @@ export default function FocusModeView({
           {/* Left: Exit button */}
           <button
             onClick={onExit}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-fg-neutral-soft hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -209,7 +209,7 @@ export default function FocusModeView({
             {/* Pause/Resume */}
             <button
               onClick={focusState.paused ? onResume : onPause}
-              className="p-2 text-zinc-500 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+              className="p-2 text-fg-neutral-soft hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
             >
               {focusState.paused ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -251,7 +251,7 @@ export default function FocusModeView({
                 setEditingTitle(false);
               }
             }}
-            className="w-full text-xl font-medium text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-fg-neutral-secondary mb-4"
+            className="w-full text-xl font-medium text-center bg-transparent border-b-2 border-border-accent focus:outline-none resize-none text-fg-neutral-secondary mb-4"
             rows={2}
             autoFocus
           />
@@ -275,9 +275,9 @@ export default function FocusModeView({
             </div>
 
             {/* Progress bar */}
-            <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-700 rounded-full mb-8 overflow-hidden">
+            <div className="w-full h-2 bg-bg-neutral-subtle rounded-full mb-8 overflow-hidden">
               <div
-                className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                className="h-full bg-bg-accent-high rounded-full transition-all duration-500"
                 style={{ width: `${(progress.completed / Math.max(progress.total, 1)) * 100}%` }}
               />
             </div>
@@ -286,21 +286,21 @@ export default function FocusModeView({
 
         {/* Current Step Card */}
         {isComplete ? (
-          <div className="w-full p-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+          <div className="w-full p-8 bg-bg-positive-subtle border border-border-positive rounded-2xl text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-positive-subtle flex items-center justify-center">
+              <svg className="w-8 h-8 text-fg-positive" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">
+            <h2 className="text-xl font-semibold text-fg-positive mb-2">
               Focus Goal Complete!
             </h2>
-            <p className="text-green-600 dark:text-green-400 mb-6">
+            <p className="text-fg-positive mb-6">
               Great work! You completed all {progress.total} steps.
             </p>
             <button
               onClick={onExit}
-              className="px-6 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-6 py-3 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-positive-high hover:bg-bg-positive-high-hover rounded-lg transition-colors"
             >
               Done
             </button>
@@ -331,7 +331,7 @@ export default function FocusModeView({
                     setEditingStep(false);
                   }
                 }}
-                className="w-full text-lg text-center bg-transparent border-b-2 border-violet-500 focus:outline-none resize-none text-fg-neutral-primary mb-6"
+                className="w-full text-lg text-center bg-transparent border-b-2 border-border-accent focus:outline-none resize-none text-fg-neutral-primary mb-6"
                 rows={2}
                 autoFocus
               />
@@ -358,8 +358,8 @@ export default function FocusModeView({
                         flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors
                         ${
                           substep.completed
-                            ? "bg-green-500 border-green-500 text-white"
-                            : "border-border-color-neutral hover:border-violet-400"
+                            ? "bg-bg-positive-high border-border-positive text-fg-neutral-inverse-primary"
+                            : "border-border-color-neutral hover:border-border-accent"
                         }
                       `}
                     >
@@ -393,7 +393,7 @@ export default function FocusModeView({
                           }
                           if (e.key === "Escape") setEditingSubstepId(null);
                         }}
-                        className="flex-1 text-sm bg-transparent border-b border-violet-500 focus:outline-none text-fg-neutral-secondary"
+                        className="flex-1 text-sm bg-transparent border-b border-border-accent focus:outline-none text-fg-neutral-secondary"
                         autoFocus
                       />
                     ) : (
@@ -404,7 +404,7 @@ export default function FocusModeView({
                         }}
                         className={`flex-1 text-sm cursor-text hover:bg-bg-neutral-subtle px-1 -mx-1 rounded transition-colors ${
                           substep.completed
-                            ? "text-zinc-400 line-through"
+                            ? "text-fg-neutral-soft line-through"
                             : "text-fg-neutral-secondary"
                         }`}
                       >
@@ -416,7 +416,7 @@ export default function FocusModeView({
                       {idx > 0 && (
                         <button
                           onClick={() => onMoveSubstepUp(task.id, currentStep.id, substep.id)}
-                          className="p-1 text-zinc-400 hover:text-fg-neutral-secondary"
+                          className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary"
                           title="Move up"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,7 +427,7 @@ export default function FocusModeView({
                       {idx < currentStep.substeps.length - 1 && (
                         <button
                           onClick={() => onMoveSubstepDown(task.id, currentStep.id, substep.id)}
-                          className="p-1 text-zinc-400 hover:text-fg-neutral-secondary"
+                          className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary"
                           title="Move down"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,7 +437,7 @@ export default function FocusModeView({
                       )}
                       <button
                         onClick={() => onDeleteSubstep(task.id, currentStep.id, substep.id)}
-                        className="p-1 text-zinc-400 hover:text-red-500"
+                        className="p-1 text-fg-neutral-soft hover:text-fg-alert"
                         title="Delete"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,7 +461,7 @@ export default function FocusModeView({
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleMarkDone}
-                className="px-8 py-3 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                className="px-8 py-3 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-lg transition-colors"
               >
                 Done
               </button>
@@ -469,7 +469,7 @@ export default function FocusModeView({
               <div className="relative">
                 <button
                   onClick={() => setShowStuckMenu(!showStuckMenu)}
-                  className="px-6 py-3 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
+                  className="px-6 py-3 text-sm font-medium text-fg-neutral-primary bg-bg-neutral-subtle hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   I&apos;m Stuck
                 </button>
@@ -485,7 +485,7 @@ export default function FocusModeView({
                       }}
                       className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
-                      <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-fg-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                       </svg>
                       Break down this step
@@ -497,7 +497,7 @@ export default function FocusModeView({
                       }}
                       className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
-                      <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-fg-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                       What&apos;s my first tiny action?
@@ -509,7 +509,7 @@ export default function FocusModeView({
                       }}
                       className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
-                      <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-fg-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Explain this step
@@ -522,7 +522,7 @@ export default function FocusModeView({
                       }}
                       className="w-full px-4 py-2.5 text-sm text-left text-fg-neutral-primary hover:bg-bg-neutral-subtle flex items-center gap-3"
                     >
-                      <svg className="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-fg-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                       Talk it through with AI
@@ -536,21 +536,21 @@ export default function FocusModeView({
         ) : hasNoSteps ? (
           /* Task with no steps - show mark complete option */
           isTaskComplete ? (
-            <div className="w-full p-8 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-full p-8 bg-bg-positive-subtle border border-border-positive rounded-2xl text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-positive-subtle flex items-center justify-center">
+                <svg className="w-8 h-8 text-fg-positive" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-green-700 dark:text-green-300 mb-2">
+              <h2 className="text-xl font-semibold text-fg-positive mb-2">
                 Task Complete!
               </h2>
-              <p className="text-green-600 dark:text-green-400 mb-6">
+              <p className="text-fg-positive mb-6">
                 Great work!
               </p>
               <button
                 onClick={onExit}
-                className="px-6 py-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                className="px-6 py-3 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-positive-high hover:bg-bg-positive-high-hover rounded-lg transition-colors"
               >
                 Done
               </button>
@@ -563,13 +563,13 @@ export default function FocusModeView({
               <div className="flex justify-center gap-4">
                 <button
                   onClick={handleMarkTaskComplete}
-                  className="px-8 py-3 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+                  className="px-8 py-3 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-lg transition-colors"
                 >
                   Mark Complete
                 </button>
                 <button
                   onClick={onOpenAIDrawer}
-                  className="px-6 py-3 text-sm font-medium text-fg-neutral-secondary border border-border-color-neutral hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                  className="px-6 py-3 text-sm font-medium text-fg-neutral-secondary border border-border-color-neutral hover:bg-bg-neutral-subtle rounded-lg transition-colors"
                 >
                   Talk to AI
                 </button>
@@ -577,7 +577,7 @@ export default function FocusModeView({
             </div>
           )
         ) : (
-          <div className="w-full p-6 bg-zinc-50 dark:bg-zinc-800 border border-border-color-neutral rounded-2xl text-center">
+          <div className="w-full p-6 bg-bg-neutral-subtle border border-border-color-neutral rounded-2xl text-center">
             <p className="text-fg-neutral-secondary">
               No more steps to complete
             </p>

@@ -18,9 +18,9 @@
 | 3 | Layout Components | Header, TabCluster, SearchBar, Sidebar | ✅ | | ~25 raw colors replaced |
 | 4 | Picker Components | 8 picker/input components | ✅ | | 8 files migrated |
 | 5 | Cards + Views | Task cards + view containers (~11 files) | ✅ | | 13 files migrated |
-| 6 | Medium Components | Selectors, displays, focus mode (~8 files) | 🔲 | | |
-| 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | 🔲 | | |
-| 8 | TaskDetail | Largest component + sub-components | 🔲 | | |
+| 6 | Medium Components | Selectors, displays, focus mode (~8 files) | ✅ | | 8 files migrated, +energy border tokens |
+| 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | ✅ | | 11 files migrated, +accent-glow tokens |
+| 8 | TaskDetail | Largest component + sub-components | ✅ | | 5 files migrated, ~100+ raw colors replaced |
 | 9 | AI Components + Globals | AI glass tokens, globals.css, font tokens | 🔲 | | |
 | 10 | Verification + Cleanup | Audit, legacy removal, documentation | 🔲 | | |
 
@@ -172,40 +172,40 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 | Component | Raw Colors | Status | Session |
 |-----------|-----------|--------|---------|
-| EnergySelector | 18 | 🔲 | 6 |
-| PriorityDisplay | 8 | 🔲 | 6 |
-| PriorityBreakdownDrawer | 20 | 🔲 | 6 |
-| FocusModeView | 15 | 🔲 | 6 |
-| ProjectsView | 20 | 🔲 | 6 |
-| TasksView | 15+ | 🔲 | 6 |
-| TaskCreationPopover | 15 | 🔲 | 6 |
-| FocusSelectionModal | 4 | 🔲 | 6 |
+| EnergySelector | 0 | ✅ | 6 |
+| PriorityDisplay | 0 | ✅ | 6 |
+| PriorityBreakdownDrawer | 0 | ✅ | 6 |
+| FocusModeView | 0 | ✅ | 6 |
+| ProjectsView | 0 | ✅ | 6 |
+| TasksView | 0 | ✅ | 5 |
+| TaskCreationPopover | 0 | ✅ | 6 |
+| FocusSelectionModal | 0 | ✅ | 6 |
 
 ### Hard Components
 
 | Component | Raw Colors | Status | Session |
 |-----------|-----------|--------|---------|
-| FilterDrawer | 25+ | 🔲 | 7 |
-| StagingArea | 40+ | 🔲 | 7 |
-| StagingToast | 12 | 🔲 | 7 |
-| AIDisclosure | 40+ | 🔲 | 7 |
-| NotificationPermissionBanner | 12 | 🔲 | 7 |
-| ProjectModal | 10 | 🔲 | 7 |
-| NotificationCard | 6 | 🔲 | 7 |
-| NotificationsHub | 4 | 🔲 | 7 |
-| NotificationSettings | 4 | 🔲 | 7 |
-| PriorityQueueModule | 4 | 🔲 | 7 |
-| NotificationBadge | 2 | 🔲 | 7 |
+| FilterDrawer | 0 | ✅ | 7 |
+| StagingArea | 0 | ✅ | 7 |
+| StagingToast | 0 | ✅ | 7 |
+| AIDisclosure | 0 | ✅ | 7 |
+| NotificationPermissionBanner | 0 | ✅ | 7 |
+| ProjectModal | 0 | ✅ | 7 |
+| NotificationCard | 0 | ✅ | 7 |
+| NotificationsHub | 0 | ✅ | 7 |
+| NotificationSettings | 0 | ✅ | 7 |
+| PriorityQueueModule | 0 | ✅ | 7 |
+| NotificationBadge | 0 | ✅ | 7 |
 
 ### TaskDetail
 
 | Component | Raw Colors | Status | Session |
 |-----------|-----------|--------|---------|
-| TaskDetail | 50+ | 🔲 | 8 |
-| StatusModule | 4 | 🔲 | 8 |
-| RecurrenceFields | 8 | 🔲 | 8 |
-| DetailsSection | 2 | 🔲 | 8 |
-| StartPokeField | 0 | 🔲 | 8 |
+| TaskDetail | 0 | ✅ | 8 |
+| StatusModule | 0 | ✅ | 8 |
+| RecurrenceFields | 0 | ✅ | 8 |
+| DetailsSection | 0 | ✅ | 8 |
+| StartPokeField | 0 | ✅ | 8 |
 
 ### AI + Global
 

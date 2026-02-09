@@ -32,23 +32,23 @@ interface FactorRow {
 const tierConfig: Record<PriorityTier, { label: string; bgColor: string; textColor: string }> = {
   critical: {
     label: "Critical",
-    bgColor: "bg-red-100 dark:bg-red-900/30",
-    textColor: "text-red-700 dark:text-red-400",
+    bgColor: "bg-bg-priority-critical-subtle",
+    textColor: "text-fg-priority-critical",
   },
   high: {
     label: "High",
-    bgColor: "bg-orange-100 dark:bg-orange-900/30",
-    textColor: "text-orange-700 dark:text-orange-400",
+    bgColor: "bg-bg-priority-high-subtle",
+    textColor: "text-fg-priority-high",
   },
   medium: {
     label: "Medium",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
-    textColor: "text-amber-700 dark:text-amber-400",
+    bgColor: "bg-bg-priority-medium-subtle",
+    textColor: "text-fg-priority-medium",
   },
   low: {
     label: "Low",
     bgColor: "bg-bg-neutral-subtle",
-    textColor: "text-zinc-700 dark:text-zinc-400",
+    textColor: "text-fg-neutral-secondary",
   },
 };
 
@@ -154,7 +154,7 @@ export default function PriorityBreakdownDrawer({
 
       {/* Scale Info (expandable) */}
       {showScaleInfo && (
-        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-3 text-xs space-y-1">
+        <div className="bg-bg-neutral-subtle rounded-lg p-3 text-xs space-y-1">
           <div className="font-medium text-fg-neutral-primary mb-2">
             Priority Scale
           </div>
@@ -163,7 +163,7 @@ export default function PriorityBreakdownDrawer({
               <span>
                 <span className="font-mono">{item.range}</span> {item.tier}
               </span>
-              <span className="text-zinc-500">{item.meaning}</span>
+              <span className="text-fg-neutral-soft">{item.meaning}</span>
             </div>
           ))}
         </div>
@@ -191,7 +191,7 @@ export default function PriorityBreakdownDrawer({
               <span
                 className={`font-mono text-xs ${
                   factor.points > 0
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-fg-positive"
                     : "text-fg-neutral-soft"
                 }`}
               >
@@ -209,7 +209,7 @@ export default function PriorityBreakdownDrawer({
       </div>
 
       {/* Prediction */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs px-3 py-2 rounded-lg flex items-start gap-2">
+      <div className="bg-bg-info-subtle text-fg-info text-xs px-3 py-2 rounded-lg flex items-start gap-2">
         <span>📈</span>
         <span>{predictionHint}</span>
       </div>
@@ -269,7 +269,7 @@ export default function PriorityBreakdownDrawer({
       {/* Desktop: Side drawer from right */}
       <div
         className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-zinc-200/50 lg:dark:border-zinc-700/30 lg:bg-white lg:dark:bg-zinc-900
+          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-border-color-neutral lg:bg-bg-neutral-min
           transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
           ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
         `}

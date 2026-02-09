@@ -129,11 +129,11 @@ export default function FocusSelectionModal({
   );
 
   const BulkActions = () => (
-    <div className="flex gap-2 px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+    <div className="flex gap-2 px-4 py-3 border-b border-border-color-neutral shrink-0">
       <button
         onClick={handleAllToday}
         className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
-                   bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover
+                   bg-bg-neutral-subtle hover:bg-bg-neutral-subtle-hover
                    rounded-lg transition-colors"
       >
         All for Today
@@ -141,7 +141,7 @@ export default function FocusSelectionModal({
       <button
         onClick={handleAllUpcoming}
         className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary
-                   bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover
+                   bg-bg-neutral-subtle hover:bg-bg-neutral-subtle-hover
                    rounded-lg transition-colors"
       >
         All for Upcoming
@@ -159,7 +159,7 @@ export default function FocusSelectionModal({
           <div
             key={step.id}
             className={`flex items-center gap-3 py-3 ${
-              index < task.steps.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-700/50' : ''
+              index < task.steps.length - 1 ? 'border-b border-border-color-neutral' : ''
             } ${isCompleted ? 'opacity-50' : ''}`}
           >
             {/* Step text */}
@@ -177,12 +177,12 @@ export default function FocusSelectionModal({
             {!isCompleted && (
               <div
                 onClick={() => handleToggle(step.id)}
-                className="flex shrink-0 bg-zinc-100 dark:bg-zinc-700 rounded-lg p-0.5 cursor-pointer"
+                className="flex shrink-0 bg-bg-neutral-subtle rounded-lg p-0.5 cursor-pointer"
               >
                 <span
                   className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     isSelected
-                      ? "bg-violet-600 text-white shadow-sm"
+                      ? "bg-bg-accent-high text-fg-neutral-inverse-primary shadow-sm"
                       : "text-fg-neutral-secondary"
                   }`}
                 >
@@ -191,7 +191,7 @@ export default function FocusSelectionModal({
                 <span
                   className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
                     !isSelected
-                      ? "bg-white dark:bg-zinc-600 text-zinc-700 dark:text-zinc-200 shadow-sm"
+                      ? "bg-bg-neutral-min text-fg-neutral-primary shadow-sm"
                       : "text-fg-neutral-secondary"
                   }`}
                 >
@@ -208,7 +208,7 @@ export default function FocusSelectionModal({
   // Footer - just summary, no buttons (changes save immediately)
   const Footer = () => (
     <div
-      className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 shrink-0"
+      className="px-4 py-3 border-t border-border-color-neutral shrink-0"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       <span className="text-sm text-fg-neutral-secondary">

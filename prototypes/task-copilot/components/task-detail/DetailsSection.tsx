@@ -391,7 +391,7 @@ export default function DetailsSection({
   return (
     <div className="mb-6">
       {/* Unified Status/Details Container */}
-      <div className={`px-4 ${showStatusModule ? 'py-3' : 'py-2.5'} bg-white/95 dark:bg-zinc-900/95 backdrop-blur-lg border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl`}>
+      <div className={`px-4 ${showStatusModule ? 'py-3' : 'py-2.5'} bg-bg-glass-card backdrop-blur-lg border border-border-color-glass shadow-xl shadow-black/10 dark:shadow-black/30 rounded-2xl`}>
         {/* Status Module - shown when applicable */}
         {showStatusModule && (
           <StatusModule
@@ -411,7 +411,7 @@ export default function DetailsSection({
 
         {/* Divider when StatusModule renders */}
         {showStatusModule && (
-          <div className="my-3 border-t border-zinc-300/50 dark:border-zinc-700/50" />
+          <div className="my-3 border-t border-border-color-glass" />
         )}
 
         {/* Fixed header row with priority - always visible, never moves */}
@@ -447,7 +447,7 @@ export default function DetailsSection({
                 expanded ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
             >
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-neutral-soft group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-fg-neutral-soft group-hover:text-fg-neutral-secondary transition-colors">
                 Details
               </h3>
             </button>
@@ -484,7 +484,7 @@ export default function DetailsSection({
                     <span className="text-sm">
                       {projects.find((p) => p.id === task.projectId)?.name || "No project"}
                     </span>
-                    <Lock className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <Lock className="w-4 h-4 text-fg-neutral-soft flex-shrink-0" />
                   </div>
                 </div>
               ) : (
@@ -517,7 +517,7 @@ export default function DetailsSection({
                       ) : (
                         <span className="text-sm text-fg-neutral-soft">None</span>
                       )}
-                      <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
+                      <ChevronRight className="w-4 h-4 text-fg-neutral-soft group-hover:text-fg-neutral-secondary" />
                     </div>
                   </button>
 
@@ -528,10 +528,10 @@ export default function DetailsSection({
                           onUpdateTask(task.id, { projectId: null });
                           setShowProjectDropdown(false);
                         }}
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-secondary"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center justify-between text-fg-neutral-secondary"
                       >
                         <span>No project</span>
-                        {!task.projectId && <Check className="w-4 h-4 text-violet-500" />}
+                        {!task.projectId && <Check className="w-4 h-4 text-fg-accent-primary" />}
                       </button>
                       {projects
                         .filter((p) => p.status === "active")
@@ -542,7 +542,7 @@ export default function DetailsSection({
                               onUpdateTask(task.id, { projectId: project.id });
                               setShowProjectDropdown(false);
                             }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-primary"
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center justify-between text-fg-neutral-primary"
                           >
                             <span className="flex items-center gap-2 truncate">
                               {project.color && (
@@ -554,11 +554,11 @@ export default function DetailsSection({
                               <span className="truncate">{project.name}</span>
                             </span>
                             {task.projectId === project.id && (
-                              <Check className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                              <Check className="w-4 h-4 text-fg-accent-primary flex-shrink-0" />
                             )}
                           </button>
                         ))}
-                      <div className="border-t border-zinc-100 dark:border-zinc-700" />
+                      <div className="border-t border-border-color-neutral" />
                       <button
                         onClick={() => {
                           setShowProjectDropdown(false);
@@ -570,7 +570,7 @@ export default function DetailsSection({
                             onOpenProjectModal();
                           }
                         }}
-                        className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center gap-2 text-violet-600 dark:text-violet-400"
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center gap-2 text-fg-accent-secondary"
                       >
                         <Plus className="w-4 h-4" />
                         <span>Add new project...</span>
@@ -620,8 +620,8 @@ export default function DetailsSection({
                     }}
                     className={`relative w-11 h-6 rounded-full transition-colors ${
                       task.isRecurring
-                        ? "bg-violet-500"
-                        : "bg-zinc-200 dark:bg-zinc-700"
+                        ? "bg-bg-accent-high"
+                        : "bg-bg-neutral-low"
                     }`}
                   >
                     <span
@@ -1162,12 +1162,12 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
             key={option.value}
             onClick={() => onChange(option.value, selectedTime || null)}
             className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-bg-neutral-subtle rounded-lg transition-colors ${
-              value === option.value ? "bg-violet-50 dark:bg-violet-900/20" : ""
+              value === option.value ? "bg-bg-accent-subtle" : ""
             }`}
           >
             {option.label}
             {value === option.value && (
-              <Check className="w-4 h-4 ml-auto text-violet-500" />
+              <Check className="w-4 h-4 ml-auto text-fg-accent-primary" />
             )}
           </button>
         ))}
@@ -1203,13 +1203,13 @@ function DatePickerDropdown({ value, time, onChange, onClose, label, showTime = 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
+            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-primary bg-bg-neutral-low hover:bg-bg-neutral-low-hover rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={() => onChange(selectedDate, showTime ? selectedTime || null : undefined)}
-            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+            className="flex-1 px-3 py-2 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-lg transition-colors"
           >
             Set {label.includes("Date") ? "Date" : label}
           </button>
@@ -1322,16 +1322,16 @@ function CollapsedProjectPicker({
       >
         <button
           onClick={() => onSelect(null)}
-          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-secondary"
+          className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center justify-between text-fg-neutral-secondary"
         >
           <span>No project</span>
-          {!currentProjectId && <Check className="w-4 h-4 text-violet-500" />}
+          {!currentProjectId && <Check className="w-4 h-4 text-fg-accent-primary" />}
         </button>
         {activeProjects.map((project) => (
           <button
             key={project.id}
             onClick={() => onSelect(project.id)}
-            className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between text-fg-neutral-primary"
+            className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center justify-between text-fg-neutral-primary"
           >
             <span className="flex items-center gap-2 truncate">
               {project.color && (
@@ -1343,14 +1343,14 @@ function CollapsedProjectPicker({
               <span className="truncate">{project.name}</span>
             </span>
             {currentProjectId === project.id && (
-              <Check className="w-4 h-4 text-violet-500 flex-shrink-0" />
+              <Check className="w-4 h-4 text-fg-accent-primary flex-shrink-0" />
             )}
           </button>
         ))}
-        <div className="border-t border-zinc-100 dark:border-zinc-700" />
+        <div className="border-t border-border-color-neutral" />
         <button
           onClick={onCreateNew}
-          className="w-full px-3 py-2 text-sm text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center gap-2 text-violet-600 dark:text-violet-400"
+          className="w-full px-3 py-2 text-sm text-left hover:bg-bg-neutral-subtle-hover flex items-center gap-2 text-fg-accent-secondary"
         >
           <Plus className="w-4 h-4" />
           <span>Add new project...</span>

@@ -16,7 +16,7 @@ export default function NotificationBadge({ count, className = "" }: Notificatio
         inline-flex items-center justify-center
         min-w-[18px] h-[18px] px-1
         text-xs font-medium
-        bg-violet-500 text-white
+        bg-bg-accent-high text-fg-neutral-inverse-primary
         rounded-full
         ${className}
       `}

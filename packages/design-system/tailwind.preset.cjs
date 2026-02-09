@@ -73,6 +73,7 @@ module.exports = {
             medium: 'var(--color-bg-positive-medium)',
             strong: 'var(--color-bg-positive-strong)',
             high: 'var(--color-bg-positive-high)',
+            'high-hover': 'var(--color-bg-positive-high-hover)',
             'high-accented': 'var(--color-bg-positive-high-accented)',
             // Legacy
             DEFAULT: 'var(--color-bg-positive-default)',
@@ -329,6 +330,12 @@ module.exports = {
           a11y: {
             primary: 'var(--color-border-a11y-primary)',
           },
+          // Energy level border colors
+          energy: {
+            high: 'var(--color-border-energy-high)',
+            medium: 'var(--color-border-energy-medium)',
+            low: 'var(--color-border-energy-low)',
+          },
         },
 
         // ========================================
@@ -368,6 +375,7 @@ module.exports = {
         // Ring colors for focus states
         ringColor: {
           focus: 'var(--color-ring-focus)',
+          'accent-glow': 'var(--color-ring-accent-glow)',
         },
 
         // ========================================
@@ -524,6 +532,7 @@ module.exports = {
         'ds-focus': 'var(--shadow-focus)',
         'ds-focus-error': 'var(--shadow-focus-error)',
         'ds-focus-success': 'var(--shadow-focus-success)',
+        'accent-glow': 'var(--shadow-accent-glow)',
       },
 
       // Transition durations

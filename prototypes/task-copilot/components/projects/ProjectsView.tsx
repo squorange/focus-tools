@@ -93,7 +93,7 @@ interface TaskGroupProps {
 function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurringSection = false }: TaskGroupProps) {
   return (
     <div className="px-4 py-2">
-      <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+      <div className="text-xs font-medium text-fg-neutral-soft uppercase tracking-wider mb-2">
         {label} ({tasks.length})
       </div>
       <div className="space-y-1">
@@ -104,7 +104,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
           >
             <button
               onClick={() => onOpenTask(task.id)}
-              className="flex-1 text-left text-sm text-fg-neutral-primary hover:text-zinc-900 dark:hover:text-zinc-100 truncate"
+              className="flex-1 text-left text-sm text-fg-neutral-primary hover:text-fg-neutral-primary truncate"
             >
               {task.title || "Untitled"}
             </button>
@@ -115,7 +115,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
                 return text ? (
                   <span className={`text-xs whitespace-nowrap ${
                     isPastDue
-                      ? 'text-red-500 dark:text-red-400 font-medium'
+                      ? 'text-fg-alert font-medium'
                       : 'text-fg-neutral-secondary'
                   }`}>
                     {isPastDue ? `Past Due: ${text}` : `Next: ${text}`}
@@ -126,7 +126,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
               /* Non-recurring tasks: show Focus button or In Focus status */
               <>
                 {isInQueue(task.id) ? (
-                  <span className="text-xs text-green-600 dark:text-green-400">
+                  <span className="text-xs text-fg-positive">
                     In Focus
                   </span>
                 ) : task.status !== 'complete' && (
@@ -135,7 +135,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
                       e.stopPropagation();
                       onAddToQueue(task.id);
                     }}
-                    className="text-xs px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-900 transition-colors"
+                    className="text-xs px-2 py-0.5 rounded bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover transition-colors"
                   >
                     Focus
                   </button>
@@ -144,7 +144,7 @@ function TaskGroup({ label, tasks, onOpenTask, onAddToQueue, isInQueue, isRecurr
             )}
             <button
               onClick={() => onOpenTask(task.id)}
-              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary"
+              className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -205,7 +205,7 @@ export default function ProjectsView({
       <div className="flex justify-end">
         <button
           onClick={() => onOpenProjectModal()}
-          className="px-3 py-1.5 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 text-sm font-medium text-fg-accent-primary border border-border-accent hover:bg-bg-accent-subtle rounded-lg transition-colors flex items-center gap-1.5"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -228,16 +228,16 @@ export default function ProjectsView({
             return (
               <div
                 key={project.id}
-                className="bg-zinc-50 dark:bg-zinc-800/80 border border-border-color-neutral rounded-lg overflow-hidden"
+                className="bg-bg-neutral-subtle border border-border-color-neutral rounded-lg overflow-hidden"
               >
                 {/* Project header */}
-                <div className="flex items-center justify-between px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50">
+                <div className="flex items-center justify-between px-4 py-3 bg-bg-neutral-subtle">
                   <button
                     onClick={() => toggleProject(project.id)}
                     className="flex-1 flex items-center gap-3 text-left"
                   >
                     <svg
-                      className={`w-4 h-4 text-zinc-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      className={`w-4 h-4 text-fg-neutral-soft transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -267,7 +267,7 @@ export default function ProjectsView({
                   </button>
                   <button
                     onClick={() => onOpenProjectModal(project)}
-                    className="p-1.5 text-zinc-400 hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors"
+                    className="p-1.5 text-fg-neutral-soft hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors"
                     title="Edit project"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,7 +279,7 @@ export default function ProjectsView({
 
                 {/* Project tasks (when expanded) */}
                 {isExpanded && taskCount > 0 && (
-                  <div className="divide-y divide-zinc-100 dark:divide-zinc-700">
+                  <div className="divide-y divide-border-color-neutral">
                     {/* Recurring tasks (first) */}
                     {grouped.recurring.length > 0 && (
                       <TaskGroup
@@ -336,15 +336,15 @@ export default function ProjectsView({
       ) : (
         /* Empty state */
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-            <svg className="w-8 h-8 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-bg-accent-subtle flex items-center justify-center">
+            <svg className="w-8 h-8 text-fg-accent-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
             </svg>
           </div>
           <p className="text-fg-neutral-secondary mb-4">No projects yet</p>
           <button
             onClick={() => onOpenProjectModal()}
-            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover rounded-lg transition-colors"
           >
             Create your first project
           </button>

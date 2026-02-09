@@ -36,9 +36,9 @@ function NotificationIconComponent({ icon, type }: { icon: NotificationIcon; typ
 function getIconColor(type: NotificationType): string {
   switch (type) {
     case 'start_poke':
-      return 'text-violet-500 dark:text-violet-400';
+      return 'text-fg-accent-secondary';
     case 'streak':
-      return 'text-orange-500 dark:text-orange-400';
+      return 'text-fg-attention-primary';
     case 'reminder':
     case 'system':
     default:
@@ -122,7 +122,7 @@ export default function NotificationCard({
         {isStartPoke ? (
           <span className="text-lg leading-none" role="img" aria-label="Start poke">👉🏽</span>
         ) : (
-          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-bg-neutral-subtle">
             <NotificationIconComponent icon={notification.icon} type={notification.type} />
           </div>
         )}
@@ -131,11 +131,11 @@ export default function NotificationCard({
       <ActionableCard.Body>
         {/* Title with unread indicator */}
         <div className="flex items-center gap-2">
-          <ActionableCard.Title className={isHighlighted ? 'text-violet-700 dark:text-violet-300' : ''}>
+          <ActionableCard.Title className={isHighlighted ? 'text-fg-accent-primary' : ''}>
             {displayTitle}
           </ActionableCard.Title>
           {isUnread && (
-            <span className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-bg-accent-high flex-shrink-0" />
           )}
         </div>
 
@@ -161,9 +161,9 @@ export default function NotificationCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onStart(); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-overlay-light
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-overlay-medium
                   transition-colors"
               >
                 Start
@@ -174,9 +174,9 @@ export default function NotificationCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onSnooze(5); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-overlay-light
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-overlay-medium
                   transition-colors"
               >
                 Snooze 5m
@@ -187,9 +187,9 @@ export default function NotificationCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-overlay-light
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-overlay-medium
                   transition-colors"
               >
                 Dismiss
@@ -200,9 +200,9 @@ export default function NotificationCard({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onCancel(); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-overlay-light
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-overlay-medium
                   transition-colors"
               >
                 Cancel

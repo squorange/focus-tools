@@ -80,7 +80,7 @@ export default function ProjectModal({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Project name..."
-          className="w-full px-3 py-2 bg-bg-neutral-base border border-border-color-neutral rounded-lg text-fg-neutral-primary placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full px-3 py-2 bg-bg-neutral-base border border-border-color-neutral rounded-lg text-fg-neutral-primary placeholder-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSave();
@@ -100,12 +100,12 @@ export default function ProjectModal({
             onClick={() => setColor(null)}
             className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
               color === null
-                ? "border-violet-500 ring-2 ring-violet-500/30"
-                : "border-border-color-neutral hover:border-zinc-400"
+                ? "border-border-accent ring-2 ring-accent-glow"
+                : "border-border-color-neutral hover:border-border-color-neutral-hover"
             }`}
             title="No color"
           >
-            <span className="text-zinc-400 text-xs">-</span>
+            <span className="text-fg-neutral-soft text-xs">-</span>
           </button>
 
           {PROJECT_COLORS.map((c) => (
@@ -114,7 +114,7 @@ export default function ProjectModal({
               onClick={() => setColor(c.value)}
               className={`w-8 h-8 rounded-full border-2 transition-all ${
                 color === c.value
-                  ? "border-violet-500 ring-2 ring-violet-500/30"
+                  ? "border-border-accent ring-2 ring-accent-glow"
                   : "border-transparent hover:scale-110"
               }`}
               style={{ backgroundColor: c.value }}
@@ -130,16 +130,16 @@ export default function ProjectModal({
     if (!project || !onDelete) return null;
     return showDeleteConfirm ? (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-red-600 dark:text-red-400">Delete?</span>
+        <span className="text-sm text-fg-alert-primary">Delete?</span>
         <button
           onClick={handleDelete}
-          className="px-2 py-1 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+          className="px-2 py-1 text-sm text-fg-alert-primary hover:bg-bg-alert-subtle-hover rounded"
         >
           Yes
         </button>
         <button
           onClick={() => setShowDeleteConfirm(false)}
-          className="px-2 py-1 text-sm text-zinc-600 hover:bg-bg-neutral-subtle rounded"
+          className="px-2 py-1 text-sm text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded"
         >
           No
         </button>
@@ -147,7 +147,7 @@ export default function ProjectModal({
     ) : (
       <button
         onClick={() => setShowDeleteConfirm(true)}
-        className="text-sm text-red-600 dark:text-red-400 hover:underline"
+        className="text-sm text-fg-alert-primary hover:underline"
       >
         Delete project
       </button>
@@ -165,7 +165,7 @@ export default function ProjectModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded"
+            className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -191,7 +191,7 @@ export default function ProjectModal({
             <button
               onClick={handleSave}
               disabled={!name.trim()}
-              className="px-4 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              className="px-4 py-2.5 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               {project ? "Save" : "Create"}
             </button>
@@ -223,7 +223,7 @@ export default function ProjectModal({
             </h2>
             <button
               onClick={onClose}
-              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary rounded"
+              className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -250,7 +250,7 @@ export default function ProjectModal({
               <button
                 onClick={handleSave}
                 disabled={!name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-fg-neutral-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
               >
                 {project ? "Save" : "Create"}
               </button>

@@ -79,7 +79,7 @@ function TierSection({
           </span>
         </h3>
         <svg
-          className={`w-4 h-4 text-zinc-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-fg-neutral-soft transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -105,7 +105,7 @@ function TierSection({
             <button
               type="button"
               onClick={() => setShowAll(true)}
-              className="text-xs text-zinc-500 hover:text-fg-neutral-secondary py-1 pl-1"
+              className="text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary py-1 pl-1"
             >
               Show {tasks.length - maxTasks} more...
             </button>
@@ -127,13 +127,13 @@ interface PriorityTaskCardProps {
 function getTierBadgeColors(tier: PriorityTier): string {
   switch (tier) {
     case "critical":
-      return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+      return "bg-bg-priority-critical-subtle text-fg-priority-critical";
     case "high":
-      return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400";
+      return "bg-bg-priority-high-subtle text-fg-priority-high";
     case "medium":
-      return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400";
+      return "bg-bg-priority-medium-subtle text-fg-priority-medium";
     case "low":
-      return "bg-bg-neutral-subtle text-fg-neutral-secondary";
+      return "bg-bg-priority-low-subtle text-fg-priority-low";
   }
 }
 
@@ -153,7 +153,7 @@ function PriorityTaskCard({ item, tier, onTap, userEnergy }: PriorityTaskCardPro
     <button
       type="button"
       onClick={onTap}
-      className="group w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 sm:px-4 py-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+      className="group w-full text-left bg-bg-neutral-subtle border border-border-color-neutral rounded-lg px-3 sm:px-4 py-3 hover:border-border-color-neutral-hover transition-colors"
     >
       <div className="flex items-start gap-3">
         {/* Content */}
@@ -194,7 +194,7 @@ function PriorityTaskCard({ item, tier, onTap, userEnergy }: PriorityTaskCardPro
         <div className="flex-shrink-0">
           <Info
             size={14}
-            className="text-zinc-400 hover:text-fg-neutral-secondary"
+            className="text-fg-neutral-soft hover:text-fg-neutral-secondary"
           />
         </div>
       </div>
@@ -243,7 +243,7 @@ export default function PriorityQueueModule({
   if (totalTasks === 0) {
     return (
       <div className="py-8 text-center">
-        <BarChart3 size={32} className="mx-auto text-zinc-300 dark:text-zinc-600 mb-3" />
+        <BarChart3 size={32} className="mx-auto text-fg-neutral-soft mb-3" />
         <p className="text-sm text-fg-neutral-secondary">
           {filteredCount > 0
             ? `No matching tasks (${filteredCount} hidden by energy filter)`

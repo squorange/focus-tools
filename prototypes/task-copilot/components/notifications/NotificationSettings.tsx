@@ -86,7 +86,7 @@ export default function SettingsView({
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Appearance section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
               <h2 className="text-base font-medium text-fg-neutral-primary">
@@ -112,7 +112,7 @@ export default function SettingsView({
         </div>
 
         {/* Start Time Poke section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -123,7 +123,7 @@ export default function SettingsView({
                 Calculates when to start to finish on time.{' '}
                 <button
                   onClick={() => setShowMoreInfo(!showMoreInfo)}
-                  className="text-violet-600 dark:text-violet-400 hover:underline"
+                  className="text-fg-accent-secondary hover:underline"
                 >
                   {showMoreInfo ? 'Less info' : 'More info'}
                 </button>
@@ -135,8 +135,8 @@ export default function SettingsView({
               className={`
                 relative w-[51px] h-[31px] rounded-full transition-colors flex-shrink-0
                 ${userSettings.startPokeEnabled
-                  ? 'bg-violet-500'
-                  : 'bg-zinc-300 dark:bg-zinc-600'
+                  ? 'bg-bg-accent-high'
+                  : 'bg-bg-neutral-low'
                 }
               `}
             >
@@ -162,7 +162,7 @@ export default function SettingsView({
                 <div className="px-4 pb-4 pt-0">
                   <div className="bg-bg-neutral-subtle/50 rounded-lg p-3 text-sm text-fg-neutral-secondary">
                     <p className="mb-2">Start Time Poke calculates when you need to start a task to finish on time:</p>
-                    <div className="font-mono bg-white dark:bg-zinc-950 px-3 py-2 rounded border border-border-color-neutral text-xs">
+                    <div className="font-mono bg-bg-neutral-min px-3 py-2 rounded border border-border-color-neutral text-xs">
                       Poke Time = Due Time - Duration - Buffer
                     </div>
                     <p className="mt-2">You'll receive a notification when it's time to start, with quick access to begin focusing.</p>
@@ -182,7 +182,7 @@ export default function SettingsView({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <div className="divide-y divide-border-color-neutral">
                   {/* Scope row */}
                   <button
                     onClick={() => setShowScopePicker(true)}
@@ -191,7 +191,7 @@ export default function SettingsView({
                     <span className="text-sm text-fg-neutral-primary">Poke scope</span>
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-fg-neutral-secondary">{currentScopeLabel}</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
                     </div>
                   </button>
 
@@ -203,7 +203,7 @@ export default function SettingsView({
                     <span className="text-sm text-fg-neutral-primary">Buffer time</span>
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-fg-neutral-secondary">{currentBufferLabel}</span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
                     </div>
                   </button>
                 </div>
@@ -213,7 +213,7 @@ export default function SettingsView({
         </div>
 
         {/* Day Offset section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -227,7 +227,7 @@ export default function SettingsView({
                 }{' '}
                 <button
                   onClick={() => setShowDayOffsetMoreInfo(!showDayOffsetMoreInfo)}
-                  className="text-violet-600 dark:text-violet-400 hover:underline"
+                  className="text-fg-accent-secondary hover:underline"
                 >
                   {showDayOffsetMoreInfo ? 'Less info' : 'More info'}
                 </button>
@@ -241,8 +241,8 @@ export default function SettingsView({
               className={`
                 relative w-[51px] h-[31px] rounded-full transition-colors flex-shrink-0
                 ${userSettings.dayStartHour > 0
-                  ? 'bg-violet-500'
-                  : 'bg-zinc-300 dark:bg-zinc-600'
+                  ? 'bg-bg-accent-high'
+                  : 'bg-bg-neutral-low'
                 }
               `}
             >
@@ -295,7 +295,7 @@ export default function SettingsView({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <div className="divide-y divide-border-color-neutral">
                   {/* Day start time row */}
                   <div className="px-4 py-3 flex items-center justify-between">
                     <span className="text-sm text-fg-neutral-primary">Day starts at</span>
@@ -318,7 +318,7 @@ export default function SettingsView({
         </div>
 
         {/* Quiet Hours section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           {/* Toggle row */}
           <div className="p-4 flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -329,7 +329,7 @@ export default function SettingsView({
                 Silence non-critical nudges during set hours.{' '}
                 <button
                   onClick={() => setShowQuietHoursMoreInfo(!showQuietHoursMoreInfo)}
-                  className="text-violet-600 dark:text-violet-400 hover:underline"
+                  className="text-fg-accent-secondary hover:underline"
                 >
                   {showQuietHoursMoreInfo ? 'Less info' : 'More info'}
                 </button>
@@ -341,8 +341,8 @@ export default function SettingsView({
               className={`
                 relative w-[51px] h-[31px] rounded-full transition-colors flex-shrink-0
                 ${userSettings.quietHoursEnabled
-                  ? 'bg-violet-500'
-                  : 'bg-zinc-300 dark:bg-zinc-600'
+                  ? 'bg-bg-accent-high'
+                  : 'bg-bg-neutral-low'
                 }
               `}
             >
@@ -389,7 +389,7 @@ export default function SettingsView({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <div className="divide-y divide-border-color-neutral">
                   {/* Start time row */}
                   <div className="px-4 py-3 flex items-center justify-between">
                     <span className="text-sm text-fg-neutral-primary">Starts at</span>
@@ -418,7 +418,7 @@ export default function SettingsView({
         </div>
 
         {/* Nudge Cooldown section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden">
           <div className="p-4">
             <h2 className="text-base font-medium text-fg-neutral-primary">
               Nudge Cooldown
@@ -427,7 +427,7 @@ export default function SettingsView({
               Minimum time between nudges for the same task.
             </p>
           </div>
-          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          <div className="divide-y divide-border-color-neutral">
             <button
               onClick={() => setShowCooldownPicker(true)}
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
@@ -435,14 +435,14 @@ export default function SettingsView({
               <span className="text-sm text-fg-neutral-primary">Cooldown period</span>
               <div className="flex items-center gap-1">
                 <span className="text-sm text-fg-neutral-secondary">{currentCooldownLabel}</span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
               </div>
             </button>
           </div>
         </div>
 
         {/* Data section */}
-        <div className="bg-bg-neutral-base rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+        <div className="bg-bg-neutral-base rounded-xl border border-border-color-neutral shadow-xl shadow-black/5 dark:shadow-black/30 overflow-hidden divide-y divide-border-color-neutral">
           {/* Export row */}
           {onExportData && (
             <button
@@ -450,13 +450,13 @@ export default function SettingsView({
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Download className="w-5 h-5 text-zinc-400" />
+                <Download className="w-5 h-5 text-fg-neutral-soft" />
                 <div>
                   <span className="text-sm text-fg-neutral-primary">Export Data</span>
                   <p className="text-xs text-fg-neutral-secondary mt-0.5">Download all tasks and settings as JSON</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
+              <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
             </button>
           )}
 
@@ -467,13 +467,13 @@ export default function SettingsView({
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Upload className="w-5 h-5 text-zinc-400" />
+                <Upload className="w-5 h-5 text-fg-neutral-soft" />
                 <div>
                   <span className="text-sm text-fg-neutral-primary">Import Data</span>
                   <p className="text-xs text-fg-neutral-secondary mt-0.5">Restore from a previously exported file</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
+              <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
             </button>
           )}
 
@@ -484,13 +484,13 @@ export default function SettingsView({
               className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-bg-neutral-subtle transition-colors"
             >
               <div className="flex items-center gap-3">
-                <RefreshCw className="w-5 h-5 text-zinc-400" />
+                <RefreshCw className="w-5 h-5 text-fg-neutral-soft" />
                 <div>
                   <span className="text-sm text-fg-neutral-primary">Rescan Pokes</span>
                   <p className="text-xs text-fg-neutral-secondary mt-0.5">Regenerate all poke notifications based on current settings</p>
                 </div>
               </div>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
+              <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
             </button>
           )}
         </div>
@@ -508,7 +508,7 @@ export default function SettingsView({
               <span className="text-lg font-semibold text-fg-neutral-primary">Poke scope</span>
               <button
                 onClick={() => setShowScopePicker(false)}
-                className="text-sm font-medium text-violet-600 dark:text-violet-400"
+                className="text-sm font-medium text-fg-accent-secondary"
               >
                 Done
               </button>
@@ -524,7 +524,7 @@ export default function SettingsView({
                   className={`
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.startPokeDefault === option.value
-                      ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                      ? 'bg-bg-accent-subtle text-fg-accent-primary'
                       : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                     }
                   `}
@@ -549,7 +549,7 @@ export default function SettingsView({
               <span className="text-lg font-semibold text-fg-neutral-primary">Buffer time</span>
               <button
                 onClick={() => setShowBufferPicker(false)}
-                className="text-sm font-medium text-violet-600 dark:text-violet-400"
+                className="text-sm font-medium text-fg-accent-secondary"
               >
                 Done
               </button>
@@ -577,7 +577,7 @@ export default function SettingsView({
                     className={`
                       w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                       ${isSelected
-                        ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                        ? 'bg-bg-accent-subtle text-fg-accent-primary'
                         : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                       }
                     `}
@@ -606,7 +606,7 @@ export default function SettingsView({
               <span className="text-lg font-semibold text-fg-neutral-primary">Nudge cooldown</span>
               <button
                 onClick={() => setShowCooldownPicker(false)}
-                className="text-sm font-medium text-violet-600 dark:text-violet-400"
+                className="text-sm font-medium text-fg-accent-secondary"
               >
                 Done
               </button>
@@ -622,7 +622,7 @@ export default function SettingsView({
                   className={`
                     w-full px-4 py-3 rounded-lg text-left text-sm transition-colors
                     ${userSettings.nudgeCooldownMinutes === option.value
-                      ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300'
+                      ? 'bg-bg-accent-subtle text-fg-accent-primary'
                       : 'text-fg-neutral-primary hover:bg-bg-neutral-subtle'
                     }
                   `}

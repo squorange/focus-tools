@@ -356,6 +356,8 @@
    * Interactive State Colors - Focus
    * ============================================ */
   --color-ring-focus: #8b5cf6;
+  --color-ring-accent-glow: rgba(139, 92, 246, 0.3);
+  --shadow-accent-glow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 
   /* ============================================
    * Priority Tier Colors
@@ -374,10 +376,18 @@
    * ============================================ */
   --color-bg-energy-high-subtle: #dbeafe;
   --color-fg-energy-high: #3b82f6;
+  --color-border-energy-high: #93c5fd;
   --color-bg-energy-medium-subtle: #dcfce7;
   --color-fg-energy-medium: #22c55e;
+  --color-border-energy-medium: #86efac;
   --color-bg-energy-low-subtle: #fef3c7;
   --color-fg-energy-low: #f59e0b;
+  --color-border-energy-low: #fcd34d;
+
+  /* ============================================
+   * Interactive - Positive Hover
+   * ============================================ */
+  --color-bg-positive-high-hover: #15803d;
 
   /* ============================================
    * Overlay Colors
@@ -741,6 +751,8 @@
 
   /* Interactive State Colors - Focus */
   --color-ring-focus: #8b5cf6;
+  --color-ring-accent-glow: rgba(139, 92, 246, 0.4);
+  --shadow-accent-glow: 0 0 0 3px rgba(139, 92, 246, 0.3);
 
   /* Priority Tier Colors */
   --color-bg-priority-critical-subtle: rgba(127, 29, 29, 0.3);
@@ -755,10 +767,16 @@
   /* Energy Level Colors */
   --color-bg-energy-high-subtle: rgba(30, 58, 138, 0.3);
   --color-fg-energy-high: #60a5fa;
+  --color-border-energy-high: rgba(96, 165, 250, 0.5);
   --color-bg-energy-medium-subtle: rgba(20, 83, 45, 0.3);
   --color-fg-energy-medium: #4ade80;
+  --color-border-energy-medium: rgba(74, 222, 128, 0.5);
   --color-bg-energy-low-subtle: rgba(120, 53, 15, 0.3);
   --color-fg-energy-low: #fbbf24;
+  --color-border-energy-low: rgba(251, 191, 36, 0.5);
+
+  /* Interactive - Positive Hover */
+  --color-bg-positive-high-hover: #22c55e;
 
   /* Overlay Colors */
   --color-bg-overlay-light: rgba(0, 0, 0, 0.3);
