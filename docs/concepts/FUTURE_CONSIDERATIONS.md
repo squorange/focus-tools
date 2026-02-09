@@ -356,6 +356,7 @@ interface ThemeAdapter {
 **References:** 
 - `UI_CONCEPTS_EXPLORED.md` — Full catalog of visual concepts considered
 - `FOCUS_TOOLS_DATA_MODEL.md` — Visualization fields (focusScore, complexity, healthStatus)
+- [MULTI_SHELL_ARCHITECTURE.md](./MULTI_SHELL_ARCHITECTURE.md) — Technical strategy for the three-layer architecture (shared foundation, headless hooks, swappable shells) that enables theme packs
 
 ---
 

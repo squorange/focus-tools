@@ -240,6 +240,7 @@ Both List UI and Orbital Zen show the same data:
 | [FUTURE_CONSIDERATIONS.md](./FUTURE_CONSIDERATIONS.md) | Theme system analysis |
 | [../ROADMAP.md](../ROADMAP.md) | Implementation timeline |
 | [../ARCHITECTURE_EVOLUTION_GUIDE.md](../ARCHITECTURE_EVOLUTION_GUIDE.md) | Infrastructure phasing |
+| [MULTI_SHELL_ARCHITECTURE.md](./MULTI_SHELL_ARCHITECTURE.md) | Three-layer strategy for shell extraction (hooks, contract, shells) |
 
 ---
 

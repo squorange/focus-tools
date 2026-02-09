@@ -255,7 +255,7 @@ Track emerging complexity here. When 2+ signals appear, it's time to act.
 - **State management:** Recent modal simplification reduced complexity. Watch for coordination bugs between MiniBar ↔ Palette ↔ TaskDetail.
 - **Testing:** Unit tests exist for critical logic (queue-reorder, priority calculation). Integration tests needed before auth/backend work. Harnesses planned as Phase 2 of infrastructure evolution.
 - **Context building:** Current hook-based approach working well. Middleware needed when auth introduces persistent user history.
-- **Component coupling:** Theming/Orbital Zen requires separation of logic from presentation. Design system extraction planned after IndexedDB migration.
+- **Component coupling:** Theming/Orbital Zen requires separation of logic from presentation. Design system extraction planned after IndexedDB migration. See [concepts/MULTI_SHELL_ARCHITECTURE.md](./concepts/MULTI_SHELL_ARCHITECTURE.md) for the full technical strategy (headless hooks, shell interface, incremental path).
 - **Storage limits:** localStorage reaching practical limits. IndexedDB migration planned as Phase 1 of infrastructure evolution.
 
 **How to update:** When you notice a signal (repeated code, coordination bug, etc.), add it here with date. When count reaches threshold, address it.
