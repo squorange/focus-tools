@@ -5700,7 +5700,7 @@ export default function Home() {
   if (!hasHydrated) {
     return (
       <div className="min-h-screen bg-bg-neutral-base flex items-center justify-center">
-        <div className="text-zinc-500">Loading...</div>
+        <div className="text-fg-neutral-soft">Loading...</div>
       </div>
     );
   }
@@ -5764,7 +5764,7 @@ export default function Home() {
       {/* Mobile backdrop - full overlay with fade for closing sidebar */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
+          className="fixed inset-0 bg-bg-overlay-light z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -6230,7 +6230,7 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={aiAssistant.closeDrawer}
-              className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 lg:hidden"
+              className="fixed inset-0 bg-bg-overlay-light z-40 lg:hidden"
             />
             <AIAssistantDrawer
               messages={aiAssistant.state.messages}

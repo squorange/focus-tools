@@ -119,8 +119,8 @@ export default function TaskList({
             placeholder="My Tasks"
             rows={1}
             className="flex-1 min-w-0 text-lg font-semibold bg-transparent border-none outline-none
-                       text-neutral-800 dark:text-neutral-100
-                       placeholder-neutral-400 dark:placeholder-neutral-500
+                       text-fg-neutral-primary
+                       placeholder-fg-neutral-soft
                        focus:ring-0 resize-none overflow-hidden leading-tight"
             onInput={(e) => {
               const target = e.currentTarget;
@@ -132,7 +132,7 @@ export default function TaskList({
         <button
           onClick={handleAddStep}
           className="-mt-0.5 flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                     text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20
+                     text-fg-accent-primary hover:bg-bg-accent-subtle
                      rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -146,10 +146,10 @@ export default function TaskList({
       <div>
         {steps.length === 0 ? (
           <div className="py-12 text-center">
-            <p className="text-neutral-500 dark:text-neutral-400 mb-2">
+            <p className="text-fg-neutral-secondary mb-2">
               No tasks yet
             </p>
-            <p className="text-sm text-neutral-400 dark:text-neutral-500">
+            <p className="text-sm text-fg-neutral-soft">
               Add one manually or ask AI to help break something down
             </p>
           </div>

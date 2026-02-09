@@ -644,8 +644,8 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
     completed: {
       label: 'Completed',
       color: '#16a34a', // green-600
-      bgClass: 'bg-green-100 dark:bg-green-900/30',
-      textClass: 'text-green-700 dark:text-green-300',
+      bgClass: 'bg-bg-positive-subtle',
+      textClass: 'text-fg-positive-default',
     },
     archived: {
       label: 'Archived',
@@ -656,14 +656,14 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
     today: {
       label: 'Today',
       color: '#8b5cf6', // violet-500
-      bgClass: 'bg-violet-100 dark:bg-violet-900/30',
-      textClass: 'text-violet-700 dark:text-violet-300',
+      bgClass: 'bg-bg-accent-subtle',
+      textClass: 'text-fg-accent-primary',
     },
     focus: {
       label: 'Focus',
       color: '#6d28d9', // violet-700
-      bgClass: 'bg-violet-50 dark:bg-violet-950/30',
-      textClass: 'text-violet-600 dark:text-violet-400',
+      bgClass: 'bg-bg-accent-subtle',
+      textClass: 'text-fg-accent-primary',
     },
     waiting: {
       label: 'Waiting',
@@ -680,14 +680,14 @@ export function getStatusInfo(status: DisplayStatus): DisplayStatusInfo {
     ready: {
       label: 'Ready',
       color: '#2563eb', // blue-600
-      bgClass: 'bg-blue-100 dark:bg-blue-900/30',
-      textClass: 'text-blue-700 dark:text-blue-300',
+      bgClass: 'bg-bg-information-subtle',
+      textClass: 'text-fg-info-default',
     },
     inbox: {
       label: 'Inbox',
       color: '#d97706', // amber-600
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-      textClass: 'text-amber-700 dark:text-amber-300',
+      bgClass: 'bg-bg-attention-subtle',
+      textClass: 'text-fg-attention-default',
     },
   };
 

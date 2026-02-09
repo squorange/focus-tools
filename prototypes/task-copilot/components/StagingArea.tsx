@@ -228,7 +228,7 @@ export default function StagingArea({
                       {edit.newText}
                       {/* Display time estimate if provided */}
                       {edit.estimatedMinutes !== undefined && edit.estimatedMinutes > 0 && (
-                        <span className="ml-2 text-xs text-violet-500 dark:text-violet-400">
+                        <span className="ml-2 text-xs text-fg-accent-default">
                           ~{formatDuration(edit.estimatedMinutes)}
                         </span>
                       )}

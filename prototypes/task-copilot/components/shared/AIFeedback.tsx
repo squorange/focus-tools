@@ -45,7 +45,7 @@ export function QuickReaction({
 
   if (selected) {
     return (
-      <div className={`flex items-center gap-1.5 text-slate-400 dark:text-slate-500 ${className}`}>
+      <div className={`flex items-center gap-1.5 text-fg-neutral-soft ${className}`}>
         <span className="text-xs">Thanks for the feedback!</span>
       </div>
     );
@@ -55,14 +55,14 @@ export function QuickReaction({
     <div className={`flex items-center gap-1 ${className}`}>
       <button
         onClick={() => handleFeedback('positive')}
-        className={`${sizeClasses} rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors`}
+        className={`${sizeClasses} rounded hover:bg-bg-positive-subtle text-fg-neutral-soft hover:text-fg-positive-default transition-colors`}
         title="Helpful"
       >
         <ThumbsUp className={iconSize} />
       </button>
       <button
         onClick={() => handleFeedback('negative')}
-        className={`${sizeClasses} rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors`}
+        className={`${sizeClasses} rounded hover:bg-bg-alert-subtle text-fg-neutral-soft hover:text-fg-alert-default transition-colors`}
         title="Not helpful"
       >
         <ThumbsDown className={iconSize} />
@@ -132,16 +132,16 @@ export function DetailedFeedback({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-overlay-heavy">
+      <div className="bg-bg-neutral-min rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border-color-neutral">
+          <h3 className="font-semibold text-fg-neutral-primary">
             Share Feedback
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            className="p-1 rounded hover:bg-bg-neutral-subtle text-fg-neutral-soft hover:text-fg-neutral-secondary"
           >
             <X className="w-5 h-5" />
           </button>
@@ -151,10 +151,10 @@ export function DetailedFeedback({
         <div className="p-4">
           {submitted ? (
             <div className="text-center py-8">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                <ThumbsUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div className="w-12 h-12 bg-bg-positive-subtle rounded-full flex items-center justify-center mx-auto mb-3">
+                <ThumbsUp className="w-6 h-6 text-fg-positive-default" />
               </div>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-fg-neutral-secondary">
                 Thanks for your feedback!
               </p>
             </div>
@@ -162,7 +162,7 @@ export function DetailedFeedback({
             <>
               {/* Sentiment selection */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-fg-neutral-secondary mb-2">
                   How was this AI response?
                 </label>
                 <div className="flex gap-2">
@@ -170,8 +170,8 @@ export function DetailedFeedback({
                     onClick={() => setSentiment('positive')}
                     className={`flex-1 py-2 px-3 rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
                       sentiment === 'positive'
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        ? 'border-fg-positive-default bg-bg-positive-subtle text-fg-positive-default'
+                        : 'border-border-color-neutral text-fg-neutral-secondary hover:border-border-neutral-hover'
                     }`}
                   >
                     <ThumbsUp className="w-4 h-4" />
@@ -181,8 +181,8 @@ export function DetailedFeedback({
                     onClick={() => setSentiment('neutral')}
                     className={`flex-1 py-2 px-3 rounded-lg border-2 transition-colors ${
                       sentiment === 'neutral'
-                        ? 'border-slate-500 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                        : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        ? 'border-fg-neutral-secondary bg-bg-neutral-subtle text-fg-neutral-secondary'
+                        : 'border-border-color-neutral text-fg-neutral-secondary hover:border-border-neutral-hover'
                     }`}
                   >
                     Okay
@@ -191,8 +191,8 @@ export function DetailedFeedback({
                     onClick={() => setSentiment('negative')}
                     className={`flex-1 py-2 px-3 rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
                       sentiment === 'negative'
-                        ? 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        ? 'border-fg-alert-default bg-bg-alert-subtle text-fg-alert-default'
+                        : 'border-border-color-neutral text-fg-neutral-secondary hover:border-border-neutral-hover'
                     }`}
                   >
                     <ThumbsDown className="w-4 h-4" />
@@ -203,16 +203,16 @@ export function DetailedFeedback({
 
               {/* Feedback text */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-fg-neutral-secondary mb-2">
                   Tell us more (optional)
                 </label>
                 <textarea
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   placeholder="What could be better? What worked well?"
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg resize-none h-24 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-border-color-neutral rounded-lg resize-none h-24 text-sm bg-bg-neutral-min text-fg-neutral-primary placeholder-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus focus:border-transparent"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-fg-neutral-soft">
                   Your feedback helps us improve AI suggestions for everyone.
                 </p>
               </div>
@@ -220,7 +220,7 @@ export function DetailedFeedback({
               {/* Submit button */}
               <button
                 onClick={handleSubmit}
-                className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full py-2 px-4 bg-bg-accent-high text-fg-accent-inverse-primary font-medium rounded-lg hover:bg-bg-accent-high-hover transition-colors"
               >
                 Submit Feedback
               </button>
@@ -245,7 +245,7 @@ export function FeedbackButton({ onClick, className = '' }: FeedbackButtonProps)
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors ${className}`}
+      className={`flex items-center gap-1.5 px-2 py-1 text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary hover:bg-bg-neutral-subtle rounded transition-colors ${className}`}
       title="Give feedback on AI"
     >
       <MessageSquare className="w-3.5 h-3.5" />

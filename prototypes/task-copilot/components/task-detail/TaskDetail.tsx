@@ -1608,7 +1608,7 @@ export default function TaskDetail({
                           })
                         }
                         placeholder="Nobody"
-                        className="w-full h-8 px-2 py-1 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-focus"
+                        className="w-full h-8 px-2 py-1 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
                       />
                     </div>
                   </div>
@@ -2008,7 +2008,7 @@ export default function TaskDetail({
               value={newStepText}
               onChange={(e) => setNewStepText(e.target.value)}
               placeholder="Add a step..."
-              className="flex-1 px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-focus"
+              className="flex-1 px-3 py-2 text-sm bg-bg-neutral-min border border-border-color-neutral rounded-lg placeholder-fg-neutral-soft focus:outline-none focus:ring-2 focus:ring-focus"
             />
             {newStepText.trim() && (
               <button

@@ -159,7 +159,7 @@ export default function RoutineRowCard({ task, project, onOpen, isPaused }: Rout
             <span>{streak}</span>
           </div>
         )}
-        <ChevronRight className="w-4 h-4 text-zinc-400" />
+        <ChevronRight className="w-4 h-4 text-fg-neutral-soft" />
       </ActionableCard.Trailing>
     </ActionableCard>
   );

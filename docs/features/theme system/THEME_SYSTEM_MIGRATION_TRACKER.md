@@ -22,7 +22,7 @@
 | 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | ✅ | | 11 files migrated, +accent-glow tokens |
 | 8 | TaskDetail | Largest component + sub-components | ✅ | | 5 files migrated, ~100+ raw colors replaced |
 | 9 | AI Components + Globals | AI glass tokens, globals.css, font tokens | ✅ | | 13 files migrated, ~100+ raw colors replaced |
-| 10 | Verification + Cleanup | Audit, legacy removal, documentation | 🔲 | | |
+| 10 | Verification + Cleanup | Audit, legacy removal, documentation | 🟡 | | AIFeedback, TaskList, priority, utils status map, page overlays migrated; Tier 3 (SearchView, HistoryModal, TaskItem, neutral-* components) deferred to Phase 2 |
 
 **Status key:** 🔲 Not started · 🟡 In progress · ✅ Complete · ⚠️ Blocked · 🔄 Needs rework
 

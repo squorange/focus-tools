@@ -659,24 +659,24 @@ export function getTierColors(tier: PriorityTier): {
   switch (tier) {
     case 'critical':
       return {
-        bg: 'bg-red-50 dark:bg-red-900/20',
-        border: 'border-red-200 dark:border-red-800',
-        text: 'text-red-700 dark:text-red-400',
-        badge: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+        bg: 'bg-bg-alert-subtle',
+        border: 'border-border-color-neutral',
+        text: 'text-fg-alert-default',
+        badge: 'bg-bg-alert-subtle text-fg-alert-default',
       };
     case 'high':
       return {
-        bg: 'bg-orange-50 dark:bg-orange-900/20',
-        border: 'border-orange-200 dark:border-orange-800',
-        text: 'text-orange-700 dark:text-orange-400',
-        badge: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400',
+        bg: 'bg-bg-attention-subtle',
+        border: 'border-border-color-neutral',
+        text: 'text-fg-attention-default',
+        badge: 'bg-bg-attention-subtle text-fg-attention-default',
       };
     case 'medium':
       return {
-        bg: 'bg-amber-50 dark:bg-amber-900/20',
-        border: 'border-amber-200 dark:border-amber-800',
-        text: 'text-amber-700 dark:text-amber-400',
-        badge: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400',
+        bg: 'bg-bg-attention-subtle',
+        border: 'border-border-color-neutral',
+        text: 'text-fg-attention-default',
+        badge: 'bg-bg-attention-subtle text-fg-attention-default',
       };
     case 'low':
     default:

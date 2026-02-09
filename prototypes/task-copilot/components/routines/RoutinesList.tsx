@@ -51,11 +51,11 @@ export default function RoutinesList({
   if (allRoutines.length === 0) {
     return (
       <div className="text-center py-12">
-        <Repeat className="w-12 h-12 mx-auto text-zinc-300 dark:text-zinc-600 mb-4" />
+        <Repeat className="w-12 h-12 mx-auto text-fg-neutral-disabled mb-4" />
         <h3 className="text-lg font-medium text-fg-neutral-secondary mb-2">
           No routines yet
         </h3>
-        <p className="text-sm text-zinc-500 dark:text-zinc-500 max-w-xs mx-auto">
+        <p className="text-sm text-fg-neutral-soft max-w-xs mx-auto">
           Create a routine by opening a task and toggling "Recurring" in the details section.
         </p>
       </div>
