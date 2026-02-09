@@ -20,10 +20,11 @@
 | IndexedDB Migration | ✅ Complete |
 | Test Harnesses | ✅ Complete (Infra Phase 2) |
 | AI Guardrails | ✅ Complete (Infra Phase 3) |
-| Design System Integration | 🔄 In Progress (Infra Phase 4) |
+| Design System Integration | ✅ Complete (Infra Phase 4) |
+| Theme System Migration | ✅ Complete (Phase 1: Token Migration) |
 | Auth & User Accounts | 📋 Planned (Infra Phase 5) |
 | Capacitor (Native) | 📋 Planned (Infra Phase 6) |
-| Theming Infrastructure | 📋 Planned (Infra Phase 7) |
+| Theming Infrastructure | 🔄 In Progress (Infra Phase 7, starting Phase 2) |
 | Orbital Zen Theme | 📋 Planned (Infra Phase 8) |
 | Supabase Sync | ⏸️ Deferred (Infra Phase 9) |
 
@@ -98,7 +99,7 @@ See [CLAUDE.md](../prototypes/task-copilot/CLAUDE.md) for detailed sprint contex
 | P1 | IndexedDB Migration (Infra Phase 1) | ✅ Complete |
 | P1 | Test Harnesses (Infra Phase 2) | ✅ Complete |
 | P1 | AI Guardrails (Infra Phase 3) | ✅ Complete |
-| P2 | Design System Integration (Infra Phase 4) | 🔄 Phase 4/6: Tier 1 complete |
+| P1 | Theme Infrastructure (Infra Phase 7) | 🔄 Starting Phase 2 |
 | P2 | Proactive stale task nudge | ⬜ |
 | P2 | Inline AI Actions (Tasks) | ⬜ |
 | P3 | Auth & Accounts (Infra Phase 5) | ⬜ |
@@ -117,10 +118,11 @@ The following improvements build on each other and should be implemented in orde
 | **1** | [IndexedDB Migration](./features/indexeddb-migration/) ✅ | Async storage, larger capacity | Service worker access, offline-first |
 | **2** | [Test Harnesses](./features/test-harnesses/) ✅ | Integration tests, E2E framework | Safe refactoring, CI/CD |
 | **3** | [AI Guardrails](./features/ai-guardrails/) ✅ | Reliability, safety, consistency constraints | Production-ready AI |
-| **4** | [Design System Integration](./features/design-system-integration/) 🔄 | Design tokens, component primitives | Theming, Orbital Zen |
+| **4** | [Design System Integration](./features/design-system-integration/) ✅ | Design tokens, component primitives | Theming, Orbital Zen |
+| **4a** | [Theme System Migration](./features/theme%20system/) ✅ | Semantic token migration (Phase 1) | Theme infrastructure |
 | **5** | Auth & User Accounts | Supabase auth, sessions | Multi-device, cloud sync prep |
 | **6** | Capacitor (Native) | iOS/Android wrapper | Push notifications, voice APIs |
-| **7** | Theming Infrastructure | Theme provider, switching UI | Multiple visual modes |
+| **7** | [Theming Infrastructure](./features/theme%20system/) 🔄 | Theme provider, switching UI | Multiple visual modes |
 | **8** | [Orbital Zen Theme](./concepts/ORBITAL_ZEN.md) | Planetary visualization | Calming alternative UI |
 | **9** | Supabase Sync | Cross-device sync, backup | Collaboration foundations |
 

@@ -22,7 +22,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** February 7, 2026
+**Last Updated:** February 8, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -34,6 +34,8 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P0 | AI Guardrails | ✅ Complete | Infra Phase 3: Rate limiting, analytics, safety integrated |
 | P1 | Design System Integration | ✅ Complete | All phases complete (1-6e) |
 | P1 | ActionableCard Unification | ✅ Complete | All 7 components migrated, 78% code reduction |
+| P1 | Theme System Migration (Phase 1) | ✅ Complete | 10 sessions, ~260 tokens, zero hardcoded colors in prototype |
+| P1 | Theme Infrastructure (Phase 2) | 🔄 In Progress | ColorTheme type, ThemeProvider, presets |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow |
@@ -49,6 +51,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated to semantic tokens |
 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
 | v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
 | v41 | ActionableCard Phase 6c: QueueTaskCard, DoneTaskCard migrated (636 lines deleted) |
@@ -339,6 +342,7 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-08 | v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated |
 | 2026-02-07 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
 | 2026-02-06 | v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
 | 2026-02-06 | v41 | ActionableCard Phase 6c: QueueTaskCard, DoneTaskCard migrated |

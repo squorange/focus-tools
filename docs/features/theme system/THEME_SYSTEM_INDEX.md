@@ -1,7 +1,7 @@
 # Theme System — Documentation Index
 
-> **Last Updated:** February 7, 2026
-> **Current Phase:** Phase 1 — Token Migration (pre-start)
+> **Last Updated:** February 8, 2026
+> **Current Phase:** Phase 2 — Theme Infrastructure (starting)
 
 ---
 

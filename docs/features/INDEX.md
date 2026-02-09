@@ -110,10 +110,11 @@ Pending:
 | 2 | [**Test Harnesses**](./test-harnesses/) | ✅ Complete | [README](./test-harnesses/README.md) |
 | 3 | [**AI Guardrails**](./ai-guardrails/) | ✅ Complete | [SPEC](./ai-guardrails/SPEC.md) |
 | 4 | [**Design System**](../../packages/design-system/) | ✅ Complete | [README](../../packages/design-system/README.md) |
-| 4a | [**Design System Integration**](./design-system-integration/) | 🔄 In Progress | [SPEC](./design-system-integration/SPEC.md) |
+| 4a | [**Design System Integration**](./design-system-integration/) | ✅ Complete | [SPEC](./design-system-integration/SPEC.md) |
+| 4b | [**Theme System Migration**](./theme%20system/) | ✅ Complete | [Tracker](./theme%20system/THEME_SYSTEM_MIGRATION_TRACKER.md) |
 | 5 | Auth & User Accounts | 📋 Planned | Not documented |
 | 6 | Capacitor (Native) | 📋 Planned | Not documented |
-| 7 | Theming Infrastructure | 📋 Planned | Not documented |
+| 7 | [**Theming Infrastructure**](./theme%20system/) | 🔄 In Progress | [Index](./theme%20system/THEME_SYSTEM_INDEX.md) |
 | 8 | Orbital Zen Theme | 📋 Planned | [Concept](../concepts/ORBITAL_ZEN.md) |
 | 9 | Supabase Sync | ⏸️ Deferred | Not documented |
 
