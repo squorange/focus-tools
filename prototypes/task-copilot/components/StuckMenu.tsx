@@ -64,15 +64,15 @@ export default function StuckMenu({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-overlay-light">
       <div
         ref={menuRef}
-        className="w-72 bg-white dark:bg-neutral-800 rounded-xl shadow-xl
-                   border border-neutral-200 dark:border-neutral-700 overflow-hidden"
+        className="w-72 bg-bg-neutral-min rounded-xl shadow-xl
+                   border border-border-color-neutral overflow-hidden"
       >
         {/* Header */}
-        <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
-          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+        <div className="px-4 py-3 border-b border-border-color-neutral">
+          <p className="text-sm font-medium text-fg-neutral-secondary">
             What's blocking you?
           </p>
         </div>
@@ -84,11 +84,11 @@ export default function StuckMenu({
               key={option}
               onClick={() => onSelectOption(option)}
               className="w-full flex items-center gap-3 px-4 py-3
-                         hover:bg-neutral-100 dark:hover:bg-neutral-700
+                         hover:bg-bg-neutral-subtle
                          transition-colors text-left"
             >
               <span className="text-lg">{icon}</span>
-              <span className="text-sm text-neutral-700 dark:text-neutral-200">
+              <span className="text-sm text-fg-neutral-primary">
                 {label}
               </span>
             </button>

@@ -79,11 +79,11 @@ export default function NotesModule({
           value={notes}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full text-sm bg-transparent border border-neutral-200 dark:border-neutral-700
+          className="w-full text-sm bg-transparent border border-border-color-neutral
                      rounded-lg px-3 py-2 outline-none resize-none
-                     text-neutral-600 dark:text-neutral-300
-                     placeholder-neutral-400 dark:placeholder-neutral-500
-                     focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                     text-fg-neutral-secondary
+                     placeholder-fg-neutral-soft
+                     focus:ring-2 focus:ring-ring-focus focus:border-transparent"
           style={{ minHeight: "72px" }}
         />
       </div>
@@ -93,8 +93,8 @@ export default function NotesModule({
   // Collapsible: expand/collapse with smooth animation
   return (
     <div
-      className="w-full bg-neutral-50 dark:bg-neutral-800/50
-                 border border-neutral-200 dark:border-neutral-700 rounded-lg
+      className="w-full bg-bg-neutral-subtle
+                 border border-border-color-neutral rounded-lg
                  overflow-hidden"
     >
       {/* Collapsed view - clickable header */}
@@ -105,16 +105,16 @@ export default function NotesModule({
           <button
             onClick={handleExpand}
             className="w-full flex items-center justify-between px-4 py-3
-                       hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors
+                       hover:bg-bg-neutral-subtle transition-colors
                        text-left"
           >
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className={`text-sm truncate ${notes ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400 dark:text-neutral-500"}`}>
+              <span className={`text-sm truncate ${notes ? "text-fg-neutral-secondary" : "text-fg-neutral-soft"}`}>
                 {getPreview()}
               </span>
             </div>
             <svg
-              className="w-4 h-4 text-neutral-400 flex-shrink-0 ml-2"
+              className="w-4 h-4 text-fg-neutral-soft flex-shrink-0 ml-2"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -138,15 +138,15 @@ export default function NotesModule({
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 className="flex-1 min-w-0 text-sm bg-transparent border-none outline-none resize-none
-                           text-neutral-600 dark:text-neutral-300
-                           placeholder-neutral-400 dark:placeholder-neutral-500
+                           text-fg-neutral-secondary
+                           placeholder-fg-neutral-soft
                            focus:ring-0"
                 style={{ minHeight: "72px" }}
               />
               <button
                 onClick={handleCollapse}
                 className="flex-shrink-0 p-1 -mr-1 -mt-0.5
-                           text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300
+                           text-fg-neutral-soft hover:text-fg-neutral-secondary
                            transition-colors"
               >
                 <svg

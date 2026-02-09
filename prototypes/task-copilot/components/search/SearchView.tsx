@@ -142,7 +142,7 @@ export default function SearchView({
                   <button
                     key={task.id}
                     onClick={() => onOpenTask(task.id)}
-                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                    className="w-full text-left bg-bg-neutral-subtle border border-border-color-neutral rounded-lg p-3 hover:border-border-neutral-hover transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
@@ -171,7 +171,7 @@ export default function SearchView({
                   <button
                     key={task.id}
                     onClick={() => onOpenTask(task.id)}
-                    className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                    className="w-full text-left bg-bg-neutral-subtle border border-border-color-neutral rounded-lg p-3 hover:border-border-neutral-hover transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <StatusBadge status={task.status} />
@@ -206,7 +206,7 @@ export default function SearchView({
                 <button
                   key={task.id}
                   onClick={() => onOpenTask(task.id)}
-                  className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+                  className="w-full text-left bg-bg-neutral-subtle border border-border-color-neutral rounded-lg p-3 hover:border-border-neutral-hover transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <StatusBadge status={task.status} />
@@ -215,12 +215,12 @@ export default function SearchView({
                     </span>
                   </div>
                   {task.waitingOn && (
-                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                    <p className="text-sm text-fg-attention-default mt-1">
                       Waiting on: {task.waitingOn.who}
                     </p>
                   )}
                   {task.deferredUntil && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                    <p className="text-sm text-fg-info-default mt-1">
                       Deferred until: {task.deferredUntil}
                     </p>
                   )}
@@ -270,10 +270,10 @@ export default function SearchView({
 // Status Badge Component
 function StatusBadge({ status }: { status: string }) {
   const classes = {
-    inbox: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
-    pool: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
-    complete: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
-    archived: "bg-zinc-100 dark:bg-zinc-700 text-fg-neutral-secondary",
+    inbox: "bg-bg-attention-subtle text-fg-attention-default",
+    pool: "bg-bg-information-subtle text-fg-info-default",
+    complete: "bg-bg-positive-subtle text-fg-positive-default",
+    archived: "bg-bg-neutral-subtle text-fg-neutral-secondary",
   };
 
   return (
@@ -322,13 +322,13 @@ function SearchResultItem({ result, query, preview, onClick }: SearchResultItemP
 
   // Preview type indicator
   const previewIcon = preview.type === 'step' ? (
-    <span className="text-violet-500 dark:text-violet-400 mr-1">→</span>
+    <span className="text-fg-accent-default mr-1">→</span>
   ) : null;
 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+      className="w-full text-left bg-bg-neutral-subtle border border-border-color-neutral rounded-lg p-3 hover:border-border-neutral-hover transition-colors"
     >
       {/* Title row with status badge */}
       <div className="flex items-center gap-2">

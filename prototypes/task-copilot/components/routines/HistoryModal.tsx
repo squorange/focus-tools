@@ -220,7 +220,7 @@ export default function HistoryModal({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={goToPrevMonth}
-          className="p-2 text-zinc-400 hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
+          className="p-2 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -229,7 +229,7 @@ export default function HistoryModal({
         </h3>
         <button
           onClick={goToNextMonth}
-          className="p-2 text-zinc-400 hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
+          className="p-2 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded-lg hover:bg-bg-neutral-subtle"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -259,9 +259,9 @@ export default function HistoryModal({
                 className={`
                   aspect-square flex flex-col items-center justify-center rounded-lg text-sm
                   transition-colors
-                  ${day === null ? "text-zinc-300 dark:text-zinc-700" : ""}
-                  ${day?.isToday ? "ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-zinc-900" : ""}
-                  ${selectedDate === day?.date ? "bg-violet-100 dark:bg-violet-900/30" : ""}
+                  ${day === null ? "text-fg-neutral-disabled" : ""}
+                  ${day?.isToday ? "ring-2 ring-ring-focus ring-offset-2 dark:ring-offset-zinc-900" : ""}
+                  ${selectedDate === day?.date ? "bg-bg-accent-subtle" : ""}
                   ${day && day.status !== "no_occurrence" ? "hover:bg-bg-neutral-subtle cursor-pointer" : "cursor-default"}
                 `}
               >
@@ -270,7 +270,7 @@ export default function HistoryModal({
                     <span
                       className={`text-xs ${
                         day.isToday
-                          ? "font-bold text-violet-600 dark:text-violet-400"
+                          ? "font-bold text-fg-accent-primary"
                           : "text-fg-neutral-secondary"
                       }`}
                     >
@@ -314,7 +314,7 @@ export default function HistoryModal({
 
       {/* Selected Date Details Panel */}
       {selectedInstance && (
-        <div className="mt-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg border border-border-color-neutral">
+        <div className="mt-4 p-3 bg-bg-neutral-subtle rounded-lg border border-border-color-neutral">
           <p className="text-sm font-medium text-fg-neutral-primary mb-1">
             {parseISO(selectedInstance.date).toLocaleDateString("en-US", {
               weekday: "long",
@@ -339,7 +339,7 @@ export default function HistoryModal({
                       .filter(s => s.completed)
                       .map(step => (
                         <li key={step.id} className="flex items-center gap-1.5 text-sm text-fg-neutral-primary">
-                          <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                          <Check className="w-3.5 h-3.5 text-fg-positive-default flex-shrink-0" />
                           <span className="truncate">{step.text}</span>
                         </li>
                       ))}
@@ -364,7 +364,7 @@ export default function HistoryModal({
                 selectedInstance.status === "today") && (
                 <button
                   onClick={() => handleMarkComplete(selectedInstance.date)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-accent-inverse-primary bg-bg-positive-high hover:opacity-90 rounded-lg transition-colors"
                 >
                   <Check className="w-4 h-4" />
                   Complete
@@ -375,7 +375,7 @@ export default function HistoryModal({
                 selectedInstance.status === "today") && (
                 <button
                   onClick={() => handleMarkSkipped(selectedInstance.date)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-neutral-primary bg-zinc-100 dark:bg-zinc-700 hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-fg-neutral-primary bg-bg-neutral-subtle hover:bg-bg-neutral-subtle-hover rounded-lg transition-colors"
                 >
                   <SkipForward className="w-4 h-4" />
                   Skip
@@ -410,7 +410,7 @@ export default function HistoryModal({
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-around py-3 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-border-color-neutral shrink-0">
+          <div className="flex items-center justify-around py-3 px-4 bg-bg-neutral-subtle border-b border-border-color-neutral shrink-0">
             <div className="flex items-center gap-1.5 text-sm">
               <Flame className="w-4 h-4 text-orange-500" />
               <span className="text-fg-neutral-secondary">Streak:</span>
@@ -419,14 +419,14 @@ export default function HistoryModal({
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
-              <Trophy className="w-4 h-4 text-amber-500" />
+              <Trophy className="w-4 h-4 text-fg-attention-default" />
               <span className="text-fg-neutral-secondary">Best:</span>
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.bestStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
-              <Hash className="w-4 h-4 text-violet-500" />
+              <Hash className="w-4 h-4 text-fg-accent-default" />
               <span className="text-fg-neutral-secondary">Total:</span>
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.totalCompletions}
@@ -463,7 +463,7 @@ export default function HistoryModal({
           </div>
 
           {/* Stats Bar */}
-          <div className="flex items-center justify-around py-2.5 px-4 bg-zinc-50 dark:bg-zinc-800/50 border-b border-border-color-neutral">
+          <div className="flex items-center justify-around py-2.5 px-4 bg-bg-neutral-subtle border-b border-border-color-neutral">
             <div className="flex items-center gap-1.5 text-sm">
               <Flame className="w-4 h-4 text-orange-500" />
               <span className="font-semibold text-fg-neutral-primary">
@@ -471,13 +471,13 @@ export default function HistoryModal({
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
-              <Trophy className="w-4 h-4 text-amber-500" />
+              <Trophy className="w-4 h-4 text-fg-attention-default" />
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.bestStreak}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-sm">
-              <Hash className="w-4 h-4 text-violet-500" />
+              <Hash className="w-4 h-4 text-fg-accent-default" />
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.totalCompletions}
               </span>
@@ -506,19 +506,19 @@ function StatusIcon({
   switch (status) {
     case "completed":
       return (
-        <div className={`${containerSize} rounded-full bg-green-500 flex items-center justify-center`}>
+        <div className={`${containerSize} rounded-full bg-bg-positive-high flex items-center justify-center`}>
           <Check className={`${iconSize} text-white`} strokeWidth={3} />
         </div>
       );
     case "missed":
       return (
-        <div className={`${containerSize} rounded-full bg-red-500 flex items-center justify-center`}>
+        <div className={`${containerSize} rounded-full bg-bg-alert-high flex items-center justify-center`}>
           <X className={`${iconSize} text-white`} strokeWidth={3} />
         </div>
       );
     case "skipped":
       return (
-        <div className={`${containerSize} rounded-full bg-amber-500 flex items-center justify-center`}>
+        <div className={`${containerSize} rounded-full bg-bg-attention-high flex items-center justify-center`}>
           <SkipForward className={`${iconSize} text-white`} strokeWidth={3} />
         </div>
       );
@@ -530,26 +530,26 @@ function StatusIcon({
       );
     case "paused":
       return (
-        <div className={`${containerSize} rounded-full bg-zinc-400 flex items-center justify-center`}>
+        <div className={`${containerSize} rounded-full bg-fg-neutral-soft flex items-center justify-center`}>
           <Pause className={`${iconSize} text-white`} strokeWidth={3} />
         </div>
       );
     case "today":
       return (
-        <div className={`${containerSize} rounded-full border-2 border-violet-500 flex items-center justify-center`}>
-          <Circle className={`${size === "lg" ? "w-2" : "w-1.5"} ${size === "lg" ? "h-2" : "h-1.5"} text-violet-500 fill-violet-500`} />
+        <div className={`${containerSize} rounded-full border-2 border-fg-accent-default flex items-center justify-center`}>
+          <Circle className={`${size === "lg" ? "w-2" : "w-1.5"} ${size === "lg" ? "h-2" : "h-1.5"} text-fg-accent-default fill-fg-accent-default`} />
         </div>
       );
     case "pending":
       return (
         <div className={`${containerSize} rounded-full border-2 border-border-color-neutral flex items-center justify-center`}>
-          <Circle className={`${size === "lg" ? "w-2" : "w-1.5"} ${size === "lg" ? "h-2" : "h-1.5"} text-zinc-300 dark:text-zinc-600`} />
+          <Circle className={`${size === "lg" ? "w-2" : "w-1.5"} ${size === "lg" ? "h-2" : "h-1.5"} text-fg-neutral-disabled`} />
         </div>
       );
     case "no_occurrence":
       return (
         <div className={`${containerSize} flex items-center justify-center`}>
-          <span className="text-zinc-200 dark:text-zinc-700 text-xs">·</span>
+          <span className="text-fg-neutral-disabled text-xs">·</span>
         </div>
       );
     default:

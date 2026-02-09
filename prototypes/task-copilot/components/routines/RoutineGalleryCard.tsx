@@ -41,7 +41,7 @@ function StatusRing({
     >
       {isComplete ? (
         // Completed: solid green circle with checkmark
-        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-bg-positive-high flex items-center justify-center">
           <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -61,7 +61,7 @@ function StatusRing({
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
-            className="text-zinc-200 dark:text-zinc-700"
+            className="text-fg-neutral-disabled"
           />
           {/* Progress arc */}
           {total > 0 && completed > 0 && (
@@ -75,7 +75,7 @@ function StatusRing({
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
-              className="text-violet-500"
+              className="text-fg-accent-default"
             />
           )}
           {/* "!" indicator when past time window */}
@@ -84,7 +84,7 @@ function StatusRing({
               x="10"
               y="14"
               textAnchor="middle"
-              className="fill-zinc-400 dark:fill-zinc-500"
+              className="fill-fg-neutral-soft"
               style={{ fontSize: "10px", fontWeight: 600 }}
               transform="rotate(90 10 10)"
             >
@@ -180,7 +180,7 @@ export default function RoutineGalleryCard({
         <ActionableCard.Meta position="bottom">
           <div className={`flex items-center gap-1.5 text-xs min-w-0 ${
             isPastWindow
-              ? "text-amber-600 dark:text-amber-400"
+              ? "text-fg-attention-default"
               : "text-fg-neutral-secondary"
           }`}>
             <Repeat className="w-3 h-3 flex-shrink-0" />

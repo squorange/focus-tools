@@ -152,10 +152,10 @@ export default function TaskItem({
           className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors
             ${
               step.completed
-                ? "bg-green-500 border-green-500 text-white"
+                ? "bg-bg-positive-high border-bg-positive-high text-white"
                 : step.skipped
-                ? "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400"
-                : "border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500"
+                ? "bg-fg-neutral-disabled border-fg-neutral-disabled text-fg-neutral-soft"
+                : "border-fg-neutral-disabled hover:border-fg-neutral-soft"
             }`}
         >
           {step.completed && (
@@ -171,7 +171,7 @@ export default function TaskItem({
         </button>
 
         {/* Step number */}
-        <span className="mt-0.5 w-6 font-medium text-neutral-400 dark:text-neutral-500 flex-shrink-0">
+        <span className="mt-0.5 w-6 font-medium text-fg-neutral-soft flex-shrink-0">
           {step.id}.
         </span>
 
@@ -184,9 +184,9 @@ export default function TaskItem({
             onBlur={handleSave}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="flex-1 min-w-0 px-2 py-0.5 -mx-2 bg-white dark:bg-neutral-800
+            className="flex-1 min-w-0 px-2 py-0.5 -mx-2 bg-bg-neutral-min
                        border border-blue-500 rounded outline-none resize-none leading-normal
-                       text-neutral-800 dark:text-neutral-100"
+                       text-fg-neutral-primary"
             onInput={(e) => {
               const target = e.currentTarget;
               target.style.height = 'auto';
@@ -196,19 +196,19 @@ export default function TaskItem({
         ) : (
           <span
             onClick={() => setIsEditing(true)}
-            className="flex-1 min-w-0 flex items-baseline gap-2 cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800
+            className="flex-1 min-w-0 flex items-baseline gap-2 cursor-text hover:bg-bg-neutral-subtle
                        rounded px-2 py-0.5 transition-colors"
           >
             <span
               className={`whitespace-normal break-words
-                ${step.completed || step.skipped ? "line-through text-neutral-400 dark:text-neutral-500" : "text-neutral-700 dark:text-neutral-200"}
+                ${step.completed || step.skipped ? "line-through text-fg-neutral-soft" : "text-fg-neutral-primary"}
                 ${step.skipped ? "italic" : ""}`}
             >
-              {step.text || <span className="text-neutral-400 italic">Click to edit...</span>}
+              {step.text || <span className="text-fg-neutral-soft italic">Click to edit...</span>}
             </span>
             {step.skipped && (
-              <span className="flex-shrink-0 text-xs font-normal bg-neutral-200 dark:bg-neutral-700
-                               text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded">
+              <span className="flex-shrink-0 text-xs font-normal bg-bg-neutral-subtle
+                               text-fg-neutral-soft px-1.5 py-0.5 rounded">
                 Skipped
               </span>
             )}
@@ -234,7 +234,7 @@ export default function TaskItem({
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="p-1 focus:opacity-100 transition-colors
-                       text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                       text-fg-neutral-soft hover:text-fg-neutral-secondary"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -242,28 +242,28 @@ export default function TaskItem({
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-neutral-800 rounded-lg shadow-lg 
-                            border border-neutral-200 dark:border-neutral-700 py-1 z-10">
+            <div className="absolute right-0 mt-1 w-40 bg-bg-neutral-min rounded-lg shadow-lg 
+                            border border-border-color-neutral py-1 z-10">
               <button
                 onClick={handleAddSubstep}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                           text-neutral-700 dark:text-neutral-200"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                           text-fg-neutral-primary"
               >
                 Add substep
               </button>
               <button
                 onClick={() => { onMoveUp(step.id); setShowMenu(false); }}
                 disabled={isFirst}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                           text-neutral-700 dark:text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                           text-fg-neutral-primary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Move up
               </button>
               <button
                 onClick={() => { onMoveDown(step.id); setShowMenu(false); }}
                 disabled={isLast}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                           text-neutral-700 dark:text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                           text-fg-neutral-primary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Move down
               </button>
@@ -272,26 +272,26 @@ export default function TaskItem({
                 step.skipped ? (
                   <button
                     onClick={() => { onUnskip(step.id); setShowMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                               text-neutral-700 dark:text-neutral-200"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                               text-fg-neutral-primary"
                   >
                     Unskip
                   </button>
                 ) : (
                   <button
                     onClick={() => { onSkip(step.id); setShowMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                               text-neutral-700 dark:text-neutral-200"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                               text-fg-neutral-primary"
                   >
                     Skip
                   </button>
                 )
               )}
-              <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
+              <hr className="my-1 border-border-color-neutral" />
               <button
                 onClick={() => { onDelete(step.id); setShowMenu(false); }}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20
-                           text-red-600 dark:text-red-400"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-bg-alert-subtle
+                           text-fg-alert-default"
               >
                 Delete
               </button>
@@ -302,7 +302,7 @@ export default function TaskItem({
 
       {/* Substeps */}
       {step.substeps.length > 0 && (
-        <ul className="ml-8 pl-6 border-l-2 border-neutral-200 dark:border-neutral-700 space-y-1">
+        <ul className="ml-8 pl-6 border-l-2 border-border-color-neutral space-y-1">
           {step.substeps.map((substep, index) => (
             <SubstepItem
               key={substep.id}
@@ -401,10 +401,10 @@ function SubstepItem({
         className={`mt-1 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors
           ${
             substep.completed
-              ? "bg-green-500 border-green-500 text-white"
+              ? "bg-bg-positive-high border-bg-positive-high text-white"
               : substep.skipped
-              ? "bg-neutral-300 border-neutral-300 dark:bg-neutral-600 dark:border-neutral-600 text-neutral-500 dark:text-neutral-400"
-              : "border-neutral-300 dark:border-neutral-600"
+              ? "bg-fg-neutral-disabled border-fg-neutral-disabled text-fg-neutral-soft"
+              : "border-fg-neutral-disabled"
           }`}
       >
         {substep.completed && (
@@ -419,7 +419,7 @@ function SubstepItem({
         )}
       </button>
 
-      <span className="mt-0.5 text-sm font-medium text-neutral-400 dark:text-neutral-500 w-6">
+      <span className="mt-0.5 text-sm font-medium text-fg-neutral-soft w-6">
         {substep.id}.
       </span>
 
@@ -431,7 +431,7 @@ function SubstepItem({
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
           rows={1}
-          className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-white dark:bg-neutral-800
+          className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-bg-neutral-min
                      border border-blue-500 rounded outline-none resize-none"
           onInput={(e) => {
             const target = e.currentTarget;
@@ -442,19 +442,19 @@ function SubstepItem({
       ) : (
         <span
           onClick={() => setIsEditing(true)}
-          className="flex-1 min-w-0 flex items-baseline gap-2 cursor-text hover:bg-neutral-100 dark:hover:bg-neutral-800
+          className="flex-1 min-w-0 flex items-baseline gap-2 cursor-text hover:bg-bg-neutral-subtle
                       rounded px-1.5 py-0.5 transition-colors"
         >
           <span
             className={`break-words text-sm
-              ${substep.completed || substep.skipped ? "line-through text-neutral-400 dark:text-neutral-500" : "text-neutral-600 dark:text-neutral-300"}
+              ${substep.completed || substep.skipped ? "line-through text-fg-neutral-soft" : "text-fg-neutral-secondary"}
               ${substep.skipped ? "italic" : ""}`}
           >
-            {substep.text || <span className="text-neutral-400 italic">Click to edit...</span>}
+            {substep.text || <span className="text-fg-neutral-soft italic">Click to edit...</span>}
           </span>
           {substep.skipped && (
-            <span className="flex-shrink-0 text-xs font-normal bg-neutral-200 dark:bg-neutral-700
-                             text-neutral-500 dark:text-neutral-400 px-1.5 py-0.5 rounded">
+            <span className="flex-shrink-0 text-xs font-normal bg-bg-neutral-subtle
+                             text-fg-neutral-soft px-1.5 py-0.5 rounded">
               Skipped
             </span>
           )}
@@ -466,7 +466,7 @@ function SubstepItem({
         <button
           onClick={() => setShowMenu(!showMenu)}
           className="p-1 focus:opacity-100 transition-colors
-                     text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                     text-fg-neutral-soft hover:text-fg-neutral-secondary"
         >
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -474,21 +474,21 @@ function SubstepItem({
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-neutral-800 rounded-lg shadow-lg
-                          border border-neutral-200 dark:border-neutral-700 py-1 z-10">
+          <div className="absolute right-0 mt-1 w-40 bg-bg-neutral-min rounded-lg shadow-lg
+                          border border-border-color-neutral py-1 z-10">
             <button
               onClick={() => { onMoveUp(); setShowMenu(false); }}
               disabled={isFirst}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                         text-neutral-700 dark:text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                         text-fg-neutral-primary disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Move up
             </button>
             <button
               onClick={() => { onMoveDown(); setShowMenu(false); }}
               disabled={isLast}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                         text-neutral-700 dark:text-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                         text-fg-neutral-primary disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Move down
             </button>
@@ -497,26 +497,26 @@ function SubstepItem({
               substep.skipped ? (
                 <button
                   onClick={() => { onUnskip(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                             text-neutral-700 dark:text-neutral-200"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                             text-fg-neutral-primary"
                 >
                   Unskip
                 </button>
               ) : (
                 <button
                   onClick={() => { onSkip(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700
-                             text-neutral-700 dark:text-neutral-200"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-bg-neutral-subtle
+                             text-fg-neutral-primary"
                 >
                   Skip
                 </button>
               )
             )}
-            <hr className="my-1 border-neutral-200 dark:border-neutral-700" />
+            <hr className="my-1 border-border-color-neutral" />
             <button
               onClick={() => { onDelete(); setShowMenu(false); }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900/20
-                         text-red-600 dark:text-red-400"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-bg-alert-subtle
+                         text-fg-alert-default"
             >
               Delete
             </button>
