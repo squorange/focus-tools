@@ -21,7 +21,7 @@
 | 6 | Medium Components | Selectors, displays, focus mode (~8 files) | ✅ | | 8 files migrated, +energy border tokens |
 | 7 | Hard Components | FilterDrawer, StagingArea, AIDisclosure, notifications | ✅ | | 11 files migrated, +accent-glow tokens |
 | 8 | TaskDetail | Largest component + sub-components | ✅ | | 5 files migrated, ~100+ raw colors replaced |
-| 9 | AI Components + Globals | AI glass tokens, globals.css, font tokens | 🔲 | | |
+| 9 | AI Components + Globals | AI glass tokens, globals.css, font tokens | ✅ | | 13 files migrated, ~100+ raw colors replaced |
 | 10 | Verification + Cleanup | Audit, legacy removal, documentation | 🔲 | | |
 
 **Status key:** 🔲 Not started · 🟡 In progress · ✅ Complete · ⚠️ Blocked · 🔄 Needs rework

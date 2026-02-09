@@ -140,17 +140,16 @@ export function AIAssistantOverlay({
       {...dragProps}
       className={`
         w-full sm:w-[400px]
-        bg-gradient-to-br from-violet-50/50 via-violet-100/40 to-violet-50/50
-        dark:from-violet-950/30 dark:via-violet-950/20 dark:to-violet-950/30
-        backdrop-blur-lg
-        border border-violet-200/30 dark:border-violet-800/30
-        overflow-hidden
-        shadow-lg shadow-violet-400/[0.04] dark:shadow-violet-950/20
+        border overflow-hidden
         rounded-3xl
         ${isExpanded ? 'touch-none' : ''}
         ${isAnimating ? 'pointer-events-none' : ''}
       `}
       style={{
+        background: 'var(--glass-ai-bg)',
+        backdropFilter: 'blur(var(--glass-ai-blur))',
+        borderColor: 'var(--glass-ai-border)',
+        boxShadow: '0 10px 15px -3px var(--glass-ai-shadow), 0 4px 6px -4px var(--glass-ai-shadow)',
         maxHeight: isExpanded ? HEIGHTS.expandedMax : undefined,
         opacity: isExpanded ? Math.max(0.5, 1 - dragY / 200) : 1,
       }}
@@ -171,13 +170,13 @@ export function AIAssistantOverlay({
           >
             {/* Left half */}
             <motion.div
-              className="w-5 h-1 rounded-l-full bg-zinc-300 dark:bg-zinc-600 origin-right"
+              className="w-5 h-1 rounded-l-full bg-fg-neutral-softer origin-right"
               animate={{ rotate: isHandleHovered && !prefersReducedMotion ? 15 : 0 }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
             />
             {/* Right half */}
             <motion.div
-              className="w-5 h-1 rounded-r-full bg-zinc-300 dark:bg-zinc-600 origin-left"
+              className="w-5 h-1 rounded-r-full bg-fg-neutral-softer origin-left"
               animate={{ rotate: isHandleHovered && !prefersReducedMotion ? -15 : 0 }}
               transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
             />

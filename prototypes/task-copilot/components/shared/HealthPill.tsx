@@ -115,9 +115,9 @@ export default function HealthPill({
                 className="text-sm text-fg-neutral-primary flex items-start gap-1.5"
               >
                 <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                  health.status === 'critical' ? 'bg-red-500' :
-                  health.status === 'at_risk' ? 'bg-amber-500' :
-                  'bg-green-500'
+                  health.status === 'critical' ? 'bg-bg-alert-high' :
+                  health.status === 'at_risk' ? 'bg-bg-attention-high' :
+                  'bg-bg-positive-high'
                 }`} />
                 {reason}
               </li>

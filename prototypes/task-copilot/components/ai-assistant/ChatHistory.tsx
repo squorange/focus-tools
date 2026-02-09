@@ -23,7 +23,7 @@ export function ChatHistory({ messages }: ChatHistoryProps) {
             className={`
               max-w-[85%] px-3 py-2 rounded-2xl text-sm
               ${message.role === 'user'
-                ? 'bg-violet-600 text-white rounded-br-md'
+                ? 'bg-bg-accent-high text-fg-accent-inverse-primary rounded-br-md'
                 : 'bg-bg-neutral-subtle text-fg-neutral-primary rounded-bl-md'
               }
             `}

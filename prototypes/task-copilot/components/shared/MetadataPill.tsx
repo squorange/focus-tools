@@ -32,20 +32,20 @@ export default function MetadataPill({
 
   const variantClasses: Record<PillVariant, string> = {
     default:
-      "bg-black/5 dark:bg-white/10 text-fg-neutral-secondary",
+      "bg-bg-transparent-subtle-accented text-fg-neutral-secondary",
     "priority-high":
-      "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+      "bg-bg-alert-subtle text-fg-alert-default",
     "priority-medium":
-      "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+      "bg-bg-attention-subtle text-fg-attention-default",
     healthy:
-      "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-    due: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+      "bg-bg-positive-subtle text-fg-positive-default",
+    due: "bg-bg-information-subtle text-fg-info-default",
     overdue:
-      "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    project: "bg-black/5 dark:bg-white/10 text-fg-neutral-secondary", // Monochrome like default
-    paused: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
-    waiting: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
-    deferred: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400",
+      "bg-bg-alert-subtle text-fg-alert-default",
+    project: "bg-bg-transparent-subtle-accented text-fg-neutral-secondary", // Monochrome like default
+    paused: "bg-bg-attention-subtle text-fg-attention-default",
+    waiting: "bg-bg-attention-subtle text-fg-attention-default",
+    deferred: "bg-bg-attention-subtle text-fg-attention-default",
   };
 
   // No inline style needed for project variant (now uses monochrome styling)

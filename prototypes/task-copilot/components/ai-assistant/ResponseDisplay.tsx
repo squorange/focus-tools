@@ -57,7 +57,7 @@ export function ResponseDisplay({ response }: ResponseDisplayProps) {
 
 function TextResponse({ content }: { content: TextContent }) {
   return (
-    <p className="text-base text-zinc-600 dark:text-zinc-300 leading-relaxed text-left whitespace-pre-wrap">
+    <p className="text-base text-fg-neutral-secondary leading-relaxed text-left whitespace-pre-wrap">
       {content.text}
     </p>
   );
@@ -80,9 +80,9 @@ function ExplanationResponse({ content }: { content: ExplanationContent }) {
 
 function ErrorResponse({ content }: { content: TextContent }) {
   return (
-    <div className="flex items-start gap-2 p-3 bg-red-900/20 border border-red-800/50 rounded-lg text-left">
-      <span className="text-red-400">⚠️</span>
-      <p className="text-base text-red-300">{content.text}</p>
+    <div className="flex items-start gap-2 p-3 bg-bg-alert-subtle border border-border-color-neutral rounded-lg text-left">
+      <span className="text-fg-alert-default">⚠️</span>
+      <p className="text-base text-fg-alert-default">{content.text}</p>
     </div>
   );
 }

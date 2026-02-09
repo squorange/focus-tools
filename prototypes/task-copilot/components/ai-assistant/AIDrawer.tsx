@@ -96,7 +96,7 @@ export function AIDrawer({
         <motion.button
           onClick={onClose}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
-          className="px-3 py-1 text-xs font-medium text-fg-neutral-secondary hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-bg-neutral-subtle rounded-lg transition-colors"
+          className="px-3 py-1 text-xs font-medium text-fg-neutral-secondary hover:text-fg-neutral-primary hover:bg-bg-neutral-subtle rounded-lg transition-colors"
           aria-label="Close chat"
         >
           Done
@@ -146,7 +146,7 @@ export function AIDrawer({
       {/* Input area - uses CSS var from BottomSheet for keyboard-aware safe area */}
       <div className="flex-shrink-0 p-4" style={{ paddingBottom: "calc(1rem + var(--safe-area-bottom, env(safe-area-inset-bottom)))" }}>
         <form onSubmit={handleSubmit}>
-          <div className="bg-violet-50/30 dark:bg-violet-900/10 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
+          <div className="rounded-xl border focus-within:border-[var(--glass-ai-input-focus)] transition-colors" style={{ backgroundColor: 'var(--glass-ai-input-bg)', borderColor: 'var(--glass-ai-input-border)' }}>
             <textarea
               ref={inputRef}
               rows={1}
@@ -162,7 +162,7 @@ export function AIDrawer({
               placeholder="Type a message..."
               disabled={isLoading}
               className="w-full px-4 pt-3 pb-1 bg-transparent border-0 resize-none
-                outline-none text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500
+                outline-none text-sm text-fg-neutral-primary placeholder-fg-neutral-soft
                 disabled:opacity-50 min-h-[44px] max-h-[200px]"
             />
             <div className="flex items-center justify-end gap-2 px-3 pb-2">
@@ -170,8 +170,8 @@ export function AIDrawer({
                 type="submit"
                 disabled={!query.trim() || isLoading}
                 whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
-                className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-400/30 dark:disabled:bg-zinc-600/30
-                  disabled:cursor-not-allowed text-white rounded-full transition-colors"
+                className="p-2 bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:bg-bg-transparent-subtle-accented
+                  disabled:cursor-not-allowed text-fg-accent-inverse-primary rounded-full transition-colors"
                 aria-label="Send message"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -203,7 +203,7 @@ export function AIDrawer({
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
-      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 border-l border-zinc-200/50 dark:border-zinc-700/30 pt-[env(safe-area-inset-top)]"
+      className="fixed z-50 flex flex-col shadow-xl right-0 top-0 bottom-0 border-l border-border-color-neutral pt-[env(safe-area-inset-top)]"
       style={{ width: WIDTHS.drawer }}
     >
       {drawerContent}

@@ -71,13 +71,13 @@ export default function ReadOnlyInfoPopover({
 
         {onEditTemplate && (
           <>
-            <div className="border-t border-zinc-100 dark:border-zinc-700" />
+            <div className="border-t border-border-color-neutral" />
             <button
               onClick={() => {
                 onEditTemplate();
                 onClose();
               }}
-              className="w-full px-3 py-2.5 text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-between transition-colors"
+              className="w-full px-3 py-2.5 text-sm font-medium text-fg-accent-primary hover:bg-bg-neutral-subtle flex items-center justify-between transition-colors"
             >
               <span>Edit template</span>
               <ChevronRight className="w-4 h-4" />

@@ -66,7 +66,7 @@ export default function DetailsPill({
   };
 
   const interactiveClasses = isInteractive
-    ? "cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 active:scale-95"
+    ? "cursor-pointer hover:bg-bg-neutral-low-hover hover:border-border-neutral-hover active:scale-95"
     : "";
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -125,7 +125,7 @@ export default function DetailsPill({
             e.stopPropagation();
             onClear();
           }}
-          className={`flex-shrink-0 ml-0.5 rounded-full hover:bg-zinc-300 dark:hover:bg-zinc-600 p-0.5 cursor-pointer ${
+          className={`flex-shrink-0 ml-0.5 rounded-full hover:bg-bg-neutral-low-hover p-0.5 cursor-pointer ${
             size === "sm" ? "w-4 h-4" : "w-5 h-5"
           } flex items-center justify-center`}
         >
@@ -135,7 +135,7 @@ export default function DetailsPill({
 
       {/* Lock icon for locked variant */}
       {variant === "locked" && (
-        <Lock className={`${size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} text-zinc-400 flex-shrink-0 ml-0.5`} />
+        <Lock className={`${size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} text-fg-neutral-soft flex-shrink-0 ml-0.5`} />
       )}
     </button>
   );

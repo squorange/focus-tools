@@ -258,10 +258,10 @@ export function PaletteContent({
     >
       {/* Target banner - shows when step is targeted (reply arrow style) */}
       {aiTargetContext && !isLoading && !response && (
-        <div className="flex items-center justify-between px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+        <div className="flex items-center justify-between px-3 py-2 mb-4 bg-bg-accent-subtle border border-border-accent-low rounded-lg">
           <div className="flex items-center gap-2 min-w-0">
             {/* Reply arrow icon */}
-            <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0 text-zinc-400">
+            <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0 text-fg-neutral-soft">
               <path d="M4 2v8h8" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round"/>
               <path d="M9 7l3 3-3 3" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -273,7 +273,7 @@ export function PaletteContent({
             <button
               type="button"
               onClick={onClearAITarget}
-              className="p-1 text-zinc-400 hover:text-fg-neutral-secondary transition-colors flex-shrink-0"
+              className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors flex-shrink-0"
               aria-label="Clear target"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +291,7 @@ export function PaletteContent({
         const total = awareness.items.length;
 
         return (
-          <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+          <div className="px-3 py-2 mb-4 bg-bg-accent-subtle border border-border-accent-low rounded-lg">
             {/* Title row: emoji + full title (wraps) + count */}
             <div className="flex items-start gap-2">
               <span className="flex-shrink-0 text-sm mt-0.5">👀</span>
@@ -310,9 +310,9 @@ export function PaletteContent({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); awareness.onReview(current.taskId); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-transparent-subtle-accented
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-neutral-low-hover
                   transition-colors"
               >
                 Review
@@ -321,9 +321,9 @@ export function PaletteContent({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); awareness.onDismiss(current.id); }}
                 className="px-2.5 py-1 text-xs font-medium rounded-full
-                  bg-zinc-900/10 dark:bg-white/10
+                  bg-bg-transparent-subtle-accented
                   text-fg-neutral-primary
-                  hover:bg-zinc-900/20 dark:hover:bg-white/20
+                  hover:bg-bg-neutral-low-hover
                   transition-colors"
               >
                 Dismiss
@@ -333,9 +333,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); awareness.onNext(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                   aria-label="Next item"
                 >
@@ -362,7 +362,7 @@ export function PaletteContent({
           const dueTimeStr = new Date(poke.anchorTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
           return (
-            <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+            <div className="px-3 py-2 mb-4 bg-bg-accent-subtle border border-border-accent-low rounded-lg">
               {/* Title row: pointing emoji + task title + poke time + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">👉🏽</span>
@@ -373,7 +373,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                    className="flex-shrink-0 text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -391,9 +391,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onStartPokeAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Start
@@ -402,9 +402,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); poke.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Snooze 5m
@@ -413,9 +413,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); poke.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Dismiss
@@ -430,7 +430,7 @@ export function PaletteContent({
           const dateStr = effectiveDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
           return (
-            <div className="px-3 py-2 mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg">
+            <div className="px-3 py-2 mb-4 bg-bg-attention-subtle border border-border-color-neutral rounded-lg">
               {/* Title row: running emoji + task title + date + count */}
               <div className="flex items-start gap-2">
                 <span className="flex-shrink-0 text-sm mt-0.5">🏃</span>
@@ -441,7 +441,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                    className="flex-shrink-0 text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -457,9 +457,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); runway.onStart(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   View Task
@@ -468,9 +468,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); runway.onSnooze(60); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Snooze 1h
@@ -479,9 +479,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); runway.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Dismiss
@@ -496,12 +496,12 @@ export function PaletteContent({
           const timeStr = reminderTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
           return (
-            <div className="px-3 py-2 mb-4 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/50 rounded-lg">
+            <div className="px-3 py-2 mb-4 bg-bg-accent-subtle border border-border-accent-low rounded-lg">
               {/* Title row: bell icon + task title + time + count */}
               <div className="flex items-start gap-2">
                 <Bell
                   size={14}
-                  className="flex-shrink-0 mt-0.5 text-violet-500 dark:text-violet-400"
+                  className="flex-shrink-0 mt-0.5 text-fg-accent-default"
                 />
                 <span className="flex-1 text-sm text-fg-neutral-primary">
                   &ldquo;{reminder.taskTitle}&rdquo; — Set for {timeStr}
@@ -510,7 +510,7 @@ export function PaletteContent({
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onCycleAlert?.(); }}
-                    className="flex-shrink-0 text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                    className="flex-shrink-0 text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
                   >
                     ({currentAlertIndex + 1}/{alertCount})
                   </button>
@@ -522,9 +522,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onReminderAction?.(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   View
@@ -533,9 +533,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); reminder.onSnooze(5); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Snooze 5m
@@ -544,9 +544,9 @@ export function PaletteContent({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); reminder.onDismiss(); }}
                   className="px-2.5 py-1 text-xs font-medium rounded-full
-                    bg-zinc-900/10 dark:bg-white/10
+                    bg-bg-transparent-subtle-accented
                     text-fg-neutral-primary
-                    hover:bg-zinc-900/20 dark:hover:bg-white/20
+                    hover:bg-bg-neutral-low-hover
                     transition-colors"
                 >
                   Dismiss
@@ -561,7 +561,7 @@ export function PaletteContent({
       <div className="relative flex-1 min-h-0 mb-4 overflow-hidden">
         {/* Top gradient fade (visible when scrolled down) */}
         <div
-          className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-glass-ai-fade-from to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showTopFade ? 'opacity-100' : 'opacity-0'}`}
         />
 
         {/* Scrollable content */}
@@ -639,7 +639,7 @@ export function PaletteContent({
                         <p className="text-base font-medium text-fg-neutral-primary">
                           "{(response.content as RecommendationContent).taskTitle}"
                         </p>
-                        <p className="text-base text-zinc-600 dark:text-zinc-300">
+                        <p className="text-base text-fg-neutral-secondary">
                           {(response.content as RecommendationContent).reason}
                         </p>
                       </div>
@@ -666,7 +666,7 @@ export function PaletteContent({
                           onCollapse?.();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          bg-violet-600 text-white hover:bg-violet-700"
+                          bg-bg-accent-high text-fg-accent-inverse-primary hover:bg-bg-accent-high-hover"
                       >
                         Got it
                       </button>
@@ -678,7 +678,7 @@ export function PaletteContent({
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
                           text-fg-neutral-primary border border-border-color-neutral
-                          hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                          hover:bg-bg-neutral-subtle"
                       >
                         Ask AI
                       </button>
@@ -695,7 +695,7 @@ export function PaletteContent({
                           onCollapse?.();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-white bg-violet-600 hover:bg-violet-700"
+                          text-fg-accent-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover"
                       >
                         Got it
                       </button>
@@ -706,8 +706,7 @@ export function PaletteContent({
                           setShowInput(true);
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                          bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover"
                       >
                         Ask AI
                       </button>
@@ -724,7 +723,7 @@ export function PaletteContent({
                           onSubmit(); // Retry the query
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-white bg-violet-600 hover:bg-violet-700"
+                          text-fg-accent-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover"
                       >
                         Retry
                       </button>
@@ -735,8 +734,7 @@ export function PaletteContent({
                           setShowInput(true);
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                          bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover"
                       >
                         Ask AI
                       </button>
@@ -768,7 +766,7 @@ export function PaletteContent({
                           onCollapse?.();
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          text-white bg-violet-600 hover:bg-violet-700"
+                          text-fg-accent-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover"
                       >
                         Start Focus
                       </button>
@@ -779,8 +777,7 @@ export function PaletteContent({
                           setShowInput(true);
                         }}
                         className="px-4 py-2 text-sm font-medium rounded-lg transition-colors
-                          bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300
-                          hover:bg-violet-200 dark:hover:bg-violet-800/40"
+                          bg-bg-accent-subtle text-fg-accent-primary hover:bg-bg-accent-subtle-hover"
                       >
                         Ask AI
                       </button>
@@ -805,7 +802,7 @@ export function PaletteContent({
 
         {/* Bottom gradient fade (visible when more content below) */}
         <div
-          className={`absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showBottomFade ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-glass-ai-fade-from to-transparent pointer-events-none z-10 transition-opacity duration-200 ${showBottomFade ? 'opacity-100' : 'opacity-0'}`}
         />
       </div>
 
@@ -823,7 +820,7 @@ export function PaletteContent({
               className="overflow-hidden"
             >
               <form onSubmit={handleSubmit}>
-            <div className="bg-violet-50/30 dark:bg-violet-900/10 rounded-xl border border-violet-200/30 dark:border-violet-800/30 focus-within:border-violet-500 dark:focus-within:border-violet-500 transition-colors">
+            <div className="rounded-xl border focus-within:border-[var(--glass-ai-input-focus)] transition-colors" style={{ backgroundColor: 'var(--glass-ai-input-bg)', borderColor: 'var(--glass-ai-input-border)' }}>
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -846,7 +843,7 @@ export function PaletteContent({
                   minHeight: '44px',
                 }}
                 className="w-full px-4 pt-3 pb-1 bg-transparent border-0 resize-none
-                  outline-none text-sm text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500
+                  outline-none text-sm text-fg-neutral-primary placeholder-fg-neutral-soft
                   disabled:opacity-50"
               />
               <div className="flex items-center justify-end gap-2 px-3 pb-2">
@@ -854,7 +851,7 @@ export function PaletteContent({
                 <button
                   type="button"
                   onClick={onOpenDrawer}
-                  className="p-2 text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                  className="p-2 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
                   aria-label="Open expanded chat"
                   title="Open expanded chat"
                 >
@@ -870,8 +867,8 @@ export function PaletteContent({
                   type="submit"
                   disabled={!query.trim() || isLoading}
                   whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
-                  className="p-2 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-400/30 dark:disabled:bg-zinc-600/30
-                    disabled:cursor-not-allowed text-white rounded-full transition-colors"
+                  className="p-2 bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:bg-bg-transparent-subtle-accented
+                    disabled:cursor-not-allowed text-fg-accent-inverse-primary rounded-full transition-colors"
                   aria-label="Send message"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">

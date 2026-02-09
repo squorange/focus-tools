@@ -87,12 +87,12 @@ export function MiniBarContent({
           ) : isReminder ? (
             <Bell
               size={18}
-              className="text-amber-500 dark:text-amber-400"
+              className="text-fg-attention-default"
             />
           ) : (
             <Sparkles
               size={18}
-              className="text-violet-500 dark:text-violet-400"
+              className="text-fg-accent-default"
             />
           )}
         </motion.div>
@@ -119,9 +119,9 @@ export function MiniBarContent({
               className={`
                 ${isIdle ? 'text-fg-neutral-soft' : 'text-fg-neutral-primary'}
                 ${isNudge || isPrompt ? 'font-medium' : ''}
-                ${isResponse ? 'text-violet-600 dark:text-violet-300' : ''}
-                ${isSuggestionsReady ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}
-                ${isConfirmation ? 'text-green-600 dark:text-green-400' : ''}
+                ${isResponse ? 'text-fg-accent-primary' : ''}
+                ${isSuggestionsReady ? 'text-fg-attention-default font-medium' : ''}
+                ${isConfirmation ? 'text-fg-positive-default' : ''}
                 ${isCancelled ? 'text-fg-neutral-secondary' : ''}
               `}
             >
@@ -149,9 +149,9 @@ export function MiniBarContent({
                 onStartPokeAction();
               }}
               className="flex-shrink-0 px-3 py-1.5 text-sm font-medium rounded-full
-                bg-violet-100 dark:bg-violet-900/40
-                text-violet-700 dark:text-violet-300
-                hover:bg-violet-200 dark:hover:bg-violet-800/50
+                bg-bg-accent-subtle
+                text-fg-accent-primary
+                hover:bg-bg-accent-subtle-hover
                 transition-colors"
             >
               Start
@@ -159,7 +159,7 @@ export function MiniBarContent({
             {hasMultipleAlerts && (
               <button
                 onClick={handleCycleClick}
-                className="text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                className="text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
               >
                 ({currentAlertIndex + 1}/{alertCount})
               </button>
@@ -181,9 +181,9 @@ export function MiniBarContent({
                 onReminderAction();
               }}
               className="flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full
-                bg-amber-100 dark:bg-amber-900/40
-                text-amber-700 dark:text-amber-300
-                hover:bg-amber-200 dark:hover:bg-amber-800/50
+                bg-bg-attention-subtle
+                text-fg-attention-default
+                hover:bg-bg-attention-subtle-hover
                 transition-colors"
             >
               View
@@ -191,7 +191,7 @@ export function MiniBarContent({
             {hasMultipleAlerts && (
               <button
                 onClick={handleCycleClick}
-                className="text-xs text-zinc-400 hover:text-fg-neutral-secondary transition-colors"
+                className="text-xs text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
               >
                 ({currentAlertIndex + 1}/{alertCount})
               </button>
@@ -207,9 +207,9 @@ export function MiniBarContent({
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
             onClick={handlePromptPillClick}
             className="flex-shrink-0 px-3 py-1.5 text-sm rounded-full
-              bg-violet-100 dark:bg-violet-900/40
-              text-violet-700 dark:text-violet-300
-              hover:bg-violet-200 dark:hover:bg-violet-800/50
+              bg-bg-accent-subtle
+              text-fg-accent-primary
+              hover:bg-bg-accent-subtle-hover
               transition-colors"
           >
             {content.prompt.pillIcon} {content.prompt.pillLabel}
@@ -223,9 +223,9 @@ export function MiniBarContent({
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
             className="flex-shrink-0 px-3 py-1.5 text-sm rounded-full
-              bg-violet-100 dark:bg-violet-900/40
-              text-violet-700 dark:text-violet-300
-              hover:bg-violet-200 dark:hover:bg-violet-800/50
+              bg-bg-accent-subtle
+              text-fg-accent-primary
+              hover:bg-bg-accent-subtle-hover
               transition-colors"
             onClick={(e) => {
               e.stopPropagation();
@@ -248,7 +248,7 @@ export function MiniBarContent({
             height="16"
             viewBox="0 0 16 16"
             fill="none"
-            className="flex-shrink-0 text-amber-500 dark:text-amber-400"
+            className="flex-shrink-0 text-fg-attention-default"
           >
             <path
               d="M4 10L8 6L12 10"

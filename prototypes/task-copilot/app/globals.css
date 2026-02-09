@@ -23,7 +23,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-family-sans);
 }
 
 /* Smooth transitions for interactive elements */
@@ -63,21 +63,12 @@ input[type="date"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: var(--color-fg-neutral-disabled);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: #4b5563;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
-  }
+  background: var(--color-fg-neutral-softer);
 }
 
 /* Toast animation */
@@ -109,10 +100,10 @@ input[type="date"] {
 /* StagingArea pulse-glow animation for new arrivals */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 10px 15px -3px rgb(167 139 250 / 0.3), 0 4px 6px -4px rgb(167 139 250 / 0.2);
+    box-shadow: 0 10px 15px -3px var(--glass-ai-shadow), 0 4px 6px -4px var(--glass-ai-shadow);
   }
   50% {
-    box-shadow: 0 10px 25px -3px rgb(167 139 250 / 0.5), 0 4px 10px -4px rgb(167 139 250 / 0.4);
+    box-shadow: 0 10px 25px -3px var(--color-ring-accent-glow), 0 4px 10px -4px var(--color-ring-accent-glow);
   }
 }
 
@@ -171,9 +162,9 @@ input[type="date"] {
   /* Use explicit properties instead of shorthand for cross-browser animation support */
   background-image: linear-gradient(
     90deg,
-    #52525b 25%,
-    #ddd6fe 50%,
-    #52525b 75%
+    var(--color-fg-neutral-softer) 25%,
+    var(--color-bg-accent-low) 50%,
+    var(--color-fg-neutral-softer) 75%
   );
   background-size: 300% 100%;
   background-clip: text;
@@ -181,22 +172,6 @@ input[type="date"] {
   color: transparent;
   animation: shimmer 2s ease-out infinite;
   -webkit-animation: shimmer 2s ease-out infinite;
-}
-
-/* Dark mode shimmer - use media query to match app's dark mode strategy */
-@media (prefers-color-scheme: dark) {
-  .shimmer-text {
-    background-image: linear-gradient(
-      90deg,
-      #a1a1aa 25%,
-      #ede9fe 50%,
-      #a1a1aa 75%
-    );
-    background-size: 300% 100%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-  }
 }
 
 /* Reduced motion: disable loading animations */
@@ -208,14 +183,7 @@ input[type="date"] {
     animation: none;
     -webkit-animation: none;
     background-image: none;
-    color: #71717a;
+    color: var(--color-fg-neutral-soft);
     opacity: 0.7;
-  }
-}
-
-/* Reduced motion + dark mode combination */
-@media (prefers-reduced-motion: reduce) and (prefers-color-scheme: dark) {
-  .shimmer-text {
-    color: #a1a1aa;
   }
 }

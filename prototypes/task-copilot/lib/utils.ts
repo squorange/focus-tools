@@ -358,20 +358,20 @@ export function getHealthStatusInfo(status: HealthResult['status']): HealthStatu
     healthy: {
       label: '', // Not displayed - healthy tasks show no health pill
       color: '#16a34a', // green-600
-      bgClass: 'bg-green-100 dark:bg-green-900/30',
-      textClass: 'text-green-700 dark:text-green-300',
+      bgClass: 'bg-bg-positive-subtle',
+      textClass: 'text-fg-positive-default',
     },
     at_risk: {
       label: 'Watch',
       color: '#f59e0b', // amber-500
-      bgClass: 'bg-amber-100 dark:bg-amber-900/30',
-      textClass: 'text-amber-700 dark:text-amber-300',
+      bgClass: 'bg-bg-attention-subtle',
+      textClass: 'text-fg-attention-default',
     },
     critical: {
       label: 'Alert',
       color: '#ef4444', // red-500
-      bgClass: 'bg-red-100 dark:bg-red-900/30',
-      textClass: 'text-red-700 dark:text-red-300',
+      bgClass: 'bg-bg-alert-subtle',
+      textClass: 'text-fg-alert-default',
     },
   };
   return statusMap[status];
