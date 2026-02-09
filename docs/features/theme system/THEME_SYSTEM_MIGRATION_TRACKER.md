@@ -251,6 +251,15 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 ---
 
+## Next Session
+
+- **What:** Session 11 — Define ColorTheme TypeScript type
+- **Context:** Phase 1 complete. All components use semantic tokens via CSS custom properties in `foundations.css`. The `ColorTheme` type needs to model every token so themes can override them at runtime.
+- **Key files:** `packages/design-system/tokens/foundations.css` (source of truth for all token names/values), `packages/design-system/tailwind.preset.cjs` (maps tokens to Tailwind utilities)
+- **Open questions:** Should themes override all ~260 tokens or just a curated subset? How do glass/AI tokens fit — separate from core palette?
+
+---
+
 ## Phase 2 Preview (Post-Migration)
 
 | Session | Scope | Status |
@@ -276,4 +285,5 @@ _*Excluding known exceptions: project.color inline styles, Storybook stories, or
 
 | Date | Change |
 |------|--------|
+| 2026-02-08 | Phase 1 complete, added Next Session handoff for Phase 2 |
 | 2026-02-07 | Initial tracker created from audit synthesis |

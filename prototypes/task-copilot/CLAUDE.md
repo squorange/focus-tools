@@ -214,127 +214,28 @@ See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration
 
 ## Session Workflow
 
-### Planning & Ideation
+**Full lifecycle guide:** [docs/guides/SESSION_LIFECYCLE.md](../../docs/guides/SESSION_LIFECYCLE.md)
 
-When discussing ideas, concepts, or future work (not immediate implementation):
+**Quick reference — the 7 steps:**
 
-| Discussion type | Where to capture |
-|-----------------|------------------|
-| Fleshing out an idea/concept | `docs/concepts/` or new feature folder |
-| "I want to eventually..." | `docs/ROADMAP.md` (Planned/Long-term section) |
-| Exploring approaches | `docs/concepts/` or feature's SPEC.md |
-| Decision made for later | `docs/ROADMAP.md` or feature folder |
+1. **Pre-Session** — Run tests, check sprint table, read feature docs + "Next Session" note
+2. **Planning** — Enter plan mode for non-trivial work, get user approval
+3. **Implementation** — Execute plan, build check after each batch, fix issues immediately
+4. **Post-Implementation** — Build, tests, audit (grep to verify), no deferred gaps
+5. **Documentation Updates** — Sprint table, Recent Completions, feature docs, ROADMAP, INDEX
+6. **Wrap-up & Handoff** — Recap, align on next steps, write "Next Session" note, commit
+7. **Clear Context** — Start next session fresh; docs + handoff note are the bridge
 
-**At end of planning discussion, ask:**
-- "Should I add this to ROADMAP.md as a planned item?"
-- "Should I create a feature folder with initial SPEC.md?"
-- "Should I capture this in docs/concepts/?"
+**Key test commands:**
 
-**If user is unsure:** Default to capturing in `docs/concepts/FUTURE_CONSIDERATIONS.md` with a dated entry.
+| Scope | Command |
+|-------|---------|
+| Full suite | `npm run test:run` |
+| Storage | `npm test -- lib/storage.test.ts` |
+| Priority | `npm test -- lib/priority.vitest.ts` |
+| Queue reorder | `npm test -- lib/queue-reorder.vitest.ts` |
 
-### Starting Active Work
-
-1. **Run tests first** — `npm run test:run` to verify baseline before making changes
-2. **Check sprint table above** — Identify current priorities (P0 → P1 → P2)
-3. **Review feature docs** — Read `docs/features/{feature}/SPEC.md` before implementing
-4. **Check for existing patterns** — Consult `docs/PRINCIPLES.md` for conventions
-5. **Confirm approach if unclear** — Ask user before starting if requirements are ambiguous
-
-**If starting a new feature:**
-- Check if `docs/features/{feature}/` exists
-- If not, ask: "Should I create a feature folder with SPEC.md?"
-
-### During Development
-
-| Before doing... | Check... |
-|-----------------|----------|
-| Adding TypeScript types | `docs/DATA_MODEL.md` for existing patterns |
-| Adding UI components | `docs/PRINCIPLES.md` for icon/styling conventions |
-| Implementing feature logic | `docs/features/{feature}/SPEC.md` for requirements |
-| Making architectural decisions | Ask user to confirm approach |
-| Modifying storage/data layer | Run `npm test -- lib/storage.test.ts` in watch mode |
-| Modifying priority/queue logic | Run relevant test file in watch mode |
-
-**Testing during development:**
-- When modifying `lib/storage*.ts` or `lib/indexeddb.ts` → run storage tests
-- When modifying `lib/priority.ts` → run `npm test -- lib/priority.vitest.ts`
-- When modifying `lib/queue-reorder.ts` → run `npm test -- lib/queue-reorder.vitest.ts`
-- Proactively run tests after significant changes, don't wait for user to ask
-
-**When uncertain:** Prompt the user rather than assume. Examples:
-- "This changes the data model — should I update DATA_MODEL.md now?"
-- "This establishes a new pattern — should I add it to PRINCIPLES.md?"
-- "The spec doesn't cover this case — how should it behave?"
-
-### After Completing Work
-
-**IMPORTANT: Update documentation as part of completing work, not as a separate step.**
-
-#### Testing (Do First)
-
-| When you... | Test action |
-|-------------|-------------|
-| Fix a bug | Write regression test BEFORE confirming fix works |
-| Modify storage/data layer | Run `npm run test:run` and verify all pass |
-| Add new calculation/logic | Add tests covering happy path + edge cases |
-| Complete any code changes | Run `npm run test:run` before considering done |
-
-#### Automatic Updates (Do These Immediately)
-
-| When you... | Immediately update... |
-|-------------|----------------------|
-| Complete a sprint item | Mark ✅ in sprint table above, add to Recent Completions |
-| Add/change TypeScript interfaces | `docs/DATA_MODEL.md` |
-| Add/change a handler in page.tsx | Handler Reference table above |
-| Establish a new pattern | `docs/PRINCIPLES.md` |
-| Complete a feature phase | `docs/features/{feature}/IMPLEMENTATION.md`, `docs/ROADMAP.md` |
-| Add new files/folders | File Structure section above |
-
-### Proactive Checks (Before Ending Session)
-
-1. **Sprint table current?** Update status of any items worked on
-2. **Recent Completions** — Add entry if significant work completed (bump version)
-3. **Feature docs** — If feature work done, ensure IMPLEMENTATION.md reflects reality
-4. **This file under 250 lines?** If not, extract stable content to docs/
-
-### What Belongs Where
-
-| Content Type | Location | Example |
-|--------------|----------|---------|
-| Current priorities | Here (CLAUDE.md) | Sprint table |
-| Recent work (last 2 weeks) | Here | Recent Completions |
-| TypeScript interfaces | `docs/DATA_MODEL.md` | Task, Step, FocusQueueItem |
-| Design decisions | `docs/PRINCIPLES.md` | Icon/emoji convention |
-| Feature specs | `docs/features/{feature}/SPEC.md` | Priority calculation rules |
-| How something was built | `docs/features/{feature}/IMPLEMENTATION.md` | Nudge orchestrator architecture |
-| Old history | `docs/archive/` | Revision history older than 10 entries |
-
-### Version Numbering
-
-Increment version in Recent Completions when:
-- Bug fix or refinement → same version (e.g., v29 → v29)
-- New capability or significant change → bump version (e.g., v29 → v30)
-
-### When to Prompt or Remind
-
-| Situation | Action |
-|-----------|--------|
-| User shares idea/concept | Ask: "Capture in concepts/ or ROADMAP.md?" |
-| User says "later" or "eventually" | Ask: "Add to ROADMAP.md as planned item?" |
-| Planning discussion concludes | Ask: "Create feature folder with SPEC.md?" |
-| Requirements unclear | Ask before implementing |
-| Multiple valid approaches | Present options, ask user preference |
-| Work affects data model | Confirm: "Update DATA_MODEL.md?" |
-| New pattern established | Confirm: "Add to PRINCIPLES.md?" |
-| Feature phase complete | Remind: "Update IMPLEMENTATION.md and ROADMAP.md?" |
-| Session ending with changes | Remind: "Update Recent Completions?" |
-| Starting coding session | Run `npm run test:run` to verify baseline first |
-| About to modify storage/data layer | Run relevant tests in watch mode (`npm test -- lib/storage.test.ts`) |
-| Bug fixed | Write regression test BEFORE confirming fix works |
-| Code changes complete | Run `npm run test:run` to catch regressions |
-| New calculation/logic added | Add tests covering happy path + edge cases |
-
-See [docs/README.md](../../docs/README.md) for full workflow guide.
+**When uncertain:** Prompt the user rather than assume.
 
 ---
 
@@ -354,18 +255,4 @@ See [docs/README.md](../../docs/README.md) for full workflow guide.
 | 2026-02-04 | v35 | Design System Integration docs (SPEC, COMPONENT_CATALOG, token alignment) |
 | 2026-02-01 | v34 | AI Guardrails Implementation (rate limit, analytics, safety, 35 tests) |
 | 2026-02-01 | v33 | AI Guardrails SPEC complete |
-| 2026-02-01 | v32 | Test Harnesses (Vitest, 98 tests) |
-| 2026-02-01 | v31 | IndexedDB migration bug fix |
-| 2026-01-31 | v30 | Waiting On refinements + Defer date picker |
-| 2026-01-29 | v29 | BottomSheet iOS fix |
-| 2026-01-28 | v28 | Nudge System MVP complete |
-| 2026-01-27 | v27 | Recurring Tasks Phase 1-2 |
-| 2026-01-26 | v26 | Nav Restructure |
-| 2026-01-25 | v25 | Object-scoped AI |
-| 2026-01-24 | v24 | Quick actions mobile wrap |
-| 2026-01-23 | v23 | Palette target banner |
-| 2026-01-22 | v22 | Unified AI palette |
-| 2026-01-21 | v21 | Inline AI refinements |
-| 2026-01-20 | v20 | Inline AI for steps |
-
-For older history, see [docs/archive/](../../docs/archive/).
+For older history (v20-v32), see [docs/archive/REVISION_HISTORY.md](../../docs/archive/REVISION_HISTORY.md).

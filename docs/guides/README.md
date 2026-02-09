@@ -9,6 +9,7 @@
 
 | Guide | Purpose |
 |-------|---------|
+| [SESSION_LIFECYCLE.md](./SESSION_LIFECYCLE.md) | 7-step workflow for each coding session |
 | [TESTING.md](./TESTING.md) | When and how to use the test harness |
 | [TESTING_WORKFLOWS.md](./TESTING_WORKFLOWS.md) | Step-by-step scenarios with specific actions |
 
