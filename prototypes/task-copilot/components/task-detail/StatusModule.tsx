@@ -39,7 +39,7 @@ function LargeProgressRing({
         className="rounded-full bg-bg-positive-high flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
       >
-        <Check className="w-6 h-6 text-white" />
+        <Check className="w-6 h-6 text-fg-neutral-inverse-primary" />
       </div>
     );
   }

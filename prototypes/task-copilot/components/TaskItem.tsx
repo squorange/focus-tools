@@ -152,7 +152,7 @@ export default function TaskItem({
           className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors
             ${
               step.completed
-                ? "bg-bg-positive-high border-bg-positive-high text-white"
+                ? "bg-bg-positive-high border-bg-positive-high text-fg-neutral-inverse-primary"
                 : step.skipped
                 ? "bg-fg-neutral-disabled border-fg-neutral-disabled text-fg-neutral-soft"
                 : "border-fg-neutral-disabled hover:border-fg-neutral-soft"
@@ -185,7 +185,7 @@ export default function TaskItem({
             onKeyDown={handleKeyDown}
             rows={1}
             className="flex-1 min-w-0 px-2 py-0.5 -mx-2 bg-bg-neutral-min
-                       border border-blue-500 rounded outline-none resize-none leading-normal
+                       border border-color-info rounded outline-none resize-none leading-normal
                        text-fg-neutral-primary"
             onInput={(e) => {
               const target = e.currentTarget;
@@ -219,8 +219,8 @@ export default function TaskItem({
         {onEnterFocus && !step.completed && !step.skipped && (
           <button
             onClick={() => onEnterFocus(step.id)}
-            className="p-1 flex-shrink-0 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300
-                       hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+            className="p-1 flex-shrink-0 text-fg-information-spot-readable hover:text-fg-information-secondary
+                       hover:bg-bg-information-subtle rounded transition-colors"
             title="Focus on this task"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,7 +401,7 @@ function SubstepItem({
         className={`mt-1 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors
           ${
             substep.completed
-              ? "bg-bg-positive-high border-bg-positive-high text-white"
+              ? "bg-bg-positive-high border-bg-positive-high text-fg-neutral-inverse-primary"
               : substep.skipped
               ? "bg-fg-neutral-disabled border-fg-neutral-disabled text-fg-neutral-soft"
               : "border-fg-neutral-disabled"
@@ -432,7 +432,7 @@ function SubstepItem({
           onKeyDown={handleKeyDown}
           rows={1}
           className="flex-1 min-w-0 px-1.5 py-0.5 text-sm bg-bg-neutral-min
-                     border border-blue-500 rounded outline-none resize-none"
+                     border border-color-info rounded outline-none resize-none"
           onInput={(e) => {
             const target = e.currentTarget;
             target.style.height = 'auto';

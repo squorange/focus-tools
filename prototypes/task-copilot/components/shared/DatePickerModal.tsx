@@ -131,7 +131,7 @@ export default function DatePickerModal({
           <button
             onClick={handleSelect}
             disabled={!selectedDate}
-            className="px-4 py-2.5 text-sm font-medium text-white bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-fg-accent-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             Select
           </button>
@@ -186,7 +186,7 @@ export default function DatePickerModal({
             <button
               onClick={handleSelect}
               disabled={!selectedDate}
-              className="px-4 py-2 text-sm font-medium text-white bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-fg-accent-inverse-primary bg-bg-accent-high hover:bg-bg-accent-high-hover disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               Select
             </button>

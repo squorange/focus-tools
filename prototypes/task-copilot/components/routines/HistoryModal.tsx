@@ -260,7 +260,7 @@ export default function HistoryModal({
                   aspect-square flex flex-col items-center justify-center rounded-lg text-sm
                   transition-colors
                   ${day === null ? "text-fg-neutral-disabled" : ""}
-                  ${day?.isToday ? "ring-2 ring-ring-focus ring-offset-2 dark:ring-offset-zinc-900" : ""}
+                  ${day?.isToday ? "ring-2 ring-ring-focus ring-offset-2 dark:ring-offset-[var(--color-bg-neutral-min)]" : ""}
                   ${selectedDate === day?.date ? "bg-bg-accent-subtle" : ""}
                   ${day && day.status !== "no_occurrence" ? "hover:bg-bg-neutral-subtle cursor-pointer" : "cursor-default"}
                 `}
@@ -412,7 +412,7 @@ export default function HistoryModal({
           {/* Stats Bar */}
           <div className="flex items-center justify-around py-3 px-4 bg-bg-neutral-subtle border-b border-border-color-neutral shrink-0">
             <div className="flex items-center gap-1.5 text-sm">
-              <Flame className="w-4 h-4 text-orange-500" />
+              <Flame className="w-4 h-4 text-fg-attention-secondary" />
               <span className="text-fg-neutral-secondary">Streak:</span>
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.currentStreak}
@@ -465,7 +465,7 @@ export default function HistoryModal({
           {/* Stats Bar */}
           <div className="flex items-center justify-around py-2.5 px-4 bg-bg-neutral-subtle border-b border-border-color-neutral">
             <div className="flex items-center gap-1.5 text-sm">
-              <Flame className="w-4 h-4 text-orange-500" />
+              <Flame className="w-4 h-4 text-fg-attention-secondary" />
               <span className="font-semibold text-fg-neutral-primary">
                 {stats.currentStreak}
               </span>
@@ -507,31 +507,31 @@ function StatusIcon({
     case "completed":
       return (
         <div className={`${containerSize} rounded-full bg-bg-positive-high flex items-center justify-center`}>
-          <Check className={`${iconSize} text-white`} strokeWidth={3} />
+          <Check className={`${iconSize} text-fg-neutral-inverse-primary`} strokeWidth={3} />
         </div>
       );
     case "missed":
       return (
         <div className={`${containerSize} rounded-full bg-bg-alert-high flex items-center justify-center`}>
-          <X className={`${iconSize} text-white`} strokeWidth={3} />
+          <X className={`${iconSize} text-fg-neutral-inverse-primary`} strokeWidth={3} />
         </div>
       );
     case "skipped":
       return (
         <div className={`${containerSize} rounded-full bg-bg-attention-high flex items-center justify-center`}>
-          <SkipForward className={`${iconSize} text-white`} strokeWidth={3} />
+          <SkipForward className={`${iconSize} text-fg-neutral-inverse-primary`} strokeWidth={3} />
         </div>
       );
     case "overdue":
       return (
-        <div className={`${containerSize} rounded-full bg-orange-500 flex items-center justify-center`}>
-          <AlertTriangle className={`${iconSize} text-white`} strokeWidth={3} />
+        <div className={`${containerSize} rounded-full bg-bg-attention-high flex items-center justify-center`}>
+          <AlertTriangle className={`${iconSize} text-fg-neutral-inverse-primary`} strokeWidth={3} />
         </div>
       );
     case "paused":
       return (
         <div className={`${containerSize} rounded-full bg-fg-neutral-soft flex items-center justify-center`}>
-          <Pause className={`${iconSize} text-white`} strokeWidth={3} />
+          <Pause className={`${iconSize} text-fg-neutral-inverse-primary`} strokeWidth={3} />
         </div>
       );
     case "today":

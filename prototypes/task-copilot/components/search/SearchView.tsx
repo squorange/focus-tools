@@ -300,7 +300,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
   return (
     <>
       {before}
-      <mark className="bg-yellow-200 dark:bg-yellow-800/50 text-inherit rounded-sm px-0.5">
+      <mark className="bg-bg-attention-low text-inherit rounded-sm px-0.5">
         {match}
       </mark>
       {after}
