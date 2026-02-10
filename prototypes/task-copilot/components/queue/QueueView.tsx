@@ -541,10 +541,10 @@ export default function QueueView({
                             </svg>
                           </div>
                           {/* Full-width line */}
-                          <div className="flex-1 h-px bg-border-accent" />
+                          <div className="flex-1 h-px bg-border-color-accent" />
                         </div>
                         {/* Label - absolutely centered over the line with opaque background */}
-                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-fg-accent-primary bg-bg-neutral-min border border-border-accent rounded select-none">
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-0.5 text-xs font-medium text-fg-accent-primary bg-bg-neutral-min border border-border-color-accent rounded select-none">
                           Today
                         </span>
                       </div>

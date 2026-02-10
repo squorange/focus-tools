@@ -41,7 +41,7 @@ function StatusRing({
     >
       {isComplete ? (
         // Completed: solid green circle with checkmark
-        <div className="w-5 h-5 rounded-full bg-bg-positive-high flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-bg-positive-strong flex items-center justify-center">
           <svg className="w-3 h-3 text-fg-neutral-inverse-primary" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
@@ -61,7 +61,7 @@ function StatusRing({
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
-            className="text-fg-neutral-disabled"
+            className="text-fg-neutral-softest"
           />
           {/* Progress arc */}
           {total > 0 && completed > 0 && (
@@ -75,7 +75,7 @@ function StatusRing({
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - progress)}
               strokeLinecap="round"
-              className="text-fg-accent-default"
+              className="text-fg-accent-primary"
             />
           )}
           {/* "!" indicator when past time window */}
@@ -106,14 +106,7 @@ export default function RoutineGalleryCard({
 }: RoutineGalleryCardProps) {
   if (!task.recurrence) return null;
 
-  // Calculate overdue days
   const today = getTodayISO(dayStartHour);
-  const nextDue = task.recurringNextDue;
-  let overdueDays = 0;
-  if (nextDue && nextDue < today) {
-    const diffMs = new Date(today).getTime() - new Date(nextDue).getTime();
-    overdueDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  }
 
   // Get current instance for step progress
   const activeDate = getActiveOccurrenceDate(task, dayStartHour) || today;
@@ -138,7 +131,7 @@ export default function RoutineGalleryCard({
   };
 
   // Determine if past time window
-  const isPastWindow = timeWindowStatus === "past";
+  const isPastWindow = !isInstanceComplete && timeWindowStatus === "past";
   const isActiveWindow = timeWindowStatus === "active";
 
   return (
@@ -169,7 +162,7 @@ export default function RoutineGalleryCard({
         </div>
 
         {/* Title row - 2-line clamp */}
-        <ActionableCard.Title clamp={2} className="mt-2">
+        <ActionableCard.Title clamp={2} className="mt-2.5">
           {task.title}
         </ActionableCard.Title>
 
@@ -180,7 +173,7 @@ export default function RoutineGalleryCard({
         <ActionableCard.Meta position="bottom">
           <div className={`flex items-center gap-1.5 text-xs min-w-0 ${
             isPastWindow
-              ? "text-fg-attention-default"
+              ? "text-fg-attention"
               : "text-fg-neutral-secondary"
           }`}>
             <Repeat className="w-3 h-3 flex-shrink-0" />
