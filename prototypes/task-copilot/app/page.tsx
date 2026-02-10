@@ -111,6 +111,9 @@ import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { useContextualPrompts, PromptContext, PromptHandlers } from "@/hooks/useContextualPrompts";
 import { useKeyboardVisible } from "@/hooks/useKeyboardVisible";
 import { useTheme } from "@/hooks/useTheme";
+import { useToasts } from "@/hooks/useToasts";
+import { useProjects } from "@/hooks/useProjects";
+import { useNavigation } from "@/hooks/useNavigation";
 import { AIAssistantContext, AIResponse, AISubmitResult, SuggestionsContent, CollapsedContent, RecommendationContent } from "@/lib/ai-types";
 import { structureToAIResponse, getPendingActionType } from "@/lib/ai-adapter";
 import { categorizeResponse, buildSuggestionsReadyMessage } from "@/lib/ai-response-types";
@@ -143,13 +146,8 @@ const initialFocusModeState: FocusModeState = {
 export default function Home() {
   const [state, setState] = useState<AppState>(createInitialAppState);
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [previousView, setPreviousView] = useState<ViewType>('focus');
-  const [projectModalOpen, setProjectModalOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [datePickerModalOpen, setDatePickerModalOpen] = useState(false);
   const [pendingDateCallback, setPendingDateCallback] = useState<((dateStr: string) => void) | null>(null);
-  const [toasts, setToasts] = useState<ToastData[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stagingIsNewArrival, setStagingIsNewArrival] = useState(false);
   const [paletteManuallyOpened, setPaletteManuallyOpened] = useState(false);
@@ -165,21 +163,8 @@ export default function Home() {
   // Inline AI actions - tracks which step/task is targeted
   const [aiTargetContext, setAITargetContext] = useState<AITargetContext | null>(null);
 
-  // Sidebar state (nav restructure)
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [taskCreationOpen, setTaskCreationOpen] = useState(false);
-  const [shouldFocusSearch, setShouldFocusSearch] = useState(false);
-
   // Apply theme setting (light/dark/auto)
   useTheme(state.userSettings.theme);
-
-  // Centralized drawer state - only one drawer can be open at a time
-  // This enables push behavior (content pushes left) and prevents overlapping drawers
-  const [activeDrawer, setActiveDrawer] = useState<DrawerType>(null);
-
-  // Derived state for backwards compatibility
-  const completedDrawerOpen = activeDrawer === 'completed';
 
   // Alert cycling state (for pokes and reminders)
   const [currentAlertIndex, setCurrentAlertIndex] = useState(0);
@@ -187,16 +172,6 @@ export default function Home() {
   // Keyboard visibility detection (for hiding minibar when keyboard is open)
   const isKeyboardVisible = useKeyboardVisible();
 
-  // Search state (simplified - sidebar mode swaps based on focus/query)
-  const [searchInputFocused, setSearchInputFocused] = useState(false);
-  // Recent tasks (for search empty state)
-  const [recentTaskIds, setRecentTaskIds] = useState<string[]>([]);
-  // Frozen recents - snapshot when search starts, prevents reordering during search session
-  const [frozenRecentTaskIds, setFrozenRecentTaskIds] = useState<string[] | null>(null);
-  // Pending filter (for navigation from search shortcuts to TasksView)
-  const [pendingFilter, setPendingFilter] = useState<string | null>(null);
-  // Track active tab in TasksView for back navigation
-  const [activeTasksTab, setActiveTasksTab] = useState<'staging' | 'routines' | 'on_hold' | 'done'>('staging');
   // TasksView filter state (lifted from TasksView for root-level FilterDrawer)
   const [tasksFilters, setTasksFilters] = useState<TaskFilters>(() => {
     if (typeof window === 'undefined') return {};
@@ -208,12 +183,9 @@ export default function Home() {
     }
   });
   const [tasksFilterMatchCount, setTasksFilterMatchCount] = useState(0);
-  // FocusSelectionModal state (lifted for root-level rendering)
-  const [editingFocusQueueItemId, setEditingFocusQueueItemId] = useState<string | null>(null);
 
   // Ref for main content scroll-to-top on tab re-tap
   const mainRef = useRef<HTMLDivElement>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
 
   // Stale queue item nudge state (session-level)
   const [dismissedStaleIds, setDismissedStaleIds] = useState<Set<string>>(new Set());
@@ -223,11 +195,15 @@ export default function Home() {
   const [dismissedOldInboxIds, setDismissedOldInboxIds] = useState<Set<string>>(new Set());
   const [oldInboxIndex, setOldInboxIndex] = useState(0);
 
-  // Callback for auto-selecting new project after creation (from TaskCreationPopover)
-  const [pendingProjectCallback, setPendingProjectCallback] = useState<((projectId: string) => void) | null>(null);
-
   // Notification permission banner state
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+
+  // ============================================
+  // Extracted Hooks
+  // ============================================
+
+  // Toast state (extracted hook)
+  const { toasts, showToast, dismissToast } = useToasts();
 
   // Register PWA service worker
   usePWA();
@@ -982,6 +958,55 @@ export default function Home() {
     onAcceptSuggestions: handleAIMinibarAccept,
   });
 
+  // Project CRUD and modal state (extracted hook)
+  const projectsHook = useProjects(state, setState, { showToast });
+  const {
+    projectModalOpen,
+    editingProject,
+    createProject: handleCreateProject,
+    updateProject: handleUpdateProject,
+    deleteProject: handleDeleteProject,
+    openProjectModal: handleOpenProjectModal,
+    openProjectModalWithCallback: handleOpenProjectModalWithCallback,
+    closeProjectModal: handleCloseProjectModal,
+  } = projectsHook;
+
+  // Navigation, sidebar, drawers, search state (extracted hook)
+  const nav = useNavigation(state, setState, { aiAssistant, mainRef, hasHydrated });
+  const {
+    previousView, setPreviousView,
+    searchQuery, setSearchQuery,
+    sidebarOpen, setSidebarOpen,
+    sidebarCollapsed, setSidebarCollapsed,
+    taskCreationOpen, setTaskCreationOpen,
+    shouldFocusSearch, setShouldFocusSearch,
+    activeDrawer, setActiveDrawer,
+    completedDrawerOpen,
+    searchInputFocused, setSearchInputFocused,
+    recentTaskIds, setRecentTaskIds,
+    frozenRecentTaskIds,
+    pendingFilter,
+    activeTasksTab, setActiveTasksTab,
+    isScrolled,
+    editingFocusQueueItemId,
+    viewChange: handleViewChange,
+    openTask: handleOpenTask,
+    backToList: handleBackToList,
+    toggleTaskDetailMode: handleToggleTaskDetailMode,
+    goToTasks: handleGoToTasks,
+    goToInbox: handleGoToInbox,
+    backToTasks: handleBackToTasks,
+    goToProjects: handleGoToProjects,
+    openDrawer: handleOpenDrawer,
+    closeDrawer: handleCloseDrawer,
+    toggleCompletedDrawer: handleToggleCompletedDrawer,
+    openFocusSelection: handleOpenFocusSelection,
+    jumpToFilter: handleJumpToFilter,
+    backToMenu: handleBackToMenu,
+    clearPendingFilter: handleClearPendingFilter,
+    mainScroll: handleMainScroll,
+  } = nav;
+
   // ============================================
   // Contextual Prompts
   // ============================================
@@ -1409,13 +1434,6 @@ export default function Home() {
     });
   }, [hasHydrated, state.tasks]);
 
-  // Save recent task IDs to localStorage
-  useEffect(() => {
-    if (hasHydrated && recentTaskIds.length > 0) {
-      localStorage.setItem('focus-tools-recent-tasks', JSON.stringify(recentTaskIds));
-    }
-  }, [recentTaskIds, hasHydrated]);
-
   // Save tasks filters to localStorage
   useEffect(() => {
     if (hasHydrated) {
@@ -1426,18 +1444,6 @@ export default function Home() {
       }
     }
   }, [tasksFilters, hasHydrated]);
-
-  // Freeze recents when entering search mode, unfreeze when exiting
-  useEffect(() => {
-    const isSearchActive = searchInputFocused || searchQuery.trim() !== '';
-    if (isSearchActive && frozenRecentTaskIds === null) {
-      // Entering search mode - snapshot current recents
-      setFrozenRecentTaskIds(recentTaskIds);
-    } else if (!isSearchActive && frozenRecentTaskIds !== null) {
-      // Fully exiting search mode - clear frozen state
-      setFrozenRecentTaskIds(null);
-    }
-  }, [searchInputFocused, searchQuery, frozenRecentTaskIds, recentTaskIds]);
 
   // Handle notification click deep links while app is open
   useEffect(() => {
@@ -1616,8 +1622,7 @@ export default function Home() {
           }
           // Priority 6: Close project modal
           else if (projectModalOpen) {
-            setProjectModalOpen(false);
-            setEditingProject(null);
+            handleCloseProjectModal();
           }
           break;
 
@@ -1657,13 +1662,6 @@ export default function Home() {
   const EDGE_THRESHOLD = 20; // px from screen edge to trigger swipe
   const SWIPE_MIN_DISTANCE = 50; // minimum horizontal distance for swipe
   const SWIPE_RATIO = 2; // horizontal must be > 2x vertical
-
-  // Scroll-based header shadow
-  const handleMainScroll = useCallback(() => {
-    if (mainRef.current) {
-      setIsScrolled(mainRef.current.scrollTop >= 8);
-    }
-  }, []);
 
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     // Only track swipes that start near screen edges
@@ -1886,36 +1884,6 @@ export default function Home() {
   }, [activeOldInboxItems.length]);
 
   // ============================================
-  // Navigation
-  // ============================================
-
-  const handleViewChange = useCallback((view: ViewType) => {
-    aiAssistant.clearNudge();
-    // Close any open drawer on navigation
-    if (aiAssistant.state.mode === 'drawer') {
-      aiAssistant.closeDrawer();
-    }
-    setActiveDrawer(null);
-    setState((prev) => {
-      if (prev.currentView === view) {
-        // Same tab tapped again — scroll to top
-        mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        if (view === 'tasks') {
-          setActiveTasksTab('staging');
-        }
-        return prev;
-      }
-
-      return {
-        ...prev,
-        currentView: view,
-        // Clear active task when navigating to main views
-        activeTaskId: ['focus', 'tasks', 'inbox', 'search'].includes(view) ? null : prev.activeTaskId,
-      };
-    });
-  }, [aiAssistant]);
-
-  // ============================================
   // Inline AI Actions (Step-Level)
   // ============================================
 
@@ -1965,49 +1933,6 @@ export default function Home() {
     // Expand palette - step-specific quick actions will be shown there
     aiAssistant.expand();
   }, [state.tasks, aiAssistant]);
-
-  const handleOpenTask = useCallback((taskId: string, mode?: 'executing' | 'managing') => {
-    // Close any open drawer on navigation
-    if (aiAssistant.state.mode === 'drawer') {
-      aiAssistant.closeDrawer();
-    }
-    setActiveDrawer(null);
-    // Save current view before navigating to task detail
-    setPreviousView(state.currentView);
-    setState((prev) => ({
-      ...prev,
-      currentView: 'taskDetail',
-      activeTaskId: taskId,
-      // Default to 'executing' mode if not specified
-      taskDetailMode: mode || 'executing',
-    }));
-    // Track recent task (for search empty state)
-    setRecentTaskIds(prev => {
-      const filtered = prev.filter(id => id !== taskId);
-      return [taskId, ...filtered].slice(0, 5); // Keep max 5
-    });
-  }, [state.currentView, aiAssistant]);
-
-  const handleBackToList = useCallback(() => {
-    // Close any open drawer on navigation
-    if (aiAssistant.state.mode === 'drawer') {
-      aiAssistant.closeDrawer();
-    }
-    setActiveDrawer(null);
-    setState((prev) => ({
-      ...prev,
-      // Safety: Prevent stuck state if previousView points to current view or 'taskDetail'
-      currentView: previousView === 'taskDetail' || previousView === prev.currentView ? 'focus' : previousView,
-      activeTaskId: null,
-    }));
-  }, [previousView, aiAssistant]);
-
-  const handleToggleTaskDetailMode = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      taskDetailMode: prev.taskDetailMode === 'executing' ? 'managing' : 'executing',
-    }));
-  }, []);
 
   // ============================================
   // Notification Handlers
@@ -2201,12 +2126,10 @@ export default function Home() {
       setPreviousView('focus');
 
       const taskTitle = completedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 25)}${taskTitle.length > 25 ? '...' : ''}" completed!`,
         type: 'success',
-      }]);
+      });
     }
 
     // Handle notification scheduling based on update type
@@ -2275,9 +2198,7 @@ export default function Home() {
     // Show toast with undo action
     if (deletedTask) {
       const taskTitle = deletedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 30)}${taskTitle.length > 30 ? '...' : ''}" deleted`,
         type: 'info',
         action: {
@@ -2294,7 +2215,7 @@ export default function Home() {
             }));
           },
         },
-      }]);
+      });
     }
   }, [cancelNotificationForTask]);
 
@@ -2316,9 +2237,7 @@ export default function Home() {
     // Show toast with undo action
     if (sentTask) {
       const taskTitle = sentTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Ready`,
         type: 'info',
         action: {
@@ -2334,7 +2253,7 @@ export default function Home() {
             }));
           },
         },
-      }]);
+      });
     }
   }, []);
 
@@ -2389,9 +2308,7 @@ export default function Home() {
     // Show toast with undo action
     if (deferredTask) {
       const taskTitle = deferredTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" deferred until ${until}`,
         type: 'info',
         action: {
@@ -2421,7 +2338,7 @@ export default function Home() {
             }));
           },
         },
-      }]);
+      });
     }
   }, []);
 
@@ -2487,14 +2404,12 @@ export default function Home() {
     // Show toast
     if (clearedTask) {
       const taskTitle = clearedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: restoredToFocus
           ? `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" restored to Focus`
           : `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Ready`,
         type: 'success',
-      }]);
+      });
     }
   }, []);
 
@@ -2523,12 +2438,10 @@ export default function Home() {
     // Show toast
     if (clearedTask) {
       const taskTitle = clearedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" no longer waiting`,
         type: 'success',
-      }]);
+      });
     }
   }, []);
 
@@ -2576,9 +2489,7 @@ export default function Home() {
     // Show toast with undo action
     if (parkedTask) {
       const taskTitle = parkedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 30)}${taskTitle.length > 30 ? '...' : ''}" archived`,
         type: 'info',
         action: {
@@ -2601,7 +2512,7 @@ export default function Home() {
             }));
           },
         },
-      }]);
+      });
     }
   }, []);
 
@@ -2629,112 +2540,11 @@ export default function Home() {
     // Show toast
     if (unarchivedTask) {
       const taskTitle = unarchivedTask.title || 'Task';
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 30)}${taskTitle.length > 30 ? '...' : ''}" restored to Ready`,
         type: 'success',
-      }]);
+      });
     }
-  }, []);
-
-  // ============================================
-  // Project Handlers
-  // ============================================
-
-  const handleCreateProject = useCallback((name: string, color: string | null) => {
-    const newProject = createProject(name, color ?? undefined);
-    setState((prev) => ({
-      ...prev,
-      projects: [...prev.projects, newProject],
-    }));
-    setProjectModalOpen(false);
-    setEditingProject(null);
-
-    // Call pending callback to auto-select the new project (from TaskCreationPopover)
-    if (pendingProjectCallback) {
-      pendingProjectCallback(newProject.id);
-      setPendingProjectCallback(null);
-    }
-  }, [pendingProjectCallback]);
-
-  const handleUpdateProject = useCallback((projectId: string, name: string, color: string | null) => {
-    setState((prev) => ({
-      ...prev,
-      projects: prev.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, name, color, updatedAt: Date.now() }
-          : p
-      ),
-    }));
-    setProjectModalOpen(false);
-    setEditingProject(null);
-  }, []);
-
-  const handleDeleteProject = useCallback((projectId: string) => {
-    // Capture project and affected tasks for undo
-    let deletedProject: Project | undefined;
-    let affectedTaskIds: string[] = [];
-
-    setState((prev) => {
-      deletedProject = prev.projects.find((p) => p.id === projectId);
-      affectedTaskIds = prev.tasks
-        .filter((t) => t.projectId === projectId)
-        .map((t) => t.id);
-
-      return {
-        ...prev,
-        projects: prev.projects.filter((p) => p.id !== projectId),
-        // Also remove project from tasks that reference it
-        tasks: prev.tasks.map((t) =>
-          t.projectId === projectId
-            ? { ...t, projectId: null, updatedAt: Date.now() }
-            : t
-        ),
-      };
-    });
-
-    // Show toast with undo action
-    if (deletedProject) {
-      const projectName = deletedProject.name;
-      const taskCount = affectedTaskIds.length;
-      const toastId = generateId();
-      setToasts((prev) => [...prev, {
-        id: toastId,
-        message: `"${projectName}" deleted${taskCount > 0 ? ` (${taskCount} task${taskCount > 1 ? 's' : ''} released)` : ''}`,
-        type: 'info',
-        action: {
-          label: 'Undo',
-          onClick: () => {
-            // Restore project and re-assign tasks
-            setState((prev) => ({
-              ...prev,
-              projects: [...prev.projects, deletedProject!],
-              tasks: prev.tasks.map((t) =>
-                affectedTaskIds.includes(t.id)
-                  ? { ...t, projectId: projectId, updatedAt: Date.now() }
-                  : t
-              ),
-            }));
-          },
-        },
-      }]);
-    }
-
-    setProjectModalOpen(false);
-    setEditingProject(null);
-  }, []);
-
-  const handleOpenProjectModal = useCallback((project?: Project) => {
-    setEditingProject(project || null);
-    setProjectModalOpen(true);
-  }, []);
-
-  // Callback version for auto-selecting new project (used by TaskCreationPopover)
-  const handleOpenProjectModalWithCallback = useCallback((callback: (projectId: string) => void) => {
-    setPendingProjectCallback(() => callback);
-    setEditingProject(null);
-    setProjectModalOpen(true);
   }, []);
 
   // ============================================
@@ -2753,20 +2563,6 @@ export default function Home() {
       setPendingDateCallback(null);
     }
   }, [pendingDateCallback]);
-
-  // ============================================
-  // Toast Handlers
-  // ============================================
-
-  const showToast = useCallback((toast: Omit<ToastData, "id">) => {
-    const id = generateId();
-    setToasts((prev) => [...prev, { ...toast, id }]);
-    return id;
-  }, []);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
 
   // Rescan all tasks and regenerate pokes based on current settings
   const handleRescanPokes = useCallback(() => {
@@ -2841,12 +2637,11 @@ export default function Home() {
       action: {
         label: 'Show',
         onClick: () => {
-          setPendingFilter('staging');
-          handleViewChange('tasks');
+          handleJumpToFilter('staging');
         },
       },
     });
-  }, [showToast, handleViewChange]);
+  }, [showToast, handleJumpToFilter]);
 
   // Add task from popover and navigate to TaskDetail
   const handleAddAndOpenTask = useCallback((title: string, projectId: string | null) => {
@@ -2945,10 +2740,8 @@ export default function Home() {
     // Show toast with undo action
     if (addedTask && addedItemId) {
       const taskTitle = addedTask.title || 'Task';
-      const toastId = generateId();
       const itemId = addedItemId;
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" added to Focus`,
         type: 'info',
         action: {
@@ -2972,7 +2765,7 @@ export default function Home() {
             });
           },
         },
-      }]);
+      });
     }
 
     // Schedule start poke notification for the added task
@@ -3095,11 +2888,9 @@ export default function Home() {
     // Show toast with undo action
     if (removedItem && removedTask) {
       const taskTitle = removedTask.title || 'Task';
-      const toastId = generateId();
       const item = { ...removedItem };
       const addedAboveLine = wasAboveLine;
-      setToasts((prev) => [...prev, {
-        id: toastId,
+      showToast({
         message: `"${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}" moved to Tasks`,
         type: 'info',
         action: {
@@ -3126,7 +2917,7 @@ export default function Home() {
             });
           },
         },
-      }]);
+      });
     }
   }, []);
 
@@ -3157,9 +2948,7 @@ export default function Home() {
     cancelNotificationForTask(taskId);
 
     // Show toast with streak info and undo
-    const toastId = generateId();
-    setToasts((prev) => [...prev, {
-      id: toastId,
+    showToast({
       message: `Completed! ${newStreak > 1 ? `${newStreak}d streak` : 'Streak started'}`,
       type: 'success',
       action: previousTask ? {
@@ -3171,7 +2960,7 @@ export default function Home() {
           }));
         },
       } : undefined,
-    }]);
+    });
   }, []);
 
   // Skip a routine (uses active occurrence date for overdue support)
@@ -3196,9 +2985,7 @@ export default function Home() {
     });
 
     // Show toast with undo
-    const toastId = generateId();
-    setToasts((prev) => [...prev, {
-      id: toastId,
+    showToast({
       message: `Skipped "${taskTitle.slice(0, 20)}${taskTitle.length > 20 ? '...' : ''}"`,
       type: 'info',
       action: previousTask ? {
@@ -3210,7 +2997,7 @@ export default function Home() {
           }));
         },
       } : undefined,
-    }]);
+    });
   }, []);
 
   // Mark routine incomplete (uses active occurrence date for overdue support)
@@ -3235,9 +3022,7 @@ export default function Home() {
     });
 
     // Show toast with undo
-    const toastId = generateId();
-    setToasts((prev) => [...prev, {
-      id: toastId,
+    showToast({
       message: `Marked incomplete`,
       type: 'info',
       action: previousTask ? {
@@ -3249,7 +3034,7 @@ export default function Home() {
           }));
         },
       } : undefined,
-    }]);
+    });
   }, []);
 
   // Reset current routine instance from template (re-clone steps)
@@ -3297,9 +3082,7 @@ export default function Home() {
     });
 
     // Show toast with undo
-    const toastId = generateId();
-    setToasts((prev) => [...prev, {
-      id: toastId,
+    showToast({
       message: 'Steps reset from template',
       type: 'success',
       action: previousInstanceData ? {
@@ -3332,7 +3115,7 @@ export default function Home() {
           });
         },
       } : undefined,
-    }]);
+    });
   }, []);
 
   // Move queue item to a new position
@@ -3658,65 +3441,6 @@ export default function Home() {
     });
   }, [aiAssistant]);
 
-  // Navigation helpers
-  const handleGoToTasks = useCallback(() => {
-    setState((prev) => ({ ...prev, currentView: 'tasks' as const }));
-  }, []);
-
-  const handleGoToInbox = useCallback(() => {
-    setState((prev) => ({ ...prev, currentView: 'inbox' as const }));
-  }, []);
-
-  const handleBackToTasks = useCallback(() => {
-    setState((prev) => ({ ...prev, currentView: 'tasks' as const }));
-  }, []);
-
-  const handleGoToProjects = useCallback(() => {
-    setPreviousView(state.currentView);
-    setState((prev) => ({ ...prev, currentView: 'projects' as const }));
-  }, [state.currentView]);
-
-  // Open a drawer - closes any other open drawer first
-  // This is the single point of control for drawer state
-  const handleOpenDrawer = useCallback((drawer: DrawerType) => {
-    if (drawer === null) {
-      setActiveDrawer(null);
-      return;
-    }
-    // Close AI drawer if it's open and we're opening a different drawer
-    if (aiAssistant.state.mode === 'drawer' && drawer !== 'ai') {
-      aiAssistant.closeDrawer();
-    }
-    setActiveDrawer(drawer);
-  }, [aiAssistant]);
-
-  // Close the currently active drawer
-  const handleCloseDrawer = useCallback(() => {
-    setActiveDrawer(null);
-  }, []);
-
-  // Completed drawer toggle - wrapper for backwards compatibility
-  const handleToggleCompletedDrawer = useCallback((open: boolean) => {
-    if (open) {
-      handleOpenDrawer('completed');
-    } else {
-      handleCloseDrawer();
-    }
-  }, [handleOpenDrawer, handleCloseDrawer]);
-
-  // Open focus selection modal for a queue item
-  const handleOpenFocusSelection = useCallback((queueItemId: string) => {
-    setEditingFocusQueueItemId(queueItemId);
-    handleOpenDrawer('focus-selection');
-  }, [handleOpenDrawer]);
-
-  // Close focus selection modal (clears state when drawer closes)
-  useEffect(() => {
-    if (activeDrawer !== 'focus-selection' && editingFocusQueueItemId) {
-      setEditingFocusQueueItemId(null);
-    }
-  }, [activeDrawer, editingFocusQueueItemId]);
-
   // AI drawer open with mutual exclusivity
   const handleOpenAIDrawer = useCallback(() => {
     handleOpenDrawer('ai');
@@ -4013,11 +3737,10 @@ export default function Home() {
 
     if (movedToUpcoming) {
       const title = movedTaskTitle.slice(0, 25) + (movedTaskTitle.length > 25 ? '...' : '');
-      setToasts((prev) => [...prev, {
-        id: generateId(),
+      showToast({
         message: `Today's steps done! "${title}" moved to Upcoming`,
         type: 'success',
-      }]);
+      });
     }
 
     // Cancel notifications for the completed task
@@ -5634,40 +5357,6 @@ export default function Home() {
     }
   })();
 
-  // ============================================
-  // Sidebar Handlers
-  // ============================================
-
-  // Handle Jump To filter from search empty state - navigates to TasksView with filter
-  const handleJumpToFilter = useCallback((filter: string) => {
-    // Set pending filter for TasksView to pick up
-    setPendingFilter(filter);
-    // Clear search state
-    setSearchQuery('');
-    setSearchInputFocused(false);
-    // Navigate to Tasks view
-    handleViewChange('tasks');
-    // Close sidebar on mobile
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
-  }, []);
-
-  // Handle back to menu from search - clears search state
-  const handleBackToMenu = useCallback(() => {
-    setSearchQuery('');
-    setSearchInputFocused(false);
-    // Blur search input if focused
-    if (document.activeElement instanceof HTMLInputElement) {
-      document.activeElement.blur();
-    }
-  }, []);
-
-  // Handle clearing pending filter (memoized to avoid re-render loops)
-  const handleClearPendingFilter = useCallback(() => {
-    setPendingFilter(null);
-  }, []);
-
   // Handle settings open
   const handleOpenSettings = () => {
     // For now, show a simple alert with export/import info
@@ -6117,11 +5806,7 @@ export default function Home() {
       <ProjectModal
         isOpen={projectModalOpen}
         project={editingProject}
-        onClose={() => {
-          setProjectModalOpen(false);
-          setEditingProject(null);
-          setPendingProjectCallback(null); // Clear callback on cancel
-        }}
+        onClose={handleCloseProjectModal}
         onSave={(name, color) => {
           if (editingProject) {
             handleUpdateProject(editingProject.id, name, color);

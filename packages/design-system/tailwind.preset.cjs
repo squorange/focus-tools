@@ -327,6 +327,7 @@ module.exports = {
             medium: 'var(--color-border-accent-medium)',
           },
           info: 'var(--color-border-info)',
+          glass: 'var(--color-border-glass)',
           a11y: {
             primary: 'var(--color-border-a11y-primary)',
           },

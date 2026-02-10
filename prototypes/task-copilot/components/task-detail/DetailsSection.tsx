@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Lock, Plus, Check, ChevronDown, ChevronRight, RefreshCw, Bell, Calendar, Target, Timer, Clock, Zap, Star, X } from "lucide-react";
+import { Lock, Plus, Check, ChevronDown, ChevronRight, Repeat, Bell, Calendar, Target, Timer, Clock, Zap, Star, X } from "lucide-react";
 import { Task, FocusQueue, FocusQueueItem, Project, UserSettings, DrawerType, PriorityTier, ImportanceLevel, EnergyType } from "@/lib/types";
 import { formatDate, isDateOverdue, getDisplayStatus, getStatusInfo, computeHealthStatus } from "@/lib/utils";
 import { describePattern } from "@/lib/recurring-utils";
@@ -221,8 +221,8 @@ export default function DetailsSection({
       // Recurring: Show pattern, reminder, start poke
       if (patternDescription) {
         pills.push({
-          icon: <RefreshCw />,
-          label: patternDescription,
+          icon: <Repeat />,
+          label: patternDescription + (task.recurrence?.rolloverIfMissed ? " · Persists" : ""),
           variant: isReadOnly ? "locked" : "filled",
           pickerType: isReadOnly ? 'readOnly' : undefined,
         });
@@ -411,7 +411,7 @@ export default function DetailsSection({
 
         {/* Divider when StatusModule renders */}
         {showStatusModule && (
-          <div className="my-3 border-t border-border-color-glass" />
+          <div className="my-3 border-t border-border-color-neutral-subtle" />
         )}
 
         {/* Fixed header row with priority - always visible, never moves */}
@@ -653,8 +653,8 @@ export default function DetailsSection({
                     // Recurring: Pattern, Duration, Start Poke
                     <>
                       <DetailsPill
-                        icon={<RefreshCw />}
-                        label={patternDescription || "Set pattern"}
+                        icon={<Repeat />}
+                        label={(patternDescription || "Set pattern") + (task.recurrence?.rolloverIfMissed ? " · Persists" : "")}
                         variant={isReadOnly ? "locked" : patternDescription ? "filled" : "empty"}
                         size="md"
                         onPress={isReadOnly ? undefined : () => setShowPatternModal(true)}
@@ -945,6 +945,7 @@ export default function DetailsSection({
         isOpen={isPriorityOpen}
         onClose={() => setShowPriorityModal(false)}
         task={task}
+        isMobileView={isMobileView}
       />
 
       {/* Lead Time Picker */}

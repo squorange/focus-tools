@@ -2,8 +2,8 @@
 
 import { Task } from "@/lib/types";
 import { RecurrenceRuleExtended, RecurringInstance } from "@/lib/recurring-types";
-import { describePattern, getTodayISO, dateMatchesPattern, timestampToLocalDate, calculateStreak } from "@/lib/recurring-utils";
-import { Check, ChevronRight, Repeat, SkipForward, Zap } from "lucide-react";
+import { getTodayISO, dateMatchesPattern, timestampToLocalDate, calculateStreak } from "@/lib/recurring-utils";
+import { Check, ChevronRight, SkipForward, Zap } from "lucide-react";
 
 // 48px progress ring for the status module - fraction only, no label inside
 function LargeProgressRing({
@@ -127,7 +127,6 @@ export default function StatusModule({
 }: StatusModuleProps) {
   const isRecurring = task.isRecurring && task.recurrence;
   const recurrencePattern = task.recurrence as RecurrenceRuleExtended | null;
-  const patternDescription = recurrencePattern ? describePattern(recurrencePattern) : "";
 
   // Determine if task/instance is complete
   const isComplete = isRecurring
@@ -162,20 +161,12 @@ export default function StatusModule({
 
     // MANAGING MODE: Simplified display - just pattern + streak (no chart)
     if (mode === 'managing') {
-      return (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm text-fg-neutral-soft">
-            <Repeat className="w-3 h-3 text-fg-accent-primary" />
-            <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
-          </div>
-          {streak > 0 && (
-            <div className="flex items-center gap-1 text-sm text-fg-neutral-secondary font-medium">
-              <Zap className="w-3.5 h-3.5" />
-              <span>{streak}</span>
-            </div>
-          )}
+      return streak > 0 ? (
+        <div className="flex items-center justify-end gap-1 text-sm text-fg-neutral-secondary font-medium">
+          <Zap className="w-3.5 h-3.5" />
+          <span>{streak}</span>
         </div>
-      );
+      ) : null;
     }
 
     // EXECUTING MODE: Full display with chart
@@ -191,16 +182,15 @@ export default function StatusModule({
     const wasSkippedToday = todayMatchesPattern && todayInstance?.skipped;
 
     return (
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4">
         <LargeProgressRing
           completed={instanceCompleted}
           total={instanceTotal}
           isComplete={currentInstance?.completed ?? false}
-          overdue={currentInstance?.overdueDays ? currentInstance.overdueDays > 0 : false}
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="space-y-0.5">
+          <div className="flex items-center justify-between">
+            <div>
               {/* Step count OR Skipped message - all use leading-5 for consistent height */}
               {wasSkippedToday ? (
                 <span className="inline-flex items-center gap-1.5 text-sm leading-5 text-fg-attention-primary">
@@ -220,21 +210,6 @@ export default function StatusModule({
                 }`}>
                   {instanceCompleted} of {instanceTotal} steps{currentInstance?.completed && " complete"}
                 </span>
-              )}
-              {/* Pattern - stacked under step count/skipped */}
-              <div className="flex items-center gap-1.5 text-sm text-fg-neutral-soft">
-                <Repeat className="w-3 h-3 text-fg-accent-primary" />
-                <span>{patternDescription}{task.recurrence?.rolloverIfMissed && " · Persists"}</span>
-              </div>
-              {/* Toggle - stacked under pattern */}
-              {hasCompletedSteps && instanceCompleted > 0 && !(currentInstance?.completed ?? false) && (
-                <button
-                  onClick={onToggleCompletedSteps}
-                  className="flex items-center gap-1 text-sm text-fg-neutral-secondary hover:text-fg-neutral-secondary transition-colors"
-                >
-                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${completedStepsExpanded ? "rotate-90" : ""}`} />
-                  {completedStepsExpanded ? "Hide completed" : `Show ${instanceCompleted} completed`}
-                </button>
               )}
             </div>
             {/* Streak - right-aligned */}

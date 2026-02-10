@@ -884,8 +884,8 @@ export default function TaskDetail({
           {isRecurring && onToggleMode && (
             <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${
               mode === 'managing'
-                ? 'bg-bg-accent-subtle border border-border-color-accent'
-                : 'bg-bg-accent-subtle border border-border-color-accent/60'
+                ? 'bg-bg-accent-subtle border border-border-color-accent-low'
+                : 'bg-bg-accent-subtle border border-border-color-accent-low'
             }`}>
               <div className="flex items-center gap-2">
                 {mode === 'managing' ? (
@@ -1831,7 +1831,7 @@ export default function TaskDetail({
               <div className="space-y-2">
               {/* Show completed steps when expanded (via StatusModule toggle) OR when all steps are complete - with grid-rows animation */}
               <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-                (completedStepsExpanded || allStepsComplete) && completedSteps.length > 0 ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                (completedStepsExpanded || allStepsComplete || task.isRecurring) && completedSteps.length > 0 ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
               }`}>
                 <div className="overflow-hidden space-y-2">
                   {completedSteps.map((step) => {
@@ -2737,7 +2737,7 @@ function StepItem({ step, index, totalSteps, mode, isToday, isAITarget, isAITarg
           isAITarget
             ? "border-border-color-accent shadow-lg shadow-accent-glow ring-2 ring-accent-glow"
             : step.completed
-            ? "bg-bg-positive-subtle/50 border-border-color-positive"
+            ? "border-border-color-neutral"
             : isToday
             ? "bg-bg-accent-subtle border-border-color-accent hover:border-border-color-accent-hover"
             : "bg-bg-neutral-min border-border-color-neutral hover:border-border-color-accent-hover"

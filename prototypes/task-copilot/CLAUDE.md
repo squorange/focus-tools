@@ -22,7 +22,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 ## Current Sprint
 
-**Last Updated:** February 8, 2026
+**Last Updated:** February 9, 2026
 
 | Priority | Item | Status | Notes |
 |----------|------|--------|-------|
@@ -36,6 +36,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P1 | ActionableCard Unification | ✅ Complete | All 7 components migrated, 78% code reduction |
 | P1 | Theme System Migration (Phase 1) | ✅ Complete | 10 sessions, ~260 tokens, zero hardcoded colors in prototype |
 | P1 | Theme Infrastructure (Phase 2) | 🔄 In Progress | ColorTheme type, ThemeProvider, presets |
+| P1 | Hook Extraction (Multi-Shell Prep) | 🔄 In Progress | Session 1 done: useToasts, useProjects, useNavigation |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow |
@@ -51,6 +52,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v45 | Hook Extraction Session 1: useToasts, useProjects, useNavigation extracted from page.tsx (~315 lines removed) |
 | v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated to semantic tokens |
 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
 | v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |
@@ -100,6 +102,15 @@ task-copilot/
 │   ├── page.tsx              # Main app, state, routing, handlers
 │   ├── layout.tsx            # Root layout
 │   └── api/structure/route.ts # Claude API endpoint
+├── hooks/
+│   ├── useToasts.ts          # Toast state + showToast/dismissToast
+│   ├── useProjects.ts        # Project CRUD + modal state
+│   ├── useNavigation.ts      # View switching, sidebar, drawers, search
+│   ├── useStepActions.ts     # Step/substep operations
+│   ├── useAIAssistant.ts     # AI minibar/palette/drawer state machine
+│   ├── useContextualPrompts.ts # Auto-prompts for minibar
+│   ├── useTheme.ts           # Theme CSS class application
+│   └── useKeyboardVisible.ts # Mobile keyboard detection
 ├── components/
 │   ├── layout/               # Header, Sidebar, TabCluster
 │   ├── inbox/                # InboxView (uses TriageRow)
@@ -185,16 +196,19 @@ See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration
 
 ## Handler Reference (page.tsx)
 
-| Category | Handlers |
-|----------|----------|
-| **Navigation** | `handleViewChange`, `handleOpenTask`, `handleBackToList` |
-| **Task CRUD** | `handleCreateTask`, `handleUpdateTask`, `handleDeleteTask` |
-| **Workflow** | `handleSendToPool`, `handleDefer`, `handlePark` |
-| **Queue** | `handleAddToQueue`, `handleRemoveFromQueue`, `handleStartFocus` |
-| **Steps** | `handleStepComplete`, `handleAddStep`, `handleDeleteStep`, `handleMoveStep*` |
-| **Focus** | `handleStartFocus`, `handlePauseFocus`, `handleResumeFocus`, `handleExitFocus` |
-| **AI** | `handleSendMessage`, `handleAutoBreakdown`, `handleAcceptSuggestion` |
-| **Projects** | `handleCreateProject`, `handleUpdateProject`, `handleDeleteProject` |
+| Category | Handlers | Location |
+|----------|----------|----------|
+| **Navigation** | `viewChange`, `openTask`, `backToList`, `goToTasks`, `goToInbox` | `hooks/useNavigation.ts` |
+| **Drawers** | `openDrawer`, `closeDrawer`, `toggleCompletedDrawer`, `openFocusSelection` | `hooks/useNavigation.ts` |
+| **Search** | `jumpToFilter`, `backToMenu`, `clearPendingFilter` | `hooks/useNavigation.ts` |
+| **Toasts** | `showToast`, `dismissToast` | `hooks/useToasts.ts` |
+| **Projects** | `createProject`, `updateProject`, `deleteProject`, `openProjectModal` | `hooks/useProjects.ts` |
+| **Task CRUD** | `handleCreateTask`, `handleUpdateTask`, `handleDeleteTask` | page.tsx |
+| **Workflow** | `handleSendToPool`, `handleDefer`, `handlePark` | page.tsx |
+| **Queue** | `handleAddToQueue`, `handleRemoveFromQueue`, `handleStartFocus` | page.tsx |
+| **Steps** | `handleStepComplete`, `handleAddStep`, `handleDeleteStep`, `handleMoveStep*` | page.tsx |
+| **Focus** | `handleStartFocus`, `handlePauseFocus`, `handleResumeFocus`, `handleExitFocus` | page.tsx |
+| **AI** | `handleSendMessage`, `handleAutoBreakdown`, `handleAcceptSuggestion` | page.tsx |
 
 ---
 
@@ -243,6 +257,7 @@ See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-09 | v45 | Hook Extraction Session 1: useToasts, useProjects, useNavigation (~315 lines from page.tsx) |
 | 2026-02-08 | v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated |
 | 2026-02-07 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
 | 2026-02-06 | v42 | ActionableCard Phase 6d: NotificationCard, RoutineRowCard, RoutineGalleryCard migrated |

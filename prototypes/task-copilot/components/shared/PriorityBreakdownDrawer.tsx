@@ -21,6 +21,8 @@ interface PriorityBreakdownDrawerProps {
   userEnergy?: EnergyLevel | null;
   /** Callback when user saves changes to inputs */
   onSave?: (changes: Record<string, unknown>) => void;
+  /** Use mobile BottomSheet instead of desktop side drawer */
+  isMobileView?: boolean;
 }
 
 interface FactorRow {
@@ -70,6 +72,7 @@ export default function PriorityBreakdownDrawer({
   onClose,
   task,
   userEnergy = null,
+  isMobileView = false,
 }: PriorityBreakdownDrawerProps) {
   const [showScaleInfo, setShowScaleInfo] = useState(false);
 
@@ -264,14 +267,41 @@ export default function PriorityBreakdownDrawer({
     </>
   );
 
+  if (isMobileView) {
+    return (
+      <BottomSheet isOpen={isOpen} onClose={onClose} height="70vh">
+        {/* Mobile header */}
+        <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
+          <div className="px-2">
+            <h2 className="text-base font-medium text-fg-neutral-primary">
+              Priority Breakdown
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} className="text-fg-neutral-secondary" />
+          </button>
+        </div>
+
+        {/* Mobile content */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
+          {renderContent()}
+        </div>
+      </BottomSheet>
+    );
+  }
+
   return (
     <>
       {/* Desktop: Side drawer from right */}
       <div
         className={`
-          hidden lg:flex lg:flex-col lg:flex-shrink-0 lg:border-l lg:border-border-color-neutral lg:bg-bg-neutral-min
+          flex flex-col flex-shrink-0 border-l border-border-color-neutral bg-bg-neutral-min
           transition-all duration-300 ease-in-out overflow-hidden fixed right-0 top-0 bottom-0 z-40
-          ${isOpen ? "lg:w-[400px]" : "lg:w-0 lg:border-l-0"}
+          ${isOpen ? "w-[400px]" : "w-0 border-l-0"}
         `}
       >
         <div
@@ -279,7 +309,7 @@ export default function PriorityBreakdownDrawer({
             isOpen ? "opacity-100" : "opacity-0"
           }`}
         >
-          {/* Header - matches main navbar (no bottom border) */}
+          {/* Header */}
           <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
             <div className="px-2">
               <h2 className="text-base font-medium text-fg-neutral-primary">
@@ -304,37 +334,11 @@ export default function PriorityBreakdownDrawer({
 
       {/* Desktop backdrop */}
       <div
-        className={`hidden lg:block fixed inset-0 z-30 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-30 transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
       />
-
-      {/* Mobile: Bottom sheet */}
-      <div className="lg:hidden">
-        <BottomSheet isOpen={isOpen} onClose={onClose} height="70vh">
-          {/* Mobile header - matches main navbar (no bottom border) */}
-          <div className="h-14 flex items-center justify-between px-2 flex-shrink-0">
-            <div className="px-2">
-              <h2 className="text-base font-medium text-fg-neutral-primary">
-                Priority Breakdown
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-bg-neutral-subtle transition-colors"
-              aria-label="Close"
-            >
-              <X size={20} className="text-fg-neutral-secondary" />
-            </button>
-          </div>
-
-          {/* Mobile content */}
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-            {renderContent()}
-          </div>
-        </BottomSheet>
-      </div>
     </>
   );
 }

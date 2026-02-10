@@ -146,14 +146,28 @@ The `useAIAssistant()` hook handles the shared parts. Each shell renders the res
 
 **Effort:** Medium-High (largest single piece of work)
 **What it unlocks:** Any shell can consume app logic
+**Progress:** Session 1 complete — `useToasts`, `useProjects`, `useNavigation` extracted
 
 This is the critical step. `page.tsx` currently holds ~all state and handlers. Extract into composable hooks that can be used by any shell.
 
 **Approach:**
-1. Start with the most self-contained domain (e.g., `useProjects()`)
+1. Start with the most self-contained domain (e.g., `useProjects()`) ✅
 2. Work through each hook, moving state + handlers out of page.tsx
 3. page.tsx becomes a thin shell that wires hooks to current list components
-4. Validate: current UI still works identically after extraction
+4. Validate: current UI still works identically after extraction ✅ (build + 133 tests pass)
+
+**Session 1 results (Feb 9, 2026):**
+- `useToasts` — self-contained toast state + showToast/dismissToast (31 lines)
+- `useProjects` — project CRUD + modal state, takes `showToast` (141 lines)
+- `useNavigation` — view switching, sidebar, drawers, search, scroll, 3 effects (286 lines)
+- page.tsx reduced from 6,252 → 5,937 lines (~315 removed)
+- 15 inline `setToasts(...)` calls migrated to `showToast(...)`
+
+**Next candidates for extraction:**
+- `useTaskCrud` — task create/update/delete + undo toasts
+- `useFocusQueue` — queue add/remove/reorder/step-selection
+- `useFocusSession` — focus mode start/pause/resume/exit
+- `useNotifications` — notification scheduling, alerts, poke management
 
 **Risk:** Some handlers have cross-cutting concerns (e.g., completing a step affects queue state, nudge state, and session state). These need careful boundary design — probably a shared context or event bus rather than hooks calling each other.
 
