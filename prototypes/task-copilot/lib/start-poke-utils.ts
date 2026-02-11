@@ -38,20 +38,20 @@ const DEFAULT_DEADLINE_HOUR = 17; // 5 PM for deadlines
 export function getAnchorTime(task: Task): number | null {
   // Priority: deadline > target > recurrence time
 
-  // Try deadline first
-  if (task.deadlineDate) {
+  // Try deadline first (only if specific time is set — date-only isn't enough info)
+  if (task.deadlineDate && task.deadlineTime) {
     return dateToTimestamp(
       task.deadlineDate,
-      task.deadlineTime || null,
+      task.deadlineTime,
       DEFAULT_DEADLINE_HOUR
     );
   }
 
-  // Try target date
-  if (task.targetDate) {
+  // Try target date (only if specific time is set)
+  if (task.targetDate && task.targetTime) {
     return dateToTimestamp(
       task.targetDate,
-      task.targetTime || null,
+      task.targetTime,
       DEFAULT_TARGET_HOUR
     );
   }

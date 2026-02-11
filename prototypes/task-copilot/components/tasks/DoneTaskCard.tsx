@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Task, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { ActionableCard, ProgressRing, Pill } from "@design-system/components";
 import { MoreVertical } from "lucide-react";
 
@@ -44,6 +45,8 @@ export default function DoneTaskCard({
   badge,
 }: DoneTaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, showMenu, () => setShowMenu(false));
 
   const completedSteps = task.steps.filter((s) => s.completed).length;
   const totalSteps = task.steps.length;
@@ -118,7 +121,7 @@ export default function DoneTaskCard({
 
         {/* Kebab menu */}
         {hasKebabMenu && (
-          <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowMenu(!showMenu)}
               className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary rounded hover:bg-bg-neutral-subtle transition-colors"
@@ -127,8 +130,6 @@ export default function DoneTaskCard({
               <MoreVertical className="w-4 h-4" />
             </button>
             {showMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                 <div
                   className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
                 >
@@ -173,7 +174,6 @@ export default function DoneTaskCard({
                     </button>
                   )}
                 </div>
-              </>
             )}
           </div>
         )}

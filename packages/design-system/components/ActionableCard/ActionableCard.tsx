@@ -264,7 +264,7 @@ const ActionableCardRoot = forwardRef<HTMLDivElement, ActionableCardProps>(
 
     // Interactive classes
     const interactiveClasses = onClick
-      ? 'cursor-pointer active:scale-[0.995]'
+      ? 'cursor-pointer'
       : '';
 
     // Height for compact variant

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Task, FocusQueueItem } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { ActionableCard, ProgressRing, Pill } from "@design-system/components";
 import { MoreVertical, ChevronDown, Bell } from "lucide-react";
 
@@ -41,6 +42,10 @@ export default function PoolTaskCard({
 }: PoolTaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showFocusDropdown, setShowFocusDropdown] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const focusDropdownRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, showMenu, () => setShowMenu(false));
+  useClickOutside(focusDropdownRef, showFocusDropdown, () => setShowFocusDropdown(false));
 
   const progress = getProgress(task);
   const isInQueue = !!queueItem;
@@ -121,7 +126,7 @@ export default function PoolTaskCard({
         ) : isComplete ? (
           <span className="text-xs text-fg-positive">Done</span>
         ) : (
-          <div className="relative opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+          <div ref={focusDropdownRef} className="relative opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             <div className="flex">
               <button
                 onClick={() => onAddToQueue(task.id, false)}
@@ -137,8 +142,6 @@ export default function PoolTaskCard({
               </button>
             </div>
             {showFocusDropdown && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowFocusDropdown(false)} />
                 <div className="absolute right-0 top-full mt-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]">
                   <button
                     onClick={() => { onAddToQueue(task.id, true); setShowFocusDropdown(false); }}
@@ -147,14 +150,13 @@ export default function PoolTaskCard({
                     Add to Today
                   </button>
                 </div>
-              </>
             )}
           </div>
         )}
 
         {/* Kebab menu */}
         {hasKebabMenu && (
-          <div className="relative">
+          <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
               className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
@@ -163,8 +165,6 @@ export default function PoolTaskCard({
               <MoreVertical className="w-4 h-4" />
             </button>
             {showMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                 <div
                   className="absolute right-0 bottom-full mb-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
                   onClick={(e) => e.stopPropagation()}
@@ -210,7 +210,6 @@ export default function PoolTaskCard({
                     </button>
                   )}
                 </div>
-              </>
             )}
           </div>
         )}

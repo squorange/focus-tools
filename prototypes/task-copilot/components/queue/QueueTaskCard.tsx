@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Task, FocusQueueItem, Project } from "@/lib/types";
 import { formatDate, computeHealthStatus } from "@/lib/utils";
 import { getTaskPriorityInfo } from "@/lib/priority";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { ActionableCard, ProgressRing, Pill } from "@design-system/components";
 import PriorityDisplay from "@/components/shared/PriorityDisplay";
 import { MoreVertical, Bell, Play, ClipboardCheck, ChevronUp, ChevronDown, ArrowRight, GripVertical } from "lucide-react";
@@ -102,6 +103,8 @@ export default function QueueTaskCard({
   onMoveDown,
 }: QueueTaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, showMenu, () => setShowMenu(false));
 
   const progress = getProgress(task, item);
   const estimate = getEstimate(task, item);
@@ -194,7 +197,7 @@ export default function QueueTaskCard({
         <PriorityDisplay tier={priorityInfo.tier} showChevron={false} />
 
         {/* Kebab menu */}
-        <div className="relative" onClick={(e) => e.stopPropagation()}>
+        <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setShowMenu(!showMenu)}
             className="p-1 text-fg-neutral-soft hover:text-fg-neutral-secondary transition-colors"
@@ -203,8 +206,6 @@ export default function QueueTaskCard({
             <MoreVertical className="w-4 h-4" />
           </button>
           {showMenu && (
-            <>
-              <div className="fixed inset-0 z-20" onClick={() => setShowMenu(false)} />
               <div className={`absolute right-0 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-30 min-w-[140px] ${
                 isFirst ? "top-full mt-1" : "bottom-full mb-1"
               }`}>
@@ -256,7 +257,6 @@ export default function QueueTaskCard({
                   Tasks
                 </button>
               </div>
-            </>
           )}
         </div>
       </ActionableCard.Trailing>

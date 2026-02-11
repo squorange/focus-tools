@@ -29,7 +29,8 @@ export function getTodayISO(dayStartHour: number = 0): string {
  * Format a date for display
  */
 export function formatDate(isoDate: string): string {
-  const date = new Date(isoDate + 'T00:00:00');
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Task } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { useClickOutside } from "@/hooks/useClickOutside";
 import { ActionableCard, ProgressRing, Pill } from "@design-system/components";
 import { MoreVertical } from "lucide-react";
 
@@ -35,6 +36,8 @@ export default function TriageTaskCard({
   variant = "compact",
 }: TriageTaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useClickOutside(menuRef, showMenu, () => setShowMenu(false));
 
   const isCompact = variant === "compact";
   const isOverdue = task.deadlineDate && task.deadlineDate < new Date().toISOString().split("T")[0];
@@ -104,7 +107,7 @@ export default function TriageTaskCard({
         </button>
 
         {/* Kebab menu */}
-        <div className="relative">
+        <div ref={menuRef} className="relative" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -116,8 +119,6 @@ export default function TriageTaskCard({
             <MoreVertical className="w-4 h-4" />
           </button>
           {showMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
               <div
                 className="absolute right-0 bottom-full mb-1 py-1 bg-bg-neutral-min border border-border-color-neutral rounded-lg shadow-lg z-20 min-w-[140px]"
                 onClick={(e) => e.stopPropagation()}
@@ -163,7 +164,6 @@ export default function TriageTaskCard({
                   Delete
                 </button>
               </div>
-            </>
           )}
         </div>
       </ActionableCard.Trailing>

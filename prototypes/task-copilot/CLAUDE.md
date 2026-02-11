@@ -36,7 +36,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 | P1 | ActionableCard Unification | ✅ Complete | All 7 components migrated, 78% code reduction |
 | P1 | Theme System Migration (Phase 1) | ✅ Complete | 10 sessions, ~260 tokens, zero hardcoded colors in prototype |
 | P1 | Theme Infrastructure (Phase 2) | 🔄 In Progress | ColorTheme type, ThemeProvider, presets |
-| P1 | Hook Extraction (Multi-Shell Prep) | 🔄 In Progress | Session 1 done: useToasts, useProjects, useNavigation |
+| P1 | Hook Extraction (Multi-Shell Prep) | 🔄 In Progress | Sessions 1-2 done: 6 hooks extracted, page.tsx ~4,550 lines |
 | P1 | Proactive stale task nudge | ⬜ Not Started | Health computed but not surfaced |
 | P1 | Recurring tasks | 🔄 In Progress | Phase 1-2 complete, Phase 3-6 pending |
 | P2 | Inline AI Actions (Tasks) | ⬜ Not Started | QueueItem, TaskRow |
@@ -52,6 +52,7 @@ The repo root has a separate `.vercel` project config which is NOT the correct t
 
 | Version | Changes |
 |---------|---------|
+| v46 | Hook Extraction Session 2: useFocusQueue, useTaskCrud, useFocusSession extracted (~1,389 lines from page.tsx) |
 | v45 | Hook Extraction Session 1: useToasts, useProjects, useNavigation extracted from page.tsx (~315 lines removed) |
 | v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated to semantic tokens |
 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
@@ -106,6 +107,9 @@ task-copilot/
 │   ├── useToasts.ts          # Toast state + showToast/dismissToast
 │   ├── useProjects.ts        # Project CRUD + modal state
 │   ├── useNavigation.ts      # View switching, sidebar, drawers, search
+│   ├── useFocusQueue.ts      # Queue add/remove/reorder + routine handlers
+│   ├── useTaskCrud.ts        # Task create/update/delete + workflow
+│   ├── useFocusSession.ts    # Focus mode start/pause/resume/exit
 │   ├── useStepActions.ts     # Step/substep operations
 │   ├── useAIAssistant.ts     # AI minibar/palette/drawer state machine
 │   ├── useContextualPrompts.ts # Auto-prompts for minibar
@@ -203,11 +207,12 @@ See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration
 | **Search** | `jumpToFilter`, `backToMenu`, `clearPendingFilter` | `hooks/useNavigation.ts` |
 | **Toasts** | `showToast`, `dismissToast` | `hooks/useToasts.ts` |
 | **Projects** | `createProject`, `updateProject`, `deleteProject`, `openProjectModal` | `hooks/useProjects.ts` |
-| **Task CRUD** | `handleCreateTask`, `handleUpdateTask`, `handleDeleteTask` | page.tsx |
-| **Workflow** | `handleSendToPool`, `handleDefer`, `handlePark` | page.tsx |
-| **Queue** | `handleAddToQueue`, `handleRemoveFromQueue`, `handleStartFocus` | page.tsx |
+| **Task CRUD** | `handleCreateTask`, `handleUpdateTask`, `handleDeleteTask` | `hooks/useTaskCrud.ts` |
+| **Workflow** | `handleSendToPool`, `handleDefer`, `handlePark`, `handleUnarchive` | `hooks/useTaskCrud.ts` |
+| **Queue** | `handleAddToQueue`, `handleRemoveFromQueue`, `handleReorderQueue` | `hooks/useFocusQueue.ts` |
+| **Routines** | `handleCompleteRoutine`, `handleSkipRoutine`, `handleResetFromTemplate` | `hooks/useFocusQueue.ts` |
 | **Steps** | `handleStepComplete`, `handleAddStep`, `handleDeleteStep`, `handleMoveStep*` | page.tsx |
-| **Focus** | `handleStartFocus`, `handlePauseFocus`, `handleResumeFocus`, `handleExitFocus` | page.tsx |
+| **Focus** | `handleStartFocus`, `handlePauseFocus`, `handleResumeFocus`, `handleExitFocus` | `hooks/useFocusSession.ts` |
 | **AI** | `handleSendMessage`, `handleAutoBreakdown`, `handleAcceptSuggestion` | page.tsx |
 
 ---
@@ -257,6 +262,7 @@ See [docs/features/indexeddb-migration/](../../docs/features/indexeddb-migration
 
 | Date | Version | Summary |
 |------|---------|---------|
+| 2026-02-09 | v46 | Hook Extraction Session 2: useFocusQueue, useTaskCrud, useFocusSession (~1,389 lines from page.tsx) |
 | 2026-02-09 | v45 | Hook Extraction Session 1: useToasts, useProjects, useNavigation (~315 lines from page.tsx) |
 | 2026-02-08 | v44 | Theme System Phase 1 complete: 10 sessions, ~260 tokens, all components migrated |
 | 2026-02-07 | v43 | Design System Integration complete: All phases (1-6e) done, 78% code reduction |
